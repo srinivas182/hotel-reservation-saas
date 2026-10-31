@@ -25,4 +25,17 @@ return [
 
     'password_min_length' => 12,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Content Security Policy
+    |--------------------------------------------------------------------------
+    |
+    | Report-only until violation reports are clean, then set to true.
+    |
+    */
+
+    'csp' => [
+        'enforce' => (bool) env('CSP_ENFORCE', false),
+    ],
+
 ];

@@ -61,7 +61,7 @@ jobs:
           all=$(match '^\.github/workflows/')
           backend=$(match '^(app|bootstrap|config|database|routes|tests|lang|resources/views|resources/js/pages)/|^(composer\.(json|lock)|phpunit\.xml|phpstan\.neon|artisan)$')
           frontend=$(match '^resources/(js|css)/|^(package(-lock)?\.json|vite\.config\.ts|tsconfig\.json|components\.json)$')
-          docker=$(match '^docker/|^(compose\.yaml|\.dockerignore)$')
+          docker=$(match '^docker/|^(compose(\.prod)?\.yaml|\.dockerignore|deploy\.sh)$')
           [ "$all" = true ] && backend=true && frontend=true && docker=true
           echo "backend=$backend"   >> "$GITHUB_OUTPUT"
           echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
@@ -274,6 +274,9 @@ jobs:
         run: |
           docker build --target dev  -f docker/php/Dockerfile -t hotel-saas-php:dev  .
           docker build --target prod -f docker/php/Dockerfile -t hotel-saas-php:prod .
+          docker build --target web  -f docker/php/Dockerfile -t hotel-saas-web:prod .
+          docker run --rm hotel-saas-php:prod php artisan --version
+          docker run --rm hotel-saas-web:prod nginx -t
           docker run --rm hotel-saas-php:dev php -m | grep -E '^(pdo_mysql|redis|intl|bcmath|gd|pcntl|zip)$'
 
   gate:

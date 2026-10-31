@@ -9,6 +9,7 @@ use App\Domains\Tenancy\TenantContext;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Context;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -37,6 +38,8 @@ final class ResolveCurrentHotel
         if (! $user instanceof User || ! $request->hasSession()) {
             return $next($request);
         }
+
+        Context::add('user_id', $user->getKey());
 
         $storedId = $request->session()->get(self::SESSION_KEY);
 

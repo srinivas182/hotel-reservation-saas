@@ -2,9 +2,25 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Domains\Platform\Health\HeartbeatCheck;
+use App\Domains\Platform\Health\QueueHeartbeatJob;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+/*
+|--------------------------------------------------------------------------
+| Health heartbeats
+|--------------------------------------------------------------------------
+|
+| The scheduler records that it ran, and dispatches a job whose execution
+| proves a queue worker is processing jobs. /health reports both.
+|
+*/
+
+Schedule::call(fn () => Cache::put(HeartbeatCheck::scheduler()->cacheKey(), now()->getTimestamp(), 600))
+    ->name('health:scheduler-heartbeat')
+    ->everyMinute();
+
+Schedule::job(new QueueHeartbeatJob)
+    ->name('health:queue-heartbeat')
+    ->everyMinute();
