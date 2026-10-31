@@ -6,6 +6,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Dated far in the future so it always runs after the application's own
+ * migrations (it references the hotels table).
+ */
 return new class extends Migration
 {
     public function up(): void

@@ -26,6 +26,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - Users have ULID IDs, first and last names (a full `name` is still provided), phone, preferred language, platform role, last sign-in time and soft deletes.
 - Sign-in throttling now records a lockout entry in the audit log.
 
+#### Fixed
+
+- Test-only fixture migration now always runs after the application's migrations (MySQL rejected its foreign key to `hotels`).
+
 ### S0.1 — Skeleton, tooling and CI
 
 #### Added
