@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S1.2 — Hotel settings, money and taxes
+
+#### Added
+
+- Hotel settings page (`/hotel/settings`): name and legal name, contact details (phone and WhatsApp number in international format, email, address, map link), check-in and check-out times, latest late check-out, staffed hours per weekday (up to three periods a day), time zone, currency, default and enabled languages, and a preview of dates and money. Viewing needs `hotel.settings.view`; changing needs `hotel.settings.manage`. Changes are audited.
+- One `hotel_settings` row per hotel, created with every new hotel (and for existing hotels by the migration).
+- Money handled with `brick/money` in minor units; `MoneyFormatter` formats amounts with the locale's conventions.
+- Taxes (`/hotel/taxes`): percentage or fixed per night, per person per night or per stay; included in prices or added on top; applies to rooms, food & beverage and/or events; active switch, start and end dates, order; names per enabled language. Audited.
+- `TaxCalculator`: included taxes are worked back from the price (fixed first, then percentages, no tax on tax), added taxes are calculated on the net price; each tax is rounded to the currency's minor unit and the net absorbs rounding so totals always reconcile. Tested in FCFA, euro and rupee.
+- "Try it" preview on the taxes page using the same calculator as the server.
+- Hotel settings and Taxes appear in the sidebar for users allowed to see them.
+
 ### S1.1 — Hotel roles, staff management and invitations
 
 #### Added

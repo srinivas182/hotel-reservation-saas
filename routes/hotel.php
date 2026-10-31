@@ -6,6 +6,8 @@ use App\Domains\Access\Http\Controllers\AcceptInvitationController;
 use App\Domains\Access\Http\Controllers\InvitationController;
 use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Access\Http\Controllers\StaffController;
+use App\Domains\Finance\Http\Controllers\TaxRateController;
+use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,6 +33,16 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('staff/invitations', [InvitationController::class, 'store'])->name('staff.invitations.store');
         Route::post('staff/invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('staff.invitations.resend');
         Route::delete('staff/invitations/{invitation}', [InvitationController::class, 'destroy'])->name('staff.invitations.destroy');
+    });
+
+    Route::get('hotel/settings', [HotelSettingsController::class, 'edit'])->middleware('can:hotel.settings.view')->name('hotel.settings.edit');
+    Route::put('hotel/settings', [HotelSettingsController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.settings.update');
+
+    Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');
+    Route::middleware('can:taxes.manage')->group(function (): void {
+        Route::post('hotel/taxes', [TaxRateController::class, 'store'])->name('hotel.taxes.store');
+        Route::put('hotel/taxes/{taxRate}', [TaxRateController::class, 'update'])->name('hotel.taxes.update');
+        Route::delete('hotel/taxes/{taxRate}', [TaxRateController::class, 'destroy'])->name('hotel.taxes.destroy');
     });
 
     Route::middleware('can:roles.manage')->group(function (): void {
