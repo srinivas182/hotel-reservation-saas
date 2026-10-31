@@ -1,6 +1,11 @@
 export type User = {
-    id: number;
+    id: string;
+    first_name: string;
+    last_name: string;
     name: string;
+    phone_e164: string | null;
+    preferred_locale: string;
+    platform_role: 'super_admin' | 'support' | null;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
@@ -12,6 +17,17 @@ export type User = {
 
 export type Auth = {
     user: User;
+};
+
+export type HotelSummary = {
+    id: string;
+    name: string;
+    slug: string;
+};
+
+export type Tenancy = {
+    current: HotelSummary | null;
+    hotels: HotelSummary[];
 };
 
 export type TwoFactorSetupData = {

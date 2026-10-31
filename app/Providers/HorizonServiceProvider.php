@@ -13,11 +13,11 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     /**
      * Register the Horizon gate.
      *
-     * Outside the local environment Horizon is closed to everyone until
-     * platform roles land in S0.2, when access is limited to super admins.
+     * Outside the local environment only platform super admins may open
+     * the Horizon dashboard.
      */
     protected function gate(): void
     {
-        Gate::define('viewHorizon', fn (?User $user = null): bool => false);
+        Gate::define('viewHorizon', fn (?User $user = null): bool => $user?->isSuperAdmin() === true);
     }
 }
