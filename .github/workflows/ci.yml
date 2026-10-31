@@ -250,6 +250,9 @@ jobs:
         run: npm test
         env:
           DB_CONNECTION: sqlite
+          # laravel-vite-plugin refuses to start a dev server when CI=true;
+          # Vitest boots the Vite config, so the guard is bypassed for tests only.
+          LARAVEL_BYPASS_ENV_CHECK: '1'
 
       - name: Production build
         run: npm run build
