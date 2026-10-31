@@ -1,5 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, LayoutGrid, Users } from 'lucide-react';
+import { Building2, LayoutGrid, Percent, Settings2, Users } from 'lucide-react';
+import TaxRateController from '@/actions/App/Domains/Finance/Http/Controllers/TaxRateController';
+import HotelSettingsController from '@/actions/App/Domains/Hotel/Http/Controllers/HotelSettingsController';
 import StaffController from '@/actions/App/Domains/Access/Http/Controllers/StaffController';
 import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/HotelController';
 import AppLogo from '@/components/app-logo';
@@ -41,6 +43,24 @@ export function AppSidebar() {
         ...mainNavItems,
         ...(auth.permissions.includes('staff.view')
             ? [{ title: 'Staff', href: StaffController.index(), icon: Users }]
+            : []),
+        ...(auth.permissions.includes('hotel.settings.view')
+            ? [
+                  {
+                      title: 'Hotel settings',
+                      href: HotelSettingsController.edit(),
+                      icon: Settings2,
+                  },
+              ]
+            : []),
+        ...(auth.permissions.includes('taxes.view')
+            ? [
+                  {
+                      title: 'Taxes',
+                      href: TaxRateController.index(),
+                      icon: Percent,
+                  },
+              ]
             : []),
     ];
 
