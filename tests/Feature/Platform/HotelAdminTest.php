@@ -108,6 +108,17 @@ it('lets a super admin update a hotel and audits the change', function (): void 
         ->and(AuditLog::query()->where('event', 'hotel.updated')->exists())->toBeTrue();
 });
 
+it('adds staff with a chosen role', function (): void {
+    $hotel = Hotel::factory()->create();
+    $user = User::factory()->create(['email' => 'chef@lodge.test']);
+
+    $this->actingAs($this->admin)
+        ->post(route('platform.hotels.members.store', $hotel), ['email' => 'chef@lodge.test', 'role' => 'restaurant_bar'])
+        ->assertSessionHasNoErrors();
+
+    expect(app(App\Domains\Access\StaffService::class)->roleOf($hotel, $user)?->name)->toBe('restaurant_bar');
+});
+
 it('adds and removes hotel staff', function (): void {
     $hotel = Hotel::factory()->create();
     $user = User::factory()->create(['email' => 'reception@lodge.test']);

@@ -33,6 +33,9 @@ final class ResolveCurrentHotel
 
     public function handle(Request $request, Closure $next): Response
     {
+        // Start every request without a hotel (long-lived workers, tests).
+        $this->context->forget();
+
         $user = $request->user();
 
         if (! $user instanceof User || ! $request->hasSession()) {

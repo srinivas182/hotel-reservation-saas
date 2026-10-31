@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/platform/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { t } from '@/lib/i18n';
 
 type Member = {
     id: string;
@@ -26,6 +27,7 @@ type Props = {
     timezones: string[];
     canUpdate: boolean;
     canManageMembers: boolean;
+    memberRoles: { value: string; label: string }[];
 };
 
 export default function HotelsEdit({
@@ -36,6 +38,7 @@ export default function HotelsEdit({
     timezones,
     canUpdate,
     canManageMembers,
+    memberRoles,
 }: Props) {
     return (
         <>
@@ -45,7 +48,7 @@ export default function HotelsEdit({
                     <div className="flex items-start justify-between gap-4">
                         <Heading
                             title={hotel.name}
-                            description="Hotel details"
+                            description={t('Hotel details')}
                         />
                         <StatusBadge status={hotel.status} />
                     </div>
@@ -57,21 +60,21 @@ export default function HotelsEdit({
                         timezones={timezones}
                         showStatus
                         readOnly={!canUpdate}
-                        submitLabel="Save changes"
+                        submitLabel={t('Save changes')}
                     />
                 </section>
 
                 <section className="flex flex-col gap-4">
                     <Heading
                         variant="small"
-                        title="Staff"
-                        description="People who can work in this hotel. Invitations and roles arrive in the next sprint."
+                        title={t('Staff')}
+                        description={t('People who can work in this hotel.')}
                     />
 
                     <ul className="divide-y rounded-xl border">
                         {members.length === 0 && (
                             <li className="px-4 py-6 text-center text-sm text-muted-foreground">
-                                No staff yet.
+                                {t('No staff yet.')}
                             </li>
                         )}
                         {members.map((member) => (
@@ -88,7 +91,9 @@ export default function HotelsEdit({
                                     </div>
                                 </div>
                                 {member.is_owner && (
-                                    <Badge variant="secondary">Owner</Badge>
+                                    <Badge variant="secondary">
+                                        {t('Owner')}
+                                    </Badge>
                                 )}
                                 {member.status !== 'active' && (
                                     <Badge variant="outline">
@@ -102,7 +107,10 @@ export default function HotelsEdit({
                                         onClick={() => {
                                             if (
                                                 window.confirm(
-                                                    `Remove ${member.name} from this hotel?`,
+                                                    t(
+                                                        'Remove :name from this hotel?',
+                                                        { name: member.name },
+                                                    ),
                                                 )
                                             ) {
                                                 router.delete(
@@ -117,7 +125,7 @@ export default function HotelsEdit({
                                             }
                                         }}
                                     >
-                                        Remove
+                                        {t('Remove')}
                                     </Button>
                                 )}
                             </li>
@@ -137,8 +145,12 @@ export default function HotelsEdit({
                                         <Input
                                             name="email"
                                             type="email"
-                                            placeholder="Email of an existing user"
-                                            aria-label="Email of the user to add"
+                                            placeholder={t(
+                                                'Email of an existing user',
+                                            )}
+                                            aria-label={t(
+                                                'Email of the user to add',
+                                            )}
                                             required
                                         />
                                         <InputError
@@ -146,8 +158,23 @@ export default function HotelsEdit({
                                             message={errors.email}
                                         />
                                     </div>
+                                    <select
+                                        name="role"
+                                        aria-label={t('Role')}
+                                        defaultValue="reception"
+                                        className="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-xs"
+                                    >
+                                        {memberRoles.map((role) => (
+                                            <option
+                                                key={role.value}
+                                                value={role.value}
+                                            >
+                                                {role.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <Button disabled={processing}>
-                                        Add to hotel
+                                        {t('Add to hotel')}
                                     </Button>
                                 </>
                             )}

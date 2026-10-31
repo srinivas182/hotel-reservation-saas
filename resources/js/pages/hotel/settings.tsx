@@ -7,6 +7,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { t } from '@/lib/i18n';
 
 type Interval = { from: string; to: string };
 type StaffedHours = Record<string, Interval[]>;
@@ -130,7 +131,7 @@ export default function HotelSettingsPage({
 
     return (
         <>
-            <Head title="Hotel settings" />
+            <Head title={t('Hotel settings')} />
             <form
                 onSubmit={submit}
                 className="flex max-w-3xl flex-col gap-10 p-4"
@@ -141,13 +142,15 @@ export default function HotelSettingsPage({
                 >
                     <section className="flex flex-col gap-4">
                         <Heading
-                            title="Hotel settings"
-                            description="Details used by your team, the WhatsApp assistant and guest messages."
+                            title={t('Hotel settings')}
+                            description={t(
+                                'Details used by your team, the WhatsApp assistant and guest messages.',
+                            )}
                         />
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Field
                                 id="name"
-                                label="Hotel name"
+                                label={t('Hotel name')}
                                 error={error('name')}
                             >
                                 <Input
@@ -161,7 +164,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="legal_name"
-                                label="Legal name"
+                                label={t('Legal name')}
                                 error={error('legal_name')}
                             >
                                 <Input
@@ -176,11 +179,11 @@ export default function HotelSettingsPage({
                     </section>
 
                     <section className="flex flex-col gap-4">
-                        <Heading variant="small" title="Contact" />
+                        <Heading variant="small" title={t('Contact')} />
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Field
                                 id="phone_e164"
-                                label="Phone"
+                                label={t('Phone')}
                                 error={error('phone_e164')}
                             >
                                 <Input
@@ -194,7 +197,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="whatsapp_display_e164"
-                                label="WhatsApp number shown to guests"
+                                label={t('WhatsApp number shown to guests')}
                                 error={error('whatsapp_display_e164')}
                             >
                                 <Input
@@ -211,7 +214,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="email"
-                                label="Email"
+                                label={t('Email')}
                                 error={error('email')}
                             >
                                 <Input
@@ -223,7 +226,11 @@ export default function HotelSettingsPage({
                                     }
                                 />
                             </Field>
-                            <Field id="city" label="City" error={error('city')}>
+                            <Field
+                                id="city"
+                                label={t('City')}
+                                error={error('city')}
+                            >
                                 <Input
                                     id="city"
                                     value={data.city}
@@ -234,7 +241,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="address_line1"
-                                label="Address"
+                                label={t('Address')}
                                 error={error('address_line1')}
                             >
                                 <Input
@@ -247,7 +254,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="address_line2"
-                                label="Address (line 2)"
+                                label={t('Address (line 2)')}
                                 error={error('address_line2')}
                             >
                                 <Input
@@ -261,7 +268,7 @@ export default function HotelSettingsPage({
                         </div>
                         <Field
                             id="map_url"
-                            label="Map link (https)"
+                            label={t('Map link (https)')}
                             error={error('map_url')}
                         >
                             <Input
@@ -276,11 +283,11 @@ export default function HotelSettingsPage({
                     </section>
 
                     <section className="flex flex-col gap-4">
-                        <Heading variant="small" title="Operations" />
+                        <Heading variant="small" title={t('Operations')} />
                         <div className="grid gap-4 sm:grid-cols-3">
                             <Field
                                 id="check_in_time"
-                                label="Check-in from"
+                                label={t('Check-in from')}
                                 error={error('check_in_time')}
                             >
                                 <Input
@@ -295,7 +302,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="check_out_time"
-                                label="Check-out by"
+                                label={t('Check-out by')}
                                 error={error('check_out_time')}
                             >
                                 <Input
@@ -313,7 +320,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="late_checkout_until"
-                                label="Latest late check-out"
+                                label={t('Latest late check-out')}
                                 error={error('late_checkout_until')}
                             >
                                 <Input
@@ -332,7 +339,9 @@ export default function HotelSettingsPage({
 
                         <div className="flex flex-col gap-2">
                             <Label>
-                                Staffed hours (when reception answers requests)
+                                {t(
+                                    'Staffed hours (when reception answers requests)',
+                                )}
                             </Label>
                             <div className="divide-y rounded-xl border">
                                 {options.days.map((day) => {
@@ -349,7 +358,7 @@ export default function HotelSettingsPage({
                                             </span>
                                             {intervals.length === 0 && (
                                                 <span className="text-muted-foreground">
-                                                    Closed
+                                                    {t('Closed')}
                                                 </span>
                                             )}
                                             {intervals.map(
@@ -417,7 +426,9 @@ export default function HotelSettingsPage({
                                                             type="button"
                                                             variant="ghost"
                                                             size="icon"
-                                                            aria-label="Remove period"
+                                                            aria-label={t(
+                                                                'Remove period',
+                                                            )}
                                                             onClick={() =>
                                                                 setIntervals(
                                                                     day,
@@ -452,7 +463,7 @@ export default function HotelSettingsPage({
                                                         ])
                                                     }
                                                 >
-                                                    <Plus /> Add
+                                                    <Plus /> {t('Add')}
                                                 </Button>
                                             )}
                                             <InputError
@@ -474,11 +485,11 @@ export default function HotelSettingsPage({
                     </section>
 
                     <section className="flex flex-col gap-4">
-                        <Heading variant="small" title="Regional" />
+                        <Heading variant="small" title={t('Regional')} />
                         <div className="grid gap-4 sm:grid-cols-3">
                             <Field
                                 id="timezone"
-                                label="Time zone"
+                                label={t('Time zone')}
                                 error={error('timezone')}
                             >
                                 <Input
@@ -498,7 +509,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="currency"
-                                label="Currency"
+                                label={t('Currency')}
                                 error={error('currency')}
                             >
                                 <Input
@@ -516,7 +527,7 @@ export default function HotelSettingsPage({
                             </Field>
                             <Field
                                 id="default_locale"
-                                label="Default language"
+                                label={t('Default language')}
                                 error={error('default_locale')}
                             >
                                 <select
@@ -541,7 +552,7 @@ export default function HotelSettingsPage({
                             </Field>
                         </div>
                         <div className="grid gap-2">
-                            <Label>Enabled languages</Label>
+                            <Label>{t('Enabled languages')}</Label>
                             <div className="flex flex-wrap gap-4">
                                 {Object.entries(options.locales).map(
                                     ([code, label]) => (
@@ -570,14 +581,16 @@ export default function HotelSettingsPage({
                             <InputError message={error('enabled_locales')} />
                         </div>
                         <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-                            Preview (saved settings): {preview.datetime} ·{' '}
-                            {preview.money}
+                            {t('Preview (saved settings):')} {preview.datetime}{' '}
+                            · {preview.money}
                         </p>
                     </section>
 
                     {canManage && (
                         <div>
-                            <Button disabled={processing}>Save settings</Button>
+                            <Button disabled={processing}>
+                                {t('Save settings')}
+                            </Button>
                         </div>
                     )}
                 </fieldset>

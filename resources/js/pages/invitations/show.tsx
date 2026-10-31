@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { login, logout } from '@/routes';
+import { t } from '@/lib/i18n';
 
 type Props = {
     state: 'pending' | 'invalid' | 'expired' | 'accepted' | 'revoked';
@@ -36,12 +37,12 @@ export default function InvitationShow({
     if (state !== 'pending' || !invitation) {
         return (
             <>
-                <Head title="Invitation" />
+                <Head title={t('Invitation')} />
                 <p className="text-center text-sm text-muted-foreground">
                     {messages[state]}
                 </p>
                 <div className="mt-6 text-center">
-                    <TextLink href={login()}>Go to sign in</TextLink>
+                    <TextLink href={login()}>{t('Go to sign in')}</TextLink>
                 </div>
             </>
         );
@@ -51,19 +52,19 @@ export default function InvitationShow({
 
     return (
         <>
-            <Head title={`Join ${invitation.hotel}`} />
+            <Head title={t('Join :hotel', { hotel: invitation.hotel })} />
             <p className="mb-6 text-center text-sm text-muted-foreground">
-                You are invited to join{' '}
-                <strong className="text-foreground">{invitation.hotel}</strong>{' '}
-                as{' '}
-                <strong className="text-foreground">{invitation.role}</strong>.
+                {t('You are invited to join :hotel as :role.', {
+                    hotel: invitation.hotel,
+                    role: invitation.role,
+                })}
             </p>
 
             {signedInAsInvitee && (
                 <Form {...action}>
                     {({ processing }) => (
                         <Button className="w-full" disabled={processing}>
-                            Accept invitation
+                            {t('Accept invitation')}
                         </Button>
                     )}
                 </Form>
@@ -72,8 +73,13 @@ export default function InvitationShow({
             {signedInAs && !signedInAsInvitee && (
                 <div className="text-center text-sm">
                     <p className="text-muted-foreground">
-                        You are signed in as {signedInAs}, but this invitation
-                        is for {invitation.email}.
+                        {t(
+                            'You are signed in as :current, but this invitation is for :email.',
+                            {
+                                current: signedInAs,
+                                email: invitation.email,
+                            },
+                        )}
                     </p>
                     <Link
                         href={logout()}
@@ -81,7 +87,7 @@ export default function InvitationShow({
                         as="button"
                         className="mt-4 underline"
                     >
-                        Sign out and continue
+                        {t('Sign out and continue')}
                     </Link>
                 </div>
             )}
@@ -89,11 +95,15 @@ export default function InvitationShow({
             {!signedInAs && accountExists && (
                 <div className="text-center text-sm">
                     <p className="text-muted-foreground">
-                        An account already exists for {invitation.email}. Sign
-                        in, then open this link again to accept.
+                        {t(
+                            'An account already exists for :email. Sign in, then open this link again to accept.',
+                            {
+                                email: invitation.email,
+                            },
+                        )}
                     </p>
                     <div className="mt-4">
-                        <TextLink href={login()}>Sign in</TextLink>
+                        <TextLink href={login()}>{t('Sign in')}</TextLink>
                     </div>
                 </div>
             )}
@@ -107,7 +117,7 @@ export default function InvitationShow({
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">{t('Email')}</Label>
                                 <Input
                                     id="email"
                                     value={invitation.email}
@@ -118,7 +128,7 @@ export default function InvitationShow({
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="first_name">
-                                        First name
+                                        {t('First name')}
                                     </Label>
                                     <Input
                                         id="first_name"
@@ -129,7 +139,9 @@ export default function InvitationShow({
                                     <InputError message={errors.first_name} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="last_name">Last name</Label>
+                                    <Label htmlFor="last_name">
+                                        {t('Last name')}
+                                    </Label>
                                     <Input
                                         id="last_name"
                                         name="last_name"
@@ -140,7 +152,9 @@ export default function InvitationShow({
                                 </div>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">
+                                    {t('Password')}
+                                </Label>
                                 <PasswordInput
                                     id="password"
                                     name="password"
@@ -151,7 +165,7 @@ export default function InvitationShow({
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="password_confirmation">
-                                    Confirm password
+                                    {t('Confirm password')}
                                 </Label>
                                 <PasswordInput
                                     id="password_confirmation"
@@ -161,7 +175,7 @@ export default function InvitationShow({
                                 />
                             </div>
                             <Button className="w-full" disabled={processing}>
-                                Create account and join
+                                {t('Create account and join')}
                             </Button>
                         </>
                     )}

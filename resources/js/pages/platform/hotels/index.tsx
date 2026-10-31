@@ -6,6 +6,7 @@ import Heading from '@/components/heading';
 import { StatusBadge } from '@/components/platform/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { t } from '@/lib/i18n';
 
 type HotelRow = {
     id: string;
@@ -35,17 +36,17 @@ export default function HotelsIndex({ hotels, filters, canCreate }: Props) {
 
     return (
         <>
-            <Head title="Hotels" />
+            <Head title={t('Hotels')} />
             <div className="flex flex-col gap-6 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <Heading
-                        title="Hotels"
+                        title={t('Hotels')}
                         description={`${hotels.total} hotels on the platform`}
                     />
                     {canCreate && (
                         <Button asChild>
                             <Link href={HotelController.create()}>
-                                <Plus /> New hotel
+                                <Plus /> {t('New hotel')}
                             </Link>
                         </Button>
                     )}
@@ -64,10 +65,10 @@ export default function HotelsIndex({ hotels, filters, canCreate }: Props) {
                 >
                     <Input
                         type="search"
-                        placeholder="Search by name or slug"
+                        placeholder={t('Search by name or slug')}
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        aria-label="Search hotels"
+                        aria-label={t('Search hotels')}
                     />
                 </form>
 
@@ -75,16 +76,20 @@ export default function HotelsIndex({ hotels, filters, canCreate }: Props) {
                     <table className="w-full text-sm">
                         <thead className="bg-muted/50 text-left text-muted-foreground">
                             <tr>
-                                <th className="px-4 py-3 font-medium">Hotel</th>
                                 <th className="px-4 py-3 font-medium">
-                                    Status
+                                    {t('Hotel')}
                                 </th>
                                 <th className="px-4 py-3 font-medium">
-                                    Country
+                                    {t('Status')}
                                 </th>
-                                <th className="px-4 py-3 font-medium">Owner</th>
+                                <th className="px-4 py-3 font-medium">
+                                    {t('Country')}
+                                </th>
+                                <th className="px-4 py-3 font-medium">
+                                    {t('Owner')}
+                                </th>
                                 <th className="px-4 py-3 text-right font-medium">
-                                    Staff
+                                    {t('Staff')}
                                 </th>
                             </tr>
                         </thead>
@@ -95,7 +100,7 @@ export default function HotelsIndex({ hotels, filters, canCreate }: Props) {
                                         colSpan={5}
                                         className="px-4 py-8 text-center text-muted-foreground"
                                     >
-                                        No hotels found.
+                                        {t('No hotels found.')}
                                     </td>
                                 </tr>
                             )}
@@ -125,7 +130,7 @@ export default function HotelsIndex({ hotels, filters, canCreate }: Props) {
                                             hotel.owner.name
                                         ) : (
                                             <span className="text-muted-foreground">
-                                                None
+                                                {t('None')}
                                             </span>
                                         )}
                                     </td>
@@ -141,7 +146,7 @@ export default function HotelsIndex({ hotels, filters, canCreate }: Props) {
                 {hotels.links.length > 3 && (
                     <nav
                         className="flex flex-wrap gap-1"
-                        aria-label="Pagination"
+                        aria-label={t('Pagination')}
                     >
                         {hotels.links.map((link, index) => (
                             <Button

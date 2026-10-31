@@ -24,6 +24,8 @@ export type HotelSummary = {
     id: string;
     name: string;
     slug: string;
+    timezone: string;
+    currency: string;
 };
 
 export type Tenancy = {

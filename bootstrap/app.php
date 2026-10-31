@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Domains\Audit\Http\Middleware\AssignRequestId;
+use App\Domains\Identity\Http\Middleware\EnsureAccountActive;
 use App\Domains\Identity\Http\Middleware\EnsureTwoFactorEnrolled;
+use App\Domains\Identity\Http\Middleware\SetLocale;
 use App\Domains\Platform\Http\Middleware\EnsurePlatformStaff;
 use App\Domains\Tenancy\Http\Middleware\EnsureHotelSelected;
 use App\Domains\Tenancy\Http\Middleware\ResolveCurrentHotel;
@@ -35,6 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
             SecurityHeaders::class,
             HandleAppearance::class,
             ResolveCurrentHotel::class,
+            SetLocale::class,
+            EnsureAccountActive::class,
             EnsureTwoFactorEnrolled::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

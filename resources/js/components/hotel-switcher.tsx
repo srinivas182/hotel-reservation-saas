@@ -13,6 +13,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import SwitchHotelController from '@/actions/App/Domains/Tenancy/Http/Controllers/SwitchHotelController';
+import { t } from '@/lib/i18n';
 
 /**
  * Shows the current hotel and lets staff who work at several hotels switch.
@@ -43,10 +44,10 @@ export function HotelSwitcher() {
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate text-xs text-muted-foreground">
-                                    Current hotel
+                                    {t('Current hotel')}
                                 </span>
                                 <span className="truncate font-medium">
-                                    {current?.name ?? 'Select a hotel'}
+                                    {current?.name ?? t('Select a hotel')}
                                 </span>
                             </div>
                             {canSwitch && (
@@ -58,7 +59,9 @@ export function HotelSwitcher() {
                         className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
                         align="start"
                     >
-                        <DropdownMenuLabel>Switch hotel</DropdownMenuLabel>
+                        <DropdownMenuLabel>
+                            {t('Switch hotel')}
+                        </DropdownMenuLabel>
                         {tenancy.hotels.map((hotel) => (
                             <DropdownMenuItem
                                 key={hotel.id}

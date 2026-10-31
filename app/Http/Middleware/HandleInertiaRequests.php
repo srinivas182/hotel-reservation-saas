@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domains\Hotel\Support\Locales;
 use App\Domains\Tenancy\HotelMembershipService;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Domains\Tenancy\TenantContext;
@@ -44,6 +45,8 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'locale' => app()->getLocale(),
+            'locales' => Locales::SUPPORTED,
             'auth' => [
                 'user' => $request->user(),
                 'permissions' => fn (): array => $this->permissions($request),
@@ -56,7 +59,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * Current hotel and the hotels the user can switch to.
      *
-     * @return array{current: array{id: string, name: string, slug: string}|null, hotels: list<array{id: string, name: string, slug: string}>}
+     * @return array{current: array<string, string>|null, hotels: list<array<string, string>>}
      */
     private function tenancy(Request $request): array
     {
@@ -67,6 +70,8 @@ class HandleInertiaRequests extends Middleware
             'id' => (string) $hotel->getKey(),
             'name' => $hotel->name,
             'slug' => $hotel->slug,
+            'timezone' => $hotel->timezone,
+            'currency' => $hotel->currency,
         ];
 
         return [

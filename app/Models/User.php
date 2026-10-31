@@ -11,6 +11,7 @@ use App\Domains\Tenancy\Models\Hotel;
 use App\Domains\Tenancy\Models\HotelMembership;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Appends;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -45,6 +46,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property Carbon|null $last_login_at
+ * @property Carbon|null $deactivated_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -53,7 +55,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[Fillable(['first_name', 'last_name', 'email', 'phone_e164', 'preferred_locale', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 #[Appends(['name'])]
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, HasUlids, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
@@ -68,6 +70,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'deactivated_at' => 'datetime',
             'platform_role' => PlatformRole::class,
         ];
     }
@@ -108,6 +111,20 @@ class User extends Authenticatable implements MustVerifyEmail
     public function ownedHotels(): HasMany
     {
         return $this->hasMany(Hotel::class, 'owner_user_id');
+    }
+
+    /**
+     * Language for emails and notifications sent to this user. Without a
+     * personal choice, the language of the current request is used.
+     */
+    public function preferredLocale(): ?string
+    {
+        return $this->preferred_locale;
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
     }
 
     public function isPlatformStaff(): bool

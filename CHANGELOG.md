@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S1.3 — Languages, formatting, hotel audit log and platform users
+
+#### Added
+
+- English and French throughout the interface and emails. Translations live in `lang/en.json` and `lang/fr.json` (English text as the key) and are shared by Laravel (`__()`) and React (`t()`); French framework messages (validation, sign-in, passwords) from Laravel Lang (MIT) with field names translated.
+- Language chosen per request: the user's own choice, then the visitor's session choice, then the hotel's default language, then the browser's preferred language, then English. Language switcher in the user menu (saved on the account). Emails and notifications follow the recipient's language.
+- `php artisan translations:check` fails when a string used in code is missing from `en.json` or another language misses, adds or leaves empty a key; runs in CI.
+- `useFormat()` for dates, times, money and numbers in the user's language and the hotel's time zone and currency.
+- Hotel audit log page (`/hotel/audit`, permission `audit.view`): filter by event, person and dates; current hotel only.
+- Platform users (`/platform/users`): search, deactivate and reactivate accounts (sessions end immediately, sign-in refused), invite MCS staff as super admin or support (password link by email; two-factor required).
+- Role choice when adding an existing user to a hotel in platform admin.
+
+#### Changed
+
+- `/` now sends visitors to sign-in and signed-in users to the dashboard; the starter-kit welcome page is removed.
+- Users without their own language choice follow the hotel's default language (`preferred_locale` is now optional).
+- The current hotel is cleared at the start of every request before being resolved.
+
 ### S1.2 — Hotel settings, money and taxes
 
 #### Added

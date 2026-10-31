@@ -4,6 +4,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { t } from '@/lib/i18n';
 
 export type HotelFormValues = {
     name: string;
@@ -51,7 +52,7 @@ export function HotelForm({
                 <fieldset disabled={readOnly} className="space-y-6">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Hotel name</Label>
+                            <Label htmlFor="name">{t('Hotel name')}</Label>
                             <Input
                                 id="name"
                                 name="name"
@@ -61,12 +62,14 @@ export function HotelForm({
                             <InputError message={errors.name} />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="slug">Slug</Label>
+                            <Label htmlFor="slug">{t('Slug')}</Label>
                             <Input
                                 id="slug"
                                 name="slug"
                                 defaultValue={values.slug}
-                                placeholder="Generated from the name if empty"
+                                placeholder={t(
+                                    'Generated from the name if empty',
+                                )}
                             />
                             <InputError message={errors.slug} />
                         </div>
@@ -74,7 +77,7 @@ export function HotelForm({
 
                     <div className="grid gap-2">
                         <Label htmlFor="legal_name">
-                            Legal name (optional)
+                            {t('Legal name (optional)')}
                         </Label>
                         <Input
                             id="legal_name"
@@ -86,32 +89,34 @@ export function HotelForm({
 
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div className="grid gap-2">
-                            <Label htmlFor="country_code">Country code</Label>
+                            <Label htmlFor="country_code">
+                                {t('Country code')}
+                            </Label>
                             <Input
                                 id="country_code"
                                 name="country_code"
                                 defaultValue={values.country_code}
                                 maxLength={2}
-                                placeholder="CI"
+                                placeholder={'CI'}
                                 required
                             />
                             <InputError message={errors.country_code} />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="currency">Currency</Label>
+                            <Label htmlFor="currency">{t('Currency')}</Label>
                             <Input
                                 id="currency"
                                 name="currency"
                                 defaultValue={values.currency}
                                 maxLength={3}
-                                placeholder="XOF"
+                                placeholder={'XOF'}
                                 required
                             />
                             <InputError message={errors.currency} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="default_locale">
-                                Default language
+                                {t('Default language')}
                             </Label>
                             <select
                                 id="default_locale"
@@ -131,13 +136,13 @@ export function HotelForm({
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="timezone">Time zone</Label>
+                            <Label htmlFor="timezone">{t('Time zone')}</Label>
                             <Input
                                 id="timezone"
                                 name="timezone"
                                 list="timezones"
                                 defaultValue={values.timezone}
-                                placeholder="Africa/Abidjan"
+                                placeholder={'Africa/Abidjan'}
                                 required
                             />
                             <datalist id="timezones">
@@ -149,7 +154,7 @@ export function HotelForm({
                         </div>
                         {showStatus && (
                             <div className="grid gap-2">
-                                <Label htmlFor="status">Status</Label>
+                                <Label htmlFor="status">{t('Status')}</Label>
                                 <select
                                     id="status"
                                     name="status"
@@ -169,7 +174,7 @@ export function HotelForm({
 
                     <div className="grid gap-2">
                         <Label htmlFor="owner_email">
-                            Owner email (existing user, optional)
+                            {t('Owner email (existing user, optional)')}
                         </Label>
                         <Input
                             id="owner_email"

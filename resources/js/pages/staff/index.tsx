@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useFormat } from '@/hooks/use-format';
+import { t } from '@/lib/i18n';
 
 type Member = {
     id: string;
@@ -44,16 +46,6 @@ type Props = {
 const selectClass =
     'flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50';
 
-function formatDate(value: string | null): string {
-    return value
-        ? new Date(value).toLocaleDateString(undefined, {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-          })
-        : 'Never';
-}
-
 export default function StaffIndex({
     members,
     invitations,
@@ -62,21 +54,24 @@ export default function StaffIndex({
     isOwner,
     can,
 }: Props) {
+    const format = useFormat();
     const assignableRoles = roles.filter((role) => isOwner || !role.is_owner);
 
     return (
         <>
-            <Head title="Staff" />
+            <Head title={t('Staff')} />
             <div className="flex max-w-5xl flex-col gap-8 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <Heading
-                        title="Staff"
-                        description="People who can work in this hotel and what they can do."
+                        title={t('Staff')}
+                        description={t(
+                            'People who can work in this hotel and what they can do.',
+                        )}
                     />
                     {can.manageRoles && (
                         <Button variant="outline" asChild>
                             <Link href={RoleController.index()}>
-                                <ShieldCheck /> Roles
+                                <ShieldCheck /> {t('Roles')}
                             </Link>
                         </Button>
                     )}
@@ -86,8 +81,10 @@ export default function StaffIndex({
                     <section className="rounded-xl border p-4">
                         <Heading
                             variant="small"
-                            title="Invite someone"
-                            description="They receive an email with a link that is valid for 7 days."
+                            title={t('Invite someone')}
+                            description={t(
+                                'They receive an email with a link that is valid for 7 days.',
+                            )}
                         />
                         <Form
                             {...InvitationController.store.form()}
@@ -99,7 +96,7 @@ export default function StaffIndex({
                                 <>
                                     <div className="grid gap-2">
                                         <Label htmlFor="invite-email">
-                                            Email
+                                            {t('Email')}
                                         </Label>
                                         <Input
                                             id="invite-email"
@@ -111,7 +108,7 @@ export default function StaffIndex({
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="invite-role">
-                                            Role
+                                            {t('Role')}
                                         </Label>
                                         <select
                                             id="invite-role"
@@ -135,7 +132,7 @@ export default function StaffIndex({
                                         <InputError message={errors.role_id} />
                                     </div>
                                     <Button disabled={processing}>
-                                        Send invitation
+                                        {t('Send invitation')}
                                     </Button>
                                 </>
                             )}
@@ -146,24 +143,24 @@ export default function StaffIndex({
                 <section className="flex flex-col gap-3">
                     <Heading
                         variant="small"
-                        title={`Team (${members.length})`}
+                        title={t('Team (:count)', { count: members.length })}
                     />
                     <div className="overflow-x-auto rounded-xl border">
                         <table className="w-full text-sm">
                             <thead className="bg-muted/50 text-left text-muted-foreground">
                                 <tr>
                                     <th className="px-4 py-3 font-medium">
-                                        Name
+                                        {t('Name')}
                                     </th>
                                     <th className="px-4 py-3 font-medium">
-                                        Role
+                                        {t('Role')}
                                     </th>
                                     <th className="px-4 py-3 font-medium">
-                                        Last sign-in
+                                        {t('Last sign-in')}
                                     </th>
                                     {can.manage && (
                                         <th className="px-4 py-3 text-right font-medium">
-                                            Actions
+                                            {t('Actions')}
                                         </th>
                                     )}
                                 </tr>
@@ -186,7 +183,7 @@ export default function StaffIndex({
                                                     {member.name}
                                                     {isSelf && (
                                                         <span className="ml-1 text-muted-foreground">
-                                                            (you)
+                                                            {t('(you)')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -196,13 +193,13 @@ export default function StaffIndex({
                                                 <div className="mt-1 flex gap-1">
                                                     {member.is_primary_owner && (
                                                         <Badge variant="secondary">
-                                                            Primary owner
+                                                            {t('Primary owner')}
                                                         </Badge>
                                                     )}
                                                     {member.status !==
                                                         'active' && (
                                                         <Badge variant="destructive">
-                                                            Suspended
+                                                            {t('Suspended')}
                                                         </Badge>
                                                     )}
                                                 </div>
@@ -210,7 +207,12 @@ export default function StaffIndex({
                                             <td className="px-4 py-3">
                                                 {editable ? (
                                                     <select
-                                                        aria-label={`Role for ${member.name}`}
+                                                        aria-label={t(
+                                                            'Role for :name',
+                                                            {
+                                                                name: member.name,
+                                                            },
+                                                        )}
                                                         className={selectClass}
                                                         value={
                                                             member.role_id ?? ''
@@ -254,8 +256,9 @@ export default function StaffIndex({
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 text-muted-foreground">
-                                                {formatDate(
+                                                {format.date(
                                                     member.last_login_at,
+                                                    t('Never'),
                                                 )}
                                             </td>
                                             {can.manage && (
@@ -280,9 +283,9 @@ export default function StaffIndex({
                                                                             )
                                                                         }
                                                                     >
-                                                                        Make
-                                                                        primary
-                                                                        owner
+                                                                        {t(
+                                                                            'Make primary owner',
+                                                                        )}
                                                                     </Button>
                                                                 )}
                                                             {member.status ===
@@ -302,7 +305,9 @@ export default function StaffIndex({
                                                                         )
                                                                     }
                                                                 >
-                                                                    Suspend
+                                                                    {t(
+                                                                        'Suspend',
+                                                                    )}
                                                                 </Button>
                                                             ) : (
                                                                 <Button
@@ -320,7 +325,9 @@ export default function StaffIndex({
                                                                         )
                                                                     }
                                                                 >
-                                                                    Restore
+                                                                    {t(
+                                                                        'Restore',
+                                                                    )}
                                                                 </Button>
                                                             )}
                                                             <Button
@@ -330,7 +337,12 @@ export default function StaffIndex({
                                                                 onClick={() => {
                                                                     if (
                                                                         window.confirm(
-                                                                            `Remove ${member.name} from this hotel?`,
+                                                                            t(
+                                                                                'Remove :name from this hotel?',
+                                                                                {
+                                                                                    name: member.name,
+                                                                                },
+                                                                            ),
                                                                         )
                                                                     ) {
                                                                         router.delete(
@@ -344,7 +356,7 @@ export default function StaffIndex({
                                                                     }
                                                                 }}
                                                             >
-                                                                Remove
+                                                                {t('Remove')}
                                                             </Button>
                                                         </div>
                                                     )}
@@ -360,7 +372,7 @@ export default function StaffIndex({
 
                 {invitations.length > 0 && (
                     <section className="flex flex-col gap-3">
-                        <Heading variant="small" title="Invitations" />
+                        <Heading variant="small" title={t('Invitations')} />
                         <ul className="divide-y rounded-xl border">
                             {invitations.map((invitation) => (
                                 <li
@@ -374,8 +386,12 @@ export default function StaffIndex({
                                         <div className="text-muted-foreground">
                                             {invitation.role_name} ·{' '}
                                             {invitation.status === 'expired'
-                                                ? 'Expired'
-                                                : `Expires ${formatDate(invitation.expires_at)}`}
+                                                ? t('Expired')
+                                                : t('Expires :date', {
+                                                      date: format.date(
+                                                          invitation.expires_at,
+                                                      ),
+                                                  })}
                                         </div>
                                     </div>
                                     {can.invite && (
@@ -395,7 +411,7 @@ export default function StaffIndex({
                                                     )
                                                 }
                                             >
-                                                Resend
+                                                {t('Resend')}
                                             </Button>
                                             <Button
                                                 variant="ghost"
@@ -412,7 +428,7 @@ export default function StaffIndex({
                                                     )
                                                 }
                                             >
-                                                Cancel
+                                                {t('Cancel')}
                                             </Button>
                                         </div>
                                     )}

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { t } from '@/lib/i18n';
 
 type Option = { value: string; label: string };
 
@@ -127,10 +128,13 @@ function TaxForm({
                 {props.locales.map((locale) => (
                     <div key={locale} className="grid gap-2">
                         <Label htmlFor={`name-${locale}`}>
-                            Name ({locale.toUpperCase()})
                             {locale === props.defaultLocale
-                                ? ''
-                                : ' – optional'}
+                                ? t('Name (:language)', {
+                                      language: locale.toUpperCase(),
+                                  })
+                                : t('Name (:language, optional)', {
+                                      language: locale.toUpperCase(),
+                                  })}
                         </Label>
                         <Input
                             id={`name-${locale}`}
@@ -150,7 +154,7 @@ function TaxForm({
 
             <div className="grid gap-4 sm:grid-cols-3">
                 <div className="grid gap-2">
-                    <Label htmlFor="type">Type</Label>
+                    <Label htmlFor="type">{t('Type')}</Label>
                     <select
                         id="type"
                         className={selectClass}
@@ -166,7 +170,7 @@ function TaxForm({
                 </div>
                 {isPercentage ? (
                     <div className="grid gap-2">
-                        <Label htmlFor="percentage">Rate (%)</Label>
+                        <Label htmlFor="percentage">{t('Rate (%)')}</Label>
                         <Input
                             id="percentage"
                             type="number"
@@ -184,7 +188,9 @@ function TaxForm({
                 ) : (
                     <div className="grid gap-2">
                         <Label htmlFor="amount">
-                            Amount ({props.currency})
+                            {t('Amount (:currency)', {
+                                currency: props.currency,
+                            })}
                         </Label>
                         <Input
                             id="amount"
@@ -199,7 +205,7 @@ function TaxForm({
                     </div>
                 )}
                 <div className="grid gap-2">
-                    <Label htmlFor="inclusive">Price display</Label>
+                    <Label htmlFor="inclusive">{t('Price display')}</Label>
                     <select
                         id="inclusive"
                         className={selectClass}
@@ -208,14 +214,14 @@ function TaxForm({
                             setData('inclusive', e.target.value === '1')
                         }
                     >
-                        <option value="0">Added on top of prices</option>
-                        <option value="1">Included in prices</option>
+                        <option value="0">{t('Added on top of prices')}</option>
+                        <option value="1">{t('Included in prices')}</option>
                     </select>
                 </div>
             </div>
 
             <div className="grid gap-2">
-                <Label>Applies to</Label>
+                <Label>{t('Applies to')}</Label>
                 <div className="flex flex-wrap gap-4">
                     {props.scopes.map((scope) => (
                         <label
@@ -246,7 +252,9 @@ function TaxForm({
 
             <div className="grid gap-4 sm:grid-cols-4">
                 <div className="grid gap-2">
-                    <Label htmlFor="effective_from">From (optional)</Label>
+                    <Label htmlFor="effective_from">
+                        {t('From (optional)')}
+                    </Label>
                     <Input
                         id="effective_from"
                         type="date"
@@ -257,7 +265,9 @@ function TaxForm({
                     />
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="effective_to">Until (optional)</Label>
+                    <Label htmlFor="effective_to">
+                        {t('Until (optional)')}
+                    </Label>
                     <Input
                         id="effective_to"
                         type="date"
@@ -269,7 +279,7 @@ function TaxForm({
                     <InputError message={errors.effective_to} />
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="sort_order">Order</Label>
+                    <Label htmlFor="sort_order">{t('Order')}</Label>
                     <Input
                         id="sort_order"
                         type="number"
@@ -287,16 +297,16 @@ function TaxForm({
                         checked={data.active}
                         onChange={(e) => setData('active', e.target.checked)}
                     />
-                    Active
+                    {t('Active')}
                 </label>
             </div>
 
             <div className="flex gap-2">
                 <Button disabled={processing}>
-                    {rate ? 'Save tax' : 'Add tax'}
+                    {rate ? t('Save tax') : t('Add tax')}
                 </Button>
                 <Button type="button" variant="ghost" onClick={onDone}>
-                    Cancel
+                    {t('Cancel')}
                 </Button>
             </div>
         </form>
@@ -320,16 +330,18 @@ export default function Taxes(props: Props) {
 
     return (
         <>
-            <Head title="Taxes" />
+            <Head title={t('Taxes')} />
             <div className="flex max-w-4xl flex-col gap-8 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <Heading
-                        title="Taxes"
-                        description="VAT, tourist tax and service charges applied to your prices."
+                        title={t('Taxes')}
+                        description={t(
+                            'VAT, tourist tax and service charges applied to your prices.',
+                        )}
                     />
                     {canManage && editing === null && (
                         <Button onClick={() => setEditing('new')}>
-                            Add tax
+                            {t('Add tax')}
                         </Button>
                     )}
                 </div>
@@ -341,7 +353,7 @@ export default function Taxes(props: Props) {
                 <ul className="flex flex-col gap-3">
                     {rates.length === 0 && (
                         <li className="rounded-xl border px-4 py-8 text-center text-sm text-muted-foreground">
-                            No taxes yet.
+                            {t('No taxes yet.')}
                         </li>
                     )}
                     {rates.map((rate) =>
@@ -379,11 +391,13 @@ export default function Taxes(props: Props) {
                                 </div>
                                 <Badge variant="outline">
                                     {rate.inclusive
-                                        ? 'Included'
-                                        : 'Added on top'}
+                                        ? t('Included')
+                                        : t('Added on top')}
                                 </Badge>
                                 {!rate.active && (
-                                    <Badge variant="secondary">Inactive</Badge>
+                                    <Badge variant="secondary">
+                                        {t('Inactive')}
+                                    </Badge>
                                 )}
                                 {canManage && (
                                     <div className="flex gap-1">
@@ -392,7 +406,7 @@ export default function Taxes(props: Props) {
                                             size="sm"
                                             onClick={() => setEditing(rate.id)}
                                         >
-                                            Edit
+                                            {t('Edit')}
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -401,7 +415,9 @@ export default function Taxes(props: Props) {
                                             onClick={() => {
                                                 if (
                                                     window.confirm(
-                                                        `Delete ${rate.display_name}?`,
+                                                        t('Delete :name?', {
+                                                            name: rate.display_name,
+                                                        }),
                                                     )
                                                 ) {
                                                     router.delete(
@@ -415,7 +431,7 @@ export default function Taxes(props: Props) {
                                                 }
                                             }}
                                         >
-                                            Delete
+                                            {t('Delete')}
                                         </Button>
                                     </div>
                                 )}
@@ -427,8 +443,10 @@ export default function Taxes(props: Props) {
                 <section className="flex flex-col gap-4 rounded-xl border p-4">
                     <Heading
                         variant="small"
-                        title="Try it"
-                        description="See how today's active taxes apply to a price."
+                        title={t('Try it')}
+                        description={t(
+                            "See how today's active taxes apply to a price.",
+                        )}
                     />
                     <form
                         onSubmit={runPreview}
@@ -436,7 +454,9 @@ export default function Taxes(props: Props) {
                     >
                         <div className="grid gap-2 sm:col-span-2">
                             <Label htmlFor="preview-price">
-                                Price ({props.currency}, whole stay)
+                                {t('Price (:currency, whole stay)', {
+                                    currency: props.currency,
+                                })}
                             </Label>
                             <Input
                                 id="preview-price"
@@ -452,7 +472,9 @@ export default function Taxes(props: Props) {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="preview-nights">Nights</Label>
+                            <Label htmlFor="preview-nights">
+                                {t('Nights')}
+                            </Label>
                             <Input
                                 id="preview-nights"
                                 type="number"
@@ -467,7 +489,9 @@ export default function Taxes(props: Props) {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="preview-guests">Guests</Label>
+                            <Label htmlFor="preview-guests">
+                                {t('Guests')}
+                            </Label>
                             <Input
                                 id="preview-guests"
                                 type="number"
@@ -482,7 +506,7 @@ export default function Taxes(props: Props) {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="preview-scope">For</Label>
+                            <Label htmlFor="preview-scope">{t('For')}</Label>
                             <select
                                 id="preview-scope"
                                 className={selectClass}
@@ -505,7 +529,7 @@ export default function Taxes(props: Props) {
                             </select>
                         </div>
                         <Button className="sm:col-span-5 sm:w-fit">
-                            Calculate
+                            {t('Calculate')}
                         </Button>
                     </form>
 
@@ -513,7 +537,7 @@ export default function Taxes(props: Props) {
                         <dl className="grid gap-1 text-sm">
                             <div className="flex justify-between">
                                 <dt className="text-muted-foreground">
-                                    Price without tax
+                                    {t('Price without tax')}
                                 </dt>
                                 <dd>{preview.net}</dd>
                             </div>
@@ -532,7 +556,7 @@ export default function Taxes(props: Props) {
                                 </div>
                             ))}
                             <div className="mt-1 flex justify-between border-t pt-2 font-medium">
-                                <dt>Guest pays</dt>
+                                <dt>{t('Guest pays')}</dt>
                                 <dd>{preview.total}</dd>
                             </div>
                         </dl>
