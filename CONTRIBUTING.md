@@ -19,6 +19,8 @@ make check
 
 This runs Pint, Larastan (level 8), `vp check`, the TypeScript compiler and the Pest suite.
 
+Run the tests against **MySQL** (the Docker stack does this), not only SQLite. SQLite does not enforce some constraints MySQL does, such as foreign keys referencing tables created by later migrations.
+
 ## Pull requests and CI
 
 | PR state         | What CI runs                                                                                                           | Target time |

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domains\Tenancy\HotelMembershipService;
+use App\Domains\Tenancy\Models\Hotel;
+use App\Domains\Tenancy\TenantContext;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,7 +47,32 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'tenancy' => fn (): array => $this->tenancy($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * Current hotel and the hotels the user can switch to.
+     *
+     * @return array{current: array{id: string, name: string, slug: string}|null, hotels: list<array{id: string, name: string, slug: string}>}
+     */
+    private function tenancy(Request $request): array
+    {
+        $user = $request->user();
+        $context = app(TenantContext::class);
+
+        $present = fn (Hotel $hotel): array => [
+            'id' => (string) $hotel->getKey(),
+            'name' => $hotel->name,
+            'slug' => $hotel->slug,
+        ];
+
+        return [
+            'current' => $context->has() ? $present($context->hotel()) : null,
+            'hotels' => $user instanceof User
+                ? array_values(app(HotelMembershipService::class)->accessibleHotels($user)->map($present)->all())
+                : [],
         ];
     }
 }

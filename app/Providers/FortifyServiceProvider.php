@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -84,7 +85,14 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return Limit::perMinute(5)
+                ->by($throttleKey)
+                ->response(function (Request $request, array $headers) {
+                    // Throttled sign-ins are recorded in the audit log.
+                    event(new Lockout($request));
+
+                    return response(__('Too many sign-in attempts. Please try again in a minute.'), 429, $headers);
+                });
         });
 
     }
