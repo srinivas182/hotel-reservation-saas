@@ -62,7 +62,8 @@ it('lets a super admin create a hotel with an owner', function (): void {
         ->and($hotel->currency)->toBe('XOF')
         ->and($hotel->status)->toBe(HotelStatus::Trial)
         ->and($hotel->owner_user_id)->toBe($owner->id)
-        ->and(app(HotelMembershipService::class)->accessibleHotel($owner, $hotel->id))->not->toBeNull();
+        ->and(app(HotelMembershipService::class)->accessibleHotel($owner, $hotel->id))->not->toBeNull()
+        ->and(app(App\Domains\Access\StaffService::class)->isOwner($hotel, $owner))->toBeTrue();
 
     $created = AuditLog::query()->where('event', 'hotel.created')->sole();
     expect($created->causer_id)->toBe($this->admin->id);

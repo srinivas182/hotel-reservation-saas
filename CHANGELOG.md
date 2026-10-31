@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S1.1 — Hotel roles, staff management and invitations
+
+#### Added
+
+- Permissions per hotel with `spatie/laravel-permission` in teams mode (the hotel is the team; ULID keys). The current hotel sets the permission team automatically.
+- Permission catalogue in code (`App\Domains\Access\Permission`) and six system roles copied into every hotel: Owner, Manager, Reception, Restaurant & Bar, Events coordinator, Read-only. `php artisan permissions:sync` keeps them in line with the code and runs on every deployment.
+- Custom roles: hotels create roles by ticking permissions; system roles cannot be edited; roles in use cannot be deleted.
+- Staff page: roles, suspend and restore, remove, primary-owner transfer (password confirmation). Safety rules: no changes to your own access, only owners grant or remove the Owner role, the primary owner cannot be removed, and a hotel always keeps an active owner.
+- Email invitations valid for 7 days, stored as token hashes, rate-limited per hotel; new people create an account from the link (email counts as verified), existing accounts sign in and accept; resend and cancel. Owner invitees go straight to two-factor setup.
+- The current hotel's permissions are shared with the frontend; the Staff menu appears for users who can see staff.
+- Audit entries for invitations, role changes, custom roles and primary-owner changes.
+
+#### Changed
+
+- Hotel owners assigned in platform admin and demo data receive the Owner role; platform admin can choose a role when adding an existing user.
+- Two-factor authentication is required for anyone holding the Owner role in any hotel.
+- Role and permission relations are reloaded whenever the current hotel is resolved, so rights from one hotel are never reused in another.
+
 ### S0.3 — App shell, platform admin, security headers, monitoring and deployment
 
 #### Added
