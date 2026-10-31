@@ -1,0 +1,296 @@
+# ---------------------------------------------------------------------
+# CI pipeline — minute-efficient by design (see CONTRIBUTING.md).
+#
+#   Draft PR  -> "quick" job only (secrets scan, style, static analysis,
+#                types, dependency audit). Target: under 3 minutes.
+#   Ready PR  -> quick + only the suites affected by the change:
+#                backend (Pest on MySQL 8.4 + Redis), frontend (Vitest +
+#                production build), docker (image build).
+#                Target: under 10 minutes.
+#   "CI gate" -> single required status check for branch protection.
+#
+# No runs on push to main: main only changes through green PRs.
+# Docs-only changes skip CI entirely (paths-ignore).
+# ---------------------------------------------------------------------
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+  GITLEAKS_VERSION: '8.30.1'
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: filter
+        name: Classify changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files="$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA")"
+          echo "$files"
+          match() { echo "$files" | grep -Eq "$1" && echo true || echo false; }
+          all=$(match '^\.github/workflows/')
+          backend=$(match '^(app|bootstrap|config|database|routes|tests|lang|resources/views|resources/js/pages)/|^(composer\.(json|lock)|phpunit\.xml|phpstan\.neon|artisan)$')
+          frontend=$(match '^resources/(js|css)/|^(package(-lock)?\.json|vite\.config\.ts|tsconfig\.json|components\.json)$')
+          docker=$(match '^docker/|^(compose\.yaml|\.dockerignore)$')
+          [ "$all" = true ] && backend=true && frontend=true && docker=true
+          echo "backend=$backend"   >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "docker=$docker"     >> "$GITHUB_OUTPUT"
+
+  quick:
+    name: Quick checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Secrets scan (gitleaks)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "$base/$tarball"
+          curl -sSfL "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt" | grep " $tarball\$" | sha256sum -c -
+          tar -xzf "$tarball" gitleaks
+          ./gitleaks git --no-banner --redact --log-opts="$BASE_SHA..$HEAD_SHA" .
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Pint (code style)
+        run: vendor/bin/pint --test
+
+      - name: Cache PHPStan results
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: storage/phpstan
+          key: phpstan-${{ github.event.pull_request.head.sha }}
+          restore-keys: phpstan-
+
+      - name: Larastan (level 8)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Composer audit
+        run: composer audit --no-interaction
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Wayfinder types
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          php artisan wayfinder:generate --with-form
+        env:
+          DB_CONNECTION: sqlite
+
+      - name: Lint and format (vp check)
+        run: npm run check
+
+      - name: TypeScript
+        run: npm run types:check
+
+      - name: npm audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+
+  backend:
+    name: Backend tests
+    needs: [changes, quick]
+    if: github.event.pull_request.draft == false && needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: testing
+          MYSQL_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: testing
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      REDIS_HOST: 127.0.0.1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_mysql, redis, intl, bcmath
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Pest (parallel, MySQL 8.4)
+        run: php artisan test --parallel --processes=4
+
+  frontend:
+    name: Frontend tests and build
+    needs: [changes, quick]
+    if: github.event.pull_request.draft == false && needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies (needed by Wayfinder)
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+        env:
+          DB_CONNECTION: sqlite
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Vitest
+        run: npm test
+        env:
+          DB_CONNECTION: sqlite
+
+      - name: Production build
+        run: npm run build
+        env:
+          DB_CONNECTION: sqlite
+
+  docker:
+    name: Docker image build
+    needs: [changes, quick]
+    if: github.event.pull_request.draft == false && needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build dev and prod targets
+        run: |
+          docker build --target dev  -f docker/php/Dockerfile -t hotel-saas-php:dev  .
+          docker build --target prod -f docker/php/Dockerfile -t hotel-saas-php:prod .
+          docker run --rm hotel-saas-php:dev php -m | grep -E '^(pdo_mysql|redis|intl|bcmath|gd|pcntl|zip)$'
+
+  gate:
+    name: CI gate
+    if: always()
+    needs: [changes, quick, backend, frontend, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          echo "Job results: $RESULTS"
+          if [ "$DRAFT" = "true" ]; then
+            echo "Draft PR: quick checks only. Mark ready for review to run the full suite."
+            exit 1
+          fi
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) echo "A required job did not succeed ($r)."; exit 1 ;; esac
+          done
+          echo "All required jobs passed."
