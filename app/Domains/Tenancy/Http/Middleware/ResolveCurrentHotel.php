@@ -62,6 +62,10 @@ final class ResolveCurrentHotel
             $this->context->set($hotel);
         }
 
+        // Roles and permissions depend on the current hotel; never reuse ones
+        // loaded for another hotel (Octane workers, tests, hotel switching).
+        $user->unsetRelation('roles')->unsetRelation('permissions');
+
         return $next($request);
     }
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Access\Models\Role;
 use App\Domains\Audit\Models\AuditLog;
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
 use App\Domains\Tenancy\Models\HotelMembership;
@@ -19,6 +20,9 @@ const HOTEL_SCOPING_ALLOWLIST = [
     HotelMembership::class,
     // Audit rows include platform-level events (null hotel) and are queried explicitly.
     AuditLog::class,
+    // Scoped by the permission package's team ID (kept equal to the current
+    // hotel by TenantContext) and always queried by hotel in HotelRoles.
+    Role::class,
 ];
 
 it('scopes every model that has a hotel_id column', function (): void {

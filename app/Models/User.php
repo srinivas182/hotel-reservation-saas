@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domains\Access\SystemRole;
 use App\Domains\Identity\Enums\PlatformRole;
 use App\Domains\Tenancy\Enums\MembershipStatus;
 use App\Domains\Tenancy\Models\Hotel;
@@ -22,7 +23,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * A person who signs in: hotel staff, hotel owners and MCS platform staff.
@@ -53,7 +56,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasUlids, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, HasUlids, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     /**
      * @return array<string, string>
@@ -122,7 +125,23 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function requiresTwoFactor(): bool
     {
-        return $this->isPlatformStaff() || $this->ownedHotels()->exists();
+        return $this->isPlatformStaff()
+            || $this->ownedHotels()->exists()
+            || $this->holdsOwnerRoleAnywhere();
+    }
+
+    /**
+     * Whether the user holds the Owner role in any hotel (all teams).
+     */
+    public function holdsOwnerRoleAnywhere(): bool
+    {
+        return DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', $this->getMorphClass())
+            ->where('model_has_roles.model_id', $this->getKey())
+            ->where('roles.is_system', true)
+            ->where('roles.name', SystemRole::Owner->value)
+            ->exists();
     }
 
     public function hasConfirmedTwoFactor(): bool

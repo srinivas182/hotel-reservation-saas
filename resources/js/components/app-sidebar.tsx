@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, LayoutGrid } from 'lucide-react';
+import { Building2, LayoutGrid, Users } from 'lucide-react';
+import StaffController from '@/actions/App/Domains/Access/Http/Controllers/StaffController';
 import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/HotelController';
 import AppLogo from '@/components/app-logo';
 import { HotelSwitcher } from '@/components/hotel-switcher';
@@ -36,6 +37,12 @@ const platformNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage().props;
     const isPlatformStaff = auth.user.platform_role !== null;
+    const hotelNavItems: NavItem[] = [
+        ...mainNavItems,
+        ...(auth.permissions.includes('staff.view')
+            ? [{ title: 'Staff', href: StaffController.index(), icon: Users }]
+            : []),
+    ];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -53,7 +60,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain label="Hotel" items={mainNavItems} />
+                <NavMain label="Hotel" items={hotelNavItems} />
                 {isPlatformStaff && (
                     <NavMain label="Platform admin" items={platformNavItems} />
                 )}

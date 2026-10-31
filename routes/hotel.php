@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Domains\Access\Http\Controllers\AcceptInvitationController;
+use App\Domains\Access\Http\Controllers\InvitationController;
+use App\Domains\Access\Http\Controllers\RoleController;
+use App\Domains\Access\Http\Controllers\StaffController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Hotel workspace (requires a current hotel)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
+    Route::get('staff', [StaffController::class, 'index'])->middleware('can:staff.view')->name('staff.index');
+
+    Route::middleware('can:staff.manage')->group(function (): void {
+        Route::put('staff/{member}/role', [StaffController::class, 'updateRole'])->name('staff.role');
+        Route::post('staff/{member}/suspend', [StaffController::class, 'suspend'])->name('staff.suspend');
+        Route::post('staff/{member}/reactivate', [StaffController::class, 'reactivate'])->name('staff.reactivate');
+        Route::delete('staff/{member}', [StaffController::class, 'destroy'])->name('staff.destroy');
+        Route::post('staff/{member}/primary-owner', [StaffController::class, 'makePrimaryOwner'])
+            ->middleware('password.confirm')
+            ->name('staff.primary-owner');
+    });
+
+    Route::middleware('can:staff.invite')->group(function (): void {
+        Route::post('staff/invitations', [InvitationController::class, 'store'])->name('staff.invitations.store');
+        Route::post('staff/invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('staff.invitations.resend');
+        Route::delete('staff/invitations/{invitation}', [InvitationController::class, 'destroy'])->name('staff.invitations.destroy');
+    });
+
+    Route::middleware('can:roles.manage')->group(function (): void {
+        Route::get('staff/roles', [RoleController::class, 'index'])->name('staff.roles.index');
+        Route::post('staff/roles', [RoleController::class, 'store'])->name('staff.roles.store');
+        Route::put('staff/roles/{role}', [RoleController::class, 'update'])->whereNumber('role')->name('staff.roles.update');
+        Route::delete('staff/roles/{role}', [RoleController::class, 'destroy'])->whereNumber('role')->name('staff.roles.destroy');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Invitation links (public)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('invitations/{token}', [AcceptInvitationController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('invitations.show');
+Route::post('invitations/{token}', [AcceptInvitationController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('invitations.accept');

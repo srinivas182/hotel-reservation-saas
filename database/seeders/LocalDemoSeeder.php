@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domains\Access\HotelRoles;
+use App\Domains\Access\StaffService;
+use App\Domains\Access\SystemRole;
 use App\Domains\Identity\Enums\PlatformRole;
-use App\Domains\Tenancy\HotelMembershipService;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,7 +19,7 @@ use Illuminate\Database\Seeder;
  */
 class LocalDemoSeeder extends Seeder
 {
-    public function run(HotelMembershipService $memberships): void
+    public function run(StaffService $staff, HotelRoles $roles): void
     {
         User::factory()->platformAdmin(PlatformRole::SuperAdmin)->create([
             'first_name' => 'Platform',
@@ -52,8 +54,8 @@ class LocalDemoSeeder extends Seeder
                 'default_locale' => $locale,
             ]);
 
-            $memberships->add($hotel, $owner);
-            $memberships->add($hotel, $receptionist);
+            $staff->assign($hotel, $owner, $roles->system($hotel, SystemRole::Owner));
+            $staff->assign($hotel, $receptionist, $roles->system($hotel, SystemRole::Reception));
         }
     }
 }

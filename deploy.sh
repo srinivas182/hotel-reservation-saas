@@ -83,6 +83,9 @@ log "Backing up the database before migrating"
 log "Running migrations"
 RELEASE="$release" "${COMPOSE[@]}" run --rm --no-deps app php artisan migrate --force
 
+log "Syncing permissions and system roles"
+RELEASE="$release" "${COMPOSE[@]}" run --rm --no-deps app php artisan permissions:sync
+
 swap_to "$release"
 
 if health_check; then

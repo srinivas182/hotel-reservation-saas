@@ -9,6 +9,7 @@ use App\Domains\Tenancy\Exceptions\MissingHotelContext;
 use App\Domains\Tenancy\Models\Hotel;
 use Illuminate\Support\Facades\Context;
 use InvalidArgumentException;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Holds the hotel the current request, job or command is working for.
@@ -27,12 +28,14 @@ final class TenantContext
     {
         $this->hotel = $hotel;
         Context::add('hotel_id', $hotel->getKey());
+        app(PermissionRegistrar::class)->setPermissionsTeamId($hotel->getKey());
     }
 
     public function forget(): void
     {
         $this->hotel = null;
         Context::forget('hotel_id');
+        app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     }
 
     public function has(): bool

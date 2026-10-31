@@ -13,10 +13,3 @@ parameters:
     level: 8
 
     tmpDir: storage/phpstan
-
-    ignoreErrors:
-        # BelongsToHotel is applied by hotel-owned models from S1 onwards; it is
-        # exercised by the tenancy test suite through a fixture model.
-        -
-            identifier: trait.unused
-            path: app/Domains/Tenancy/Concerns/BelongsToHotel.php

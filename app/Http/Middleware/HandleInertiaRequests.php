@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                'permissions' => fn (): array => $this->permissions($request),
             ],
             'tenancy' => fn (): array => $this->tenancy($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
@@ -74,5 +75,24 @@ class HandleInertiaRequests extends Middleware
                 ? array_values(app(HotelMembershipService::class)->accessibleHotels($user)->map($present)->all())
                 : [],
         ];
+    }
+
+    /**
+     * Permission names the user holds in the current hotel (for hiding
+     * controls; the server still authorises every action).
+     *
+     * @return list<string>
+     */
+    private function permissions(Request $request): array
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User || ! app(TenantContext::class)->has()) {
+            return [];
+        }
+
+        $user->unsetRelation('roles')->unsetRelation('permissions');
+
+        return array_values($user->getAllPermissions()->pluck('name')->all());
     }
 }

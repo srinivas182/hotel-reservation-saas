@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\Platform;
 
+use App\Domains\Access\HotelRoles;
+use App\Domains\Access\StaffService;
+use App\Domains\Access\SystemRole;
 use App\Domains\Tenancy\Enums\HotelStatus;
-use App\Domains\Tenancy\HotelMembershipService;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +19,10 @@ use Illuminate\Support\Str;
  */
 final class HotelAdministration
 {
-    public function __construct(private readonly HotelMembershipService $memberships) {}
+    public function __construct(
+        private readonly StaffService $staff,
+        private readonly HotelRoles $roles,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -35,7 +40,7 @@ final class HotelAdministration
             ]);
 
             if ($owner !== null) {
-                $this->memberships->add($hotel, $owner);
+                $this->staff->assign($hotel, $owner, $this->roles->system($hotel, SystemRole::Owner));
             }
 
             return $hotel;
@@ -58,7 +63,7 @@ final class HotelAdministration
             ]);
 
             if ($owner !== null) {
-                $this->memberships->add($hotel, $owner);
+                $this->staff->assign($hotel, $owner, $this->roles->system($hotel, SystemRole::Owner));
             }
 
             return $hotel;
