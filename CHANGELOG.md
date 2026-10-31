@@ -21,6 +21,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - Trusted proxy ranges configured for the Docker network so HTTPS is detected behind Caddy.
 - CI builds and smoke-tests the `prod` and `web` images when Docker or deployment files change.
+- CI publishes the last lines of a failing build or test step as an error annotation on the PR, so failures are readable without downloading logs.
 
 ### S0.2 — Hotel data separation, sign-in security and audit log
 
