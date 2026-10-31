@@ -1,0 +1,108 @@
+# ---------------------------------------------------------------------
+# Staging / production stack (single VPS). Used by deploy.sh.
+#   caddy (HTTPS) -> web (Nginx + release assets) -> app (PHP-FPM)
+#   horizon (queues), scheduler, mysql 8.4, redis 7
+# Both release images are tagged with the git commit (RELEASE).
+# Required in the server's .env: see docs/deployment.md.
+# ---------------------------------------------------------------------
+name: hotel-saas
+
+x-app: &app
+    image: hotel-saas-php:${RELEASE:-latest}
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+        - storage:/var/www/html/storage
+    depends_on:
+        mysql:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+    logging:
+        driver: json-file
+        options: { max-size: '20m', max-file: '5' }
+
+services:
+    app:
+        <<: *app
+
+    horizon:
+        <<: *app
+        command: php artisan horizon
+        healthcheck:
+            test: ['CMD', 'php', 'artisan', 'horizon:status']
+            interval: 30s
+            timeout: 10s
+            retries: 3
+
+    scheduler:
+        <<: *app
+        command: php artisan schedule:work
+        healthcheck:
+            disable: true
+
+    web:
+        image: hotel-saas-web:${RELEASE:-latest}
+        restart: unless-stopped
+        depends_on:
+            - app
+
+    caddy:
+        image: caddy:2.8-alpine
+        restart: unless-stopped
+        ports:
+            - '80:80'
+            - '443:443'
+        environment:
+            APP_DOMAIN: ${APP_DOMAIN}
+            ACME_EMAIL: ${ACME_EMAIL}
+        volumes:
+            - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy-data:/data
+            - caddy-config:/config
+        depends_on:
+            - web
+
+    mysql:
+        image: mysql:8.4
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+        command:
+            [
+                '--character-set-server=utf8mb4',
+                '--collation-server=utf8mb4_unicode_ci',
+            ]
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD"',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+
+    redis:
+        image: redis:7-alpine
+        restart: unless-stopped
+        command: ['redis-server', '--appendonly', 'yes']
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 10s
+            timeout: 3s
+            retries: 10
+
+volumes:
+    storage:
+    mysql-data:
+    redis-data:
+    caddy-data:
+    caddy-config:

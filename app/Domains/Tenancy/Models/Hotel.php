@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Tenancy\Models;
 
+use App\Domains\Platform\Policies\HotelPolicy;
 use App\Domains\Tenancy\Enums\HotelStatus;
 use App\Domains\Tenancy\Enums\MembershipStatus;
 use App\Domains\Tenancy\Observers\HotelObserver;
@@ -12,6 +13,7 @@ use Database\Factories\HotelFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +43,7 @@ use Illuminate\Support\Carbon;
 #[Fillable(['name', 'slug', 'legal_name', 'country_code', 'timezone', 'currency', 'default_locale', 'status', 'owner_user_id'])]
 #[UseFactory(HotelFactory::class)]
 #[ObservedBy(HotelObserver::class)]
+#[UsePolicy(HotelPolicy::class)]
 class Hotel extends Model
 {
     /** @use HasFactory<HotelFactory> */

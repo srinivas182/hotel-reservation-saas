@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use App\Domains\Audit\Http\Middleware\AssignRequestId;
 use App\Domains\Identity\Http\Middleware\EnsureTwoFactorEnrolled;
+use App\Domains\Platform\Http\Middleware\EnsurePlatformStaff;
 use App\Domains\Tenancy\Http\Middleware\EnsureHotelSelected;
 use App\Domains\Tenancy\Http\Middleware\ResolveCurrentHotel;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,7 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->prepend(AssignRequestId::class);
 
+        // Behind Caddy and Nginx on the Docker network; trust their forwarded headers.
+        $middleware->trustProxies(at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.1']);
+
         $middleware->web(append: [
+            SecurityHeaders::class,
             HandleAppearance::class,
             ResolveCurrentHotel::class,
             EnsureTwoFactorEnrolled::class,
@@ -36,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'hotel' => EnsureHotelSelected::class,
+            'platform' => EnsurePlatformStaff::class,
         ]);
 
         // The current hotel must be known before route-model binding runs,

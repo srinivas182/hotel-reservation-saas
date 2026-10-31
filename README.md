@@ -2,7 +2,9 @@
 
 Multi-hotel SaaS platform that lets guests book rooms, tables and events over WhatsApp, while hotel staff manage availability, approvals and guest messaging from a phone-friendly dashboard. Built by **Mayura Consultancy Services**.
 
-> Status: **S0 — platform skeleton** (in progress). See `CHANGELOG.md`.
+> Status: **S0 — platform skeleton**: S0.1–S0.3 complete; staging deployment pending server access. See `CHANGELOG.md`.
+>
+> Deploying: see [`docs/deployment.md`](docs/deployment.md).
 
 ## Stack
 

@@ -61,7 +61,7 @@ jobs:
           all=$(match '^\.github/workflows/')
           backend=$(match '^(app|bootstrap|config|database|routes|tests|lang|resources/views|resources/js/pages)/|^(composer\.(json|lock)|phpunit\.xml|phpstan\.neon|artisan)$')
           frontend=$(match '^resources/(js|css)/|^(package(-lock)?\.json|vite\.config\.ts|tsconfig\.json|components\.json)$')
-          docker=$(match '^docker/|^(compose\.yaml|\.dockerignore)$')
+          docker=$(match '^docker/|^(compose(\.prod)?\.yaml|\.dockerignore|deploy\.sh)$')
           [ "$all" = true ] && backend=true && frontend=true && docker=true
           echo "backend=$backend"   >> "$GITHUB_OUTPUT"
           echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
@@ -204,7 +204,7 @@ jobs:
           php artisan key:generate --no-interaction
 
       - name: Pest (parallel, MySQL 8.4)
-        run: php artisan test --parallel --processes=4
+        run: .github/scripts/run-annotated.sh "Backend tests" php artisan test --parallel --processes=4
 
   frontend:
     name: Frontend tests and build
@@ -247,7 +247,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Vitest
-        run: npm test
+        run: .github/scripts/run-annotated.sh "Frontend tests" npm test
         env:
           DB_CONNECTION: sqlite
           # laravel-vite-plugin refuses to start a dev server when CI=true;
@@ -270,11 +270,21 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Build dev and prod targets
+      - name: Build dev image
+        run: .github/scripts/run-annotated.sh "Docker dev build" docker build --progress=plain --target dev -f docker/php/Dockerfile -t hotel-saas-php:dev .
+
+      - name: Build prod image
+        run: .github/scripts/run-annotated.sh "Docker prod build" docker build --progress=plain --target prod -f docker/php/Dockerfile -t hotel-saas-php:prod .
+
+      - name: Build web image
+        run: .github/scripts/run-annotated.sh "Docker web build" docker build --progress=plain --target web -f docker/php/Dockerfile -t hotel-saas-web:prod .
+
+      - name: Smoke-test images
         run: |
-          docker build --target dev  -f docker/php/Dockerfile -t hotel-saas-php:dev  .
-          docker build --target prod -f docker/php/Dockerfile -t hotel-saas-php:prod .
           docker run --rm hotel-saas-php:dev php -m | grep -E '^(pdo_mysql|redis|intl|bcmath|gd|pcntl|zip)$'
+          .github/scripts/run-annotated.sh "PHP prod smoke test" docker run --rm hotel-saas-php:prod php artisan --version
+          # "app" is the PHP-FPM service name on the Compose network; map it for the config test.
+          .github/scripts/run-annotated.sh "Nginx config test" docker run --rm --add-host app:127.0.0.1 hotel-saas-web:prod nginx -t
 
   gate:
     name: CI gate
