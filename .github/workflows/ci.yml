@@ -118,6 +118,14 @@ jobs:
       - name: Larastan (level 8)
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
+      - name: Translations complete
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          php artisan translations:check
+        env:
+          DB_CONNECTION: sqlite
+
       - name: Composer audit
         run: composer audit --no-interaction
 
@@ -130,10 +138,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Generate Wayfinder types
-        run: |
-          cp .env.example .env
-          php artisan key:generate --no-interaction
-          php artisan wayfinder:generate --with-form
+        run: php artisan wayfinder:generate --with-form
         env:
           DB_CONNECTION: sqlite
 

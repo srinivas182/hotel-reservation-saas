@@ -1,4 +1,6 @@
+import { useLocaleSync } from '@/hooks/use-locale-sync';
 import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
+import { t } from '@/lib/i18n';
 
 export default function AuthLayout({
     title = '',
@@ -9,8 +11,10 @@ export default function AuthLayout({
     description?: string;
     children: React.ReactNode;
 }) {
+    useLocaleSync();
+
     return (
-        <AuthLayoutTemplate title={title} description={description}>
+        <AuthLayoutTemplate title={t(title)} description={t(description)}>
             {children}
         </AuthLayoutTemplate>
     );

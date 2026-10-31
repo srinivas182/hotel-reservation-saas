@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Platform\Http\Controllers;
 
+use App\Domains\Access\SystemRole;
 use App\Domains\Platform\HotelAdministration;
 use App\Domains\Platform\Http\Requests\HotelRequest;
 use App\Domains\Tenancy\Enums\HotelStatus;
@@ -91,6 +92,9 @@ final class HotelController extends Controller
                     'status' => $member->getRelationValue('membership')?->getAttribute('status')?->value,
                     'is_owner' => $member->id === $hotel->owner_user_id,
                 ])
+                ->values(),
+            'memberRoles' => collect(SystemRole::cases())
+                ->map(fn (SystemRole $role): array => ['value' => $role->value, 'label' => $role->label()])
                 ->values(),
             'canUpdate' => $request->user()?->can('update', $hotel) === true,
             'canManageMembers' => $request->user()?->can('manageMembers', $hotel) === true,

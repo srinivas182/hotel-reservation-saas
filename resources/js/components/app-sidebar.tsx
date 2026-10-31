@@ -1,5 +1,15 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, LayoutGrid, Percent, Settings2, Users } from 'lucide-react';
+import {
+    Building2,
+    LayoutGrid,
+    Percent,
+    ScrollText,
+    Settings2,
+    UserCog,
+    Users,
+} from 'lucide-react';
+import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/HotelAuditController';
+import UserController from '@/actions/App/Domains/Platform/Http/Controllers/UserController';
 import TaxRateController from '@/actions/App/Domains/Finance/Http/Controllers/TaxRateController';
 import HotelSettingsController from '@/actions/App/Domains/Hotel/Http/Controllers/HotelSettingsController';
 import StaffController from '@/actions/App/Domains/Access/Http/Controllers/StaffController';
@@ -19,6 +29,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
+import { t } from '@/lib/i18n';
 
 const mainNavItems: NavItem[] = [
     {
@@ -33,6 +44,11 @@ const platformNavItems: NavItem[] = [
         title: 'Hotels',
         href: HotelController.index(),
         icon: Building2,
+    },
+    {
+        title: 'Users',
+        href: UserController.index(),
+        icon: UserCog,
     },
 ];
 
@@ -62,6 +78,15 @@ export function AppSidebar() {
                   },
               ]
             : []),
+        ...(auth.permissions.includes('audit.view')
+            ? [
+                  {
+                      title: 'Audit log',
+                      href: HotelAuditController(),
+                      icon: ScrollText,
+                  },
+              ]
+            : []),
     ];
 
     return (
@@ -80,9 +105,12 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain label="Hotel" items={hotelNavItems} />
+                <NavMain label={t('Hotel')} items={hotelNavItems} />
                 {isPlatformStaff && (
-                    <NavMain label="Platform admin" items={platformNavItems} />
+                    <NavMain
+                        label={t('Platform admin')}
+                        items={platformNavItems}
+                    />
                 )}
             </SidebarContent>
 

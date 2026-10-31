@@ -6,6 +6,7 @@ use App\Domains\Access\Http\Controllers\AcceptInvitationController;
 use App\Domains\Access\Http\Controllers\InvitationController;
 use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Access\Http\Controllers\StaffController;
+use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,8 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
 
     Route::get('hotel/settings', [HotelSettingsController::class, 'edit'])->middleware('can:hotel.settings.view')->name('hotel.settings.edit');
     Route::put('hotel/settings', [HotelSettingsController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.settings.update');
+
+    Route::get('hotel/audit', HotelAuditController::class)->middleware('can:audit.view')->name('hotel.audit');
 
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');
     Route::middleware('can:taxes.manage')->group(function (): void {

@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n';
 export default function Heading({
     title,
     description,
@@ -16,10 +17,12 @@ export default function Heading({
                         : 'text-xl font-semibold tracking-tight'
                 }
             >
-                {title}
+                {t(title)}
             </h2>
             {description && (
-                <p className="text-sm text-muted-foreground">{description}</p>
+                <p className="text-sm text-muted-foreground">
+                    {t(description)}
+                </p>
             )}
         </header>
     );

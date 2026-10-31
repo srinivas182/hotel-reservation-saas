@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { t } from '@/lib/i18n';
 
 type RoleRow = {
     id: number;
@@ -70,15 +71,17 @@ export default function Roles({ roles, permissions }: Props) {
 
     return (
         <>
-            <Head title="Roles" />
+            <Head title={t('Roles')} />
             <div className="flex max-w-4xl flex-col gap-8 p-4">
                 <Heading
-                    title="Roles"
-                    description="System roles are maintained by the platform. Create your own roles for other combinations of permissions."
+                    title={t('Roles')}
+                    description={t(
+                        'System roles are maintained by the platform. Create your own roles for other combinations of permissions.',
+                    )}
                 />
 
                 <section className="rounded-xl border p-4">
-                    <Heading variant="small" title="New custom role" />
+                    <Heading variant="small" title={t('New custom role')} />
                     <Form
                         {...RoleController.store.form()}
                         options={{ preserveScroll: true }}
@@ -88,7 +91,9 @@ export default function Roles({ roles, permissions }: Props) {
                         {({ processing, errors }) => (
                             <>
                                 <div className="grid max-w-sm gap-2">
-                                    <Label htmlFor="role-name">Role name</Label>
+                                    <Label htmlFor="role-name">
+                                        {t('Role name')}
+                                    </Label>
                                     <Input
                                         id="role-name"
                                         name="name"
@@ -103,7 +108,7 @@ export default function Roles({ roles, permissions }: Props) {
                                 />
                                 <div>
                                     <Button disabled={processing}>
-                                        Create role
+                                        {t('Create role')}
                                     </Button>
                                 </div>
                             </>
@@ -117,13 +122,16 @@ export default function Roles({ roles, permissions }: Props) {
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium">{role.name}</span>
                                 {role.is_system && (
-                                    <Badge variant="secondary">System</Badge>
+                                    <Badge variant="secondary">
+                                        {t('System')}
+                                    </Badge>
                                 )}
                                 <span className="text-sm text-muted-foreground">
-                                    {role.members_count}{' '}
                                     {role.members_count === 1
-                                        ? 'person'
-                                        : 'people'}
+                                        ? t('1 person')
+                                        : t(':count people', {
+                                              count: role.members_count,
+                                          })}
                                 </span>
                                 {!role.is_system && (
                                     <div className="ml-auto flex gap-1">
@@ -139,8 +147,8 @@ export default function Roles({ roles, permissions }: Props) {
                                             }
                                         >
                                             {editing === role.id
-                                                ? 'Close'
-                                                : 'Edit'}
+                                                ? t('Close')
+                                                : t('Edit')}
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -149,7 +157,10 @@ export default function Roles({ roles, permissions }: Props) {
                                             onClick={() => {
                                                 if (
                                                     window.confirm(
-                                                        `Delete the role ${role.name}?`,
+                                                        t(
+                                                            'Delete the role :name?',
+                                                            { name: role.name },
+                                                        ),
                                                     )
                                                 ) {
                                                     router.delete(
@@ -163,7 +174,7 @@ export default function Roles({ roles, permissions }: Props) {
                                                 }
                                             }}
                                         >
-                                            Delete
+                                            {t('Delete')}
                                         </Button>
                                     </div>
                                 )}
@@ -182,7 +193,7 @@ export default function Roles({ roles, permissions }: Props) {
                                                 <Label
                                                     htmlFor={`role-name-${role.id}`}
                                                 >
-                                                    Role name
+                                                    {t('Role name')}
                                                 </Label>
                                                 <Input
                                                     id={`role-name-${role.id}`}
@@ -200,7 +211,7 @@ export default function Roles({ roles, permissions }: Props) {
                                             />
                                             <div>
                                                 <Button disabled={processing}>
-                                                    Save role
+                                                    {t('Save role')}
                                                 </Button>
                                             </div>
                                         </>
@@ -209,7 +220,9 @@ export default function Roles({ roles, permissions }: Props) {
                             ) : (
                                 <p className="mt-2 text-sm text-muted-foreground">
                                     {role.permissions.length === 0
-                                        ? 'No permissions yet. Module permissions are added as modules are released.'
+                                        ? t(
+                                              'No permissions yet. Module permissions are added as modules are released.',
+                                          )
                                         : permissions
                                               .filter((p) =>
                                                   role.permissions.includes(
