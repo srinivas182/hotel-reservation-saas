@@ -7,8 +7,11 @@ namespace App\Console\Commands;
 use App\Domains\Availability\HoldStatus;
 use App\Domains\Availability\Models\InventoryDay;
 use App\Domains\Availability\Models\InventoryHold;
+use App\Domains\Bookings\BookingStatus;
+use App\Domains\Bookings\Models\Booking;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Domains\Tenancy\TenantContext;
+use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -16,8 +19,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Recalculate booked counts from their source records. Until bookings
- * arrive in S3 the source is converted holds; S3 switches it to bookings.
+ * Recalculate booked counts from their source records: bookings that
+ * occupy rooms (confirmed, checked in, checked out).
  * Held-back and stop-sell values are settings, not counts, and are kept.
  */
 #[Signature('inventory:rebuild {--hotel= : Only this hotel (ID or slug)}')]
@@ -35,12 +38,25 @@ final class RebuildInventory extends Command
 
             DB::transaction(function () use ($hotel): void {
                 $counts = [];
-                InventoryHold::query()->where('status', HoldStatus::Converted->value)->get()->each(function (InventoryHold $hold) use (&$counts): void {
-                    foreach (CarbonPeriod::create($hold->check_in, $hold->check_out->subDay()) as $night) {
-                        $key = $hold->room_category_id.'|'.$night->toDateString();
-                        $counts[$key] = ($counts[$key] ?? 0) + $hold->rooms;
+                $add = function (string $categoryId, CarbonInterface $checkIn, CarbonInterface $checkOut, int $rooms) use (&$counts): void {
+                    foreach (CarbonPeriod::create($checkIn, $checkOut->subDay()) as $night) {
+                        $key = $categoryId.'|'.$night->toDateString();
+                        $counts[$key] = ($counts[$key] ?? 0) + $rooms;
                     }
-                });
+                };
+
+                // Bookings that occupy their rooms.
+                Booking::query()
+                    ->whereIn('status', array_map(fn (BookingStatus $status): string => $status->value, BookingStatus::occupying()))
+                    ->get(['room_category_id', 'check_in', 'check_out', 'rooms'])
+                    ->each(fn (Booking $booking) => $add($booking->room_category_id, $booking->check_in, $booking->check_out, $booking->rooms));
+
+                // Holds converted outside a booking (none are created by the app today).
+                InventoryHold::query()
+                    ->where('status', HoldStatus::Converted->value)
+                    ->where('source_type', '!=', 'booking')
+                    ->get()
+                    ->each(fn (InventoryHold $hold) => $add($hold->room_category_id, $hold->check_in, $hold->check_out, $hold->rooms));
 
                 $changed = 0;
                 InventoryDay::query()->lockForUpdate()->get()->each(function (InventoryDay $day) use (&$counts, &$changed): void {

@@ -34,6 +34,9 @@ type Props = {
         check_in_time: string;
         check_out_time: string;
         late_checkout_until: string | null;
+        booking_prefix: string | null;
+        default_booking_prefix: string;
+        tentative_hours: number;
         staffed_hours: StaffedHours;
         enabled_locales: string[];
     };
@@ -103,6 +106,8 @@ export default function HotelSettingsPage({
         check_in_time: settings.check_in_time,
         check_out_time: settings.check_out_time,
         late_checkout_until: settings.late_checkout_until ?? '',
+        booking_prefix: settings.booking_prefix ?? '',
+        tentative_hours: settings.tentative_hours,
         staffed_hours: settings.staffed_hours as StaffedHours,
         enabled_locales: settings.enabled_locales,
     });
@@ -335,6 +340,50 @@ export default function HotelSettingsPage({
                                         setData(
                                             'late_checkout_until',
                                             e.target.value,
+                                        )
+                                    }
+                                />
+                            </Field>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <Field
+                                id="booking_prefix"
+                                label={t('Booking reference prefix')}
+                                error={error('booking_prefix')}
+                            >
+                                <Input
+                                    id="booking_prefix"
+                                    maxLength={6}
+                                    placeholder={
+                                        settings.default_booking_prefix
+                                    }
+                                    value={data.booking_prefix}
+                                    onChange={(e) =>
+                                        setData(
+                                            'booking_prefix',
+                                            e.target.value.toUpperCase(),
+                                        )
+                                    }
+                                />
+                            </Field>
+                            <Field
+                                id="tentative_hours"
+                                label={t(
+                                    'Tentative bookings hold rooms for (hours)',
+                                )}
+                                error={error('tentative_hours')}
+                            >
+                                <Input
+                                    id="tentative_hours"
+                                    type="number"
+                                    min={1}
+                                    max={720}
+                                    value={data.tentative_hours}
+                                    onChange={(e) =>
+                                        setData(
+                                            'tentative_hours',
+                                            Number(e.target.value),
                                         )
                                     }
                                 />

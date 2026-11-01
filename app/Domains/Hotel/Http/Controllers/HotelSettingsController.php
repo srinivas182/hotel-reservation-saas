@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Hotel\Http\Controllers;
 
 use App\Domains\Audit\Audit;
+use App\Domains\Bookings\BookingReferences;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Hotel\Http\Requests\HotelSettingsRequest;
 use App\Domains\Hotel\Models\HotelSettings;
@@ -41,6 +42,9 @@ final class HotelSettingsController extends Controller
                 'check_in_time' => substr($settings->check_in_time, 0, 5),
                 'check_out_time' => substr($settings->check_out_time, 0, 5),
                 'late_checkout_until' => $settings->late_checkout_until === null ? null : substr($settings->late_checkout_until, 0, 5),
+                'booking_prefix' => $settings->booking_prefix,
+                'default_booking_prefix' => BookingReferences::defaultPrefix($hotel->name),
+                'tentative_hours' => $settings->tentative_hours,
                 'staffed_hours' => $settings->staffed_hours ?? (object) [],
                 'enabled_locales' => $settings->enabled_locales ?? [$hotel->default_locale],
             ],
@@ -79,6 +83,7 @@ final class HotelSettingsController extends Controller
                 'phone_e164', 'whatsapp_display_e164', 'email',
                 'address_line1', 'address_line2', 'city', 'map_url',
                 'check_in_time', 'check_out_time', 'late_checkout_until',
+                'booking_prefix', 'tentative_hours',
                 'staffed_hours', 'enabled_locales',
             ]));
 

@@ -27,6 +27,12 @@ enum Permission: string
     case RatesManage = 'rates.manage';
     case AvailabilityView = 'availability.view';
     case AvailabilityManage = 'availability.manage';
+    case BookingsView = 'bookings.view';
+    case BookingsCreate = 'bookings.create';
+    case BookingsManage = 'bookings.manage';
+    case BookingsFrontdesk = 'bookings.frontdesk';
+    case BookingsOverridePrice = 'bookings.override_price';
+    case BookingsExport = 'bookings.export';
 
     public function group(): string
     {
@@ -52,6 +58,12 @@ enum Permission: string
             self::RatesManage => __('Change rates'),
             self::AvailabilityView => __('View availability and quotes'),
             self::AvailabilityManage => __('Stop sales, hold back rooms and place holds'),
+            self::BookingsView => __('View bookings and guests'),
+            self::BookingsCreate => __('Create bookings'),
+            self::BookingsManage => __('Change, cancel and mark no-shows'),
+            self::BookingsFrontdesk => __('Check guests in and out and give room numbers'),
+            self::BookingsOverridePrice => __('Change booking prices'),
+            self::BookingsExport => __('Export bookings'),
         };
     }
 
