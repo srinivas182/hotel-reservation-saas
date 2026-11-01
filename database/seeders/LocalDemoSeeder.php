@@ -8,7 +8,11 @@ use App\Domains\Access\HotelRoles;
 use App\Domains\Access\StaffService;
 use App\Domains\Access\SystemRole;
 use App\Domains\Identity\Enums\PlatformRole;
+use App\Domains\Rooms\Models\Room;
+use App\Domains\Rooms\Models\RoomCategory;
+use App\Domains\Rooms\RoomStatus;
 use App\Domains\Tenancy\Models\Hotel;
+use App\Domains\Tenancy\TenantContext;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -56,6 +60,51 @@ class LocalDemoSeeder extends Seeder
 
             $staff->assign($hotel, $owner, $roles->system($hotel, SystemRole::Owner));
             $staff->assign($hotel, $receptionist, $roles->system($hotel, SystemRole::Reception));
+
+            if ($key === 'lodge') {
+                $this->firstClassLodgeRooms($hotel);
+            }
         }
+    }
+
+    /**
+     * The pilot hotel's real room set-up: 26 rooms in four categories.
+     */
+    private function firstClassLodgeRooms(Hotel $hotel): void
+    {
+        $categories = [
+            ['STD', 'Standard', 'Standard', 10, 1, 2, 1, 3],
+            ['EXE', 'Executive', 'Exécutive', 10, 1, 2, 1, 3],
+            ['MSU', 'Mini Suite', 'Mini suite', 3, 3, 2, 2, 4],
+            ['SUI', 'Suite', 'Suite', 3, 4, 3, 2, 4],
+        ];
+
+        app(TenantContext::class)->run($hotel, function () use ($categories): void {
+            $number = 101;
+
+            foreach ($categories as $order => [$code, $en, $fr, $count, $floor, $maxAdults, $maxChildren, $maxGuests]) {
+                $category = RoomCategory::query()->create([
+                    'code' => $code,
+                    'name' => ['fr' => $fr, 'en' => $en],
+                    'standard_occupancy' => 2,
+                    'max_adults' => $maxAdults,
+                    'max_children' => $maxChildren,
+                    'max_occupancy' => $maxGuests,
+                    'extra_bed_allowed' => $code !== 'STD',
+                    'amenities' => ['air_conditioning', 'wifi', 'tv', 'private_bathroom', 'hot_water'],
+                    'active' => true,
+                    'sort_order' => $order,
+                ]);
+
+                foreach (range(1, $count) as $ignored) {
+                    Room::query()->create([
+                        'room_category_id' => $category->id,
+                        'number' => (string) $number++,
+                        'floor' => (string) $floor,
+                        'status' => RoomStatus::InService,
+                    ]);
+                }
+            }
+        });
     }
 }

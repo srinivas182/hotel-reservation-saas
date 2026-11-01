@@ -11,6 +11,10 @@ use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
 use App\Domains\Messaging\Http\Controllers\UsageController;
+use App\Domains\Rooms\Http\Controllers\RoomCategoryController;
+use App\Domains\Rooms\Http\Controllers\RoomClosureController;
+use App\Domains\Rooms\Http\Controllers\RoomController;
+use App\Domains\Rooms\Http\Controllers\RoomsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,6 +52,19 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         ->middleware(['can:hotel.settings.manage', 'throttle:5,1'])
         ->name('hotel.email.resend');
     Route::get('hotel/usage', UsageController::class)->middleware('can:usage.view')->name('hotel.usage');
+
+    Route::get('hotel/rooms', RoomsController::class)->middleware('can:rooms.view')->name('hotel.rooms');
+    Route::middleware('can:rooms.manage')->group(function (): void {
+        Route::post('hotel/room-categories', [RoomCategoryController::class, 'store'])->name('hotel.room-categories.store');
+        Route::put('hotel/room-categories/{roomCategory}', [RoomCategoryController::class, 'update'])->name('hotel.room-categories.update');
+        Route::delete('hotel/room-categories/{roomCategory}', [RoomCategoryController::class, 'destroy'])->name('hotel.room-categories.destroy');
+        Route::post('hotel/rooms', [RoomController::class, 'store'])->name('hotel.rooms.store');
+        Route::post('hotel/rooms/bulk', [RoomController::class, 'bulk'])->name('hotel.rooms.bulk');
+        Route::put('hotel/rooms/{room}', [RoomController::class, 'update'])->name('hotel.rooms.update');
+        Route::delete('hotel/rooms/{room}', [RoomController::class, 'destroy'])->name('hotel.rooms.destroy');
+        Route::post('hotel/rooms/{room}/closures', [RoomClosureController::class, 'store'])->name('hotel.rooms.closures.store');
+        Route::delete('hotel/room-closures/{roomClosure}', [RoomClosureController::class, 'destroy'])->name('hotel.room-closures.destroy');
+    });
 
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');
     Route::middleware('can:taxes.manage')->group(function (): void {

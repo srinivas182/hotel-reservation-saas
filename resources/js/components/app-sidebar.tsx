@@ -4,6 +4,7 @@ import {
     LayoutGrid,
     Percent,
     BarChart3,
+    BedDouble,
     Mail,
     ScrollText,
     Settings2,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/HotelAuditController';
 import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
+import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsController';
 import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
 import UserController from '@/actions/App/Domains/Platform/Http/Controllers/UserController';
 import TaxRateController from '@/actions/App/Domains/Finance/Http/Controllers/TaxRateController';
@@ -61,6 +63,9 @@ export function AppSidebar() {
     const isPlatformStaff = auth.user.platform_role !== null;
     const hotelNavItems: NavItem[] = [
         ...mainNavItems,
+        ...(auth.permissions.includes('rooms.view')
+            ? [{ title: 'Rooms', href: RoomsController(), icon: BedDouble }]
+            : []),
         ...(auth.permissions.includes('staff.view')
             ? [{ title: 'Staff', href: StaffController.index(), icon: Users }]
             : []),
