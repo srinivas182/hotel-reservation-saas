@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Finance\Taxes;
 
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
+use App\Support\Casts\DateOnly;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -50,8 +51,8 @@ class TaxRate extends Model
             'inclusive' => 'boolean',
             'applies_to' => 'array',
             'active' => 'boolean',
-            'effective_from' => 'date',
-            'effective_to' => 'date',
+            'effective_from' => DateOnly::class,
+            'effective_to' => DateOnly::class,
             'sort_order' => 'integer',
         ];
     }

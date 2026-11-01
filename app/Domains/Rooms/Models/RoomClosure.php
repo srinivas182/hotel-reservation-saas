@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Rooms\Models;
 
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
+use App\Support\Casts\DateOnly;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -33,8 +34,8 @@ class RoomClosure extends Model
     protected function casts(): array
     {
         return [
-            'from_date' => 'date',
-            'to_date' => 'date',
+            'from_date' => DateOnly::class,
+            'to_date' => DateOnly::class,
         ];
     }
 

@@ -8,6 +8,8 @@ use App\Domains\Access\HotelRoles;
 use App\Domains\Access\StaffService;
 use App\Domains\Access\SystemRole;
 use App\Domains\Identity\Enums\PlatformRole;
+use App\Domains\Rates\BreakfastMode;
+use App\Domains\Rates\Models\CategoryRate;
 use App\Domains\Rooms\Models\Room;
 use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Rooms\RoomStatus;
@@ -73,16 +75,16 @@ class LocalDemoSeeder extends Seeder
     private function firstClassLodgeRooms(Hotel $hotel): void
     {
         $categories = [
-            ['STD', 'Standard', 'Standard', 10, 1, 2, 1, 3],
-            ['EXE', 'Executive', 'Exécutive', 10, 1, 2, 1, 3],
-            ['MSU', 'Mini Suite', 'Mini suite', 3, 3, 2, 2, 4],
-            ['SUI', 'Suite', 'Suite', 3, 4, 3, 2, 4],
+            ['STD', 'Standard', 'Standard', 10, 1, 2, 1, 3, 20000],
+            ['EXE', 'Executive', 'Exécutive', 10, 1, 2, 1, 3, 25000],
+            ['MSU', 'Mini Suite', 'Mini suite', 3, 3, 2, 2, 4, 35000],
+            ['SUI', 'Suite', 'Suite', 3, 4, 3, 2, 4, 40000],
         ];
 
         app(TenantContext::class)->run($hotel, function () use ($categories): void {
             $number = 101;
 
-            foreach ($categories as $order => [$code, $en, $fr, $count, $floor, $maxAdults, $maxChildren, $maxGuests]) {
+            foreach ($categories as $order => [$code, $en, $fr, $count, $floor, $maxAdults, $maxChildren, $maxGuests, $rate]) {
                 $category = RoomCategory::query()->create([
                     'code' => $code,
                     'name' => ['fr' => $fr, 'en' => $en],
@@ -94,6 +96,18 @@ class LocalDemoSeeder extends Seeder
                     'amenities' => ['air_conditioning', 'wifi', 'tv', 'private_bathroom', 'hot_water'],
                     'active' => true,
                     'sort_order' => $order,
+                ]);
+
+                // Reference rates from the CNH note (FCFA, no decimals).
+                CategoryRate::query()->create([
+                    'room_category_id' => $category->id,
+                    'base_minor' => $rate,
+                    'extra_adult_minor' => 5000,
+                    'child_minor' => 2500,
+                    'extra_bed_minor' => 5000,
+                    'breakfast_mode' => BreakfastMode::Optional,
+                    'breakfast_minor' => 3000,
+                    'min_nights' => 1,
                 ]);
 
                 foreach (range(1, $count) as $ignored) {
