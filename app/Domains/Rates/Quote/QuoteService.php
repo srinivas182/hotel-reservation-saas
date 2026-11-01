@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Rates\Quote;
 
+use App\Domains\Availability\AvailabilityService;
 use App\Domains\Finance\Taxes\TaxCalculator;
 use App\Domains\Finance\Taxes\TaxRate;
 use App\Domains\Finance\Taxes\TaxScope;
@@ -12,9 +13,8 @@ use App\Domains\Rates\BreakfastMode;
 use App\Domains\Rates\ChildAgeBands;
 use App\Domains\Rates\ChildCharge;
 use App\Domains\Rates\Models\CategoryRate;
-use App\Domains\Rates\Models\RateOverride;
+use App\Domains\Rates\NightlyRates;
 use App\Domains\Rooms\Models\RoomCategory;
-use App\Domains\Rooms\RoomInventory;
 use App\Domains\Tenancy\TenantContext;
 use Brick\Money\Money;
 use Carbon\CarbonImmutable;
@@ -42,7 +42,8 @@ final class QuoteService
 
     public function __construct(
         private readonly TenantContext $context,
-        private readonly RoomInventory $inventory,
+        private readonly AvailabilityService $availability,
+        private readonly NightlyRates $nightlyRates,
         private readonly TaxCalculator $taxes,
     ) {}
 
@@ -88,40 +89,28 @@ final class QuoteService
 
         // Nights: price, overrides and availability.
         $lastNight = $request->checkOut->subDay();
-        $overrides = RateOverride::query()
-            ->where('from_date', '<=', $lastNight->toDateString())
-            ->where('to_date', '>=', $request->checkIn->toDateString())
-            ->where(fn ($query) => $query->whereNull('room_category_id')->orWhere('room_category_id', $category->id))
-            ->orderByDesc('updated_at')
-            ->orderByDesc('id')
-            ->get();
+        $prices = $this->nightlyRates->forRange([$category->id], $request->checkIn, $lastNight)[$category->id];
+        $inventory = $this->availability->forRange([$category->id], $request->checkIn, $lastNight)[$category->id] ?? [];
 
-        $sellable = $this->inventory->sellable([$category->id], $request->checkIn, $lastNight)[$category->id] ?? [];
+        $arrival = $prices[$request->checkIn->toDateString()];
+        $minNights = $arrival['min_nights'];
+
+        if ($arrival['closed_to_arrival']) {
+            $issues[] = new QuoteIssue('closed_to_arrival', __('Arrivals are not possible on this date.'));
+        }
 
         $nightRows = [];
-        $minNights = $rate->min_nights;
         $stopSell = false;
 
-        for ($night = $request->checkIn; $night->lt($request->checkOut); $night = $night->addDay()) {
-            $applicable = $overrides->filter(fn (RateOverride $override): bool => $override->appliesTo($category->id, $night));
-            $priced = $applicable->first(fn (RateOverride $override): bool => $override->rate_minor !== null);
-            $nightStopSell = $applicable->contains(fn (RateOverride $override): bool => $override->stop_sell);
+        foreach ($prices as $date => $price) {
+            $nightStopSell = $price['stop_sell'] || ($inventory[$date]['stop_sell'] ?? false);
             $stopSell = $stopSell || $nightStopSell;
 
-            if ($night->equalTo($request->checkIn)) {
-                $minNights = max($minNights, (int) $applicable->max(fn (RateOverride $override): int => (int) $override->min_nights));
-
-                if ($applicable->contains(fn (RateOverride $override): bool => $override->closed_to_arrival)) {
-                    $issues[] = new QuoteIssue('closed_to_arrival', __('Arrivals are not possible on this date.'));
-                }
-            }
-
-            $date = $night->toDateString();
             $nightRows[] = [
                 'date' => $date,
-                'rate' => Money::ofMinor($priced instanceof RateOverride ? (int) $priced->rate_minor : $rate->base_minor, $currency),
-                'label' => $priced?->label,
-                'available' => $nightStopSell ? 0 : (int) ($sellable[$date] ?? 0),
+                'rate' => Money::ofMinor($price['rate_minor'] ?? $rate->base_minor, $currency),
+                'label' => $price['label'],
+                'available' => $nightStopSell ? 0 : (int) ($inventory[$date]['available'] ?? 0),
             ];
         }
 
