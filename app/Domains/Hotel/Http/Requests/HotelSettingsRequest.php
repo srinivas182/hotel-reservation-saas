@@ -69,6 +69,12 @@ final class HotelSettingsRequest extends FormRequest
         $validator->after(function (\Illuminate\Validation\Validator $validator): void {
             $enabled = (array) $this->input('enabled_locales', []);
 
+            $hotel = app(\App\Domains\Tenancy\TenantContext::class)->hotel();
+
+            if ($this->input('currency') !== $hotel->currency && \App\Domains\Rates\Models\CategoryRate::query()->exists()) {
+                $validator->errors()->add('currency', __('The currency cannot be changed once room rates are set.'));
+            }
+
             if (! in_array($this->input('default_locale'), $enabled, true)) {
                 $validator->errors()->add('enabled_locales', __('The default language must be one of the enabled languages.'));
             }

@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S2.2 — Rates and quote engine
+
+#### Added
+
+- Rates page (`/hotel/rates`): per room category a nightly rate (covering the category's standard number of guests), extra adult, child and extra-bed charges per night, breakfast (included, optional with a price per person per night, or not offered) and a minimum stay. Amounts are stored in minor units of the hotel currency.
+- Date overrides for one or all categories, optionally on chosen weekdays only: a different nightly rate, a minimum stay, stop-sale or no arrivals. When overrides overlap, the most recently changed one sets the price (overlaps are flagged); restrictions from all of them apply.
+- Hotel-wide pricing settings: up to three child age bands (free, child rate or adult rate; older children pay as adults) and how long rooms are held while a booking is in progress.
+- `QuoteService`: the single source of every price. Prices each night, spreads guests across the rooms asked for, charges extras, applies room taxes (rooms scope) and breakfast taxes (food & beverage scope) with the tax calculator, shows rooms free per night, and reports stable issue codes (minimum stay, no arrivals, stop-sale, not enough rooms, too many guests, one adult per room, invalid or past dates, stays over 30 nights, no rate, category not on sale, extra bed or breakfast not offered).
+- "Try a stay" on the rates page, showing exactly what a guest would be quoted.
+- Audit entries for rates, overrides and pricing settings; reference rates for First Class Lodge in the demo data; English and French text.
+
+#### Changed
+
+- The hotel currency can no longer be changed once room rates exist.
+
+#### Fixed
+
+- Dates without times (room closures, tax and override date ranges) are stored as plain dates, so date-range queries are correct on SQLite as well as MySQL.
+
 ### S2.1 — Room categories, rooms and closures
 
 #### Added

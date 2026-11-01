@@ -11,6 +11,10 @@ use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
 use App\Domains\Messaging\Http\Controllers\UsageController;
+use App\Domains\Rates\Http\Controllers\CategoryRateController;
+use App\Domains\Rates\Http\Controllers\RateOverrideController;
+use App\Domains\Rates\Http\Controllers\RatesController;
+use App\Domains\Rates\Http\Controllers\RateSettingsController;
 use App\Domains\Rooms\Http\Controllers\RoomCategoryController;
 use App\Domains\Rooms\Http\Controllers\RoomClosureController;
 use App\Domains\Rooms\Http\Controllers\RoomController;
@@ -64,6 +68,15 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::delete('hotel/rooms/{room}', [RoomController::class, 'destroy'])->name('hotel.rooms.destroy');
         Route::post('hotel/rooms/{room}/closures', [RoomClosureController::class, 'store'])->name('hotel.rooms.closures.store');
         Route::delete('hotel/room-closures/{roomClosure}', [RoomClosureController::class, 'destroy'])->name('hotel.room-closures.destroy');
+    });
+
+    Route::get('hotel/rates', RatesController::class)->middleware('can:rates.view')->name('hotel.rates');
+    Route::middleware('can:rates.manage')->group(function (): void {
+        Route::put('hotel/rates/categories/{roomCategory}', [CategoryRateController::class, 'update'])->name('hotel.rates.category');
+        Route::put('hotel/rates/settings', [RateSettingsController::class, 'update'])->name('hotel.rates.settings');
+        Route::post('hotel/rate-overrides', [RateOverrideController::class, 'store'])->name('hotel.rate-overrides.store');
+        Route::put('hotel/rate-overrides/{rateOverride}', [RateOverrideController::class, 'update'])->name('hotel.rate-overrides.update');
+        Route::delete('hotel/rate-overrides/{rateOverride}', [RateOverrideController::class, 'destroy'])->name('hotel.rate-overrides.destroy');
     });
 
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');
