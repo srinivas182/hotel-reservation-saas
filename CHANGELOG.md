@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S4.1 — WhatsApp connection and webhooks
+
+#### Added
+
+- WhatsApp connection page (Owners, `whatsapp.connect`): Embedded Signup v4 with Meta's JavaScript SDK, offering the number already used in the WhatsApp Business app (coexistence, chat history kept) or a new number. The server exchanges the code for the hotel's business token, registers new numbers with a generated two-step PIN (not shared numbers), subscribes the app to the account's webhooks and fetches the number's details. Token and PIN are encrypted and never sent to the browser. A number can belong to one hotel only.
+- Connection card: number, name shown to guests, quality rating, messaging limit, check connection, reconnect, disconnect (password confirmation). Daily `whatsapp:check` marks accounts whose token stopped working as "Reconnect needed" and records it.
+- Webhook endpoint `/webhooks/whatsapp` for every hotel: Meta's verification handshake, `X-Hub-Signature-256` check against the app secret, each change stored encrypted (kept 30 days), immediate response, background processing with retries, routing to the hotel by phone number (or account). Quality, messaging-limit, name and restriction updates are applied; kinds without a handler yet are kept for replay.
+- Platform → WhatsApp: which Meta settings are present, the webhook address, last webhook received, failed events and every connected number.
+- Permissions `whatsapp.connect`, `conversations.view`, `conversations.reply` in the role matrix.
+- Content Security Policy allows Meta's SDK and signup window. Meta setup documented in `docs/deployment.md`.
+- English and French text.
+
 ### S3.3 — Today screen, rooms board, register check and export
 
 #### Added
