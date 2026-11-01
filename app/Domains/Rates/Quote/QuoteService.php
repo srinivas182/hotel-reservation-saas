@@ -15,9 +15,9 @@ use App\Domains\Rates\ChildCharge;
 use App\Domains\Rates\Models\CategoryRate;
 use App\Domains\Rates\NightlyRates;
 use App\Domains\Rooms\Models\RoomCategory;
+use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
 use Brick\Money\Money;
-use Carbon\CarbonImmutable;
 
 /**
  * Prices a stay for the current hotel. It is a pure calculation: nothing
@@ -62,7 +62,7 @@ final class QuoteService
         }
 
         $nights = $request->nights();
-        $today = CarbonImmutable::now($hotel->timezone)->startOfDay();
+        $today = HotelClock::today($hotel);
 
         if ($nights < 1) {
             return $this->empty($request, $zero, [new QuoteIssue('invalid_dates', __('Check-out must be after check-in.'))]);

@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S3.3 — Today screen, rooms board, register check and export
+
+#### Added
+
+- Today screen (`/hotel/today`), the home screen for staff who handle bookings: rooms free tonight per category, arrivals with one-tap check-in using suggested room numbers, departures (including overdue) with one-tap check-out, possible no-shows, tentative bookings ending within 24 hours, and guests in house.
+- Rooms board: every room tonight shown as free, occupied, arriving or out of service, with guests leaving today marked.
+- Evening register check: staff confirm tonight's occupied rooms match the paper register or describe the differences; saved with the room list and audited.
+- CSV export of bookings overlapping a date range (`bookings.export`, at most a year at a time, rate-limited): UTF-8 for spreadsheets, free text protected against formula injection, every export audited.
+
+#### Fixed
+
+- "Today" is now the hotel's local calendar date everywhere (quotes, bookings, calendar, rooms, taxes). Comparing a time-zoned "now" with plain stay dates was off by a day for hotels ahead of UTC late in the evening.
+
 ### S3.2 — Booking lifecycle
 
 #### Added

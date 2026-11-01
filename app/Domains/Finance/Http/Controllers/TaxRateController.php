@@ -13,6 +13,7 @@ use App\Domains\Finance\Taxes\TaxRate;
 use App\Domains\Finance\Taxes\TaxScope;
 use App\Domains\Finance\Taxes\TaxType;
 use App\Domains\Hotel\Models\HotelSettings;
+use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use Brick\Math\RoundingMode;
@@ -125,7 +126,7 @@ final class TaxRateController extends Controller
                 $rates,
                 Money::of((string) $input['price'], $hotel->currency, roundingMode: RoundingMode::HalfUp),
                 $scope,
-                now($hotel->timezone),
+                HotelClock::today($hotel),
                 (int) $input['nights'],
                 (int) $input['guests'],
             );

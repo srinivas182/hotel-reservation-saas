@@ -45,8 +45,8 @@ final class QuotePresenter
 
         $quote = $this->quotes->quote(new StayRequest(
             categoryId: (string) $input['category'],
-            checkIn: CarbonImmutable::parse((string) $input['check_in'], $hotel->timezone),
-            checkOut: CarbonImmutable::parse((string) $input['check_out'], $hotel->timezone),
+            checkIn: CarbonImmutable::parse((string) $input['check_in']),
+            checkOut: CarbonImmutable::parse((string) $input['check_out']),
             adults: (int) $input['adults'],
             childAges: array_map(fn (string $age): int => max(0, min(17, (int) $age)), $ages),
             rooms: (int) $input['rooms'],

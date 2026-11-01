@@ -21,6 +21,7 @@ use App\Domains\Rates\Quote\QuotePresenter;
 use App\Domains\Rates\Quote\StayRequest;
 use App\Domains\Rooms\Models\Room;
 use App\Domains\Rooms\Models\RoomCategory;
+use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -77,6 +78,7 @@ final class BookingController extends Controller
             'statuses' => collect(BookingStatus::cases())->map(fn (BookingStatus $s): array => ['value' => $s->value, 'label' => $s->label()])->values(),
             'channels' => collect(BookingChannel::cases())->map(fn (BookingChannel $c): array => ['value' => $c->value, 'label' => $c->label()])->values(),
             'canCreate' => $request->user()?->can('bookings.create') === true,
+            'canExport' => $request->user()?->can('bookings.export') === true,
         ]);
     }
 
@@ -294,7 +296,7 @@ final class BookingController extends Controller
         $manage = $user?->can('bookings.manage') === true;
         $frontdesk = $user?->can('bookings.frontdesk') === true;
         $status = $booking->status;
-        $today = CarbonImmutable::now($this->context->hotel()->timezone)->startOfDay();
+        $today = HotelClock::today($this->context->hotel());
         $current = in_array($status, [BookingStatus::Tentative, BookingStatus::Confirmed], true);
 
         return [

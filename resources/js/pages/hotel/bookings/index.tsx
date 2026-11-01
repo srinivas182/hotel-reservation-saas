@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
+import BookingExportController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingExportController';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ type Props = {
     statuses: Option[];
     channels: Option[];
     canCreate: boolean;
+    canExport: boolean;
 };
 
 const selectClass =
@@ -55,6 +57,7 @@ export default function BookingsIndex({
     statuses,
     channels,
     canCreate,
+    canExport,
 }: Props) {
     const [form, setForm] = useState({
         search: filters.search ?? '',
@@ -160,6 +163,31 @@ export default function BookingsIndex({
                     />
                     <Button variant="outline">{t('Search')}</Button>
                 </form>
+
+                {canExport && (
+                    <div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={!form.from || !form.to}
+                            title={t('Choose From and To dates to export')}
+                            onClick={() => {
+                                window.location.href =
+                                    BookingExportController.url({
+                                        query: {
+                                            from: form.from,
+                                            to: form.to,
+                                            ...(form.status
+                                                ? { status: form.status }
+                                                : {}),
+                                        },
+                                    });
+                            }}
+                        >
+                            {t('Export CSV')}
+                        </Button>
+                    </div>
+                )}
 
                 <div className="overflow-x-auto rounded-xl border">
                     <table className="w-full text-sm">

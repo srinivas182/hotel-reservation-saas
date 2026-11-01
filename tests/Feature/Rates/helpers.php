@@ -53,8 +53,8 @@ function quoteStay(Hotel $hotel, RoomCategory $category, string $in, string $out
 {
     return app(TenantContext::class)->run($hotel, fn (): Quote => app(QuoteService::class)->quote(new StayRequest(
         categoryId: $category->id,
-        checkIn: CarbonImmutable::parse($in, $hotel->timezone),
-        checkOut: CarbonImmutable::parse($out, $hotel->timezone),
+        checkIn: CarbonImmutable::parse($in),
+        checkOut: CarbonImmutable::parse($out),
         adults: $adults,
         childAges: $children,
         rooms: $rooms,

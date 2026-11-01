@@ -18,6 +18,7 @@ use App\Domains\Rates\Quote\QuoteService;
 use App\Domains\Rates\Quote\StayRequest;
 use App\Domains\Rooms\Models\Room;
 use App\Domains\Rooms\Models\RoomCategory;
+use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
 use App\Models\User;
 use Brick\Money\Money;
@@ -304,7 +305,7 @@ final class BookingLifecycle
 
     public function today(): CarbonImmutable
     {
-        return CarbonImmutable::now($this->context->hotel()->timezone)->startOfDay();
+        return HotelClock::today($this->context->hotel());
     }
 
     /**
