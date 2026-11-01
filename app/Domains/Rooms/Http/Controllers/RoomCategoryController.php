@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Rooms\Http\Controllers;
 
 use App\Domains\Audit\Audit;
+use App\Domains\Availability\Models\InventoryHold;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Rooms\Amenity;
 use App\Domains\Rooms\Models\RoomCategory;
@@ -48,6 +49,12 @@ final class RoomCategoryController extends Controller
     {
         if ($roomCategory->rooms()->exists()) {
             Inertia::flash('toast', ['type' => 'error', 'message' => __('This category still has rooms. Move or remove them, or switch the category off instead.')]);
+
+            return back();
+        }
+
+        if (InventoryHold::query()->where('room_category_id', $roomCategory->id)->exists()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('This category has held or booked rooms. Switch the category off instead.')]);
 
             return back();
         }

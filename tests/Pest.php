@@ -18,3 +18,9 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+// Concurrency tests commit data across two connections, so they truncate
+// tables instead of wrapping each test in a transaction (MySQL only).
+pest()->extend(TestCase::class)
+    ->use(Illuminate\Foundation\Testing\DatabaseTruncation::class)
+    ->in('Concurrency');

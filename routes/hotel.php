@@ -7,6 +7,8 @@ use App\Domains\Access\Http\Controllers\InvitationController;
 use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Access\Http\Controllers\StaffController;
 use App\Domains\Audit\Http\Controllers\HotelAuditController;
+use App\Domains\Availability\Http\Controllers\CalendarController;
+use App\Domains\Availability\Http\Controllers\InventoryController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
@@ -77,6 +79,15 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/rate-overrides', [RateOverrideController::class, 'store'])->name('hotel.rate-overrides.store');
         Route::put('hotel/rate-overrides/{rateOverride}', [RateOverrideController::class, 'update'])->name('hotel.rate-overrides.update');
         Route::delete('hotel/rate-overrides/{rateOverride}', [RateOverrideController::class, 'destroy'])->name('hotel.rate-overrides.destroy');
+    });
+
+    Route::get('hotel/calendar', CalendarController::class)->middleware('can:availability.view')->name('hotel.calendar');
+    Route::middleware('can:availability.manage')->group(function (): void {
+        Route::post('hotel/calendar/stop-sell', [InventoryController::class, 'stopSell'])->name('hotel.calendar.stop-sell');
+        Route::post('hotel/calendar/hold-back', [InventoryController::class, 'holdBack'])->name('hotel.calendar.hold-back');
+        Route::post('hotel/holds', [InventoryController::class, 'placeHold'])->name('hotel.holds.store');
+        Route::post('hotel/holds/{inventoryHold}/extend', [InventoryController::class, 'extendHold'])->name('hotel.holds.extend');
+        Route::delete('hotel/holds/{inventoryHold}', [InventoryController::class, 'releaseHold'])->name('hotel.holds.release');
     });
 
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');

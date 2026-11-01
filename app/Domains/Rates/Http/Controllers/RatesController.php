@@ -4,22 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Rates\Http\Controllers;
 
-use App\Domains\Finance\Money\MoneyFormatter;
-use App\Domains\Finance\Taxes\TaxBreakdown;
-use App\Domains\Finance\Taxes\TaxLine;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Rates\BreakfastMode;
 use App\Domains\Rates\ChildCharge;
 use App\Domains\Rates\Models\CategoryRate;
 use App\Domains\Rates\Models\RateOverride;
-use App\Domains\Rates\Quote\QuoteIssue;
-use App\Domains\Rates\Quote\QuoteService;
-use App\Domains\Rates\Quote\StayRequest;
+use App\Domains\Rates\Quote\QuotePresenter;
 use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use Brick\Money\Money;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +22,7 @@ final class RatesController extends Controller
 {
     public function __construct(private readonly TenantContext $context) {}
 
-    public function __invoke(Request $request, QuoteService $quotes): Response
+    public function __invoke(Request $request, QuotePresenter $quotes): Response
     {
         $hotel = $this->context->hotel();
         $locale = $hotel->default_locale;
@@ -86,68 +80,9 @@ final class RatesController extends Controller
             ],
             'breakfastModes' => collect(BreakfastMode::cases())->map(fn (BreakfastMode $mode): array => ['value' => $mode->value, 'label' => $mode->label()])->values(),
             'childCharges' => collect(ChildCharge::cases())->map(fn (ChildCharge $charge): array => ['value' => $charge->value, 'label' => $charge->label()])->values(),
-            'quote' => Inertia::optional(fn (): array => $this->quote($request, $quotes)),
+            'quote' => Inertia::optional(fn (): array => $quotes->fromRequest($request)),
             'canManage' => $request->user()?->can('rates.manage') === true,
         ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function quote(Request $request, QuoteService $quotes): array
-    {
-        $hotel = $this->context->hotel();
-        $locale = $hotel->default_locale;
-
-        $input = $request->validate([
-            'category' => ['required', 'string'],
-            'check_in' => ['required', 'date_format:Y-m-d'],
-            'check_out' => ['required', 'date_format:Y-m-d'],
-            'adults' => ['required', 'integer', 'min:1', 'max:40'],
-            'children' => ['nullable', 'string', 'max:100'],
-            'rooms' => ['required', 'integer', 'min:1', 'max:20'],
-            'breakfast' => ['nullable', 'boolean'],
-            'extra_bed' => ['nullable', 'boolean'],
-        ]);
-
-        $ages = array_values(array_filter(array_map('trim', explode(',', (string) ($input['children'] ?? ''))), fn (string $age): bool => $age !== ''));
-
-        $quote = $quotes->quote(new StayRequest(
-            categoryId: (string) $input['category'],
-            checkIn: CarbonImmutable::parse((string) $input['check_in'], $hotel->timezone),
-            checkOut: CarbonImmutable::parse((string) $input['check_out'], $hotel->timezone),
-            adults: (int) $input['adults'],
-            childAges: array_map(fn (string $age): int => max(0, min(17, (int) $age)), $ages),
-            rooms: (int) $input['rooms'],
-            breakfast: (bool) ($input['breakfast'] ?? false),
-            extraBed: (bool) ($input['extra_bed'] ?? false),
-        ));
-
-        $format = fn (Money $money): string => MoneyFormatter::format($money, $locale);
-        $taxLines = fn (?TaxBreakdown $breakdown): array => $breakdown === null ? [] : array_map(fn (TaxLine $line): array => [
-            'name' => $line->rate->localizedName($locale, $locale),
-            'amount' => $format($line->amount),
-            'inclusive' => $line->inclusive,
-        ], $breakdown->lines);
-
-        return [
-            'bookable' => $quote->bookable(),
-            'issues' => array_map(fn (QuoteIssue $issue): string => $issue->message, $quote->issues),
-            'nights' => array_map(fn (array $night): array => [
-                'date' => $night['date'],
-                'rate' => $format($night['rate']),
-                'label' => $night['label'],
-                'available' => $night['available'],
-            ], $quote->nights),
-            'lines' => array_map(fn (array $line): array => [
-                'label' => $line['label'],
-                'quantity' => $line['quantity'],
-                'amount' => $format($line['amount']),
-            ], $quote->lines),
-            'subtotal' => $format($quote->subtotal),
-            'taxes' => [...$taxLines($quote->roomTaxes), ...$taxLines($quote->breakfastTaxes)],
-            'total' => $format($quote->total),
-        ];
     }
 
     private function overlaps(RateOverride $override): bool

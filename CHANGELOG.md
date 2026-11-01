@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S2.3 — Availability, holds and calendar
+
+#### Added
+
+- Availability per room category and night: rooms in service minus closures, rooms held back, active holds and booked rooms; nothing available on stop-sell nights. `AvailabilityService` answers any range in a fixed number of queries (four for any number of categories and nights).
+- Room holds while a booking is in progress (`HoldService`): place, extend, release, expire and convert to booked rooms (used by bookings in S3). Writers lock each night's inventory row in date order inside one transaction, so two requests for the last room are served one after the other and only one succeeds. A lapsed hold stops counting immediately; `holds:expire` (every minute) keeps statuses accurate; a lapsed hold can be revived only if the rooms are still free.
+- `inventory:rebuild` recalculates booked counts from their source records (converted holds until bookings arrive in S3).
+- Availability calendar (`/hotel/calendar`): categories against 14 or 30 nights with rooms free / in service and the nightly price, colour-coded; range actions to stop or reopen sales, hold rooms back, or set a price (as a rate override); manual holds with extend and release; and "Try a stay".
+- Quotes now use live availability, including holds, held-back rooms and calendar stop-sell.
+- A room category with holds can no longer be deleted.
+- A MySQL concurrency test where two database connections compete for the last room.
+- English and French text for the new screens.
+
+#### Changed
+
+- Nightly prices and restrictions after overrides are worked out in one place (`NightlyRates`) for quotes and the calendar; "Try a stay" is a shared component on the rates and calendar pages.
+
 ### S2.2 — Rates and quote engine
 
 #### Added

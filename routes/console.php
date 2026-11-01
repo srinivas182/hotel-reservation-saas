@@ -33,3 +33,9 @@ Schedule::job(new QueueHeartbeatJob)
 Schedule::command('model:prune', ['--model' => [EmailMessage::class]])
     ->name('prune:email-messages')
     ->daily();
+
+// Room holds: lapsed holds stop counting immediately; this keeps statuses accurate.
+Schedule::command('holds:expire')
+    ->name('holds:expire')
+    ->everyMinute()
+    ->withoutOverlapping();
