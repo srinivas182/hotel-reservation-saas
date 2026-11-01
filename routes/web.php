@@ -21,7 +21,10 @@ Route::post('csp-report', CspReportController::class)
     ->name('csp.report');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    // Hotel staff who handle bookings start on the Today screen.
+    Route::get('dashboard', fn () => request()->user()?->can('bookings.view') === true
+        ? to_route('hotel.today')
+        : Inertia\Inertia::render('dashboard'))->name('dashboard');
 
     Route::post('hotels/{hotel}/switch', SwitchHotelController::class)->name('hotels.switch');
 });

@@ -52,7 +52,7 @@ it('shares the current hotel permissions with the frontend', function (): void {
     $hotel = Hotel::factory()->create();
 
     asStaffOf($hotel, staffMember($hotel, SystemRole::ReadOnly))
-        ->get(route('dashboard'))
+        ->followingRedirects()->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($permissions): bool => collect($permissions)->sort()->values()->all() === ['audit.view', 'availability.view', 'bookings.export', 'bookings.view', 'hotel.settings.view', 'rates.view', 'rooms.view', 'staff.view', 'taxes.view', 'usage.view']));
 });
 

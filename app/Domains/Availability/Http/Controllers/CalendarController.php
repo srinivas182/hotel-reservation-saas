@@ -9,6 +9,7 @@ use App\Domains\Availability\Models\InventoryHold;
 use App\Domains\Rates\NightlyRates;
 use App\Domains\Rates\Quote\QuotePresenter;
 use App\Domains\Rooms\Models\RoomCategory;
+use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use Brick\Money\Money;
@@ -29,7 +30,7 @@ final class CalendarController extends Controller
     {
         $hotel = $this->context->hotel();
         $locale = $hotel->default_locale;
-        $today = CarbonImmutable::now($hotel->timezone)->startOfDay();
+        $today = HotelClock::today($hotel);
 
         $input = $request->validate([
             'start' => ['nullable', 'date_format:Y-m-d'],

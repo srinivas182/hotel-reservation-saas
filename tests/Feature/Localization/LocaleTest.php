@@ -16,14 +16,14 @@ it('uses the user\'s own language first', function (): void {
     $hotel = Hotel::factory()->create(['default_locale' => 'en']);
     $user = staffMember($hotel, SystemRole::Manager, ['preferred_locale' => 'fr']);
 
-    asStaffOf($hotel, $user)->get(route('dashboard'))->assertInertia(fn ($page) => $page->where('locale', 'fr'));
+    asStaffOf($hotel, $user)->followingRedirects()->get(route('dashboard'))->assertInertia(fn ($page) => $page->where('locale', 'fr'));
 });
 
 it('falls back to the hotel default, then the browser, then English', function (): void {
     $frHotel = Hotel::factory()->create(['default_locale' => 'fr']);
     $user = staffMember($frHotel, SystemRole::Reception, ['preferred_locale' => null]);
 
-    asStaffOf($frHotel, $user)->get(route('dashboard'))->assertInertia(fn ($page) => $page->where('locale', 'fr'));
+    asStaffOf($frHotel, $user)->followingRedirects()->get(route('dashboard'))->assertInertia(fn ($page) => $page->where('locale', 'fr'));
 
     app('auth')->forgetGuards();
     $this->flushSession();

@@ -11,6 +11,7 @@ use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Rooms\Models\RoomClosure;
 use App\Domains\Rooms\RoomInventory;
 use App\Domains\Rooms\RoomStatus;
+use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ final class RoomsController extends Controller
     {
         $hotel = $this->context->hotel();
         $locale = $hotel->default_locale;
-        $today = now($hotel->timezone)->startOfDay();
+        $today = HotelClock::today($hotel);
 
         $categories = RoomCategory::query()->orderBy('sort_order')->orderBy('code')->get();
         $rooms = Room::query()->orderBy('number')->get();

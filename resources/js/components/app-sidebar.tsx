@@ -7,6 +7,7 @@ import {
     BedDouble,
     CalendarDays,
     ClipboardList,
+    Sun,
     Tags,
     Mail,
     ScrollText,
@@ -19,6 +20,7 @@ import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/Us
 import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsController';
 import CalendarController from '@/actions/App/Domains/Availability/Http/Controllers/CalendarController';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
+import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/TodayController';
 import RatesController from '@/actions/App/Domains/Rates/Http/Controllers/RatesController';
 import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
 import UserController from '@/actions/App/Domains/Platform/Http/Controllers/UserController';
@@ -71,6 +73,9 @@ export function AppSidebar() {
         ...mainNavItems,
         ...(auth.permissions.includes('rooms.view')
             ? [{ title: 'Rooms', href: RoomsController(), icon: BedDouble }]
+            : []),
+        ...(auth.permissions.includes('bookings.view')
+            ? [{ title: 'Today', href: TodayController.index(), icon: Sun }]
             : []),
         ...(auth.permissions.includes('bookings.view')
             ? [
