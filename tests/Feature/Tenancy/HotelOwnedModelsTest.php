@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Access\Models\Role;
 use App\Domains\Audit\Models\AuditLog;
+use App\Domains\Messaging\Email\Models\EmailMessage;
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
 use App\Domains\Tenancy\Models\HotelMembership;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,8 @@ const HOTEL_SCOPING_ALLOWLIST = [
     // Scoped by the permission package's team ID (kept equal to the current
     // hotel by TenantContext) and always queried by hotel in HotelRoles.
     Role::class,
+    // The email log includes platform emails (no hotel); hotel pages filter it explicitly.
+    EmailMessage::class,
 ];
 
 it('scopes every model that has a hotel_id column', function (): void {

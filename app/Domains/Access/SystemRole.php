@@ -47,6 +47,7 @@ enum SystemRole: string
                 Permission::TaxesView,
                 Permission::StaffView,
                 Permission::AuditView,
+                Permission::UsageView,
             ],
         };
     }

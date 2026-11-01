@@ -9,6 +9,8 @@ use App\Domains\Access\Http\Controllers\StaffController;
 use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
+use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
+use App\Domains\Messaging\Http\Controllers\UsageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +43,12 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
 
     Route::get('hotel/audit', HotelAuditController::class)->middleware('can:audit.view')->name('hotel.audit');
 
+    Route::put('hotel/settings/email', [EmailIdentityController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.email.update');
+    Route::post('hotel/settings/email/resend', [EmailIdentityController::class, 'resend'])
+        ->middleware(['can:hotel.settings.manage', 'throttle:5,1'])
+        ->name('hotel.email.resend');
+    Route::get('hotel/usage', UsageController::class)->middleware('can:usage.view')->name('hotel.usage');
+
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');
     Route::middleware('can:taxes.manage')->group(function (): void {
         Route::post('hotel/taxes', [TaxRateController::class, 'store'])->name('hotel.taxes.store');
@@ -68,3 +76,7 @@ Route::get('invitations/{token}', [AcceptInvitationController::class, 'show'])
 Route::post('invitations/{token}', [AcceptInvitationController::class, 'store'])
     ->middleware('throttle:10,1')
     ->name('invitations.accept');
+
+Route::get('email/reply-to/{token}', [EmailIdentityController::class, 'verify'])
+    ->middleware('throttle:30,1')
+    ->name('email.reply-to.verify');

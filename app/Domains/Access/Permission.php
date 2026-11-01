@@ -20,6 +20,7 @@ enum Permission: string
     case TaxesView = 'taxes.view';
     case TaxesManage = 'taxes.manage';
     case AuditView = 'audit.view';
+    case UsageView = 'usage.view';
 
     public function group(): string
     {
@@ -38,6 +39,7 @@ enum Permission: string
             self::TaxesView => __('View taxes'),
             self::TaxesManage => __('Change taxes'),
             self::AuditView => __('View the audit log'),
+            self::UsageView => __('View usage'),
         };
     }
 

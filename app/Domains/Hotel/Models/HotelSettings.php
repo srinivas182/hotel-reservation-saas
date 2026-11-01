@@ -24,6 +24,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $late_checkout_until
  * @property array<string, list<array{from: string, to: string}>>|null $staffed_hours
  * @property list<string>|null $enabled_locales
+ * @property string|null $email_sender_name
+ * @property string|null $email_reply_to
+ * @property \Carbon\CarbonInterface|null $email_reply_to_verified_at
+ * @property string|null $email_reply_to_token_hash
+ * @property \Carbon\CarbonInterface|null $email_reply_to_token_expires_at
  */
 class HotelSettings extends Model
 {
@@ -46,6 +51,8 @@ class HotelSettings extends Model
         return [
             'staffed_hours' => 'array',
             'enabled_locales' => 'array',
+            'email_reply_to_verified_at' => 'datetime',
+            'email_reply_to_token_expires_at' => 'datetime',
         ];
     }
 

@@ -53,6 +53,13 @@ final class HotelSettingsController extends Controller
                 'datetime' => $now->isoFormat('LLLL'),
                 'money' => MoneyFormatter::format(Money::of(25000, $hotel->currency, roundingMode: \Brick\Math\RoundingMode::HalfUp), $hotel->default_locale),
             ],
+            'emailIdentity' => [
+                'sender_name' => $settings->email_sender_name,
+                'default_sender_name' => $hotel->name,
+                'reply_to' => $settings->email_reply_to,
+                'reply_to_verified' => $settings->email_reply_to_verified_at !== null,
+                'sending_address' => (string) config('mail.from.address'),
+            ],
             'canManage' => $request->user()?->can('hotel.settings.manage') === true,
         ]);
     }
