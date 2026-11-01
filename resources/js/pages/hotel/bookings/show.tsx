@@ -1,4 +1,14 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
+import BookingActionController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingActionController';
+import {
+    CancelBooking,
+    ModifyStay,
+    RoomNumbers,
+} from '@/components/bookings/booking-actions';
+import type { Actions, EditStay } from '@/components/bookings/booking-actions';
+import type { QuoteResult } from '@/components/rates/try-a-stay';
+import { Button } from '@/components/ui/button';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
 import Heading from '@/components/heading';
@@ -33,7 +43,11 @@ type Booking = {
         email: string | null;
         preferred_locale: string | null;
     };
-    rooms_list: { position: number; number: string | null }[];
+    rooms_list: {
+        position: number;
+        room_id: string | null;
+        number: string | null;
+    }[];
     price: {
         nights: { date: string; rate: string; label: string | null }[];
         lines: { label: string; quantity: number; amount: string }[];
@@ -50,6 +64,13 @@ type Props = {
         by: string | null;
         at: string | null;
     }[];
+    actions: Actions;
+    eligibleRooms: { id: string; number: string; floor: string | null }[];
+    suggestedRoom: string | null;
+    editStay: EditStay;
+    categories: { id: string; name: string; extra_bed_allowed: boolean }[];
+    today: string;
+    quote?: QuoteResult;
 };
 
 function Row({
@@ -67,7 +88,23 @@ function Row({
     );
 }
 
-export default function ShowBooking({ booking, timeline }: Props) {
+export default function ShowBooking({
+    booking,
+    timeline,
+    actions,
+    eligibleRooms,
+    suggestedRoom,
+    editStay,
+    categories,
+    quote,
+}: Props) {
+    const [panel, setPanel] = useState<'modify' | 'cancel' | null>(null);
+    const post = (url: string, message?: string) => {
+        if (!message || window.confirm(message)) {
+            router.post(url, {}, { preserveScroll: true });
+        }
+    };
+
     return (
         <>
             <Head title={booking.reference} />
@@ -83,6 +120,120 @@ export default function ShowBooking({ booking, timeline }: Props) {
                             label={booking.status_label}
                         />
                     </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {actions.confirm && (
+                            <Button
+                                onClick={() =>
+                                    post(
+                                        BookingActionController.confirm.url(
+                                            booking.id,
+                                        ),
+                                    )
+                                }
+                            >
+                                {t('Confirm booking')}
+                            </Button>
+                        )}
+                        {actions.check_out && (
+                            <Button
+                                onClick={() =>
+                                    post(
+                                        BookingActionController.checkOut.url(
+                                            booking.id,
+                                        ),
+                                        actions.early_departure
+                                            ? t(
+                                                  'Check out early? The remaining nights go back on sale.',
+                                              )
+                                            : undefined,
+                                    )
+                                }
+                            >
+                                {actions.early_departure
+                                    ? t('Check out early')
+                                    : t('Check out')}
+                            </Button>
+                        )}
+                        {actions.modify && (
+                            <Button
+                                variant="outline"
+                                onClick={() =>
+                                    setPanel(
+                                        panel === 'modify' ? null : 'modify',
+                                    )
+                                }
+                            >
+                                {t('Change stay')}
+                            </Button>
+                        )}
+                        {actions.no_show && (
+                            <Button
+                                variant="outline"
+                                onClick={() =>
+                                    post(
+                                        BookingActionController.noShow.url(
+                                            booking.id,
+                                        ),
+                                        t(
+                                            'Mark this guest as a no-show? All nights go back on sale.',
+                                        ),
+                                    )
+                                }
+                            >
+                                {t('No-show')}
+                            </Button>
+                        )}
+                        {actions.cancel && (
+                            <Button
+                                variant="ghost"
+                                className="text-destructive"
+                                onClick={() =>
+                                    setPanel(
+                                        panel === 'cancel' ? null : 'cancel',
+                                    )
+                                }
+                            >
+                                {t('Cancel booking')}
+                            </Button>
+                        )}
+                    </div>
+
+                    {panel === 'modify' && (
+                        <ModifyStay
+                            bookingId={booking.id}
+                            stay={editStay}
+                            categories={categories}
+                            quote={quote}
+                            canOverride={actions.override_price}
+                            onDone={() => setPanel(null)}
+                        />
+                    )}
+                    {panel === 'cancel' && (
+                        <CancelBooking
+                            bookingId={booking.id}
+                            onDone={() => setPanel(null)}
+                        />
+                    )}
+
+                    {(actions.assign_rooms || actions.check_in) && (
+                        <section className="rounded-xl border p-4">
+                            <Heading
+                                variant="small"
+                                title={t('Room numbers')}
+                            />
+                            <div className="mt-3">
+                                <RoomNumbers
+                                    bookingId={booking.id}
+                                    lines={booking.rooms_list}
+                                    eligible={eligibleRooms}
+                                    suggested={suggestedRoom}
+                                    canAssign={actions.assign_rooms}
+                                    canCheckIn={actions.check_in}
+                                />
+                            </div>
+                        </section>
+                    )}
 
                     {booking.status === 'tentative' &&
                         booking.tentative_until && (

@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S3.2 — Booking lifecycle
+
+#### Added
+
+- Confirm a tentative booking (its hold becomes booked rooms; after the deadline only if the rooms are still free).
+- Tentative bookings not confirmed in time are cancelled automatically and free their rooms (`bookings:expire-tentative`, every minute).
+- Change a booking's dates, room category, number of rooms or guests: the stay is priced again and its rooms reserved in the same locked transaction that gives back the old nights, so the booking can grow into its own nights and nothing changes if the new rooms are taken. An agreed price must be given again; room numbers that no longer fit are removed.
+- Cancel (reason required) and mark no-shows (from the arrival date), freeing all nights at once.
+- Room numbers: only rooms of the booked category that are in service, not closed and not given to another current booking on any of the same nights can be chosen; the room row is locked while it is given; the system suggests a free room. Moves during a stay are recorded.
+- Check-in on the arrival date with a room number for every room (all-or-nothing), and check-out; leaving before the departure date shortens the stay (the first night always counts) and puts the unused nights back on sale.
+- Actions on the booking page according to the booking's status and the user's permissions; refused actions come back as clear messages. Every action is audited and shown in the booking history.
+- English and French text.
+
 ### S3.1 — Guests and bookings
 
 #### Added
