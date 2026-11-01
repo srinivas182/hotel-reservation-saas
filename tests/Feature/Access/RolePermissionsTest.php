@@ -53,7 +53,7 @@ it('shares the current hotel permissions with the frontend', function (): void {
 
     asStaffOf($hotel, staffMember($hotel, SystemRole::ReadOnly))
         ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($permissions): bool => collect($permissions)->sort()->values()->all() === ['audit.view', 'hotel.settings.view', 'staff.view', 'taxes.view', 'usage.view']));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($permissions): bool => collect($permissions)->sort()->values()->all() === ['audit.view', 'availability.view', 'hotel.settings.view', 'rates.view', 'rooms.view', 'staff.view', 'taxes.view', 'usage.view']));
 });
 
 it('keeps system roles in sync with the code', function (): void {
@@ -62,5 +62,6 @@ it('keeps system roles in sync with the code', function (): void {
 
     $this->artisan('permissions:sync')->assertSuccessful();
 
-    expect(systemRole($hotel, SystemRole::Reception)->permissions->pluck('name')->all())->toBe(['staff.view']);
+    expect(systemRole($hotel, SystemRole::Reception)->permissions->pluck('name')->sort()->values()->all())
+        ->toBe(['availability.manage', 'availability.view', 'rates.view', 'rooms.view', 'staff.view']);
 });

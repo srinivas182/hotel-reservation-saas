@@ -40,7 +40,13 @@ enum SystemRole: string
                 Permission::cases(),
                 fn (Permission $permission): bool => $permission !== Permission::RolesManage,
             )),
-            self::Reception => [Permission::StaffView],
+            self::Reception => [
+                Permission::StaffView,
+                Permission::RoomsView,
+                Permission::RatesView,
+                Permission::AvailabilityView,
+                Permission::AvailabilityManage,
+            ],
             self::RestaurantBar, self::EventsCoordinator => [],
             self::ReadOnly => [
                 Permission::HotelSettingsView,
@@ -48,6 +54,9 @@ enum SystemRole: string
                 Permission::StaffView,
                 Permission::AuditView,
                 Permission::UsageView,
+                Permission::RoomsView,
+                Permission::RatesView,
+                Permission::AvailabilityView,
             ],
         };
     }

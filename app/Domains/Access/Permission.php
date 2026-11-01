@@ -21,6 +21,12 @@ enum Permission: string
     case TaxesManage = 'taxes.manage';
     case AuditView = 'audit.view';
     case UsageView = 'usage.view';
+    case RoomsView = 'rooms.view';
+    case RoomsManage = 'rooms.manage';
+    case RatesView = 'rates.view';
+    case RatesManage = 'rates.manage';
+    case AvailabilityView = 'availability.view';
+    case AvailabilityManage = 'availability.manage';
 
     public function group(): string
     {
@@ -40,6 +46,12 @@ enum Permission: string
             self::TaxesManage => __('Change taxes'),
             self::AuditView => __('View the audit log'),
             self::UsageView => __('View usage'),
+            self::RoomsView => __('View rooms'),
+            self::RoomsManage => __('Change room categories, rooms and closures'),
+            self::RatesView => __('View rates'),
+            self::RatesManage => __('Change rates'),
+            self::AvailabilityView => __('View availability and quotes'),
+            self::AvailabilityManage => __('Stop sales, hold back rooms and place holds'),
         };
     }
 

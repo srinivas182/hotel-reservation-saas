@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S2.1 — Room categories, rooms and closures
+
+#### Added
+
+- Rooms page (`/hotel/rooms`): room categories with names and descriptions per enabled language, a short code, guests included in the price, maximum adults, children and guests, extra bed, amenities from a fixed list, on-sale switch and order. Categories with rooms cannot be deleted (switch them off instead).
+- Rooms: unique number per hotel, category, floor, status (in service, out of order, maintenance), notes; add one room or a numbered range (up to 200 at a time, existing numbers skipped).
+- Room closures for date ranges with a reason (both dates are closed nights); overlapping closures are refused.
+- `RoomInventory`: sellable rooms per category and night (rooms in service minus closures) in two queries for any date range; the base for availability in S2.3.
+- New permissions: `rooms.view`, `rooms.manage`, `rates.view`, `rates.manage`, `availability.view`, `availability.manage`. Reception can view rooms, rates and availability and manage availability; Read-only can view them.
+- All changes audited; English and French text (496 strings).
+- Local demo data: First Class Lodge with its 4 categories and 26 rooms.
+
 ### S1.4 — Email platform and usage
 
 #### Added
