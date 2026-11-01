@@ -136,6 +136,23 @@ final class HoldService
     }
 
     /**
+     * Give back booked rooms for a range of nights (cancellation, no-show,
+     * early departure, or the old dates of a changed booking).
+     */
+    public function unbook(string $categoryId, CarbonImmutable $checkIn, CarbonImmutable $checkOut, int $rooms): void
+    {
+        if ($checkOut->lte($checkIn) || $rooms < 1) {
+            return;
+        }
+
+        DB::transaction(function () use ($categoryId, $checkIn, $checkOut, $rooms): void {
+            foreach ($this->lockNights($categoryId, $checkIn, $checkOut) as $day) {
+                $day->forceFill(['booked' => max(0, $day->booked - $rooms)])->save();
+            }
+        });
+    }
+
+    /**
      * Mark lapsed holds as expired in the current hotel. Lapsed holds already
      * stopped counting when they lapsed; this keeps statuses accurate.
      */

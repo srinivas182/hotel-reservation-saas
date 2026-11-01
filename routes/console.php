@@ -39,3 +39,9 @@ Schedule::command('holds:expire')
     ->name('holds:expire')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Tentative bookings that were not confirmed in time free their rooms.
+Schedule::command('bookings:expire-tentative')
+    ->name('bookings:expire-tentative')
+    ->everyMinute()
+    ->withoutOverlapping();

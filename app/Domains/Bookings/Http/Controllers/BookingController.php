@@ -14,10 +14,12 @@ use App\Domains\Bookings\Http\Requests\StoreBookingRequest;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Bookings\Models\BookingRoom;
 use App\Domains\Bookings\NewBooking;
+use App\Domains\Bookings\RoomAssignments;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Hotel\Support\Locales;
 use App\Domains\Rates\Quote\QuotePresenter;
 use App\Domains\Rates\Quote\StayRequest;
+use App\Domains\Rooms\Models\Room;
 use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
@@ -160,7 +162,7 @@ final class BookingController extends Controller
         return to_route('hotel.bookings.show', $booking);
     }
 
-    public function show(Booking $booking): Response
+    public function show(Request $request, Booking $booking, RoomAssignments $assignments, QuotePresenter $quotes): Response
     {
         $hotel = $this->context->hotel();
         $locale = $hotel->default_locale;
@@ -204,6 +206,7 @@ final class BookingController extends Controller
                 ],
                 'rooms_list' => $booking->bookingRooms->map(fn (BookingRoom $room): array => [
                     'position' => $room->position,
+                    'room_id' => $room->room_id,
                     'number' => $room->room?->number,
                 ])->values(),
                 'price' => [
@@ -226,6 +229,33 @@ final class BookingController extends Controller
                 ],
             ],
             'timeline' => $timeline,
+            'actions' => $this->actions($request, $booking),
+            'eligibleRooms' => in_array($booking->status, [BookingStatus::Tentative, BookingStatus::Confirmed, BookingStatus::CheckedIn], true)
+                ? $assignments->eligibleRooms($booking)->map(fn (Room $room): array => [
+                    'id' => $room->id,
+                    'number' => $room->number,
+                    'floor' => $room->floor,
+                ])->values()
+                : [],
+            'suggestedRoom' => $booking->status === BookingStatus::Confirmed ? $assignments->suggest($booking)?->id : null,
+            'editStay' => [
+                'room_category_id' => $booking->room_category_id,
+                'check_in' => $booking->check_in->toDateString(),
+                'check_out' => $booking->check_out->toDateString(),
+                'adults' => $booking->adults,
+                'children' => implode(', ', array_map(fn ($age): string => (string) $age, array_filter($booking->children_ages, fn ($age): bool => $age !== null))),
+                'rooms' => $booking->rooms,
+                'breakfast' => $booking->breakfast,
+                'extra_bed' => $booking->extra_bed,
+            ],
+            'categories' => RoomCategory::query()->where('active', true)->orderBy('sort_order')->orderBy('code')->get()
+                ->map(fn (RoomCategory $category): array => [
+                    'id' => $category->id,
+                    'name' => $category->localizedName($locale, $locale),
+                    'extra_bed_allowed' => $category->extra_bed_allowed,
+                ])->values(),
+            'today' => CarbonImmutable::now($hotel->timezone)->toDateString(),
+            'quote' => Inertia::optional(fn (): array => $quotes->fromRequest($request)),
         ]);
     }
 
@@ -250,6 +280,33 @@ final class BookingController extends Controller
             'rooms' => $booking->rooms,
             'guests' => $booking->adults + count($booking->children_ages),
             'total' => MoneyFormatter::format(Money::ofMinor($booking->total_minor, $booking->currency), $locale),
+        ];
+    }
+
+    /**
+     * Which actions the user can take on the booking now.
+     *
+     * @return array<string, bool>
+     */
+    private function actions(Request $request, Booking $booking): array
+    {
+        $user = $request->user();
+        $manage = $user?->can('bookings.manage') === true;
+        $frontdesk = $user?->can('bookings.frontdesk') === true;
+        $status = $booking->status;
+        $today = CarbonImmutable::now($this->context->hotel()->timezone)->startOfDay();
+        $current = in_array($status, [BookingStatus::Tentative, BookingStatus::Confirmed], true);
+
+        return [
+            'confirm' => $manage && $status === BookingStatus::Tentative,
+            'modify' => $manage && $current,
+            'cancel' => $manage && $current,
+            'no_show' => $manage && $status === BookingStatus::Confirmed && $booking->check_in->lte($today),
+            'assign_rooms' => $frontdesk && in_array($status, [BookingStatus::Tentative, BookingStatus::Confirmed, BookingStatus::CheckedIn], true),
+            'check_in' => $frontdesk && $status === BookingStatus::Confirmed && $booking->check_in->lte($today) && $booking->check_out->gt($today),
+            'check_out' => $frontdesk && $status === BookingStatus::CheckedIn,
+            'early_departure' => $status === BookingStatus::CheckedIn && $booking->check_out->gt($today->max($booking->check_in->addDay())),
+            'override_price' => $user?->can('bookings.override_price') === true,
         ];
     }
 }

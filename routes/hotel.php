@@ -9,6 +9,7 @@ use App\Domains\Access\Http\Controllers\StaffController;
 use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Availability\Http\Controllers\CalendarController;
 use App\Domains\Availability\Http\Controllers\InventoryController;
+use App\Domains\Bookings\Http\Controllers\BookingActionController;
 use App\Domains\Bookings\Http\Controllers\BookingController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
@@ -95,6 +96,17 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::get('hotel/bookings/new', [BookingController::class, 'create'])->middleware('can:bookings.create')->name('hotel.bookings.create');
     Route::post('hotel/bookings', [BookingController::class, 'store'])->middleware('can:bookings.create')->name('hotel.bookings.store');
     Route::get('hotel/bookings/{booking}', [BookingController::class, 'show'])->middleware('can:bookings.view')->name('hotel.bookings.show');
+    Route::middleware('can:bookings.manage')->group(function (): void {
+        Route::post('hotel/bookings/{booking}/confirm', [BookingActionController::class, 'confirm'])->name('hotel.bookings.confirm');
+        Route::post('hotel/bookings/{booking}/cancel', [BookingActionController::class, 'cancel'])->name('hotel.bookings.cancel');
+        Route::post('hotel/bookings/{booking}/no-show', [BookingActionController::class, 'noShow'])->name('hotel.bookings.no-show');
+        Route::put('hotel/bookings/{booking}', [BookingActionController::class, 'update'])->name('hotel.bookings.update');
+    });
+    Route::middleware('can:bookings.frontdesk')->group(function (): void {
+        Route::put('hotel/bookings/{booking}/rooms/{position}', [BookingActionController::class, 'assignRoom'])->whereNumber('position')->name('hotel.bookings.rooms.assign');
+        Route::post('hotel/bookings/{booking}/check-in', [BookingActionController::class, 'checkIn'])->name('hotel.bookings.check-in');
+        Route::post('hotel/bookings/{booking}/check-out', [BookingActionController::class, 'checkOut'])->name('hotel.bookings.check-out');
+    });
 
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');
     Route::middleware('can:taxes.manage')->group(function (): void {
