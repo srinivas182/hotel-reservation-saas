@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S3.1 — Guests and bookings
+
+#### Added
+
+- Guests per hotel, found by phone number (the key WhatsApp will use), with language, notes and WhatsApp and promotional consent flags (off by default). No identity documents are stored.
+- Bookings: one guest, one room category, one or more rooms (each room is its own line for room numbers), channel and the other site's reference, group label, notes and a payment or deposit note.
+- References such as `FCL-26-0042`: hotel prefix (from the hotel's initials, or set in Hotel settings), year and a locked sequence per hotel and year.
+- Quick booking (`/hotel/bookings/new`): live price from the quote engine as the stay is typed, returning guests filled in from their phone number, confirmed or tentative, optional agreed price with a required reason (`bookings.override_price`).
+- Confirmed bookings book their nights at once; tentative bookings hold their rooms until their deadline (hours set in Hotel settings). Both use the S2.3 locking, so a booking can never take a room that is not free.
+- The full quote (nights, extras, taxes, total) is saved with each booking, so later rate changes never alter it.
+- Bookings list with search (reference, name, phone) and filters, and a booking page with the stay, guest, saved price and history.
+- Permissions `bookings.view`, `bookings.create`, `bookings.manage`, `bookings.frontdesk`, `bookings.override_price` and `bookings.export`, added to the system roles as agreed.
+- `inventory:rebuild` now recounts booked rooms from bookings.
+- English and French text.
+
 ### S2.3 — Availability, holds and calendar
 
 #### Added

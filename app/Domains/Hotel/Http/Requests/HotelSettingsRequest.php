@@ -30,6 +30,8 @@ final class HotelSettingsRequest extends FormRequest
             'phone_e164' => $clean($this->input('phone_e164')),
             'whatsapp_display_e164' => $clean($this->input('whatsapp_display_e164')),
             'currency' => strtoupper((string) $this->input('currency')),
+            'booking_prefix' => $this->filled('booking_prefix') ? strtoupper(trim((string) $this->input('booking_prefix'))) : null,
+            'tentative_hours' => $this->input('tentative_hours', 24),
             'enabled_locales' => array_values(array_unique((array) $this->input('enabled_locales', []))),
         ]);
     }
@@ -52,6 +54,8 @@ final class HotelSettingsRequest extends FormRequest
             'check_in_time' => ['required', 'date_format:H:i'],
             'check_out_time' => ['required', 'date_format:H:i'],
             'late_checkout_until' => ['nullable', 'date_format:H:i', 'after:check_out_time'],
+            'booking_prefix' => ['nullable', 'string', 'regex:/^[A-Z0-9]{2,6}$/'],
+            'tentative_hours' => ['required', 'integer', 'min:1', 'max:720'],
             'staffed_hours' => ['nullable', 'array:'.implode(',', self::DAYS)],
             'staffed_hours.*' => ['array', 'max:3'],
             'staffed_hours.*.*.from' => ['required', 'date_format:H:i'],
@@ -89,6 +93,7 @@ final class HotelSettingsRequest extends FormRequest
         return [
             'phone_e164.regex' => __('Use the international format, for example +2250700000000.'),
             'whatsapp_display_e164.regex' => __('Use the international format, for example +2250700000000.'),
+            'booking_prefix.regex' => __('Use 2 to 6 capital letters or digits.'),
             'late_checkout_until.after' => __('Late check-out must be after the normal check-out time.'),
         ];
     }

@@ -9,6 +9,7 @@ use App\Domains\Access\Http\Controllers\StaffController;
 use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Availability\Http\Controllers\CalendarController;
 use App\Domains\Availability\Http\Controllers\InventoryController;
+use App\Domains\Bookings\Http\Controllers\BookingController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
@@ -89,6 +90,11 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/holds/{inventoryHold}/extend', [InventoryController::class, 'extendHold'])->name('hotel.holds.extend');
         Route::delete('hotel/holds/{inventoryHold}', [InventoryController::class, 'releaseHold'])->name('hotel.holds.release');
     });
+
+    Route::get('hotel/bookings', [BookingController::class, 'index'])->middleware('can:bookings.view')->name('hotel.bookings.index');
+    Route::get('hotel/bookings/new', [BookingController::class, 'create'])->middleware('can:bookings.create')->name('hotel.bookings.create');
+    Route::post('hotel/bookings', [BookingController::class, 'store'])->middleware('can:bookings.create')->name('hotel.bookings.store');
+    Route::get('hotel/bookings/{booking}', [BookingController::class, 'show'])->middleware('can:bookings.view')->name('hotel.bookings.show');
 
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');
     Route::middleware('can:taxes.manage')->group(function (): void {
