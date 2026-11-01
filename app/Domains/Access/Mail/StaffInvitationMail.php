@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Access\Mail;
 
+use App\Domains\Messaging\Email\Concerns\HasEmailCategory;
+use App\Domains\Messaging\Email\EmailCategory;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -18,7 +20,7 @@ use Illuminate\Queue\SerializesModels;
  */
 final class StaffInvitationMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use HasEmailCategory, Queueable, SerializesModels;
 
     public function __construct(
         public readonly string $hotelName,
@@ -37,5 +39,10 @@ final class StaffInvitationMail extends Mailable
     public function content(): Content
     {
         return new Content(markdown: 'mail.staff-invitation');
+    }
+
+    protected function emailCategory(): EmailCategory
+    {
+        return EmailCategory::Security;
     }
 }

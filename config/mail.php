@@ -37,7 +37,18 @@ return [
     |
     */
 
+    /*
+    | The "platform" mailer sends through the providers configured in platform
+    | admin, with failover, logging and usage metering. With no provider
+    | enabled it uses this fallback mailer (Mailpit locally, array in tests).
+    */
+    'platform_fallback' => env('MAIL_FALLBACK_MAILER', 'log'),
+
     'mailers' => [
+
+        'platform' => [
+            'transport' => 'platform',
+        ],
 
         'smtp' => [
             'transport' => 'smtp',

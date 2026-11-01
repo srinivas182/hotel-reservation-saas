@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { EmailIdentityForm } from '@/components/hotel/email-identity-form';
+import type { EmailIdentity } from '@/components/hotel/email-identity-form';
 
 type Interval = { from: string; to: string };
 type StaffedHours = Record<string, Interval[]>;
 
 type Props = {
+    emailIdentity: EmailIdentity;
     hotel: {
         name: string;
         legal_name: string | null;
@@ -82,6 +85,7 @@ export default function HotelSettingsPage({
     options,
     preview,
     canManage,
+    emailIdentity,
 }: Props) {
     const form = useForm({
         name: hotel.name,
@@ -595,6 +599,14 @@ export default function HotelSettingsPage({
                     )}
                 </fieldset>
             </form>
+            <div className="max-w-3xl p-4 pt-0">
+                <div className="border-t pt-10">
+                    <EmailIdentityForm
+                        identity={emailIdentity}
+                        canManage={canManage}
+                    />
+                </div>
+            </div>
         </>
     );
 }

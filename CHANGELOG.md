@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S1.4 — Email platform and usage
+
+#### Added
+
+- Email providers managed by super admins in platform admin (`/platform/mail-providers`): Brevo, Amazon SES, Postmark, Mailgun, Resend and any SMTP server, all over authenticated SMTP. Enable or disable, order of use, sending address on the verified platform domain, test email with the last result. Credentials are encrypted and never sent back to the browser (a saved secret is kept when its field is left blank). Changes are audited.
+- `platform` mailer: tries enabled providers in order and fails over to the next; sends from the provider's address while keeping the display name; uses `MAIL_FALLBACK_MAILER` when no provider is enabled (Mailpit locally, array in tests).
+- Email categories (security, account, guest, operational, marketing). Security and account emails are never counted or blocked; the others are checked against the hotel's allowance (unlimited until packages arrive in S13) and logged as blocked when refused.
+- Email log of every attempt (sent, failed, blocked) with hotel, provider and recipients; subjects of security emails are not stored; entries are pruned after 90 days.
+- Append-only usage ledger (`usage_records`) recording each sent countable email once per recipient; the basis for credits and billing in S13.
+- Hotel email identity in Hotel settings: sender name (defaults to the hotel name) and a reply-to address that is used only after it is confirmed by email (48-hour link); until then replies go to the hotel's contact email.
+- Usage page (`/hotel/usage`, new `usage.view` permission for Owner, Manager and Read-only): emails this month by type, failures, the last 30 days, and the limit ("Unlimited (pilot)").
+- Platform-wide email totals for the last 30 days on the providers page.
+- English and French text for all new screens and emails.
+
+#### Changed
+
+- `MAIL_MAILER` defaults to `platform`; staff invitations are tagged as security emails.
+
 ### S1.3 — Languages, formatting, hotel audit log and platform users
 
 #### Added

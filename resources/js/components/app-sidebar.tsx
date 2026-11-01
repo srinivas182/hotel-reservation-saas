@@ -3,12 +3,16 @@ import {
     Building2,
     LayoutGrid,
     Percent,
+    BarChart3,
+    Mail,
     ScrollText,
     Settings2,
     UserCog,
     Users,
 } from 'lucide-react';
 import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/HotelAuditController';
+import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
+import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
 import UserController from '@/actions/App/Domains/Platform/Http/Controllers/UserController';
 import TaxRateController from '@/actions/App/Domains/Finance/Http/Controllers/TaxRateController';
 import HotelSettingsController from '@/actions/App/Domains/Hotel/Http/Controllers/HotelSettingsController';
@@ -87,6 +91,21 @@ export function AppSidebar() {
                   },
               ]
             : []),
+        ...(auth.permissions.includes('usage.view')
+            ? [{ title: 'Usage', href: UsageController(), icon: BarChart3 }]
+            : []),
+    ];
+    const platformItems: NavItem[] = [
+        ...platformNavItems,
+        ...(auth.user.platform_role === 'super_admin'
+            ? [
+                  {
+                      title: 'Email providers',
+                      href: MailProviderController.index(),
+                      icon: Mail,
+                  },
+              ]
+            : []),
     ];
 
     return (
@@ -109,7 +128,7 @@ export function AppSidebar() {
                 {isPlatformStaff && (
                     <NavMain
                         label={t('Platform admin')}
-                        items={platformNavItems}
+                        items={platformItems}
                     />
                 )}
             </SidebarContent>
