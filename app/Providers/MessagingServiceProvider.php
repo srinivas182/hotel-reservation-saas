@@ -18,6 +18,10 @@ final class MessagingServiceProvider extends ServiceProvider
     {
         $this->app->bind(EmailAllowance::class, UnlimitedEmailAllowance::class);
         $this->app->bind(MailTransportFactory::class);
+        $this->app->bind(\App\Domains\WhatsApp\Graph\GraphClient::class);
+
+        // WhatsApp webhook handlers by change kind (more are added in S4.2 and S4.3).
+        $this->app->tag([\App\Domains\WhatsApp\Webhooks\AccountUpdateHandler::class], 'whatsapp.webhook-handlers');
     }
 
     public function boot(): void

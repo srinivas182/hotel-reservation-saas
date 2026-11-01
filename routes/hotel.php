@@ -25,6 +25,7 @@ use App\Domains\Rooms\Http\Controllers\RoomCategoryController;
 use App\Domains\Rooms\Http\Controllers\RoomClosureController;
 use App\Domains\Rooms\Http\Controllers\RoomController;
 use App\Domains\Rooms\Http\Controllers\RoomsController;
+use App\Domains\WhatsApp\Http\Controllers\WhatsAppConnectionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -92,6 +93,13 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/holds', [InventoryController::class, 'placeHold'])->name('hotel.holds.store');
         Route::post('hotel/holds/{inventoryHold}/extend', [InventoryController::class, 'extendHold'])->name('hotel.holds.extend');
         Route::delete('hotel/holds/{inventoryHold}', [InventoryController::class, 'releaseHold'])->name('hotel.holds.release');
+    });
+
+    Route::middleware('can:whatsapp.connect')->group(function (): void {
+        Route::get('hotel/whatsapp', [WhatsAppConnectionController::class, 'show'])->name('hotel.whatsapp');
+        Route::post('hotel/whatsapp/connect', [WhatsAppConnectionController::class, 'connect'])->middleware('throttle:10,1')->name('hotel.whatsapp.connect');
+        Route::post('hotel/whatsapp/check', [WhatsAppConnectionController::class, 'check'])->middleware('throttle:10,1')->name('hotel.whatsapp.check');
+        Route::delete('hotel/whatsapp', [WhatsAppConnectionController::class, 'disconnect'])->middleware('password.confirm')->name('hotel.whatsapp.disconnect');
     });
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');

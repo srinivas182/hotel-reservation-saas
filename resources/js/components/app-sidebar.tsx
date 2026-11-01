@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Building2,
     LayoutGrid,
+    MessageCircle,
     Percent,
     BarChart3,
     BedDouble,
@@ -24,6 +25,8 @@ import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/Tod
 import RatesController from '@/actions/App/Domains/Rates/Http/Controllers/RatesController';
 import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
 import UserController from '@/actions/App/Domains/Platform/Http/Controllers/UserController';
+import WhatsAppPlatformController from '@/actions/App/Domains/Platform/Http/Controllers/WhatsAppPlatformController';
+import WhatsAppConnectionController from '@/actions/App/Domains/WhatsApp/Http/Controllers/WhatsAppConnectionController';
 import TaxRateController from '@/actions/App/Domains/Finance/Http/Controllers/TaxRateController';
 import HotelSettingsController from '@/actions/App/Domains/Hotel/Http/Controllers/HotelSettingsController';
 import StaffController from '@/actions/App/Domains/Access/Http/Controllers/StaffController';
@@ -63,6 +66,11 @@ const platformNavItems: NavItem[] = [
         title: 'Users',
         href: UserController.index(),
         icon: UserCog,
+    },
+    {
+        title: 'WhatsApp',
+        href: WhatsAppPlatformController(),
+        icon: MessageCircle,
     },
 ];
 
@@ -130,6 +138,15 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('usage.view')
             ? [{ title: 'Usage', href: UsageController(), icon: BarChart3 }]
+            : []),
+        ...(auth.permissions.includes('whatsapp.connect')
+            ? [
+                  {
+                      title: 'WhatsApp',
+                      href: WhatsAppConnectionController.show(),
+                      icon: MessageCircle,
+                  },
+              ]
             : []),
     ];
     const platformItems: NavItem[] = [

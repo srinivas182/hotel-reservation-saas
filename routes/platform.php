@@ -6,6 +6,7 @@ use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
 use App\Domains\Platform\Http\Controllers\MailProviderController;
 use App\Domains\Platform\Http\Controllers\UserController;
+use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +34,8 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::post('mail-providers/{mailProvider}/test', [MailProviderController::class, 'test'])
             ->middleware('throttle:10,1')
             ->name('mail-providers.test');
+
+        Route::get('whatsapp', WhatsAppPlatformController::class)->name('whatsapp');
 
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::post('users', [UserController::class, 'store'])->name('users.store');

@@ -33,6 +33,9 @@ enum Permission: string
     case BookingsFrontdesk = 'bookings.frontdesk';
     case BookingsOverridePrice = 'bookings.override_price';
     case BookingsExport = 'bookings.export';
+    case WhatsAppConnect = 'whatsapp.connect';
+    case ConversationsView = 'conversations.view';
+    case ConversationsReply = 'conversations.reply';
 
     public function group(): string
     {
@@ -64,6 +67,9 @@ enum Permission: string
             self::BookingsFrontdesk => __('Check guests in and out and give room numbers'),
             self::BookingsOverridePrice => __('Change booking prices'),
             self::BookingsExport => __('Export bookings'),
+            self::WhatsAppConnect => __('Connect WhatsApp and manage message templates'),
+            self::ConversationsView => __('View WhatsApp conversations'),
+            self::ConversationsReply => __('Reply to WhatsApp conversations'),
         };
     }
 

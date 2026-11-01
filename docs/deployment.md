@@ -84,3 +84,27 @@ openssl enc -d -aes-256-cbc -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY \
 ```
 
 A restore test is part of the pilot readiness checklist (S8).
+
+## WhatsApp (Meta)
+
+MCS connects to the WhatsApp Cloud API as a Meta Tech Provider. One Meta app
+serves every hotel; each hotel connects its own number from Hotel settings →
+WhatsApp (Embedded Signup v4) and pays Meta directly.
+
+Set these in the server's `.env` (never commit them):
+
+| Variable                 | Where it comes from                                                 |
+| ------------------------ | ------------------------------------------------------------------- |
+| `WHATSAPP_APP_ID`        | App Dashboard, top of the page                                      |
+| `WHATSAPP_APP_SECRET`    | App Dashboard → App settings → Basic                                |
+| `WHATSAPP_CONFIG_ID`     | Facebook Login for Business → Configurations (Embedded Signup v4)   |
+| `WHATSAPP_VERIFY_TOKEN`  | Any long random string; the same value goes in the webhook settings |
+| `WHATSAPP_GRAPH_VERSION` | Graph API version, e.g. `v23.0`                                     |
+
+Webhook address for Meta: `https://<staging or production host>/webhooks/whatsapp`.
+Subscribe to: `messages`, `message_template_status_update`,
+`phone_number_quality_update`, `account_update`, and for numbers shared with
+the WhatsApp Business app, `smb_message_echoes`.
+
+The Platform → WhatsApp page shows which settings are present, the webhook
+address, when the last webhook arrived and every connected number.

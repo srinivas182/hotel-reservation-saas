@@ -51,11 +51,13 @@ final class SecurityHeaders
 
         return implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'nonce-{$nonce}'{$devServer}",
+            // Meta's JavaScript SDK runs WhatsApp Embedded Signup (S4).
+            "script-src 'self' 'nonce-{$nonce}' https://connect.facebook.net{$devServer}",
             "style-src 'self' 'unsafe-inline'{$devServer}",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
-            "connect-src 'self'{$devServer}",
+            "connect-src 'self' https://www.facebook.com https://graph.facebook.com{$devServer}",
+            'frame-src https://www.facebook.com https://web.facebook.com https://business.facebook.com',
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",

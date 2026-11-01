@@ -38,7 +38,7 @@ enum SystemRole: string
             self::Owner => Permission::cases(),
             self::Manager => array_values(array_filter(
                 Permission::cases(),
-                fn (Permission $permission): bool => $permission !== Permission::RolesManage,
+                fn (Permission $permission): bool => ! in_array($permission, [Permission::RolesManage, Permission::WhatsAppConnect], true),
             )),
             self::Reception => [
                 Permission::StaffView,
@@ -50,6 +50,8 @@ enum SystemRole: string
                 Permission::BookingsCreate,
                 Permission::BookingsManage,
                 Permission::BookingsFrontdesk,
+                Permission::ConversationsView,
+                Permission::ConversationsReply,
             ],
             self::RestaurantBar => [Permission::BookingsView],
             self::EventsCoordinator => [],
@@ -64,6 +66,7 @@ enum SystemRole: string
                 Permission::AvailabilityView,
                 Permission::BookingsView,
                 Permission::BookingsExport,
+                Permission::ConversationsView,
             ],
         };
     }

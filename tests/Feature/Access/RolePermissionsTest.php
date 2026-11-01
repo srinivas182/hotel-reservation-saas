@@ -53,7 +53,7 @@ it('shares the current hotel permissions with the frontend', function (): void {
 
     asStaffOf($hotel, staffMember($hotel, SystemRole::ReadOnly))
         ->followingRedirects()->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($permissions): bool => collect($permissions)->sort()->values()->all() === ['audit.view', 'availability.view', 'bookings.export', 'bookings.view', 'hotel.settings.view', 'rates.view', 'rooms.view', 'staff.view', 'taxes.view', 'usage.view']));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($permissions): bool => collect($permissions)->sort()->values()->all() === ['audit.view', 'availability.view', 'bookings.export', 'bookings.view', 'conversations.view', 'hotel.settings.view', 'rates.view', 'rooms.view', 'staff.view', 'taxes.view', 'usage.view']));
 });
 
 it('keeps system roles in sync with the code', function (): void {
