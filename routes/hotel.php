@@ -6,6 +6,9 @@ use App\Domains\Access\Http\Controllers\AcceptInvitationController;
 use App\Domains\Access\Http\Controllers\InvitationController;
 use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Access\Http\Controllers\StaffController;
+use App\Domains\Assistant\Http\Controllers\AssistantSettingsController;
+use App\Domains\Assistant\Http\Controllers\KnowledgeController;
+use App\Domains\Assistant\Http\Controllers\PracticeController;
 use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Availability\Http\Controllers\CalendarController;
 use App\Domains\Availability\Http\Controllers\InventoryController;
@@ -119,6 +122,16 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::post('hotel/inbox/{conversation}/template', [InboxController::class, 'sendTemplate'])
         ->middleware(['can:conversations.reply', 'throttle:60,1'])
         ->name('hotel.inbox.template');
+
+    Route::middleware('can:assistant.manage')->group(function (): void {
+        Route::get('hotel/assistant', [AssistantSettingsController::class, 'show'])->name('hotel.assistant');
+        Route::put('hotel/assistant', [AssistantSettingsController::class, 'update'])->name('hotel.assistant.update');
+        Route::get('hotel/assistant/knowledge', [KnowledgeController::class, 'show'])->name('hotel.assistant.knowledge');
+        Route::put('hotel/assistant/knowledge', [KnowledgeController::class, 'update'])->name('hotel.assistant.knowledge.update');
+        Route::post('hotel/assistant/knowledge/publish', [KnowledgeController::class, 'publish'])->name('hotel.assistant.knowledge.publish');
+        Route::get('hotel/assistant/practice', [PracticeController::class, 'show'])->name('hotel.assistant.practice');
+        Route::post('hotel/assistant/practice', [PracticeController::class, 'run'])->middleware('throttle:30,1')->name('hotel.assistant.practice.run');
+    });
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');

@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S5.2 — The assistant: information pack, engine, guardrails, practice
+
+#### Added
+
+- Information pack (`/hotel/assistant/knowledge`, `assistant.manage`): sections per language (about, directions, policies, payments, parking, transfers, restaurant, house rules, questions and answers), saved as a draft and published as numbered versions (audited); the assistant only uses the latest published version. Facts the platform already holds (address, contact, check-in and check-out times, languages, room categories with capacity, amenities and breakfast) are added automatically; prices never are. Preview of exactly what the assistant sees.
+- Assistant settings (`/hotel/assistant`): on/off for WhatsApp (used from S6), name, tone, languages, message when staff take over per language, daily spending limit, off switch.
+- `AssistantEngine` with the `HotelAssistantAgent` (laravel/ai, structured result: reply, language, intent, handover, reason, confidence) and four read-only tools: room categories, availability, quote (S2 quote engine) and hotel information. Tools only see the current hotel.
+- Guardrails checked by code on every reply: every amount must come from a quote returned in that reply (or the published pack); no wording saying a booking is confirmed or reserved (French and English); no requests for card, passport or ID numbers; at most 1,000 characters. A blocked reply is retried once with the reason, then handed to staff.
+- Handover to staff when the AI asks for it, for complaints, requests for a person, groups and special requests, changes or cancellations, languages the hotel does not answer in, low confidence, no published pack, or AI unavailable (off, limit reached, providers failing), with the hotel's message.
+- Card-like numbers are removed from guest text before it reaches an AI provider; guest text is always sent as guest input.
+- Practice screen (`/hotel/assistant/practice`): staff write as a guest and see the reply, decision, checks, tools used, model, time and cost. Nothing is sent to anyone.
+- English and French text.
+
 ### S5.1 — AI platform: providers, models, failover, limits
 
 #### Added

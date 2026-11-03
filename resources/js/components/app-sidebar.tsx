@@ -7,6 +7,7 @@ import {
     Percent,
     BarChart3,
     BedDouble,
+    Bot,
     CalendarDays,
     ClipboardList,
     Inbox,
@@ -21,6 +22,7 @@ import {
 import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/HotelAuditController';
 import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
 import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsController';
+import AssistantSettingsController from '@/actions/App/Domains/Assistant/Http/Controllers/AssistantSettingsController';
 import CalendarController from '@/actions/App/Domains/Availability/Http/Controllers/CalendarController';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/TodayController';
@@ -152,6 +154,15 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('usage.view')
             ? [{ title: 'Usage', href: UsageController(), icon: BarChart3 }]
+            : []),
+        ...(auth.permissions.includes('assistant.manage')
+            ? [
+                  {
+                      title: 'AI assistant',
+                      href: AssistantSettingsController.show(),
+                      icon: Bot,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('whatsapp.connect')
             ? [
