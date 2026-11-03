@@ -13,6 +13,7 @@ use App\Domains\Bookings\Http\Controllers\BookingActionController;
 use App\Domains\Bookings\Http\Controllers\BookingController;
 use App\Domains\Bookings\Http\Controllers\BookingExportController;
 use App\Domains\Bookings\Http\Controllers\TodayController;
+use App\Domains\Conversations\Http\Controllers\InboxController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
@@ -101,6 +102,15 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/whatsapp/check', [WhatsAppConnectionController::class, 'check'])->middleware('throttle:10,1')->name('hotel.whatsapp.check');
         Route::delete('hotel/whatsapp', [WhatsAppConnectionController::class, 'disconnect'])->middleware('password.confirm')->name('hotel.whatsapp.disconnect');
     });
+
+    Route::middleware('can:conversations.view')->group(function (): void {
+        Route::get('hotel/inbox', [InboxController::class, 'index'])->name('hotel.inbox');
+        Route::get('hotel/inbox/media/{message}', [InboxController::class, 'media'])->name('hotel.inbox.media');
+        Route::get('hotel/inbox/{conversation}', [InboxController::class, 'show'])->name('hotel.inbox.show');
+    });
+    Route::post('hotel/inbox/{conversation}/reply', [InboxController::class, 'reply'])
+        ->middleware(['can:conversations.reply', 'throttle:60,1'])
+        ->name('hotel.inbox.reply');
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');

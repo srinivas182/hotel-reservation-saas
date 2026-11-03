@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S4.2 — Conversations and staff inbox
+
+#### Added
+
+- Guest WhatsApp messages become conversations: one per contact, linked to the guest with the same phone number (the guest is created if new), so WhatsApp and bookings share one guest. Text, voice notes, photos, documents, video, locations and button replies are handled; a message delivered twice is stored once.
+- Message text is encrypted in the database. Voice notes, photos and documents are downloaded at once (Meta's links expire), up to 16 MB, into storage private to the hotel and served only to staff who can view conversations.
+- Delivery statuses (sent, delivered, read, failed with Meta's error) never move backwards, whatever order Meta's webhooks arrive in.
+- Inbox (`/hotel/inbox`): conversations with unread counts, search by name or phone, filters (unread, reply window closing), thread with voice notes and photos in place, delivery ticks, who sent each reply, links to the guest's bookings; refreshes every 10 seconds; unread badge in the sidebar.
+- Staff replies (`conversations.reply`) are queued with an idempotency key and sent through the Cloud API: never sent twice, server errors retried, Meta's rejections explained in plain language, a revoked token marks WhatsApp "Reconnect needed". Free text is allowed only within 24 hours of the guest's last message (enforced on the server).
+- For numbers shared with the WhatsApp Business app, messages reception sends from the app appear in the inbox.
+- `whatsapp:replay` processes stored webhook events that were not processed yet.
+- English and French text.
+
 ### S4.1 — WhatsApp connection and webhooks
 
 #### Added
