@@ -21,7 +21,10 @@ final class MessagingServiceProvider extends ServiceProvider
         $this->app->bind(\App\Domains\WhatsApp\Graph\GraphClient::class);
 
         // WhatsApp webhook handlers by change kind (more are added in S4.2 and S4.3).
-        $this->app->tag([\App\Domains\WhatsApp\Webhooks\AccountUpdateHandler::class], 'whatsapp.webhook-handlers');
+        $this->app->tag([
+            \App\Domains\WhatsApp\Webhooks\AccountUpdateHandler::class,
+            \App\Domains\Conversations\Webhooks\MessagesHandler::class,
+        ], 'whatsapp.webhook-handlers');
     }
 
     public function boot(): void

@@ -71,12 +71,6 @@ it('closes events for numbers no hotel has connected', function (): void {
     expect($event->processed_at)->not->toBeNull()->and($event->error)->toBe('No hotel has this number.');
 });
 
-it('keeps events without a handler yet for replay', function (): void {
-    webhookPost($this, [['field' => 'messages', 'value' => ['metadata' => ['phone_number_id' => '5550001'], 'messages' => []]]])->assertOk();
-
-    expect(WebhookEvent::query()->sole()->processed_at)->toBeNull();
-});
-
 it('marks the account restricted when Meta restricts it', function (): void {
     webhookPost($this, [['field' => 'account_update', 'value' => ['event' => 'ACCOUNT_RESTRICTION']]])->assertOk();
 

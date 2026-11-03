@@ -8,6 +8,7 @@ import {
     BedDouble,
     CalendarDays,
     ClipboardList,
+    Inbox,
     Sun,
     Tags,
     Mail,
@@ -22,6 +23,7 @@ import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsC
 import CalendarController from '@/actions/App/Domains/Availability/Http/Controllers/CalendarController';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/TodayController';
+import InboxController from '@/actions/App/Domains/Conversations/Http/Controllers/InboxController';
 import RatesController from '@/actions/App/Domains/Rates/Http/Controllers/RatesController';
 import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
 import UserController from '@/actions/App/Domains/Platform/Http/Controllers/UserController';
@@ -75,7 +77,7 @@ const platformNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth, inboxUnread } = usePage().props;
     const isPlatformStaff = auth.user.platform_role !== null;
     const hotelNavItems: NavItem[] = [
         ...mainNavItems,
@@ -84,6 +86,16 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('bookings.view')
             ? [{ title: 'Today', href: TodayController.index(), icon: Sun }]
+            : []),
+        ...(auth.permissions.includes('conversations.view')
+            ? [
+                  {
+                      title: 'Inbox',
+                      href: InboxController.index(),
+                      icon: Inbox,
+                      badge: inboxUnread ?? 0,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('bookings.view')
             ? [

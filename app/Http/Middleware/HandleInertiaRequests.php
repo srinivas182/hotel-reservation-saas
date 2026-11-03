@@ -52,8 +52,21 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => fn (): array => $this->permissions($request),
             ],
             'tenancy' => fn (): array => $this->tenancy($request),
+            'inboxUnread' => fn (): int => $this->inboxUnread($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * Conversations with unread guest messages (sidebar badge).
+     */
+    private function inboxUnread(Request $request): int
+    {
+        if (! app(TenantContext::class)->has() || $request->user()?->can('conversations.view') !== true) {
+            return 0;
+        }
+
+        return \App\Domains\Conversations\Models\Conversation::query()->where('unread_count', '>', 0)->count();
     }
 
     /**

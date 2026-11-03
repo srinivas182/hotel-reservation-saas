@@ -64,14 +64,74 @@ class GraphClient
         ]));
     }
 
+    /**
+     * Send a message; returns Meta's message ID.
+     *
+     * @param  array<string, mixed>  $content  type-specific part, e.g. ['type' => 'text', 'text' => [...]]
+     */
+    public function sendMessage(string $phoneNumberId, string $token, string $to, array $content): string
+    {
+        $data = $this->json($this->http($token, retry: false)->post($this->url("{$phoneNumberId}/messages"), [
+            'messaging_product' => 'whatsapp',
+            'recipient_type' => 'individual',
+            'to' => $to,
+            ...$content,
+        ]));
+
+        $id = $data['messages'][0]['id'] ?? null;
+
+        if (! is_string($id) || $id === '') {
+            throw new GraphException('Meta did not return a message ID.', 0, 502);
+        }
+
+        return $id;
+    }
+
+    /**
+     * Download a media file by its ID (two steps: get a short-lived URL,
+     * then fetch it with the same token).
+     *
+     * @return array{contents: string, mime_type: string}
+     */
+    public function downloadMedia(string $mediaId, string $token, int $maxBytes): array
+    {
+        $info = $this->json($this->http($token)->get($this->url($mediaId)));
+        $url = $info['url'] ?? null;
+        $size = (int) ($info['file_size'] ?? 0);
+
+        if (! is_string($url) || $url === '') {
+            throw new GraphException('Meta did not return a download address.');
+        }
+
+        if ($size > $maxBytes) {
+            throw new GraphException('The file is larger than the limit.', 413, 413);
+        }
+
+        $response = $this->http($token)->get($url);
+
+        if ($response->failed()) {
+            throw new GraphException('The file could not be downloaded.', 0, $response->status());
+        }
+
+        $body = $response->body();
+
+        if (strlen($body) > $maxBytes) {
+            throw new GraphException('The file is larger than the limit.', 413, 413);
+        }
+
+        return ['contents' => $body, 'mime_type' => (string) ($info['mime_type'] ?? $response->header('Content-Type'))];
+    }
+
     public function url(string $path): string
     {
         return rtrim((string) config('whatsapp.graph_url'), '/').'/'.config('whatsapp.graph_version').'/'.ltrim($path, '/');
     }
 
-    private function http(?string $token = null): PendingRequest
+    private function http(?string $token = null, bool $retry = true): PendingRequest
     {
-        $request = Http::acceptJson()->timeout(15)->retry(2, 500, throw: false);
+        // Sends are not retried here: the queued job decides, so a message is never sent twice.
+        $request = Http::acceptJson()->timeout(15);
+        $request = $retry ? $request->retry(2, 500, throw: false) : $request;
 
         return $token === null ? $request : $request->withToken($token);
     }
