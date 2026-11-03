@@ -67,4 +67,11 @@ class RoomCategory extends Model
     {
         return $this->name[$locale] ?? $this->name[$fallback] ?? (string) (array_values($this->name)[0] ?? $this->code);
     }
+
+    public function localizedDescription(string $locale, string $fallback): ?string
+    {
+        $description = $this->description ?? [];
+
+        return $description[$locale] ?? $description[$fallback] ?? null;
+    }
 }
