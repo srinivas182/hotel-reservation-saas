@@ -1,4 +1,5 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import TemplateController from '@/actions/App/Domains/WhatsApp/Http/Controllers/TemplateController';
 import { useState } from 'react';
 import WhatsAppConnectionController from '@/actions/App/Domains/WhatsApp/Http/Controllers/WhatsAppConnectionController';
 import Heading from '@/components/heading';
@@ -136,6 +137,11 @@ export default function WhatsAppConnection({ account, signup, errors }: Props) {
                             </p>
                         )}
                         <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" asChild>
+                                <Link href={TemplateController.index()}>
+                                    {t('Message templates')}
+                                </Link>
+                            </Button>
                             <Button
                                 variant="outline"
                                 onClick={() =>

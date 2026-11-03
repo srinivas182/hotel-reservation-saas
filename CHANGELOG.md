@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S4.3 — WhatsApp templates and usage
+
+#### Added
+
+- Message templates (Owners, WhatsApp → Message templates): add from the platform's starter library in the hotel's languages (first starter: "We received your message", English and French), submitted to Meta with example values; Meta's refusal reason is shown and the template can be resubmitted; delete removes it at Meta too.
+- Template approval, rejection, pause and disable decisions arrive from Meta's webhooks and update the template.
+- Inbox: when the 24-hour window has closed, staff pick an approved template, fill in its values with a live preview and send it. Templates are refused unless approved and complete.
+- Usage: every sent reply (`whatsapp.service`) and template (`whatsapp.template.<category>`) is counted once in the usage records; the Usage page shows this month's WhatsApp counts.
+- Tests covering the WhatsApp permissions for every system role.
+- English and French text.
+
 ### S4.2 — Conversations and staff inbox
 
 #### Added

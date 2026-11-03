@@ -62,7 +62,101 @@ type Props = {
     conversations: ListItem[];
     conversation: Thread | null;
     canReply: boolean;
+    templates: TemplateOption[];
 };
+
+type TemplateOption = {
+    id: string;
+    name: string;
+    language: string;
+    body: string;
+    placeholders: number;
+    examples: string[];
+};
+
+function TemplatePicker({
+    thread,
+    templates,
+}: {
+    thread: Thread;
+    templates: TemplateOption[];
+}) {
+    const form = useForm({
+        template_id: templates[0]?.id ?? '',
+        values: [] as string[],
+    });
+    const template = templates.find(
+        (item) => item.id === form.data.template_id,
+    );
+
+    if (templates.length === 0) {
+        return (
+            <p className="text-sm text-muted-foreground">
+                {t(
+                    'No approved templates yet. The owner can add them under WhatsApp → Message templates.',
+                )}
+            </p>
+        );
+    }
+
+    const preview = template
+        ? template.body.replace(
+              /\{\{(\d+)\}\}/g,
+              (match, n) => form.data.values[Number(n) - 1] || match,
+          )
+        : '';
+
+    return (
+        <form
+            onSubmit={(event) => {
+                event.preventDefault();
+                form.post(InboxController.sendTemplate.url(thread.id), {
+                    preserveScroll: true,
+                    onSuccess: () => form.setData('values', []),
+                });
+            }}
+            className="flex flex-col gap-2"
+        >
+            <select
+                aria-label={t('Template')}
+                className="flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                value={form.data.template_id}
+                onChange={(e) =>
+                    form.setData({ template_id: e.target.value, values: [] })
+                }
+            >
+                {templates.map((item) => (
+                    <option key={item.id} value={item.id}>
+                        {item.name} ({item.language})
+                    </option>
+                ))}
+            </select>
+            {template &&
+                Array.from({ length: template.placeholders }, (_, index) => (
+                    <Input
+                        key={index}
+                        aria-label={t('Value :n', { n: index + 1 })}
+                        placeholder={
+                            template.examples[index] ?? `{{${index + 1}}}`
+                        }
+                        value={form.data.values[index] ?? ''}
+                        onChange={(e) => {
+                            const values = [...form.data.values];
+                            values[index] = e.target.value;
+                            form.setData('values', values);
+                        }}
+                    />
+                ))}
+            <p className="rounded-md bg-muted px-3 py-2 text-sm whitespace-pre-wrap">
+                {preview}
+            </p>
+            <InputError message={form.errors.template_id} />
+            <Button className="w-fit" disabled={form.processing}>
+                {t('Send template')}
+            </Button>
+        </form>
+    );
+}
 
 function StatusIcon({ status }: { status: string }) {
     if (status === 'read') {
@@ -199,10 +293,12 @@ function Reply({
     thread,
     canReply,
     connected,
+    templates,
 }: {
     thread: Thread;
     canReply: boolean;
     connected: boolean;
+    templates: TemplateOption[];
 }) {
     const form = useForm({ body: '' });
 
@@ -220,11 +316,14 @@ function Reply({
 
     if (!thread.window_open) {
         return (
-            <p className="border-t p-3 text-sm text-muted-foreground">
-                {t(
-                    'More than 24 hours have passed since the guest’s last message. Only approved templates can be sent.',
-                )}
-            </p>
+            <div className="flex flex-col gap-2 border-t p-3">
+                <p className="text-sm text-muted-foreground">
+                    {t(
+                        'More than 24 hours have passed since the guest’s last message. Only approved templates can be sent.',
+                    )}
+                </p>
+                <TemplatePicker thread={thread} templates={templates} />
+            </div>
         );
     }
 
@@ -276,6 +375,7 @@ export default function Inbox({
     conversations,
     conversation,
     canReply,
+    templates,
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const bottom = useRef<HTMLDivElement>(null);
@@ -469,6 +569,7 @@ export default function Inbox({
                                 thread={conversation}
                                 canReply={canReply}
                                 connected={connected}
+                                templates={templates}
                             />
                         </>
                     )}

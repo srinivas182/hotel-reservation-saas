@@ -12,6 +12,8 @@ use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
 use App\Domains\Tenancy\TenantContext;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
+use App\Domains\WhatsApp\Templates\MessageTemplate;
+use App\Domains\WhatsApp\Templates\TemplateStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -96,6 +98,18 @@ final class InboxController extends Controller
             })->values(),
             'conversation' => $conversation === null ? null : $this->thread($conversation),
             'canReply' => $request->user()?->can('conversations.reply') === true,
+            'templates' => $conversation === null ? [] : MessageTemplate::query()
+                ->where('status', TemplateStatus::Approved->value)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (MessageTemplate $template): array => [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'language' => $template->language,
+                    'body' => $template->body,
+                    'placeholders' => $template->placeholders(),
+                    'examples' => $template->examples,
+                ])->values(),
         ]);
     }
 
@@ -107,6 +121,29 @@ final class InboxController extends Controller
             $sender->sendText($conversation, (string) $data['body'], $user);
         } catch (CannotSend $exception) {
             throw ValidationException::withMessages(['body' => $exception->getMessage()]);
+        }
+
+        return back();
+    }
+
+    public function sendTemplate(Request $request, Conversation $conversation, MessageSender $sender, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'template_id' => ['required', 'string'],
+            'values' => ['array', 'max:10'],
+            'values.*' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $template = MessageTemplate::query()->whereKey((string) $data['template_id'])->first();
+
+        if ($template === null) {
+            throw ValidationException::withMessages(['template_id' => __('Choose a template.')]);
+        }
+
+        try {
+            $sender->sendTemplate($conversation, $template, array_values(array_map('strval', (array) ($data['values'] ?? []))), $user);
+        } catch (CannotSend $exception) {
+            throw ValidationException::withMessages(['template_id' => $exception->getMessage()]);
         }
 
         return back();

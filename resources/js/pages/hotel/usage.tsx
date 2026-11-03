@@ -17,9 +17,21 @@ type Props = {
     days: { date: string; sent: number }[];
     limit: number | null;
     month: string;
+    whatsapp: {
+        service: number;
+        utility: number;
+        marketing: number;
+        authentication: number;
+    };
 };
 
-export default function Usage({ categories, days, limit, month }: Props) {
+export default function Usage({
+    categories,
+    days,
+    limit,
+    month,
+    whatsapp,
+}: Props) {
     const counted = categories
         .filter((row) => row.counted)
         .reduce((sum, row) => sum + row.sent, 0);
@@ -59,6 +71,42 @@ export default function Usage({ categories, days, limit, month }: Props) {
                         <div className="text-2xl font-semibold">{failed}</div>
                     </div>
                 </div>
+
+                <section className="flex flex-col gap-3">
+                    <Heading
+                        variant="small"
+                        title="WhatsApp"
+                        description={t(
+                            'Messages sent by the hotel this month. Meta bills the hotel directly.',
+                        )}
+                    />
+                    <div className="grid gap-4 sm:grid-cols-4">
+                        {[
+                            [
+                                t('Replies (free within 24 hours)'),
+                                whatsapp.service,
+                            ],
+                            [t('Utility templates'), whatsapp.utility],
+                            [t('Marketing templates'), whatsapp.marketing],
+                            [
+                                t('Authentication templates'),
+                                whatsapp.authentication,
+                            ],
+                        ].map(([label, value]) => (
+                            <div
+                                key={String(label)}
+                                className="rounded-xl border p-4"
+                            >
+                                <div className="text-sm text-muted-foreground">
+                                    {label}
+                                </div>
+                                <div className="text-2xl font-semibold">
+                                    {value}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
 
                 <div className="overflow-x-auto rounded-xl border">
                     <table className="w-full text-sm">

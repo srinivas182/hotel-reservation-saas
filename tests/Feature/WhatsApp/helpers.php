@@ -50,3 +50,21 @@ function webhookPost(Tests\TestCase $test, array $changes, string $wabaId = '900
         'HTTP_X_HUB_SIGNATURE_256' => $signature ?? 'sha256='.hash_hmac('sha256', $body, 'test-app-secret'),
     ], $body);
 }
+
+function inbound(string $wamid, string $from = '2250700000001', array $message = [], string $name = 'Awa Koné', ?int $timestamp = null): array
+{
+    return ['field' => 'messages', 'value' => [
+        'messaging_product' => 'whatsapp',
+        'metadata' => ['display_phone_number' => '2250500000000', 'phone_number_id' => '5550001'],
+        'contacts' => [['profile' => ['name' => $name], 'wa_id' => $from]],
+        'messages' => [['from' => $from, 'id' => $wamid, 'timestamp' => (string) ($timestamp ?? now()->timestamp), 'type' => 'text', 'text' => ['body' => 'Bonjour, une chambre ?'], ...$message]],
+    ]];
+}
+
+function statusChange(string $wamid, string $status, array $extra = []): array
+{
+    return ['field' => 'messages', 'value' => [
+        'metadata' => ['phone_number_id' => '5550001'],
+        'statuses' => [['id' => $wamid, 'status' => $status, 'timestamp' => (string) now()->timestamp, 'recipient_id' => '2250700000001', ...$extra]],
+    ]];
+}

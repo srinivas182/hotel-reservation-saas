@@ -24,6 +24,7 @@ final class MessagingServiceProvider extends ServiceProvider
         $this->app->tag([
             \App\Domains\WhatsApp\Webhooks\AccountUpdateHandler::class,
             \App\Domains\Conversations\Webhooks\MessagesHandler::class,
+            \App\Domains\WhatsApp\Templates\TemplateStatusHandler::class,
         ], 'whatsapp.webhook-handlers');
     }
 
