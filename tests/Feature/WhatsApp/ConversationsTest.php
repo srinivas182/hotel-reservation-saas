@@ -43,24 +43,6 @@ beforeEach(function (): void {
     ]);
 });
 
-function inbound(string $wamid, string $from = '2250700000001', array $message = [], string $name = 'Awa Koné', ?int $timestamp = null): array
-{
-    return ['field' => 'messages', 'value' => [
-        'messaging_product' => 'whatsapp',
-        'metadata' => ['display_phone_number' => '2250500000000', 'phone_number_id' => '5550001'],
-        'contacts' => [['profile' => ['name' => $name], 'wa_id' => $from]],
-        'messages' => [['from' => $from, 'id' => $wamid, 'timestamp' => (string) ($timestamp ?? now()->timestamp), 'type' => 'text', 'text' => ['body' => 'Bonjour, une chambre ?'], ...$message]],
-    ]];
-}
-
-function statusChange(string $wamid, string $status, array $extra = []): array
-{
-    return ['field' => 'messages', 'value' => [
-        'metadata' => ['phone_number_id' => '5550001'],
-        'statuses' => [['id' => $wamid, 'status' => $status, 'timestamp' => (string) now()->timestamp, 'recipient_id' => '2250700000001', ...$extra]],
-    ]];
-}
-
 it('turns a guest message into a conversation linked to a guest, with the text encrypted', function (): void {
     webhookPost($this, [inbound('wamid.IN1')])->assertOk();
 

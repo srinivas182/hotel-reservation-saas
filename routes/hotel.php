@@ -26,6 +26,7 @@ use App\Domains\Rooms\Http\Controllers\RoomCategoryController;
 use App\Domains\Rooms\Http\Controllers\RoomClosureController;
 use App\Domains\Rooms\Http\Controllers\RoomController;
 use App\Domains\Rooms\Http\Controllers\RoomsController;
+use App\Domains\WhatsApp\Http\Controllers\TemplateController;
 use App\Domains\WhatsApp\Http\Controllers\WhatsAppConnectionController;
 use Illuminate\Support\Facades\Route;
 
@@ -100,6 +101,10 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::get('hotel/whatsapp', [WhatsAppConnectionController::class, 'show'])->name('hotel.whatsapp');
         Route::post('hotel/whatsapp/connect', [WhatsAppConnectionController::class, 'connect'])->middleware('throttle:10,1')->name('hotel.whatsapp.connect');
         Route::post('hotel/whatsapp/check', [WhatsAppConnectionController::class, 'check'])->middleware('throttle:10,1')->name('hotel.whatsapp.check');
+        Route::get('hotel/whatsapp/templates', [TemplateController::class, 'index'])->name('hotel.whatsapp.templates');
+        Route::post('hotel/whatsapp/templates', [TemplateController::class, 'store'])->middleware('throttle:20,1')->name('hotel.whatsapp.templates.store');
+        Route::post('hotel/whatsapp/templates/{template}/submit', [TemplateController::class, 'submit'])->middleware('throttle:20,1')->name('hotel.whatsapp.templates.submit');
+        Route::delete('hotel/whatsapp/templates/{template}', [TemplateController::class, 'destroy'])->name('hotel.whatsapp.templates.destroy');
         Route::delete('hotel/whatsapp', [WhatsAppConnectionController::class, 'disconnect'])->middleware('password.confirm')->name('hotel.whatsapp.disconnect');
     });
 
@@ -111,6 +116,9 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::post('hotel/inbox/{conversation}/reply', [InboxController::class, 'reply'])
         ->middleware(['can:conversations.reply', 'throttle:60,1'])
         ->name('hotel.inbox.reply');
+    Route::post('hotel/inbox/{conversation}/template', [InboxController::class, 'sendTemplate'])
+        ->middleware(['can:conversations.reply', 'throttle:60,1'])
+        ->name('hotel.inbox.template');
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');

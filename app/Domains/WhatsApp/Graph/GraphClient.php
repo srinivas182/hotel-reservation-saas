@@ -122,6 +122,34 @@ class GraphClient
         return ['contents' => $body, 'mime_type' => (string) ($info['mime_type'] ?? $response->header('Content-Type'))];
     }
 
+    /**
+     * @param  list<array<string, mixed>>  $components
+     * @return array<string, mixed> id, status, category
+     */
+    public function createTemplate(string $wabaId, string $token, string $name, string $language, string $category, array $components): array
+    {
+        return $this->json($this->http($token, retry: false)->post($this->url("{$wabaId}/message_templates"), [
+            'name' => $name,
+            'language' => $language,
+            'category' => $category,
+            'components' => $components,
+        ]));
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $components
+     * @return array<string, mixed>
+     */
+    public function editTemplate(string $templateId, string $token, array $components): array
+    {
+        return $this->json($this->http($token, retry: false)->post($this->url($templateId), ['components' => $components]));
+    }
+
+    public function deleteTemplate(string $wabaId, string $token, string $name, string $templateId): void
+    {
+        $this->json($this->http($token)->delete($this->url("{$wabaId}/message_templates").'?'.http_build_query(['name' => $name, 'hsm_id' => $templateId])));
+    }
+
     public function url(string $path): string
     {
         return rtrim((string) config('whatsapp.graph_url'), '/').'/'.config('whatsapp.graph_version').'/'.ltrim($path, '/');

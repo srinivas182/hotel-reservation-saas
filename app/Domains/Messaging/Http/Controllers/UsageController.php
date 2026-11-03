@@ -6,6 +6,7 @@ namespace App\Domains\Messaging\Http\Controllers;
 
 use App\Domains\Messaging\Email\EmailCategory;
 use App\Domains\Messaging\Email\Models\EmailMessage;
+use App\Domains\Messaging\Usage\UsageRecord;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
@@ -55,7 +56,20 @@ final class UsageController extends Controller
             return ['date' => $date, 'sent' => (int) ($daily[$date] ?? 0)];
         })->values();
 
+        $whatsapp = UsageRecord::query()
+            ->where('meter', 'like', 'whatsapp.%')
+            ->where('occurred_at', '>=', $monthStart)
+            ->selectRaw('meter, sum(quantity) as total')
+            ->groupBy('meter')
+            ->pluck('total', 'meter');
+
         return Inertia::render('hotel/usage', [
+            'whatsapp' => [
+                'service' => (int) ($whatsapp['whatsapp.service'] ?? 0),
+                'utility' => (int) ($whatsapp['whatsapp.template.utility'] ?? 0),
+                'marketing' => (int) ($whatsapp['whatsapp.template.marketing'] ?? 0),
+                'authentication' => (int) ($whatsapp['whatsapp.template.authentication'] ?? 0),
+            ],
             'categories' => $categories,
             'days' => $days,
             'limit' => null,

@@ -6,6 +6,7 @@ namespace App\Domains\Conversations\Jobs;
 
 use App\Domains\Conversations\MessageStatus;
 use App\Domains\Conversations\Models\Message;
+use App\Domains\Messaging\Usage\UsageLedger;
 use App\Domains\Tenancy\Contracts\RequiresHotelContext;
 use App\Domains\WhatsApp\Graph\GraphClient;
 use App\Domains\WhatsApp\Graph\GraphException;
@@ -34,7 +35,7 @@ final class SendMessage implements RequiresHotelContext, ShouldQueue
 
     public function __construct(public readonly string $messageId) {}
 
-    public function handle(GraphClient $graph, WhatsAppConnector $connector): void
+    public function handle(GraphClient $graph, WhatsAppConnector $connector, UsageLedger $ledger): void
     {
         $message = Message::query()->with('conversation.contact')->find($this->messageId);
 
@@ -71,6 +72,14 @@ final class SendMessage implements RequiresHotelContext, ShouldQueue
         }
 
         $message->forceFill(['wamid' => $wamid, 'status' => MessageStatus::Accepted, 'status_at' => now()])->save();
+
+        // Counted once per message, whatever happens to retries.
+        $ledger->record(
+            $message->type === 'template' ? 'whatsapp.template.'.($message->media['category'] ?? 'utility') : 'whatsapp.service',
+            1,
+            'message',
+            $message->id,
+        );
     }
 
     public function failed(?Throwable $exception): void

@@ -9,6 +9,8 @@ use App\Domains\Conversations\Jobs\SendMessage;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
+use App\Domains\WhatsApp\Templates\MessageTemplate;
+use App\Domains\WhatsApp\Templates\TemplateStatus;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -44,6 +46,58 @@ final class MessageSender
             'client_id' => (string) Str::uuid(),
             'type' => 'text',
             'body' => $text,
+            'status' => MessageStatus::Queued,
+            'sent_by' => $by?->getKey(),
+            'source' => $source,
+            'sent_at' => now(),
+        ]);
+
+        $conversation->forceFill(['last_message_at' => now()])->save();
+
+        SendMessage::dispatch($message->id);
+
+        return $message;
+    }
+
+    /**
+     * Send an approved template. Allowed at any time, including outside the
+     * 24-hour window.
+     *
+     * @param  list<string>  $values  one value per placeholder
+     */
+    public function sendTemplate(Conversation $conversation, MessageTemplate $template, array $values, ?User $by = null, MessageSource $source = MessageSource::Staff): Message
+    {
+        if ($template->status !== TemplateStatus::Approved) {
+            throw new CannotSend(__('This template is not approved by Meta yet.'));
+        }
+
+        $values = array_map(fn (string $value): string => trim($value), $values);
+
+        if (count($values) !== $template->placeholders() || in_array('', $values, true)) {
+            throw new CannotSend(__('Fill in every value of the template.'));
+        }
+
+        $account = WhatsAppAccount::query()->first();
+
+        if ($account === null || ! $account->status->canSend()) {
+            throw new CannotSend(__('WhatsApp is not connected. Ask the owner to reconnect it.'));
+        }
+
+        $message = Message::query()->create([
+            'conversation_id' => $conversation->id,
+            'direction' => 'out',
+            'client_id' => (string) Str::uuid(),
+            'type' => 'template',
+            'body' => $template->render($values),
+            'template_name' => $template->name,
+            'template_language' => $template->language,
+            'media' => [
+                'category' => strtolower($template->category),
+                'components' => $values === [] ? [] : [[
+                    'type' => 'body',
+                    'parameters' => array_map(fn (string $value): array => ['type' => 'text', 'text' => $value], $values),
+                ]],
+            ],
             'status' => MessageStatus::Queued,
             'sent_by' => $by?->getKey(),
             'source' => $source,

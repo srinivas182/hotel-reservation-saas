@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $client_id our idempotency key for sends
  * @property string $type
  * @property string|null $body
- * @property array{media_id?: string, mime_type?: string, path?: string, size?: int, filename?: string|null, voice?: bool, latitude?: float, longitude?: float, error?: string|null, components?: list<array<string, mixed>>}|null $media
+ * @property array{media_id?: string, mime_type?: string, path?: string, size?: int, filename?: string|null, voice?: bool, latitude?: float, longitude?: float, error?: string|null, components?: list<array<string, mixed>>, category?: string}|null $media
  * @property string|null $template_name
  * @property string|null $template_language
  * @property MessageStatus $status
