@@ -36,6 +36,7 @@ enum Permission: string
     case WhatsAppConnect = 'whatsapp.connect';
     case ConversationsView = 'conversations.view';
     case ConversationsReply = 'conversations.reply';
+    case AssistantManage = 'assistant.manage';
 
     public function group(): string
     {
@@ -70,6 +71,7 @@ enum Permission: string
             self::WhatsAppConnect => __('Connect WhatsApp and manage message templates'),
             self::ConversationsView => __('View WhatsApp conversations'),
             self::ConversationsReply => __('Reply to WhatsApp conversations'),
+            self::AssistantManage => __('Manage the AI assistant and its information pack'),
         };
     }
 

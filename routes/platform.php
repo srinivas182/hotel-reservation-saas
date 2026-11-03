@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Platform\Http\Controllers\AiController;
 use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
 use App\Domains\Platform\Http\Controllers\MailProviderController;
@@ -36,6 +37,16 @@ Route::middleware(['auth', 'verified', 'platform'])
             ->name('mail-providers.test');
 
         Route::get('whatsapp', WhatsAppPlatformController::class)->name('whatsapp');
+
+        Route::get('ai', [AiController::class, 'index'])->name('ai');
+        Route::put('ai/settings', [AiController::class, 'updateSettings'])->name('ai.settings');
+        Route::post('ai/providers', [AiController::class, 'storeProvider'])->name('ai.providers.store');
+        Route::put('ai/providers/{aiProvider}', [AiController::class, 'updateProvider'])->name('ai.providers.update');
+        Route::delete('ai/providers/{aiProvider}', [AiController::class, 'destroyProvider'])->name('ai.providers.destroy');
+        Route::post('ai/models', [AiController::class, 'storeModel'])->name('ai.models.store');
+        Route::put('ai/models/{aiModel}', [AiController::class, 'updateModel'])->name('ai.models.update');
+        Route::delete('ai/models/{aiModel}', [AiController::class, 'destroyModel'])->name('ai.models.destroy');
+        Route::post('ai/models/{aiModel}/test', [AiController::class, 'testModel'])->middleware('throttle:10,1')->name('ai.models.test');
 
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::post('users', [UserController::class, 'store'])->name('users.store');

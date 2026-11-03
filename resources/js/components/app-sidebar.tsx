@@ -3,6 +3,7 @@ import {
     Building2,
     LayoutGrid,
     MessageCircle,
+    Sparkles,
     Percent,
     BarChart3,
     BedDouble,
@@ -26,6 +27,7 @@ import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/Tod
 import InboxController from '@/actions/App/Domains/Conversations/Http/Controllers/InboxController';
 import RatesController from '@/actions/App/Domains/Rates/Http/Controllers/RatesController';
 import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
+import AiController from '@/actions/App/Domains/Platform/Http/Controllers/AiController';
 import UserController from '@/actions/App/Domains/Platform/Http/Controllers/UserController';
 import WhatsAppPlatformController from '@/actions/App/Domains/Platform/Http/Controllers/WhatsAppPlatformController';
 import WhatsAppConnectionController from '@/actions/App/Domains/WhatsApp/Http/Controllers/WhatsAppConnectionController';
@@ -170,6 +172,7 @@ export function AppSidebar() {
                       href: MailProviderController.index(),
                       icon: Mail,
                   },
+                  { title: 'AI', href: AiController.index(), icon: Sparkles },
               ]
             : []),
     ];

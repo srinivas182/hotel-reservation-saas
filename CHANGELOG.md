@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S5.1 — AI platform: providers, models, failover, limits
+
+#### Added
+
+- `laravel/ai` (v1.3) behind the platform's own `AiGateway`, the only code that talks to AI providers.
+- Platform → AI (super admins): AI provider accounts (Anthropic, OpenAI, Gemini, OpenAI-compatible) with encrypted, write-only keys registered with laravel/ai at run time; the approved model list (capabilities, status testing / approved / retired, prices in micro-dollars, approval date); main and backup model per task (assistant, voice notes); request time limit; platform off switch (audited); a "Test" button per model; this month's AI cost across hotels.
+- Failover in the gateway: any failure of the main model (timeout, server error, refusal) moves to the backup; retired models and inactive providers are skipped; when every model fails the caller gets a clear "unavailable" reason to hand over to staff.
+- Per-hotel assistant settings (stored now, screen in S5.2): off switch and daily spending limit (default US$5). Spending is counted in the hotel's day; at 80% the people who manage the assistant get one email a day and the alert is audited; at 100% AI stops for the day.
+- Every AI call is recorded (model, tokens, cost, time, outcome, error) with the request and reply encrypted and deleted after 30 days; usage records `ai.assistant` and `ai.cost_micro_usd` are written once per call.
+- Permission `assistant.manage` (Owners and Managers).
+- English and French text.
+
 ### S4.3 — WhatsApp templates and usage
 
 #### Added

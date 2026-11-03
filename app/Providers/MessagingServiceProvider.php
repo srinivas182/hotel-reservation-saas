@@ -19,6 +19,7 @@ final class MessagingServiceProvider extends ServiceProvider
         $this->app->bind(EmailAllowance::class, UnlimitedEmailAllowance::class);
         $this->app->bind(MailTransportFactory::class);
         $this->app->bind(\App\Domains\WhatsApp\Graph\GraphClient::class);
+        $this->app->bind(\App\Domains\Ai\Gateway\AiGateway::class, \App\Domains\Ai\Gateway\LaravelAiGateway::class);
 
         // WhatsApp webhook handlers by change kind (more are added in S4.2 and S4.3).
         $this->app->tag([

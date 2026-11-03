@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Ai\Models\AiRun;
 use App\Domains\Messaging\Email\Models\EmailMessage;
 use App\Domains\Platform\Health\HeartbeatCheck;
 use App\Domains\Platform\Health\QueueHeartbeatJob;
@@ -31,7 +32,7 @@ Schedule::job(new QueueHeartbeatJob)
 | Email log retention: entries older than 90 days are removed. Usage
 | records are kept (they are the basis for credits and billing).
 */
-Schedule::command('model:prune', ['--model' => [EmailMessage::class, WebhookEvent::class]])
+Schedule::command('model:prune', ['--model' => [EmailMessage::class, WebhookEvent::class, AiRun::class]])
     ->name('prune:email-messages')
     ->daily();
 
