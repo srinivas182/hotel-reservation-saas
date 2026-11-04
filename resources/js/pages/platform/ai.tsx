@@ -48,6 +48,26 @@ type Props = {
     drivers: { value: string; label: string; needs_url: boolean }[];
     statuses: { value: string; label: string }[];
     monthCost: number;
+    evalRuns: EvalRun[];
+};
+
+type EvalRun = {
+    id: number;
+    model: string | null;
+    started_at: string;
+    finished: boolean;
+    passed: number;
+    total: number;
+    safety_passed: number;
+    safety_total: number;
+    meets_threshold: boolean;
+    cost: number;
+    failures: {
+        id: string;
+        safety: boolean;
+        failures: string[];
+        reply: string | null;
+    }[];
 };
 
 const selectClass =
@@ -437,6 +457,7 @@ export default function PlatformAi({
     drivers,
     statuses,
     monthCost,
+    evalRuns,
 }: Props) {
     const [editingProvider, setEditingProvider] = useState<
         number | 'new' | null
@@ -638,6 +659,27 @@ export default function PlatformAi({
                                         </Button>
                                         <Button
                                             size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                                window.confirm(
+                                                    t(
+                                                        'Run the full test suite against :name? It calls the real model about 65 times and costs money. Approve the model automatically if it passes?',
+                                                        { name: model.label },
+                                                    ),
+                                                ) &&
+                                                router.post(
+                                                    AiController.evaluate.url(
+                                                        model.id,
+                                                    ),
+                                                    { approve: true },
+                                                    { preserveScroll: true },
+                                                )
+                                            }
+                                        >
+                                            {t('Run test suite')}
+                                        </Button>
+                                        <Button
+                                            size="sm"
                                             variant="ghost"
                                             onClick={() =>
                                                 setEditingModel(model.id)
@@ -669,6 +711,94 @@ export default function PlatformAi({
                                 </li>
                             ),
                         )}
+                    </ul>
+                </section>
+
+                <section className="flex flex-col gap-3">
+                    <Heading
+                        variant="small"
+                        title={t('Test suite runs')}
+                        description={t(
+                            'Approval needs at least 95% of all cases and every safety case.',
+                        )}
+                    />
+                    {evalRuns.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                            {t('No runs yet.')}
+                        </p>
+                    )}
+                    <ul className="flex flex-col gap-2">
+                        {evalRuns.map((run) => (
+                            <li
+                                key={run.id}
+                                className="rounded-xl border px-4 py-3 text-sm"
+                            >
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-medium">
+                                        {run.model}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                        {run.started_at}
+                                    </span>
+                                    <span>
+                                        {t(
+                                            ':passed/:total passed · safety :safety_passed/:safety_total · US$ :cost',
+                                            {
+                                                passed: run.passed,
+                                                total: run.total,
+                                                safety_passed:
+                                                    run.safety_passed,
+                                                safety_total: run.safety_total,
+                                                cost: run.cost,
+                                            },
+                                        )}
+                                    </span>
+                                    <Badge
+                                        variant={
+                                            run.meets_threshold
+                                                ? 'default'
+                                                : 'destructive'
+                                        }
+                                    >
+                                        {run.meets_threshold
+                                            ? t('Meets the threshold')
+                                            : t('Below the threshold')}
+                                    </Badge>
+                                </div>
+                                {run.failures.length > 0 && (
+                                    <details className="mt-2">
+                                        <summary>
+                                            {t(':count failed case(s)', {
+                                                count: run.failures.length,
+                                            })}
+                                        </summary>
+                                        <ul className="mt-1 flex flex-col gap-1">
+                                            {run.failures.map((failure) => (
+                                                <li key={failure.id}>
+                                                    <code className="text-xs">
+                                                        {failure.id}
+                                                    </code>
+                                                    {failure.safety && (
+                                                        <Badge
+                                                            variant="destructive"
+                                                            className="ml-1"
+                                                        >
+                                                            {t('safety')}
+                                                        </Badge>
+                                                    )}{' '}
+                                                    {failure.failures.join(' ')}
+                                                    {failure.reply && (
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {failure.reply}
+                                                        </div>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </details>
+                                )}
+                            </li>
+                        ))}
                     </ul>
                 </section>
             </div>

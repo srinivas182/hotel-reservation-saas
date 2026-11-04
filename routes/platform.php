@@ -47,6 +47,7 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::put('ai/models/{aiModel}', [AiController::class, 'updateModel'])->name('ai.models.update');
         Route::delete('ai/models/{aiModel}', [AiController::class, 'destroyModel'])->name('ai.models.destroy');
         Route::post('ai/models/{aiModel}/test', [AiController::class, 'testModel'])->middleware('throttle:10,1')->name('ai.models.test');
+        Route::post('ai/models/{aiModel}/evaluate', [AiController::class, 'evaluate'])->middleware('throttle:5,1')->name('ai.models.evaluate');
 
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::post('users', [UserController::class, 'store'])->name('users.store');

@@ -6,6 +6,8 @@ namespace App\Domains\Platform\Http\Controllers;
 
 use App\Domains\Ai\Agents\PingAgent;
 use App\Domains\Ai\AiDriver;
+use App\Domains\Ai\Evals\AiEvalRun;
+use App\Domains\Ai\Evals\RunEvalSuite;
 use App\Domains\Ai\Gateway\ProviderRegistry;
 use App\Domains\Ai\Models\AiModel;
 use App\Domains\Ai\Models\AiPlatformSettings;
@@ -75,6 +77,22 @@ final class AiController extends Controller
             'drivers' => collect(AiDriver::cases())->map(fn (AiDriver $d): array => ['value' => $d->value, 'label' => $d->label(), 'needs_url' => $d->needsUrl()])->values(),
             'statuses' => collect(ModelStatus::cases())->map(fn (ModelStatus $s): array => ['value' => $s->value, 'label' => $s->label()])->values(),
             'monthCost' => round($monthCost / 1_000_000, 2),
+            'evalRuns' => AiEvalRun::query()->with('model')->orderByDesc('id')->limit(10)->get()->map(fn (AiEvalRun $run): array => [
+                'id' => $run->id,
+                'model' => $run->model?->label,
+                'started_at' => $run->started_at->format('Y-m-d H:i'),
+                'finished' => $run->finished_at !== null,
+                'passed' => $run->passed,
+                'total' => $run->total,
+                'safety_passed' => $run->safety_passed,
+                'safety_total' => $run->safety_total,
+                'meets_threshold' => $run->meets_threshold,
+                'cost' => round($run->cost_micro_usd / 1_000_000, 4),
+                'failures' => array_values(array_map(
+                    fn (array $r): array => ['id' => $r['id'], 'safety' => $r['safety'], 'failures' => $r['failures'], 'reply' => $r['reply'] ?? null],
+                    array_filter((array) $run->results, fn (array $r): bool => ! $r['passed']),
+                )),
+            ])->values(),
         ]);
     }
 
@@ -204,6 +222,20 @@ final class AiController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('AI settings saved.')]);
+
+        return back();
+    }
+
+    /**
+     * Run the test suite against a model in the background.
+     */
+    public function evaluate(Request $request, AiModel $aiModel, #[CurrentUser] User $user): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($user);
+
+        RunEvalSuite::dispatch($aiModel->id, $user->id, $request->boolean('approve'));
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('The test suite is running. Results appear here when it finishes.')]);
 
         return back();
     }

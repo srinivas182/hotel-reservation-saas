@@ -35,6 +35,8 @@ type ThreadMessage = {
     location: { lat: number; lng: number } | null;
     status: string;
     error: string | null;
+    transcript: string | null;
+    transcript_error: string | null;
     source: string;
     by: string | null;
     at: string;
@@ -205,6 +207,16 @@ function Bubble({ message }: { message: ThreadMessage }) {
                         src={message.media_url}
                         className="max-w-full"
                     />
+                )}
+                {message.type === 'audio' && message.transcript && (
+                    <p className="mt-1 text-xs italic opacity-90">
+                        {t('Transcript:')} {message.transcript}
+                    </p>
+                )}
+                {message.type === 'audio' && message.transcript_error && (
+                    <p className="mt-1 text-xs italic opacity-80">
+                        {message.transcript_error}
+                    </p>
                 )}
                 {message.type === 'image' && message.media_url && (
                     <a

@@ -65,6 +65,10 @@ final class DownloadMedia implements RequiresHotelContext, ShouldQueue
             'mime_type' => $file['mime_type'] !== '' ? $file['mime_type'] : ($media['mime_type'] ?? ''),
             'error' => null,
         ]])->save();
+
+        if ($message->type === 'audio') {
+            TranscribeMessage::dispatch($message->id);
+        }
     }
 
     public static function extension(string $mime): string

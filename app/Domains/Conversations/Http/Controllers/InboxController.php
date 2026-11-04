@@ -211,6 +211,8 @@ final class InboxController extends Controller
                 'location' => isset($message->media['latitude']) ? ['lat' => $message->media['latitude'], 'lng' => $message->media['longitude'] ?? 0] : null,
                 'status' => $message->status->value,
                 'error' => $message->error_text,
+                'transcript' => $message->transcript,
+                'transcript_error' => $message->transcript_error,
                 'source' => $message->source->value,
                 'by' => $message->sender?->name,
                 'at' => $message->sent_at->setTimezone($hotel->timezone)->format('Y-m-d H:i'),

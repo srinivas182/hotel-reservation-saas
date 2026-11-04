@@ -34,6 +34,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $sent_by
  * @property MessageSource $source
  * @property CarbonImmutable $sent_at
+ * @property string|null $transcript
+ * @property string|null $transcript_language
+ * @property CarbonImmutable|null $transcribed_at
+ * @property string|null $transcript_error
+ * @property string|null $language
  */
 class Message extends Model
 {
@@ -42,7 +47,8 @@ class Message extends Model
     protected $fillable = [
         'conversation_id', 'direction', 'wamid', 'client_id', 'type', 'body', 'media',
         'template_name', 'template_language', 'status', 'status_at', 'error_code',
-        'error_text', 'sent_by', 'source', 'sent_at',
+        'error_text', 'sent_by', 'source', 'sent_at', 'transcript', 'transcript_language', 'transcribed_at',
+        'transcript_error', 'language',
     ];
 
     /**
@@ -58,6 +64,8 @@ class Message extends Model
             'error_code' => 'integer',
             'source' => MessageSource::class,
             'sent_at' => 'immutable_datetime',
+            'transcript' => 'encrypted',
+            'transcribed_at' => 'immutable_datetime',
         ];
     }
 
