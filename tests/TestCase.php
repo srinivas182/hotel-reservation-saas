@@ -34,6 +34,9 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->withoutVite();
+
+        // Tests never reach real services (Meta, AI providers): every HTTP call must be faked.
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
     }
 
     protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void

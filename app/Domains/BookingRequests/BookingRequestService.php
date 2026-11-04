@@ -174,19 +174,22 @@ final class BookingRequestService
         }
 
         $guest = $request->guest()->firstOrFail();
+        $settings = HotelAssistantSettings::current();
 
         try {
-            $booking = DB::transaction(function () use ($request, $by, $stay, $guest, $overrideTotal, $overrideReason): Booking {
+            $booking = DB::transaction(function () use ($request, $by, $stay, $guest, $overrideTotal, $overrideReason, $settings): Booking {
                 $this->releaseHold($request);
 
                 $booking = $this->bookings->create(new NewBooking(
                     stay: $stay,
                     guest: ['first_name' => $guest->first_name, 'last_name' => $guest->last_name, 'phone' => $guest->phone_e164, 'email' => $guest->email, 'preferred_locale' => $guest->preferred_locale],
                     channel: BookingChannel::WhatsApp,
-                    status: BookingStatus::Confirmed,
+                    status: $settings->deposit_required ? BookingStatus::Tentative : BookingStatus::Confirmed,
                     notes: __('From WhatsApp request :reference', ['reference' => $request->reference]),
+                    paymentNote: $settings->deposit_required ? (string) __('Deposit of :percent% requested on WhatsApp', ['percent' => $settings->deposit_percent]) : null,
                     overrideTotal: $overrideTotal,
                     overrideReason: $overrideReason,
+                    tentativeHours: $settings->deposit_hours,
                 ), $by);
 
                 $request->forceFill([

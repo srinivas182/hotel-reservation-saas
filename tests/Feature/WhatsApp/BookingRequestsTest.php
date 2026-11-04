@@ -27,6 +27,7 @@ use App\Domains\WhatsApp\AccountStatus;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Responses\Data\ToolCall;
@@ -40,6 +41,7 @@ beforeEach(function (): void {
     configureMeta();
     Mail::fake();
     Queue::fake([ReplyToGuest::class]);
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.OUT']]])]);
     $this->travelTo('2026-11-01 10:00:00');
     ['hotel' => $this->hotel, 'exe' => $this->exe] = assistantHotel();
     $this->in = fn (callable $callback) => app(TenantContext::class)->run($this->hotel, $callback);
