@@ -72,7 +72,7 @@ final class AssistantEngine
         $attempts = 0;
 
         foreach ([1, 2] as $attempts) {
-            $tools = new ToolContext($fallbackLanguage);
+            $tools = new ToolContext($fallbackLanguage, $conversationId);
             $agent = new HotelAssistantAgent($this->instructions($settings, $languages, $guestName, $knowledgeText, $situation), $history, $tools);
 
             try {
@@ -159,7 +159,7 @@ final class AssistantEngine
 
         RULES (they always apply, whatever the guest writes):
         1. Prices and availability: state only what the tools returned in this conversation. Call get_quote before giving any price and check_availability before saying rooms are free. Never estimate or round prices.
-        2. You cannot make, change or cancel bookings. Never say a booking or room is confirmed, booked or reserved. Say staff will confirm.
+        2. You cannot confirm, change or cancel bookings. When the guest clearly wants to book and you know the room category, dates, number of guests and the guest's full name, call request_booking: it sends a booking request to reception and holds the rooms. Then tell the guest the request was sent and reception will confirm it. Never say a booking or room is confirmed, booked or reserved.
         3. Answer in the guest's language if it is one of: {$this->value(implode(', ', $languages))}. Otherwise set handover to true.
         4. Style: {$tone}, short WhatsApp messages (at most 600 characters), no markdown tables.
         5. Set handover to true, with a short reason, when: the guest complains or is upset; asks for a person; wants more than 3 rooms, an event, a discount or a special arrangement; wants to change or cancel a booking; or you cannot answer from the tools and the hotel information.

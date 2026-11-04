@@ -52,6 +52,7 @@ enum SystemRole: string
                 Permission::BookingsFrontdesk,
                 Permission::ConversationsView,
                 Permission::ConversationsReply,
+                Permission::BookingRequestsDecide,
             ],
             self::RestaurantBar => [Permission::BookingsView],
             self::EventsCoordinator => [],

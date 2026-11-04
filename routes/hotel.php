@@ -12,6 +12,7 @@ use App\Domains\Assistant\Http\Controllers\PracticeController;
 use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Availability\Http\Controllers\CalendarController;
 use App\Domains\Availability\Http\Controllers\InventoryController;
+use App\Domains\BookingRequests\Http\Controllers\BookingRequestController;
 use App\Domains\Bookings\Http\Controllers\BookingActionController;
 use App\Domains\Bookings\Http\Controllers\BookingController;
 use App\Domains\Bookings\Http\Controllers\BookingExportController;
@@ -134,6 +135,11 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/assistant/knowledge/publish', [KnowledgeController::class, 'publish'])->name('hotel.assistant.knowledge.publish');
         Route::get('hotel/assistant/practice', [PracticeController::class, 'show'])->name('hotel.assistant.practice');
         Route::post('hotel/assistant/practice', [PracticeController::class, 'run'])->middleware('throttle:30,1')->name('hotel.assistant.practice.run');
+    });
+
+    Route::middleware(['can:booking_requests.decide', 'throttle:60,1'])->group(function (): void {
+        Route::post('hotel/booking-requests/{bookingRequest}/approve', [BookingRequestController::class, 'approve'])->name('hotel.booking-requests.approve');
+        Route::post('hotel/booking-requests/{bookingRequest}/decline', [BookingRequestController::class, 'decline'])->name('hotel.booking-requests.decline');
     });
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');

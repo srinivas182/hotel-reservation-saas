@@ -52,3 +52,9 @@ Schedule::command('bookings:expire-tentative')
 Schedule::command('whatsapp:check')
     ->name('whatsapp:check')
     ->dailyAt('06:00');
+
+// WhatsApp booking requests nobody answered in time release their rooms.
+Schedule::command('booking-requests:expire')
+    ->name('booking-requests:expire')
+    ->everyMinute()
+    ->withoutOverlapping();

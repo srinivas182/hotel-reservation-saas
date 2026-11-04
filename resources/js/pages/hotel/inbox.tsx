@@ -6,6 +6,8 @@ import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/B
 import InboxController from '@/actions/App/Domains/Conversations/Http/Controllers/InboxController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { RequestCard } from '@/components/booking-requests/request-card';
+import type { PendingRequest } from '@/components/booking-requests/request-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,6 +73,9 @@ type Props = {
     conversation: Thread | null;
     canReply: boolean;
     templates: TemplateOption[];
+    requests: PendingRequest[];
+    requestCategories: { id: string; name: string }[];
+    canOverridePrice: boolean;
 };
 
 type TemplateOption = {
@@ -449,10 +454,15 @@ export default function Inbox({
     conversation,
     canReply,
     templates,
+    requests,
+    requestCategories,
+    canOverridePrice,
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const bottom = useRef<HTMLDivElement>(null);
-    usePoll(10000, { only: ['conversations', 'conversation', 'inboxUnread'] });
+    usePoll(10000, {
+        only: ['conversations', 'conversation', 'inboxUnread', 'requests'],
+    });
 
     useEffect(() => {
         bottom.current?.scrollIntoView({ block: 'end' });
@@ -648,6 +658,18 @@ export default function Inbox({
                                 ))}
                                 <div ref={bottom} />
                             </div>
+                            {requests.length > 0 && (
+                                <div className="flex flex-col gap-2 border-t p-3">
+                                    {requests.map((request) => (
+                                        <RequestCard
+                                            key={request.id}
+                                            request={request}
+                                            categories={requestCategories}
+                                            canOverridePrice={canOverridePrice}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                             <Reply
                                 thread={conversation}
                                 canReply={canReply}
