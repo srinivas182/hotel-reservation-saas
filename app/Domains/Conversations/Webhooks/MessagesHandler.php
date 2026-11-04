@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Conversations\Webhooks;
 
+use App\Domains\Assistant\LanguageDetector;
 use App\Domains\Conversations\ConversationDirectory;
 use App\Domains\Conversations\Jobs\DownloadMedia;
 use App\Domains\Conversations\MessageSource;
@@ -26,7 +27,10 @@ final class MessagesHandler implements WebhookHandler
 {
     private const MEDIA_TYPES = ['audio', 'image', 'document', 'video', 'sticker'];
 
-    public function __construct(private readonly ConversationDirectory $directory) {}
+    public function __construct(
+        private readonly ConversationDirectory $directory,
+        private readonly LanguageDetector $detector,
+    ) {}
 
     public function kinds(): array
     {
@@ -90,6 +94,7 @@ final class MessagesHandler implements WebhookHandler
             'status' => MessageStatus::Received,
             'source' => MessageSource::Guest,
             'sent_at' => $sentAt,
+            'language' => $type === 'text' ? $this->detector->detect($body) : null,
         ]);
 
         if ($message === null) {
@@ -102,6 +107,11 @@ final class MessagesHandler implements WebhookHandler
         ]);
         $this->touch($conversation, $sentAt, inbound: true);
         $conversation->contact()->update(['last_inbound_at' => $sentAt]);
+
+        $guest = $conversation->contact?->guest;
+        if ($guest !== null && $guest->preferred_locale === null && $message->language !== null) {
+            $guest->forceFill(['preferred_locale' => $message->language])->save();
+        }
 
         if ($media !== null && isset($media['media_id'])) {
             DownloadMedia::dispatch($message->id);

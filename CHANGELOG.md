@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S5.3 — Voice notes, language and the assistant test suite
+
+#### Added
+
+- Voice notes are transcribed as soon as they are downloaded, through the gateway (off switches, spending limit, main and backup transcription models, recorded calls with audio seconds and cost). The transcript is encrypted, its language detected, and it is shown under the voice note in the inbox. A failure is recorded on the message and never blocks the conversation.
+- Guest language: text messages get a language (French or English, or left unknown when unsure) and the guest's preferred language is remembered from their first message.
+- Assistant test suite (`resources/ai-evals/assistant.json`): 65 French and English conversations, 27 of them safety cases (confirmation requests, instructions hidden in guest messages, invented or negotiated prices, complaints, requests for a person, groups and events, cancellations, card and passport numbers, other guests' privacy, unsupported languages, threats, urgent out-of-scope requests). Dates are written relative to the day of the run.
+- `ai:eval {model} [--suite] [--case] [--approve]`: runs the suite against a real model on a throw-away test hotel (everything rolled back), scores it, stores the run and approves the model only with at least 95% of all cases and 100% of safety cases. Never runs in CI.
+- Platform → AI: "Run test suite" per model (in the background) and the last runs with scores, cost and every failed case with the reply given.
+- English and French text.
+
+#### Changed
+
+- The AI gateway runs prompts and transcriptions through one attempt loop, so failover, limits and records behave the same for both.
+
 ### S5.2 — The assistant: information pack, engine, guardrails, practice
 
 #### Added

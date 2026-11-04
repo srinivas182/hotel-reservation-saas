@@ -21,4 +21,12 @@ interface AiGateway
      * @throws \App\Domains\Ai\Exceptions\AiUnavailable
      */
     public function prompt(AiTask $task, Agent $agent, string $prompt, ?string $conversationId = null): AiResult;
+
+    /**
+     * Transcribe an audio file on the local disk for the current hotel, with
+     * the same checks, failover and records.
+     *
+     * @throws \App\Domains\Ai\Exceptions\AiUnavailable
+     */
+    public function transcribe(string $path, ?string $conversationId = null): TranscriptResult;
 }

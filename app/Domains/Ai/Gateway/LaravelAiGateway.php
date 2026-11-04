@@ -11,9 +11,12 @@ use App\Domains\Ai\Models\AiModel;
 use App\Domains\Ai\Models\AiPlatformSettings;
 use App\Domains\Ai\Models\AiRun;
 use App\Domains\Messaging\Usage\UsageLedger;
+use Closure;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Responses\AgentResponse;
+use Laravel\Ai\Transcription;
 use Throwable;
 
 /**
@@ -31,6 +34,44 @@ final class LaravelAiGateway implements AiGateway
 
     public function prompt(AiTask $task, Agent $agent, string $prompt, ?string $conversationId = null): AiResult
     {
+        $request = json_encode(['agent' => $agent::class, 'instructions' => (string) $agent->instructions(), 'prompt' => $prompt], JSON_UNESCAPED_UNICODE) ?: '';
+
+        /** @var array{0: AgentResponse, 1: AiModel, 2: AiRun, 3: list<string>} $result */
+        $result = $this->attempt($task, $conversationId, $request, function (AiModel $model, string $provider, int $timeout) use ($agent, $prompt): array {
+            $response = $agent->prompt($prompt, provider: $provider, model: $model->model, timeout: $timeout);
+
+            return [$response, $response->text, $response->usage->inputTokens, $response->usage->outputTokens, 0];
+        });
+
+        return new AiResult($result[0], $result[1], $result[2], $result[3]);
+    }
+
+    public function transcribe(string $path, ?string $conversationId = null): TranscriptResult
+    {
+        /** @var array{0: \Laravel\Ai\Responses\TranscriptionResponse, 1: AiModel, 2: AiRun, 3: list<string>} $result */
+        $result = $this->attempt(AiTask::Transcription, $conversationId, json_encode(['audio' => $path]) ?: '', function (AiModel $model, string $provider, int $timeout) use ($path): array {
+            $response = Transcription::fromStorage($path, 'local')->timeout(max($timeout, 30))->generate($provider, $model->model);
+
+            return [
+                $response,
+                $response->text,
+                $response->usage->inputTokens,
+                $response->usage->outputTokens,
+                (int) ceil((float) ($response->usage->audioSeconds ?? 0)),
+            ];
+        });
+
+        return new TranscriptResult(trim($result[0]->text), $result[1], $result[2], $result[3]);
+    }
+
+    /**
+     * Run one call against the task's models in order.
+     *
+     * @param  Closure(AiModel, string, int): array{0: mixed, 1: string, 2: int, 3: int, 4: int}  $call
+     * @return array{0: mixed, 1: AiModel, 2: AiRun, 3: list<string>}
+     */
+    private function attempt(AiTask $task, ?string $conversationId, string $request, Closure $call): array
+    {
         $this->controls->assertAllowed();
 
         $settings = AiPlatformSettings::current();
@@ -46,30 +87,26 @@ final class LaravelAiGateway implements AiGateway
             $started = hrtime(true);
 
             try {
-                $response = $agent->prompt(
-                    $prompt,
-                    provider: $this->registry->register($model->provider ?? throw new AiUnavailable('no_model')),
-                    model: $model->model,
-                    timeout: $settings->timeout_seconds,
+                [$response, $text, $input, $output, $audio] = $call(
+                    $model,
+                    $this->registry->register($model->provider ?? throw new AiUnavailable('no_model')),
+                    $settings->timeout_seconds,
                 );
             } catch (Throwable $exception) {
-                $this->record($task, $model, $conversationId, $agent, $prompt, null, 0, 0, $started, 'error', $exception->getMessage());
+                $this->record($task, $model, $conversationId, $request, null, 0, 0, 0, $started, 'error', $exception->getMessage());
                 Log::warning('AI model failed', ['task' => $task->value, 'model' => $model->model, 'error' => Str::limit($exception->getMessage(), 300)]);
                 $failed[] = $model->model;
 
                 continue;
             }
 
-            $run = $this->record(
-                $task, $model, $conversationId, $agent, $prompt, $response->text,
-                $response->usage->inputTokens, $response->usage->outputTokens, $started, 'ok', null,
-            );
+            $run = $this->record($task, $model, $conversationId, $request, $text, $input, $output, $audio, $started, 'ok', null);
 
             $this->ledger->record("ai.{$task->value}", 1, 'ai_run', (string) $run->id);
             $this->ledger->record('ai.cost_micro_usd', $run->cost_micro_usd, 'ai_run', (string) $run->id);
             $this->controls->alertIfNearLimit();
 
-            return new AiResult($response, $model, $run, $failed);
+            return [$response, $model, $run, $failed];
         }
 
         throw new AiUnavailable('all_failed', __('The AI providers did not answer.'));
@@ -79,11 +116,11 @@ final class LaravelAiGateway implements AiGateway
         AiTask $task,
         AiModel $model,
         ?string $conversationId,
-        Agent $agent,
-        string $prompt,
+        string $request,
         ?string $reply,
         int $inputTokens,
         int $outputTokens,
+        int $audioSeconds,
         int $started,
         string $outcome,
         ?string $error,
@@ -94,11 +131,12 @@ final class LaravelAiGateway implements AiGateway
             'ai_model_id' => $model->id,
             'input_tokens' => $inputTokens,
             'output_tokens' => $outputTokens,
-            'cost_micro_usd' => $model->cost($inputTokens, $outputTokens),
+            'audio_seconds' => $audioSeconds,
+            'cost_micro_usd' => $model->cost($inputTokens, $outputTokens, $audioSeconds),
             'latency_ms' => (int) ((hrtime(true) - $started) / 1_000_000),
             'outcome' => $outcome,
             'error' => $error === null ? null : Str::limit($error, 490),
-            'request' => json_encode(['agent' => $agent::class, 'instructions' => (string) $agent->instructions(), 'prompt' => $prompt], JSON_UNESCAPED_UNICODE),
+            'request' => $request,
             'response' => $reply,
         ]);
     }
