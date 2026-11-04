@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S6.2 — WhatsApp booking requests
+
+#### Added
+
+- `request_booking` tool: once the guest has given the room category, dates, guests and their full name, the assistant sends a booking request to reception and the rooms are held. It only works for stays the quote engine says can be booked; it never confirms a booking (the instructions and the S5 confirmation guardrail still apply). One open request per conversation: a new one replaces the old and releases its rooms. The last room cannot be held twice. In the practice screen nothing is created.
+- Requests hold their rooms for the hotel's hold time (default 2 hours) and at least until one hour after reception next opens.
+- "WhatsApp booking requests" on the Today screen (refreshed every 15 seconds, with an optional browser alert) and on the conversation in the inbox: guest, stay, price quoted to the guest and price now, time waiting and hold expiry. Reception (`booking_requests.decide`) can approve, edit then approve (price changes need `bookings.override_price` and a reason), or decline with a reason. A price that changed since the quote must be accepted before approving.
+- Approving makes a confirmed WhatsApp booking from the request's held rooms in one transaction and links it to the request; declining releases the rooms.
+- Requests nobody answers expire every minute: rooms released, conversation marked "needs attention", staff emailed. Staff are also emailed for every new request. Every step is audited.
+- English and French text.
+
 ### S6.1 — The assistant answers guests on WhatsApp
 
 #### Added

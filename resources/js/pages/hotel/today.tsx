@@ -1,10 +1,13 @@
 import type { RequestPayload } from '@inertiajs/core';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePoll } from '@inertiajs/react';
+import { useEffect, useRef } from 'react';
 import { Plus } from 'lucide-react';
 import type { FormEvent } from 'react';
 import BookingActionController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingActionController';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/TodayController';
+import { RequestCard } from '@/components/booking-requests/request-card';
+import type { PendingRequest } from '@/components/booking-requests/request-card';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -59,7 +62,15 @@ type Props = {
         by: string | null;
         at: string | null;
     } | null;
-    can: { frontdesk: boolean; manage: boolean; create: boolean };
+    can: {
+        frontdesk: boolean;
+        manage: boolean;
+        create: boolean;
+        decide: boolean;
+        override_price: boolean;
+    };
+    requests: PendingRequest[];
+    categories: { id: string; name: string }[];
 };
 
 const tones: Record<BoardRoom['state'], string> = {
@@ -206,9 +217,37 @@ function RegisterCheckForm({
     );
 }
 
+function useRequestAlerts(count: number) {
+    const previous = useRef(count);
+
+    useEffect(() => {
+        if (
+            count > previous.current &&
+            typeof Notification !== 'undefined' &&
+            Notification.permission === 'granted'
+        ) {
+            new Notification(t('New WhatsApp booking request'));
+        }
+
+        previous.current = count;
+    }, [count]);
+}
+
 export default function Today(props: Props) {
     const post = (url: string, data: RequestPayload = {}) =>
         router.post(url, data, { preserveScroll: true });
+    usePoll(15000, {
+        only: [
+            'requests',
+            'arrivals',
+            'inHouse',
+            'departures',
+            'tentative',
+            'board',
+            'freeTonight',
+        ],
+    });
+    useRequestAlerts(props.requests.length);
 
     return (
         <>
@@ -247,6 +286,42 @@ export default function Today(props: Props) {
                         </div>
                     ))}
                 </div>
+
+                {props.can.decide && (
+                    <section className="flex flex-col gap-2 rounded-xl border border-primary/40 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h2 className="font-medium">
+                                {t('WhatsApp booking requests')}{' '}
+                                <Badge>{props.requests.length}</Badge>
+                            </h2>
+                            {typeof Notification !== 'undefined' &&
+                                Notification.permission === 'default' && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                            Notification.requestPermission()
+                                        }
+                                    >
+                                        {t('Alert me on this computer')}
+                                    </Button>
+                                )}
+                        </div>
+                        {props.requests.length === 0 && (
+                            <p className="text-sm text-muted-foreground">
+                                {t('No requests waiting.')}
+                            </p>
+                        )}
+                        {props.requests.map((request) => (
+                            <RequestCard
+                                key={request.id}
+                                request={request}
+                                categories={props.categories}
+                                canOverridePrice={props.can.override_price}
+                            />
+                        ))}
+                    </section>
+                )}
 
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Section

@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $daily_budget_micro_usd
  * @property bool $kill_switch
  * @property CarbonImmutable|null $budget_alerted_on
+ * @property int $request_hold_minutes
  */
 class HotelAssistantSettings extends Model
 {
@@ -34,11 +35,12 @@ class HotelAssistantSettings extends Model
         'tone' => 'formal',
         'daily_budget_micro_usd' => 5_000_000,
         'kill_switch' => false,
+        'request_hold_minutes' => 120,
     ];
 
     protected $fillable = [
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
-        'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on',
+        'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes',
     ];
 
     /**
@@ -51,6 +53,7 @@ class HotelAssistantSettings extends Model
             'languages' => 'array',
             'handover_messages' => 'array',
             'daily_budget_micro_usd' => 'integer',
+            'request_hold_minutes' => 'integer',
             'kill_switch' => 'boolean',
             'budget_alerted_on' => 'immutable_date',
         ];

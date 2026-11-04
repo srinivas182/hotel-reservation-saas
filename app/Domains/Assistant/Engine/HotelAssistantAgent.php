@@ -8,6 +8,7 @@ use App\Domains\Assistant\Engine\Tools\CheckAvailability;
 use App\Domains\Assistant\Engine\Tools\GetHotelInfo;
 use App\Domains\Assistant\Engine\Tools\GetQuote;
 use App\Domains\Assistant\Engine\Tools\ListRoomCategories;
+use App\Domains\Assistant\Engine\Tools\RequestBooking;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
@@ -63,6 +64,7 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
             new CheckAvailability($this->context),
             new GetQuote($this->context),
             new GetHotelInfo($this->context),
+            new RequestBooking($this->context),
         ];
     }
 

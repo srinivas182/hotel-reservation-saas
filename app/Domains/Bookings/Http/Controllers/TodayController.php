@@ -6,6 +6,7 @@ namespace App\Domains\Bookings\Http\Controllers;
 
 use App\Domains\Audit\Audit;
 use App\Domains\Availability\AvailabilityService;
+use App\Domains\BookingRequests\BookingRequestPresenter;
 use App\Domains\Bookings\FrontDesk;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Bookings\Models\BookingRoom;
@@ -30,7 +31,7 @@ final class TodayController extends Controller
         private readonly FrontDesk $desk,
     ) {}
 
-    public function index(Request $request, AvailabilityService $availability): Response
+    public function index(Request $request, AvailabilityService $availability, BookingRequestPresenter $requests): Response
     {
         $hotel = $this->context->hotel();
         $locale = $hotel->default_locale;
@@ -76,6 +77,8 @@ final class TodayController extends Controller
                 'sellable' => $tonight[$category->id][$today->toDateString()]['sellable'] ?? 0,
             ])->values(),
             'board' => $this->desk->roomsBoard(),
+            'requests' => $request->user()?->can('booking_requests.decide') === true ? $requests->pending() : [],
+            'categories' => $categories->map(fn (RoomCategory $c): array => ['id' => $c->id, 'name' => $c->localizedName($locale, $locale)])->values(),
             'registerCheck' => $check === null ? null : [
                 'matches' => $check->matches,
                 'notes' => $check->notes,
@@ -86,6 +89,8 @@ final class TodayController extends Controller
                 'frontdesk' => $request->user()?->can('bookings.frontdesk') === true,
                 'manage' => $request->user()?->can('bookings.manage') === true,
                 'create' => $request->user()?->can('bookings.create') === true,
+                'decide' => $request->user()?->can('booking_requests.decide') === true,
+                'override_price' => $request->user()?->can('bookings.override_price') === true,
             ],
         ]);
     }

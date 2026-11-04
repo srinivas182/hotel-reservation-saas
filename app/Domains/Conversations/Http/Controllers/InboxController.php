@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Conversations\Http\Controllers;
 
+use App\Domains\BookingRequests\BookingRequestPresenter;
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Conversations\ConversationHandover;
@@ -12,6 +13,7 @@ use App\Domains\Conversations\Exceptions\CannotSend;
 use App\Domains\Conversations\MessageSender;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
+use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Tenancy\TenantContext;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
 use App\Domains\WhatsApp\Templates\MessageTemplate;
@@ -104,6 +106,12 @@ final class InboxController extends Controller
             })->values(),
             'conversation' => $conversation === null ? null : $this->thread($conversation),
             'canReply' => $request->user()?->can('conversations.reply') === true,
+            'requests' => $conversation !== null && $request->user()?->can('booking_requests.decide') === true
+                ? app(BookingRequestPresenter::class)->pending($conversation->id)
+                : [],
+            'requestCategories' => RoomCategory::query()->where('active', true)->orderBy('sort_order')->get()
+                ->map(fn (RoomCategory $c): array => ['id' => $c->id, 'name' => $c->localizedName($this->context->hotel()->default_locale, $this->context->hotel()->default_locale)])->values(),
+            'canOverridePrice' => $request->user()?->can('bookings.override_price') === true,
             'templates' => $conversation === null ? [] : MessageTemplate::query()
                 ->where('status', TemplateStatus::Approved->value)
                 ->orderBy('name')

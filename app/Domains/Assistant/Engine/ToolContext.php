@@ -18,7 +18,18 @@ final class ToolContext
     /** @var list<array{tool: string, arguments: array<string, mixed>, result: string}> */
     private array $calls = [];
 
-    public function __construct(public readonly string $locale) {}
+    /**
+     * @param  string|null  $conversationId  null in the practice screen, where nothing is created
+     */
+    public function __construct(
+        public readonly string $locale,
+        public readonly ?string $conversationId = null,
+    ) {}
+
+    public function isPractice(): bool
+    {
+        return $this->conversationId === null;
+    }
 
     public function allowMoney(Money $money): void
     {
