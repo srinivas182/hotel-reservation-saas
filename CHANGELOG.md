@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S6.1 — The assistant answers guests on WhatsApp
+
+#### Added
+
+- Conversation modes: the assistant answers, staff answer, or paused. A handover switches to staff, marks the conversation "needs attention" with the reason, and sends the hotel's handover message. The inbox shows the mode and reason, a "Needs attention" filter and badge, "Take over" and "Hand back to the assistant" buttons (`conversations.reply`), and labels the assistant's replies. Handing back never re-answers messages staff already dealt with. Every change is audited.
+- `ReplyToGuest`: 8 seconds after a guest message (or once a voice note is transcribed) the assistant answers, only when the hotel has switched it on, the conversation is in assistant mode and WhatsApp is connected. Only the job for the newest message answers, so a burst of messages gets one combined reply; a lock per conversation and the last-answered marker mean each guest message is answered exactly once, even when Meta delivers it twice.
+- The assistant stays silent for 10 minutes after a staff reply (from the dashboard or the WhatsApp Business app) and never answers messages older than 24 hours.
+- Voice notes that cannot be downloaded or understood pass the conversation to staff; photos, documents and locations are described to the assistant.
+- Safety limits: more than 30 assistant replies in an hour, or 5 identical replies in a row, pass the conversation to staff.
+- Staffed hours: the assistant is told whether reception is staffed and, if not, when it opens, so it can tell guests when bookings will be confirmed (`StaffedHours`, hotel time zone).
+- A guest's first message records that they chose to contact the hotel (booking messages only, never marketing).
+- English and French text.
+
 ### S5.3 — Voice notes, language and the assistant test suite
 
 #### Added

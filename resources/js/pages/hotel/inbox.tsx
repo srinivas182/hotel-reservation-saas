@@ -17,6 +17,8 @@ type ListItem = {
     name: string;
     phone: string;
     unread: number;
+    mode: string;
+    needs_attention: boolean;
     window_open: boolean;
     last_at: string | null;
     preview: string | null;
@@ -46,6 +48,10 @@ type Thread = {
     id: string;
     name: string;
     phone: string;
+    mode: string;
+    mode_label: string;
+    needs_attention: boolean;
+    handover_reason: string | null;
     window_open: boolean;
     window_closes_at: string | null;
     bookings: {
@@ -287,6 +293,9 @@ function Bubble({ message }: { message: ThreadMessage }) {
                     {out && message.source === 'business_app' && (
                         <span>{t('from the WhatsApp app')} ·</span>
                     )}
+                    {out && message.source === 'assistant' && (
+                        <span>{t('Assistant')} ·</span>
+                    )}
                     {out && message.by && <span>{message.by} ·</span>}
                     <span>{message.at}</span>
                     {out && <StatusIcon status={message.status} />}
@@ -381,6 +390,58 @@ function Reply({
     );
 }
 
+function ModeControl({
+    conversation,
+    canReply,
+}: {
+    conversation: Thread;
+    canReply: boolean;
+}) {
+    const setMode = (mode: string) =>
+        router.put(
+            InboxController.mode.url(conversation.id),
+            { mode },
+            { preserveScroll: true },
+        );
+
+    return (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+            <Badge
+                variant={
+                    conversation.mode === 'assistant' ? 'default' : 'secondary'
+                }
+            >
+                {conversation.mode_label}
+            </Badge>
+            {conversation.needs_attention && conversation.handover_reason && (
+                <span className="text-destructive">
+                    {t('Passed to staff: :reason', {
+                        reason: conversation.handover_reason,
+                    })}
+                </span>
+            )}
+            {canReply && conversation.mode === 'assistant' && (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setMode('staff')}
+                >
+                    {t('Take over')}
+                </Button>
+            )}
+            {canReply && conversation.mode !== 'assistant' && (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setMode('assistant')}
+                >
+                    {t('Hand back to the assistant')}
+                </Button>
+            )}
+        </div>
+    );
+}
+
 export default function Inbox({
     filters,
     connected,
@@ -446,6 +507,7 @@ export default function Inbox({
                                 ['', t('All')],
                                 ['unread', t('Unread')],
                                 ['closing', t('Window closing')],
+                                ['attention', t('Needs attention')],
                             ].map(([value, label]) => (
                                 <Button
                                     key={value}
@@ -497,6 +559,11 @@ export default function Inbox({
                                         >
                                             {item.name}
                                         </span>
+                                        {item.needs_attention && (
+                                            <Badge variant="destructive">
+                                                {t('Needs attention')}
+                                            </Badge>
+                                        )}
                                         {item.unread > 0 && (
                                             <Badge>{item.unread}</Badge>
                                         )}
@@ -544,6 +611,10 @@ export default function Inbox({
                                         {conversation.phone}
                                     </div>
                                 </div>
+                                <ModeControl
+                                    conversation={conversation}
+                                    canReply={canReply}
+                                />
                                 <Badge
                                     variant={
                                         conversation.window_open
