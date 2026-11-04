@@ -37,6 +37,7 @@ final class TranscribeMessage implements RequiresHotelContext, ShouldQueue
             $result = $gateway->transcribe($path, $message->conversation_id);
         } catch (AiUnavailable $exception) {
             $message->forceFill(['transcript_error' => mb_substr($exception->getMessage(), 0, 290)])->save();
+            ReplyToGuest::schedule($message);
 
             return;
         }
@@ -50,5 +51,7 @@ final class TranscribeMessage implements RequiresHotelContext, ShouldQueue
             'transcribed_at' => now(),
             'transcript_error' => $result->text === '' ? __('Nothing could be heard in this voice note.') : null,
         ])->save();
+
+        ReplyToGuest::schedule($message);
     }
 }

@@ -7,6 +7,7 @@ namespace App\Domains\Conversations\Webhooks;
 use App\Domains\Assistant\LanguageDetector;
 use App\Domains\Conversations\ConversationDirectory;
 use App\Domains\Conversations\Jobs\DownloadMedia;
+use App\Domains\Conversations\Jobs\ReplyToGuest;
 use App\Domains\Conversations\MessageSource;
 use App\Domains\Conversations\MessageStatus;
 use App\Domains\Conversations\Models\Conversation;
@@ -113,8 +114,15 @@ final class MessagesHandler implements WebhookHandler
             $guest->forceFill(['preferred_locale' => $message->language])->save();
         }
 
+        $this->recordConsent($conversation);
+
         if ($media !== null && isset($media['media_id'])) {
             DownloadMedia::dispatch($message->id);
+        }
+
+        // Voice notes are answered once transcribed (TranscribeMessage).
+        if ($type !== 'audio') {
+            ReplyToGuest::schedule($message);
         }
     }
 
@@ -148,6 +156,20 @@ final class MessagesHandler implements WebhookHandler
         ]);
 
         $this->touch($conversation, $sentAt, inbound: false);
+        $conversation->forceFill(['staff_replied_at' => $sentAt])->save();
+    }
+
+    /**
+     * The guest chose to contact the hotel: record it once, for booking
+     * messages only (never marketing).
+     */
+    private function recordConsent(Conversation $conversation): void
+    {
+        $guest = $conversation->contact?->guest;
+
+        if ($guest !== null && ! $guest->whatsapp_opt_in) {
+            $guest->forceFill(['whatsapp_opt_in' => true, 'whatsapp_opt_in_at' => now()])->save();
+        }
     }
 
     /**

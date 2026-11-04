@@ -48,6 +48,8 @@ final class DownloadMedia implements RequiresHotelContext, ShouldQueue
             $message->forceFill(['media' => [...$media, 'error' => mb_substr($exception->getMessage(), 0, 200)]])->save();
 
             if ($exception->metaCode === 413) {
+                $this->replyIfVoiceNote($message);
+
                 return;
             }
 
@@ -68,6 +70,26 @@ final class DownloadMedia implements RequiresHotelContext, ShouldQueue
 
         if ($message->type === 'audio') {
             TranscribeMessage::dispatch($message->id);
+        }
+    }
+
+    public function failed(): void
+    {
+        $message = Message::query()->find($this->messageId);
+
+        if ($message !== null) {
+            $this->replyIfVoiceNote($message);
+        }
+    }
+
+    /**
+     * A voice note that cannot be downloaded cannot be transcribed: let the
+     * reply job pass the conversation to staff.
+     */
+    private function replyIfVoiceNote(Message $message): void
+    {
+        if ($message->type === 'audio') {
+            ReplyToGuest::schedule($message);
         }
     }
 

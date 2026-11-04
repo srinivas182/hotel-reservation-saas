@@ -6,6 +6,8 @@ namespace App\Domains\Conversations\Http\Controllers;
 
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Models\Booking;
+use App\Domains\Conversations\ConversationHandover;
+use App\Domains\Conversations\ConversationMode;
 use App\Domains\Conversations\Exceptions\CannotSend;
 use App\Domains\Conversations\MessageSender;
 use App\Domains\Conversations\Models\Conversation;
@@ -20,6 +22,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,7 +50,7 @@ final class InboxController extends Controller
         $hotel = $this->context->hotel();
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'filter' => ['nullable', 'in:unread,closing'],
+            'filter' => ['nullable', 'in:unread,closing,attention'],
         ]);
         $search = trim((string) ($filters['search'] ?? ''));
         $digits = preg_replace('/\D/', '', $search) ?? '';
@@ -59,6 +62,7 @@ final class InboxController extends Controller
                 ->when(strlen($digits) >= 3, fn ($q) => $q->orWhere('wa_id', 'like', "%{$digits}%"))
                 ->orWhereHas('guest', fn ($guest) => $guest->where('first_name', 'like', "%{$search}%")->orWhere('last_name', 'like', "%{$search}%"))))
             ->when(($filters['filter'] ?? null) === 'unread', fn ($query) => $query->where('unread_count', '>', 0))
+            ->when(($filters['filter'] ?? null) === 'attention', fn ($query) => $query->where('needs_attention', true))
             ->when(($filters['filter'] ?? null) === 'closing', fn ($query) => $query
                 ->where('last_inbound_at', '>', now()->subHours(Conversation::WINDOW_HOURS))
                 ->where('last_inbound_at', '<=', now()->subHours(Conversation::WINDOW_HOURS - 2)))
@@ -91,6 +95,8 @@ final class InboxController extends Controller
                     'name' => $this->name($item),
                     'phone' => '+'.$item->contact?->wa_id,
                     'unread' => $item->unread_count,
+                    'mode' => $item->mode->value,
+                    'needs_attention' => $item->needs_attention,
                     'window_open' => $item->windowOpen(),
                     'last_at' => $item->last_message_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
                     'preview' => $last === null ? null : ($last->direction === 'out' ? '↩ ' : '').$this->preview($last),
@@ -149,6 +155,19 @@ final class InboxController extends Controller
         return back();
     }
 
+    public function mode(Request $request, Conversation $conversation, ConversationHandover $handover, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate(['mode' => ['required', Rule::enum(ConversationMode::class)]]);
+
+        match (ConversationMode::from((string) $data['mode'])) {
+            ConversationMode::Staff => $handover->toStaff($conversation, 'taken_over_by_staff', $user),
+            ConversationMode::Assistant => $handover->toAssistant($conversation, $user),
+            ConversationMode::Paused => $handover->pause($conversation, $user),
+        };
+
+        return back();
+    }
+
     public function media(Message $message): StreamedResponse
     {
         $path = $message->media['path'] ?? null;
@@ -183,6 +202,10 @@ final class InboxController extends Controller
             'id' => $conversation->id,
             'name' => $this->name($conversation),
             'phone' => '+'.$conversation->contact?->wa_id,
+            'mode' => $conversation->mode->value,
+            'mode_label' => $conversation->mode->label(),
+            'needs_attention' => $conversation->needs_attention,
+            'handover_reason' => $conversation->handover_reason,
             'window_open' => $conversation->windowOpen(),
             'window_closes_at' => $conversation->windowClosesAt()?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             'bookings' => $guest === null ? [] : Booking::query()

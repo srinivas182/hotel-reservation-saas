@@ -119,6 +119,9 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::post('hotel/inbox/{conversation}/reply', [InboxController::class, 'reply'])
         ->middleware(['can:conversations.reply', 'throttle:60,1'])
         ->name('hotel.inbox.reply');
+    Route::put('hotel/inbox/{conversation}/mode', [InboxController::class, 'mode'])
+        ->middleware('can:conversations.reply')
+        ->name('hotel.inbox.mode');
     Route::post('hotel/inbox/{conversation}/template', [InboxController::class, 'sendTemplate'])
         ->middleware(['can:conversations.reply', 'throttle:60,1'])
         ->name('hotel.inbox.template');
