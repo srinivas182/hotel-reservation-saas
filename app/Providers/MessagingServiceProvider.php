@@ -31,6 +31,8 @@ final class MessagingServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \Illuminate\Support\Facades\Event::listen(\App\Domains\BookingRequests\BookingRequestDecided::class, \App\Domains\BookingRequests\Listeners\TellGuest::class);
+
         Mail::extend('platform', fn (): PlatformTransport => new PlatformTransport(
             $this->app->make(MailTransportFactory::class),
             $this->app->make(EmailAllowance::class),

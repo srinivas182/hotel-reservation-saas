@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S6.3 — Telling the guest, deposits
+
+#### Added
+
+- The guest is told what happened to their WhatsApp request automatically (`TellGuestTheDecision`, on approval, decline and expiry): free text within 24 hours of their last message, in their language, otherwise the approved template in that language (or the hotel's main language). When neither is possible the conversation is marked "needs attention" so staff contact the guest. Each outcome is audited and recorded on the request.
+- Deposits (Assistant settings): when required, approval creates a tentative booking held for the hotel's time to pay, with a payment note, and the guest receives the deposit amount (percentage of the total, rounded up), the deadline and the payment instructions; reception confirms the booking when the money arrives. Instructions are required in the hotel's main language.
+- Decision message wording per language for confirmed, deposit, declined and expired, with placeholders ({name}, {reference}, {room}, {check_in}, {check_out}, {total}, {deposit}, {deposit_deadline}, {payment_instructions}, {hotel}) and French and English defaults.
+- Four starter templates in French and English for Meta approval: `booking_confirmed`, `booking_deposit_request`, `booking_declined`, `request_expired` (no template starts or ends with a value, values never sit side by side, every value has an example).
+- Request hold time is now set in the Assistant settings.
+- Tests can no longer reach real services: every HTTP call must be faked.
+- An end-to-end test: guest asks, the assistant quotes and sends the request, reception approves, the booking is made and the guest receives the confirmation.
+- English and French text.
+
 ### S6.2 — WhatsApp booking requests
 
 #### Added

@@ -25,6 +25,7 @@ it('saves the assistant settings', function (): void {
     asStaffOf($this->hotel, $this->manager)->put(route('hotel.assistant.update'), [
         'enabled' => true, 'display_name' => 'Awa, l’assistante', 'tone' => 'formal', 'languages' => ['fr'],
         'handover_messages' => ['fr' => 'La réception vous répond.', 'en' => ''], 'daily_budget' => 7.5, 'kill_switch' => false,
+        'request_hold_minutes' => 120, 'deposit_required' => false, 'deposit_percent' => 30, 'deposit_hours' => 24,
     ])->assertSessionHasNoErrors();
 
     $settings = ($this->in)(fn () => HotelAssistantSettings::current());

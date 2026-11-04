@@ -20,7 +20,16 @@ type Props = {
         handover_messages: Record<string, string>;
         daily_budget: number;
         kill_switch: boolean;
+        request_hold_minutes: number;
+        deposit_required: boolean;
+        deposit_percent: number;
+        deposit_hours: number;
+        deposit_instructions: Record<string, string>;
+        decision_messages: Record<string, Record<string, string>>;
     };
+    decisionKinds: string[];
+    placeholders: string[];
+    defaultMessages: Record<string, Record<string, string>>;
     enabledLocales: { code: string; label: string }[];
     spentToday: number;
     publishedVersion: number | null;
@@ -31,6 +40,9 @@ export default function AssistantSettings({
     enabledLocales,
     spentToday,
     publishedVersion,
+    decisionKinds,
+    placeholders,
+    defaultMessages,
 }: Props) {
     const form = useForm(settings);
     const errors = form.errors as Record<string, string | undefined>;
@@ -251,6 +263,192 @@ export default function AssistantSettings({
                             </span>
                         </label>
                     </div>
+                    <section className="flex flex-col gap-3 border-t pt-4">
+                        <h2 className="font-medium">
+                            {t('WhatsApp booking requests')}
+                        </h2>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-1">
+                                <Label htmlFor="request_hold_minutes">
+                                    {t(
+                                        'Hold the rooms of a request for (minutes)',
+                                    )}
+                                </Label>
+                                <Input
+                                    id="request_hold_minutes"
+                                    type="number"
+                                    min={15}
+                                    max={1440}
+                                    value={form.data.request_hold_minutes}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'request_hold_minutes',
+                                            Number(e.target.value),
+                                        )
+                                    }
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {t(
+                                        'Always at least until one hour after reception opens.',
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                        <label className="flex items-center gap-2 text-sm">
+                            <input
+                                type="checkbox"
+                                className="size-4"
+                                checked={form.data.deposit_required}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'deposit_required',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            {t(
+                                'Ask for a deposit before the booking is confirmed',
+                            )}
+                        </label>
+                        {form.data.deposit_required && (
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-1">
+                                    <Label htmlFor="deposit_percent">
+                                        {t('Deposit (% of the total)')}
+                                    </Label>
+                                    <Input
+                                        id="deposit_percent"
+                                        type="number"
+                                        min={1}
+                                        max={100}
+                                        value={form.data.deposit_percent}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'deposit_percent',
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="grid gap-1">
+                                    <Label htmlFor="deposit_hours">
+                                        {t('Time to pay (hours)')}
+                                    </Label>
+                                    <Input
+                                        id="deposit_hours"
+                                        type="number"
+                                        min={1}
+                                        max={168}
+                                        value={form.data.deposit_hours}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'deposit_hours',
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                    />
+                                </div>
+                                {enabledLocales.map((locale) => (
+                                    <div
+                                        key={locale.code}
+                                        className="grid gap-1 sm:col-span-2"
+                                    >
+                                        <Label
+                                            htmlFor={`deposit-${locale.code}`}
+                                        >
+                                            {t(
+                                                'How to pay the deposit (:language)',
+                                                { language: locale.label },
+                                            )}
+                                        </Label>
+                                        <Input
+                                            id={`deposit-${locale.code}`}
+                                            placeholder={t(
+                                                'For example: Orange Money 07 00 00 00 00 (First Class Lodge)',
+                                            )}
+                                            value={
+                                                form.data.deposit_instructions[
+                                                    locale.code
+                                                ] ?? ''
+                                            }
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'deposit_instructions',
+                                                    {
+                                                        ...form.data
+                                                            .deposit_instructions,
+                                                        [locale.code]:
+                                                            e.target.value,
+                                                    },
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                ))}
+                                <InputError
+                                    className="sm:col-span-2"
+                                    message={errors.deposit_instructions}
+                                />
+                            </div>
+                        )}
+                        <details className="text-sm">
+                            <summary className="cursor-pointer font-medium">
+                                {t('Messages telling the guest the decision')}
+                            </summary>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                                {t(
+                                    'Used within 24 hours of the guest’s last message; after that the approved templates are used. Leave empty to use the default. You can use:',
+                                )}{' '}
+                                {placeholders.join(' ')}
+                            </p>
+                            {enabledLocales.map((locale) =>
+                                decisionKinds.map((kind) => (
+                                    <div
+                                        key={`${locale.code}-${kind}`}
+                                        className="mt-2 grid gap-1"
+                                    >
+                                        <Label
+                                            htmlFor={`msg-${locale.code}-${kind}`}
+                                        >
+                                            {t(kind)} ({locale.label})
+                                        </Label>
+                                        <textarea
+                                            id={`msg-${locale.code}-${kind}`}
+                                            className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                                            maxLength={900}
+                                            placeholder={
+                                                defaultMessages[locale.code]?.[
+                                                    kind
+                                                ] ?? ''
+                                            }
+                                            value={
+                                                form.data.decision_messages[
+                                                    locale.code
+                                                ]?.[kind] ?? ''
+                                            }
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'decision_messages',
+                                                    {
+                                                        ...form.data
+                                                            .decision_messages,
+                                                        [locale.code]: {
+                                                            ...form.data
+                                                                .decision_messages[
+                                                                locale.code
+                                                            ],
+                                                            [kind]: e.target
+                                                                .value,
+                                                        },
+                                                    },
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                )),
+                            )}
+                        </details>
+                    </section>
                     <div>
                         <Button disabled={form.processing}>{t('Save')}</Button>
                     </div>

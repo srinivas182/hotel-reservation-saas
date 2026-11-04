@@ -22,6 +22,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $kill_switch
  * @property CarbonImmutable|null $budget_alerted_on
  * @property int $request_hold_minutes
+ * @property bool $deposit_required
+ * @property int $deposit_percent
+ * @property int $deposit_hours
+ * @property array<string, string>|null $deposit_instructions
+ * @property array<string, array<string, string>>|null $decision_messages
  */
 class HotelAssistantSettings extends Model
 {
@@ -36,11 +41,15 @@ class HotelAssistantSettings extends Model
         'daily_budget_micro_usd' => 5_000_000,
         'kill_switch' => false,
         'request_hold_minutes' => 120,
+        'deposit_required' => false,
+        'deposit_percent' => 30,
+        'deposit_hours' => 24,
     ];
 
     protected $fillable = [
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
         'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes',
+        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'decision_messages',
     ];
 
     /**
@@ -54,6 +63,11 @@ class HotelAssistantSettings extends Model
             'handover_messages' => 'array',
             'daily_budget_micro_usd' => 'integer',
             'request_hold_minutes' => 'integer',
+            'deposit_required' => 'boolean',
+            'deposit_percent' => 'integer',
+            'deposit_hours' => 'integer',
+            'deposit_instructions' => 'array',
+            'decision_messages' => 'array',
             'kill_switch' => 'boolean',
             'budget_alerted_on' => 'immutable_date',
         ];

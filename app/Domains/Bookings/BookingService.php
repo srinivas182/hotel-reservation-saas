@@ -57,7 +57,7 @@ final class BookingService
 
         $hotel = $this->context->hotel();
         $category = RoomCategory::query()->findOrFail($data->stay->categoryId);
-        $tentativeHours = HotelSettings::current()->tentative_hours;
+        $tentativeHours = $data->tentativeHours ?? HotelSettings::current()->tentative_hours;
 
         try {
             $booking = DB::transaction(function () use ($data, $quote, $hotel, $category, $tentativeHours, $by): Booking {

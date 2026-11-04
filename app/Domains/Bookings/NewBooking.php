@@ -28,5 +28,6 @@ final readonly class NewBooking
         public ?string $paymentNote = null,
         public ?Money $overrideTotal = null,
         public ?string $overrideReason = null,
+        public ?int $tentativeHours = null,
     ) {}
 }
