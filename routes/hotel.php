@@ -30,6 +30,7 @@ use App\Domains\Rooms\Http\Controllers\RoomCategoryController;
 use App\Domains\Rooms\Http\Controllers\RoomClosureController;
 use App\Domains\Rooms\Http\Controllers\RoomController;
 use App\Domains\Rooms\Http\Controllers\RoomsController;
+use App\Domains\StaffAlerts\Http\Controllers\AlertSettingsController;
 use App\Domains\WhatsApp\Http\Controllers\TemplateController;
 use App\Domains\WhatsApp\Http\Controllers\WhatsAppConnectionController;
 use Illuminate\Support\Facades\Route;
@@ -149,6 +150,10 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/booking-requests/{bookingRequest}/approve', [BookingRequestController::class, 'approve'])->name('hotel.booking-requests.approve');
         Route::post('hotel/booking-requests/{bookingRequest}/decline', [BookingRequestController::class, 'decline'])->name('hotel.booking-requests.decline');
     });
+
+    Route::get('hotel/my-alerts', [AlertSettingsController::class, 'show'])->name('hotel.my-alerts');
+    Route::put('hotel/my-alerts', [AlertSettingsController::class, 'update'])->name('hotel.my-alerts.update');
+    Route::post('hotel/my-alerts/test', [AlertSettingsController::class, 'test'])->middleware('throttle:5,1')->name('hotel.my-alerts.test');
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');

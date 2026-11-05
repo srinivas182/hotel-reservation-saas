@@ -56,6 +56,26 @@ final class StarterTemplates
                 ],
                 'examples' => ['Awa', 'First Class Lodge', '12 November 2026', '14 November 2026'],
             ],
+            'staff_alert' => [
+                'name' => 'staff_alert',
+                'category' => 'UTILITY',
+                'label' => __('Alert to hotel staff'),
+                'bodies' => [
+                    'en' => 'Alert for {{1}}: {{2}}. Details: {{3}}. Open the dashboard to respond.',
+                    'fr' => 'Alerte pour {{1}} : {{2}}. Détails : {{3}}. Ouvrez le tableau de bord pour répondre.',
+                ],
+                'examples' => ['First Class Lodge', 'New WhatsApp booking request', 'Awa Koné, Executive, 2026-11-12 → 2026-11-14'],
+            ],
+            'owner_daily_summary' => [
+                'name' => 'owner_daily_summary',
+                'category' => 'UTILITY',
+                'label' => __('Owner\'s daily summary'),
+                'bodies' => [
+                    'en' => 'Summary for {{1}} on {{2}}: {{3}} arrivals, {{4}} departures, rooms occupied tonight {{5}}. New bookings: {{6}} worth {{7}}. WhatsApp requests approved/declined/expired: {{8}}. Conversations needing attention: {{9}}. AI cost today: {{10}}. Good evening.',
+                    'fr' => 'Résumé de {{1}} pour le {{2}} : {{3}} arrivées, {{4}} départs, chambres occupées ce soir {{5}}. Nouvelles réservations : {{6}} pour {{7}}. Demandes WhatsApp approuvées/refusées/expirées : {{8}}. Conversations à traiter : {{9}}. Coût de l\'IA aujourd\'hui : {{10}}. Bonne soirée.',
+                ],
+                'examples' => ['First Class Lodge', '12 November 2026', '4', '3', '18/26', '5', '250,000 F CFA', '3/1/0', '1', 'US$ 0.42'],
+            ],
             'request_expired' => [
                 'name' => 'request_expired',
                 'category' => 'UTILITY',
