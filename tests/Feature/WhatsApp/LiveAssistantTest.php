@@ -66,7 +66,9 @@ function runReplies(object $test): void
 
 function assistantMessages(object $test): array
 {
-    return ($test->in)(fn () => Message::query()->where('source', MessageSource::Assistant->value)->orderBy('sent_at')->orderBy('id')->pluck('body')->all());
+    // Without the "virtual assistant" line added to the first reply (tested separately).
+    return ($test->in)(fn () => Message::query()->where('source', MessageSource::Assistant->value)->orderBy('sent_at')->orderBy('id')->pluck('body')
+        ->map(fn (?string $body): string => explode("\n\n", (string) $body)[0])->all());
 }
 
 it('answers a guest message once, 8 seconds later', function (): void {

@@ -23,7 +23,7 @@ beforeEach(function (): void {
 
 it('saves the assistant settings', function (): void {
     asStaffOf($this->hotel, $this->manager)->put(route('hotel.assistant.update'), [
-        'enabled' => true, 'display_name' => 'Awa, l’assistante', 'tone' => 'formal', 'languages' => ['fr'],
+        'mode' => 'off', 'display_name' => 'Awa, l’assistante', 'tone' => 'formal', 'languages' => ['fr'],
         'handover_messages' => ['fr' => 'La réception vous répond.', 'en' => ''], 'daily_budget' => 7.5, 'kill_switch' => false,
         'request_hold_minutes' => 120, 'deposit_required' => false, 'deposit_percent' => 30, 'deposit_hours' => 24,
     ])->assertSessionHasNoErrors();
@@ -35,7 +35,7 @@ it('saves the assistant settings', function (): void {
         ->and(AuditLog::query()->where('event', 'assistant.settings_updated')->exists())->toBeTrue();
 
     asStaffOf($this->hotel, $this->manager)->put(route('hotel.assistant.update'), [
-        'enabled' => true, 'tone' => 'formal', 'languages' => ['de'], 'daily_budget' => 5, 'kill_switch' => false,
+        'mode' => 'off', 'tone' => 'formal', 'languages' => ['de'], 'daily_budget' => 5, 'kill_switch' => false,
     ])->assertSessionHasErrors('languages.0');
 });
 

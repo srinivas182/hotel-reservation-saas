@@ -116,4 +116,89 @@ final class MessageSender
 
         return $message;
     }
+
+    /**
+     * Supervised mode: keep the assistant's reply as a draft for staff.
+     */
+    public function draft(Conversation $conversation, string $text): Message
+    {
+        $message = Message::query()->create([
+            'conversation_id' => $conversation->id,
+            'direction' => 'out',
+            'type' => 'text',
+            'body' => $text,
+            'status' => MessageStatus::Draft,
+            'source' => MessageSource::Assistant,
+            'sent_at' => now(),
+        ]);
+
+        // The guest is waiting until staff send it.
+        if ($conversation->waiting_since === null) {
+            $conversation->forceFill(['waiting_since' => now()])->save();
+        }
+
+        return $message;
+    }
+
+    /**
+     * Send a draft as written or after staff edited it.
+     */
+    public function sendDraft(Message $draft, ?string $editedText, User $by): Message
+    {
+        if ($draft->status !== MessageStatus::Draft) {
+            throw new CannotSend(__('This draft has already been dealt with.'));
+        }
+
+        $conversation = $draft->conversation()->firstOrFail();
+        $text = trim($editedText ?? (string) $draft->body);
+        $edited = $editedText !== null && trim($editedText) !== trim((string) $draft->body);
+
+        if ($text === '' || mb_strlen($text) > self::MAX_TEXT) {
+            throw new CannotSend(__('Write a message of up to :max characters.', ['max' => self::MAX_TEXT]));
+        }
+
+        if (! $conversation->windowOpen()) {
+            throw new CannotSend(__('More than 24 hours have passed since the guest’s last message. Send an approved template instead.'));
+        }
+
+        $account = WhatsAppAccount::query()->first();
+
+        if ($account === null || ! $account->status->canSend()) {
+            throw new CannotSend(__('WhatsApp is not connected. Ask the owner to reconnect it.'));
+        }
+
+        $draft->forceFill([
+            'body' => $text,
+            'client_id' => (string) Str::uuid(),
+            'status' => MessageStatus::Queued,
+            'sent_by' => $by->getKey(),
+            'sent_at' => now(),
+            'draft_outcome' => $edited ? 'edited' : 'sent_unchanged',
+        ])->save();
+
+        $this->afterDraftHandled($conversation);
+        SendMessage::dispatch($draft->id);
+
+        return $draft;
+    }
+
+    public function discardDraft(Message $draft): void
+    {
+        if ($draft->status !== MessageStatus::Draft) {
+            return;
+        }
+
+        $draft->forceFill(['status' => MessageStatus::Discarded, 'draft_outcome' => 'discarded'])->save();
+        $this->afterDraftHandled($draft->conversation()->firstOrFail());
+    }
+
+    private function afterDraftHandled(Conversation $conversation): void
+    {
+        $pending = $conversation->messages()->where('status', MessageStatus::Draft->value)->exists();
+
+        $conversation->forceFill([
+            'last_message_at' => now(),
+            ...($pending ? [] : ['waiting_since' => null]),
+        ])->save();
+    }
 }

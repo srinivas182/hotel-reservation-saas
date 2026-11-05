@@ -3,6 +3,7 @@ import {
     Building2,
     LayoutGrid,
     MessageCircle,
+    Rocket,
     Sparkles,
     Percent,
     BarChart3,
@@ -24,6 +25,8 @@ import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/H
 import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
 import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsController';
 import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Controllers/AlertSettingsController';
+import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
+import ReadinessController from '@/actions/App/Domains/Platform/Http/Controllers/ReadinessController';
 import AssistantSettingsController from '@/actions/App/Domains/Assistant/Http/Controllers/AssistantSettingsController';
 import CalendarController from '@/actions/App/Domains/Availability/Http/Controllers/CalendarController';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
@@ -79,6 +82,11 @@ const platformNavItems: NavItem[] = [
         title: 'WhatsApp',
         href: WhatsAppPlatformController(),
         icon: MessageCircle,
+    },
+    {
+        title: 'Go-live readiness',
+        href: ReadinessController.index(),
+        icon: Rocket,
     },
 ];
 
@@ -166,6 +174,9 @@ export function AppSidebar() {
                       icon: BellRing,
                   },
               ]
+            : []),
+        ...(auth.permissions.includes('assistant.manage')
+            ? [{ title: 'Go-live', href: GoLiveController(), icon: Rocket }]
             : []),
         ...(auth.permissions.includes('assistant.manage')
             ? [

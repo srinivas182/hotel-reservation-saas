@@ -162,7 +162,7 @@ it('requires payment instructions when a deposit is required', function (): void
     $manager = staffMember($this->hotel, SystemRole::Manager);
 
     asStaffOf($this->hotel, $manager)->put(route('hotel.assistant.update'), [
-        'enabled' => true, 'tone' => 'formal', 'languages' => ['fr'], 'daily_budget' => 5, 'kill_switch' => false,
+        'mode' => 'off', 'tone' => 'formal', 'languages' => ['fr'], 'daily_budget' => 5, 'kill_switch' => false,
         'request_hold_minutes' => 120, 'deposit_required' => true, 'deposit_percent' => 30, 'deposit_hours' => 24, 'deposit_instructions' => ['fr' => ''],
     ])->assertSessionHasErrors('deposit_instructions');
 });

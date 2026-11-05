@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S8.1 — Go-live readiness, supervised mode, telling guests
+
+#### Added
+
+- Go-live readiness page (`/hotel/go-live`, Owners and Managers) with every check green or red and a link to fix it. Required: WhatsApp connected, a notification received in the last 24 hours, booking/alert templates (and deposit and stay templates when used) approved in the hotel's language, approved AI models with a passing test-suite run, information pack published, rooms and a rate for every category, reception hours, deposit instructions when deposits are on, someone receiving WhatsApp alerts, background jobs and scheduler running, a backup in the last 26 hours. Recommended: review link, owner summary, stay messages, privacy link.
+- Platform → Go-live readiness: every hotel's missing checks; a super admin can allow go-live without every required check, with a written reason (audited, removable).
+- Assistant mode: Off, Supervised or Automatic (replaces on/off; hotels that had it on keep Automatic). It cannot be switched on until the required checks pass, unless overridden.
+- Supervised mode: the assistant's reply (with all its checks and handover rules) is kept as a draft in the inbox; staff send it, edit and send it, or discard it, and the outcome is recorded. Nothing reaches the guest without approval (handovers send nothing either); booking requests are still created; drafts nobody approves alert staff after the waiting time. The go-live page shows the share of drafts sent unchanged.
+- The first assistant reply in a conversation says it is the hotel's virtual assistant, how to reach a person, and links the hotel's privacy notice (new setting). Words such as « réception », "human" or « personne » (editable per hotel, accents and case ignored) always pass the conversation to staff without asking the AI.
+- English and French text.
+
 ### S7.3 — Stay messages
 
 #### Added

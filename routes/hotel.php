@@ -19,6 +19,7 @@ use App\Domains\Bookings\Http\Controllers\BookingExportController;
 use App\Domains\Bookings\Http\Controllers\TodayController;
 use App\Domains\Conversations\Http\Controllers\InboxController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
+use App\Domains\GoLive\Http\Controllers\GoLiveController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
 use App\Domains\Messaging\Http\Controllers\UsageController;
@@ -126,6 +127,10 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/inbox/{conversation}/notes', [InboxController::class, 'note'])->middleware('throttle:60,1')->name('hotel.inbox.notes');
         Route::post('hotel/inbox/{conversation}/translate', [InboxController::class, 'translateDraft'])->middleware('throttle:30,1')->name('hotel.inbox.translate');
     });
+    Route::middleware(['can:conversations.reply', 'throttle:60,1'])->group(function (): void {
+        Route::post('hotel/inbox/drafts/{message}/send', [InboxController::class, 'sendDraft'])->name('hotel.inbox.drafts.send');
+        Route::post('hotel/inbox/drafts/{message}/discard', [InboxController::class, 'discardDraft'])->name('hotel.inbox.drafts.discard');
+    });
     Route::post('hotel/inbox/messages/{message}/translate', [InboxController::class, 'translateMessage'])
         ->middleware(['can:conversations.view', 'throttle:30,1'])
         ->name('hotel.inbox.messages.translate');
@@ -137,6 +142,7 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         ->name('hotel.inbox.template');
 
     Route::middleware('can:assistant.manage')->group(function (): void {
+        Route::get('hotel/go-live', GoLiveController::class)->name('hotel.go-live');
         Route::get('hotel/assistant', [AssistantSettingsController::class, 'show'])->name('hotel.assistant');
         Route::put('hotel/assistant', [AssistantSettingsController::class, 'update'])->name('hotel.assistant.update');
         Route::get('hotel/assistant/knowledge', [KnowledgeController::class, 'show'])->name('hotel.assistant.knowledge');
