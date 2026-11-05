@@ -29,5 +29,6 @@ final readonly class NewBooking
         public ?Money $overrideTotal = null,
         public ?string $overrideReason = null,
         public ?int $tentativeHours = null,
+        public bool $whatsappConsent = false,
     ) {}
 }

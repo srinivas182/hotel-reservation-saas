@@ -62,6 +62,10 @@ final class BookingService
         try {
             $booking = DB::transaction(function () use ($data, $quote, $hotel, $category, $tentativeHours, $by): Booking {
                 $guest = $this->guests->findOrCreate($data->guest);
+
+                if ($data->whatsappConsent && ! $guest->whatsapp_opt_in) {
+                    $guest->forceFill(['whatsapp_opt_in' => true, 'whatsapp_opt_in_at' => now()])->save();
+                }
                 $total = $data->overrideTotal ?? $quote->total;
                 $tentative = $data->status === BookingStatus::Tentative;
 
@@ -89,6 +93,7 @@ final class BookingService
                     'notes' => $data->notes,
                     'tentative_until' => $tentative ? now()->addHours($tentativeHours) : null,
                     'created_by' => $by?->getKey(),
+                    'whatsapp_consent_at' => $data->whatsappConsent ? now() : null,
                     'confirmed_at' => $tentative ? null : now(),
                     'confirmed_by' => $tentative ? null : $by?->getKey(),
                 ]);

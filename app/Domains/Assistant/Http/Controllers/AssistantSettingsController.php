@@ -11,6 +11,8 @@ use App\Domains\Audit\Audit;
 use App\Domains\BookingRequests\DecisionMessages;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Hotel\Support\Locales;
+use App\Domains\StayMessages\StayMessageKind;
+use App\Domains\StayMessages\StayMessenger;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -48,7 +50,11 @@ final class AssistantSettingsController extends Controller
                 'deposit_hours' => $settings->deposit_hours,
                 'deposit_instructions' => (object) ($settings->deposit_instructions ?? []),
                 'decision_messages' => (object) ($settings->decision_messages ?? []),
+                'silence_minutes' => $settings->silence_minutes,
+                'stay_messages' => StayMessenger::settings($settings),
+                'review_url' => $settings->review_url ?? '',
             ],
+            'stayKinds' => collect(StayMessageKind::cases())->map(fn (StayMessageKind $k): array => ['value' => $k->value, 'label' => $k->label()])->values(),
             'decisionKinds' => DecisionMessages::KINDS,
             'placeholders' => DecisionMessages::PLACEHOLDERS,
             'defaultMessages' => collect($enabled)->mapWithKeys(fn (string $locale): array => [
@@ -83,6 +89,11 @@ final class AssistantSettingsController extends Controller
             'decision_messages' => ['nullable', 'array'],
             'decision_messages.*' => ['array'],
             'decision_messages.*.*' => ['nullable', 'string', 'max:900'],
+            'silence_minutes' => ['nullable', 'integer', 'min:5', 'max:240'],
+            'stay_messages' => ['nullable', 'array'],
+            'stay_messages.*.enabled' => ['boolean'],
+            'stay_messages.*.time' => ['date_format:H:i'],
+            'review_url' => ['nullable', 'url:https', 'max:300'],
         ]);
 
         if ((bool) $data['deposit_required'] && trim((string) ($data['deposit_instructions'][$this->context->hotel()->default_locale] ?? '')) === '') {
@@ -109,6 +120,12 @@ final class AssistantSettingsController extends Controller
                 ->map(fn ($kinds): array => array_filter(Arr::only((array) $kinds, DecisionMessages::KINDS), fn ($m): bool => is_string($m) && trim($m) !== ''))
                 ->filter()
                 ->all(),
+            'silence_minutes' => (int) ($data['silence_minutes'] ?? $settings->silence_minutes),
+            'stay_messages' => collect(StayMessageKind::cases())->mapWithKeys(fn (StayMessageKind $k): array => [$k->value => [
+                'enabled' => (bool) ($data['stay_messages'][$k->value]['enabled'] ?? false),
+                'time' => (string) ($data['stay_messages'][$k->value]['time'] ?? $k->defaultTime()),
+            ]])->all(),
+            'review_url' => $data['review_url'] ?? null,
         ]);
 
         Audit::record('assistant.settings_updated', 'Assistant settings updated', subject: $this->context->hotel(), causer: $user, properties: [

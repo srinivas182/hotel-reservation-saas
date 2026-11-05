@@ -67,6 +67,7 @@ export default function CreateBooking({
         preferred_locale: '',
         notes: '',
         payment_note: '',
+        whatsapp_consent: false,
         override_total: '',
         override_reason: '',
     });
@@ -452,6 +453,22 @@ export default function CreateBooking({
                                 }
                             />
                         </div>
+                        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                            <input
+                                type="checkbox"
+                                className="size-4"
+                                checked={data.whatsapp_consent}
+                                onChange={(e) =>
+                                    setData(
+                                        'whatsapp_consent',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            {t(
+                                'Guest agrees to WhatsApp messages about this stay',
+                            )}
+                        </label>
                         {canOverridePrice && (
                             <>
                                 <div className="grid gap-1">

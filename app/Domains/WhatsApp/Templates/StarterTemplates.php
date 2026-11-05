@@ -76,6 +76,36 @@ final class StarterTemplates
                 ],
                 'examples' => ['First Class Lodge', '12 November 2026', '4', '3', '18/26', '5', '250,000 F CFA', '3/1/0', '1', 'US$ 0.42'],
             ],
+            'stay_reminder' => [
+                'name' => 'stay_reminder',
+                'category' => 'UTILITY',
+                'label' => __('Arrival reminder'),
+                'bodies' => [
+                    'en' => 'Hello {{1}}, we look forward to welcoming you at {{2}} tomorrow ({{3}}). Check-in is from {{4}}. Directions: {{5}}. Reply to this message if you need anything.',
+                    'fr' => 'Bonjour {{1}}, nous avons hâte de vous accueillir à {{2}} demain ({{3}}). L\'arrivée est possible à partir de {{4}}. Itinéraire : {{5}}. Répondez à ce message si vous avez besoin de quoi que ce soit.',
+                ],
+                'examples' => ['Awa', 'First Class Lodge', 'Thursday 12 November', '14:00', 'https://maps.google.com/?q=First+Class+Lodge+Korhogo'],
+            ],
+            'checkout_reminder' => [
+                'name' => 'checkout_reminder',
+                'category' => 'UTILITY',
+                'label' => __('Check-out reminder'),
+                'bodies' => [
+                    'en' => 'Good morning {{1}}, check-out at {{2}} is until {{3}} today. Reply to this message if you would like a late check-out. Thank you for your stay!',
+                    'fr' => 'Bonjour {{1}}, le départ de {{2}} est prévu jusqu\'à {{3}} aujourd\'hui. Répondez à ce message si vous souhaitez un départ tardif. Merci pour votre séjour !',
+                ],
+                'examples' => ['Awa', 'First Class Lodge', '12:00'],
+            ],
+            'stay_thank_you' => [
+                'name' => 'stay_thank_you',
+                'category' => 'UTILITY',
+                'label' => __('Thank-you after the stay'),
+                'bodies' => [
+                    'en' => 'Thank you {{1}} for staying at {{2}}. We hope to see you again soon. Your opinion helps us: {{3}}. Have a good trip!',
+                    'fr' => 'Merci {{1}} pour votre séjour à {{2}}. Nous espérons vous revoir bientôt. Votre avis nous aide : {{3}}. Bon voyage !',
+                ],
+                'examples' => ['Awa', 'First Class Lodge', 'https://g.page/r/first-class-lodge/review'],
+            ],
             'request_expired' => [
                 'name' => 'request_expired',
                 'category' => 'UTILITY',

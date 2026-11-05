@@ -26,7 +26,11 @@ type Props = {
         deposit_hours: number;
         deposit_instructions: Record<string, string>;
         decision_messages: Record<string, Record<string, string>>;
+        silence_minutes: number;
+        stay_messages: Record<string, { enabled: boolean; time: string }>;
+        review_url: string;
     };
+    stayKinds: { value: string; label: string }[];
     decisionKinds: string[];
     placeholders: string[];
     defaultMessages: Record<string, Record<string, string>>;
@@ -43,6 +47,7 @@ export default function AssistantSettings({
     decisionKinds,
     placeholders,
     defaultMessages,
+    stayKinds,
 }: Props) {
     const form = useForm(settings);
     const errors = form.errors as Record<string, string | undefined>;
@@ -448,6 +453,100 @@ export default function AssistantSettings({
                                 )),
                             )}
                         </details>
+                    </section>
+                    <section className="flex flex-col gap-3 border-t pt-4">
+                        <h2 className="font-medium">
+                            {t('Staff and stay messages')}
+                        </h2>
+                        <div className="grid max-w-xs gap-1">
+                            <Label htmlFor="silence_minutes">
+                                {t(
+                                    'Send a holding message when a guest waits for staff longer than (minutes)',
+                                )}
+                            </Label>
+                            <Input
+                                id="silence_minutes"
+                                type="number"
+                                min={5}
+                                max={240}
+                                value={form.data.silence_minutes}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'silence_minutes',
+                                        Number(e.target.value),
+                                    )
+                                }
+                            />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            {t(
+                                'Stay messages go only to guests who wrote to the hotel on WhatsApp or agreed when booking.',
+                            )}
+                        </p>
+                        {stayKinds.map((kind) => (
+                            <div
+                                key={kind.value}
+                                className="flex flex-wrap items-center gap-3 text-sm"
+                            >
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        className="size-4"
+                                        checked={
+                                            form.data.stay_messages[kind.value]
+                                                ?.enabled ?? false
+                                        }
+                                        onChange={(e) =>
+                                            form.setData('stay_messages', {
+                                                ...form.data.stay_messages,
+                                                [kind.value]: {
+                                                    ...form.data.stay_messages[
+                                                        kind.value
+                                                    ],
+                                                    enabled: e.target.checked,
+                                                },
+                                            })
+                                        }
+                                    />
+                                    {kind.label}
+                                </label>
+                                <Input
+                                    type="time"
+                                    aria-label={t('Time')}
+                                    className="w-32"
+                                    value={
+                                        form.data.stay_messages[kind.value]
+                                            ?.time ?? ''
+                                    }
+                                    onChange={(e) =>
+                                        form.setData('stay_messages', {
+                                            ...form.data.stay_messages,
+                                            [kind.value]: {
+                                                ...form.data.stay_messages[
+                                                    kind.value
+                                                ],
+                                                time: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                        ))}
+                        <div className="grid max-w-md gap-1">
+                            <Label htmlFor="review_url">
+                                {t('Review link (Google, TripAdvisor…)')}
+                            </Label>
+                            <Input
+                                id="review_url"
+                                type="url"
+                                placeholder="https://"
+                                value={form.data.review_url}
+                                onChange={(e) =>
+                                    form.setData('review_url', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.review_url} />
+                        </div>
                     </section>
                     <div>
                         <Button disabled={form.processing}>{t('Save')}</Button>

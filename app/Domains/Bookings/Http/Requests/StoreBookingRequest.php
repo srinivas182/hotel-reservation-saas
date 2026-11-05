@@ -57,6 +57,7 @@ final class StoreBookingRequest extends FormRequest
             'preferred_locale' => ['nullable', Rule::in(Locales::codes())],
             'notes' => ['nullable', 'string', 'max:2000'],
             'payment_note' => ['nullable', 'string', 'max:500'],
+            'whatsapp_consent' => ['nullable', 'boolean'],
             'override_total' => [$override ? 'required' : 'nullable', 'numeric', 'min:0', 'max:1000000000'],
             'override_reason' => [$override ? 'required' : 'nullable', 'string', 'max:300'],
         ];
