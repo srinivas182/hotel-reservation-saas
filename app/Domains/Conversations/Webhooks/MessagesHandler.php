@@ -6,6 +6,7 @@ namespace App\Domains\Conversations\Webhooks;
 
 use App\Domains\Assistant\LanguageDetector;
 use App\Domains\Conversations\ConversationDirectory;
+use App\Domains\Conversations\ConversationMode;
 use App\Domains\Conversations\Jobs\DownloadMedia;
 use App\Domains\Conversations\Jobs\ReplyToGuest;
 use App\Domains\Conversations\MessageSource;
@@ -116,6 +117,11 @@ final class MessagesHandler implements WebhookHandler
 
         $this->recordConsent($conversation);
 
+        $conversation->refresh();
+        if ($conversation->mode !== ConversationMode::Assistant && $conversation->waiting_since === null) {
+            $conversation->forceFill(['waiting_since' => $sentAt])->save();
+        }
+
         if ($media !== null && isset($media['media_id'])) {
             DownloadMedia::dispatch($message->id);
         }
@@ -156,7 +162,7 @@ final class MessagesHandler implements WebhookHandler
         ]);
 
         $this->touch($conversation, $sentAt, inbound: false);
-        $conversation->forceFill(['staff_replied_at' => $sentAt])->save();
+        $conversation->forceFill(['staff_replied_at' => $sentAt, 'waiting_since' => null])->save();
     }
 
     /**

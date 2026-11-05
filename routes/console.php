@@ -58,3 +58,9 @@ Schedule::command('booking-requests:expire')
     ->name('booking-requests:expire')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Guests waiting too long for staff get one holding message; staff are alerted again.
+Schedule::command('conversations:check-waiting')
+    ->name('conversations:check-waiting')
+    ->everyMinute()
+    ->withoutOverlapping();

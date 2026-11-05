@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S7.1 — Staff working together
+
+#### Added
+
+- Assignment: taking over a conversation assigns it to the person who clicked; it can be reassigned to anyone who can answer conversations, or unassigned; handing back to the assistant removes the assignment. The inbox shows who owns each conversation and has a "Mine" filter. Changes are audited.
+- Internal notes in the conversation thread, shown in their own style with author and time, stored encrypted, never sent to the guest, audited.
+- No guest left in silence: when a conversation is with staff and the guest has waited longer than the hotel's limit (default 15 minutes), the guest gets one holding message (with reception's opening time when it is closed), the conversation is marked "needs attention" and staff are alerted again (`conversations:check-waiting`, every minute). A staff reply, from the dashboard or the WhatsApp Business app, resets the wait.
+- Translation with the AI models: staff translate a draft reply into the guest's language and check it before sending; guest messages (and voice-note transcripts) can be shown in the staff member's language, and the translation is kept, encrypted. Metered as `ai.translation`, with the same backup model, off switches and spending limits; when AI is unavailable staff see why.
+- `ConversationNeedsStaff` event when a conversation is passed to staff or a guest is waiting (staff alerts in S7.2).
+- English and French text.
+
+#### Security
+
+- Symfony components updated to 7.4.23 for advisories published on 4 November 2026 (http-foundation, http-kernel, routing, serializer, yaml).
+
 ### S6.3 — Telling the guest, deposits
 
 #### Added

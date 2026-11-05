@@ -120,6 +120,14 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::post('hotel/inbox/{conversation}/reply', [InboxController::class, 'reply'])
         ->middleware(['can:conversations.reply', 'throttle:60,1'])
         ->name('hotel.inbox.reply');
+    Route::middleware('can:conversations.reply')->group(function (): void {
+        Route::put('hotel/inbox/{conversation}/assign', [InboxController::class, 'assign'])->name('hotel.inbox.assign');
+        Route::post('hotel/inbox/{conversation}/notes', [InboxController::class, 'note'])->middleware('throttle:60,1')->name('hotel.inbox.notes');
+        Route::post('hotel/inbox/{conversation}/translate', [InboxController::class, 'translateDraft'])->middleware('throttle:30,1')->name('hotel.inbox.translate');
+    });
+    Route::post('hotel/inbox/messages/{message}/translate', [InboxController::class, 'translateMessage'])
+        ->middleware(['can:conversations.view', 'throttle:30,1'])
+        ->name('hotel.inbox.messages.translate');
     Route::put('hotel/inbox/{conversation}/mode', [InboxController::class, 'mode'])
         ->middleware('can:conversations.reply')
         ->name('hotel.inbox.mode');

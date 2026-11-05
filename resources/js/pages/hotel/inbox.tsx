@@ -20,6 +20,7 @@ type ListItem = {
     phone: string;
     unread: number;
     mode: string;
+    assignee: string | null;
     needs_attention: boolean;
     window_open: boolean;
     last_at: string | null;
@@ -44,6 +45,8 @@ type ThreadMessage = {
     source: string;
     by: string | null;
     at: string;
+    translation?: string | null;
+    translation_language?: string | null;
 };
 
 type Thread = {
@@ -52,6 +55,10 @@ type Thread = {
     phone: string;
     mode: string;
     mode_label: string;
+    assigned_to: string | null;
+    assignee: string | null;
+    guest_language: string;
+    notes: { id: number; body: string; by: string | null; at: string | null }[];
     needs_attention: boolean;
     handover_reason: string | null;
     window_open: boolean;
@@ -76,6 +83,9 @@ type Props = {
     requests: PendingRequest[];
     requestCategories: { id: string; name: string }[];
     canOverridePrice: boolean;
+    staffLanguage: string;
+    languages: Record<string, string>;
+    assignable: { id: string; name: string }[];
 };
 
 type TemplateOption = {
@@ -201,8 +211,20 @@ function StatusIcon({ status }: { status: string }) {
     return <Clock className="size-3.5" aria-label={t('Sending')} />;
 }
 
-function Bubble({ message }: { message: ThreadMessage }) {
+function Bubble({
+    message,
+    staffLanguage,
+    languages,
+}: {
+    message: ThreadMessage;
+    staffLanguage: string;
+    languages: Record<string, string>;
+}) {
     const out = message.direction === 'out';
+    const translatable =
+        !out &&
+        (message.body || message.transcript) &&
+        message.translation_language !== staffLanguage;
 
     return (
         <div className={cn('flex', out ? 'justify-end' : 'justify-start')}>
@@ -255,6 +277,32 @@ function Bubble({ message }: { message: ThreadMessage }) {
                     )}
                 {message.media_error && (
                     <p className="italic opacity-80">{message.media_error}</p>
+                )}
+                {message.translation && (
+                    <p className="mt-1 border-t pt-1 text-xs opacity-90">
+                        {languages[message.translation_language ?? ''] ??
+                            message.translation_language}
+                        : {message.translation}
+                    </p>
+                )}
+                {translatable && (
+                    <button
+                        type="button"
+                        className="mt-1 text-xs underline opacity-80"
+                        onClick={() =>
+                            router.post(
+                                InboxController.translateMessage.url(
+                                    message.id,
+                                ),
+                                {},
+                                { preserveScroll: true },
+                            )
+                        }
+                    >
+                        {t('Show in :language', {
+                            language: languages[staffLanguage] ?? staffLanguage,
+                        })}
+                    </button>
                 )}
                 {message.location && (
                     <a
@@ -320,13 +368,39 @@ function Reply({
     canReply,
     connected,
     templates,
+    staffLanguage,
+    languages,
 }: {
     thread: Thread;
     canReply: boolean;
     connected: boolean;
     templates: TemplateOption[];
+    staffLanguage: string;
+    languages: Record<string, string>;
 }) {
     const form = useForm({ body: '' });
+    const [translating, setTranslating] = useState(false);
+    const translate = () => {
+        setTranslating(true);
+        router.post(
+            InboxController.translateDraft.url(thread.id),
+            { text: form.data.body, language: thread.guest_language },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFlash: (flash) => {
+                    const translation = (flash as { translation?: string })
+                        .translation;
+
+                    if (translation) {
+                        form.setData('body', translation);
+                    }
+                },
+                onError: (errors) => form.setError('body', errors.body ?? ''),
+                onFinish: () => setTranslating(false),
+            },
+        );
+    };
 
     if (!canReply) {
         return null;
@@ -383,6 +457,28 @@ function Reply({
                     {t('Send')}
                 </Button>
             </div>
+            {thread.guest_language !== staffLanguage &&
+                form.data.body.trim() !== '' && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="w-fit"
+                        disabled={translating}
+                        onClick={translate}
+                    >
+                        {translating
+                            ? t('Translating…')
+                            : t(
+                                  'Translate to :language (check before sending)',
+                                  {
+                                      language:
+                                          languages[thread.guest_language] ??
+                                          thread.guest_language,
+                                  },
+                              )}
+                    </Button>
+                )}
             <InputError message={form.errors.body} />
             {thread.window_closes_at && (
                 <p className="text-xs text-muted-foreground">
@@ -395,13 +491,106 @@ function Reply({
     );
 }
 
+type TimelineEntry =
+    | { kind: 'message'; at: string; message: ThreadMessage }
+    | { kind: 'note'; at: string; note: Thread['notes'][number] };
+
+function timeline(thread: Thread): TimelineEntry[] {
+    const entries: TimelineEntry[] = [
+        ...thread.messages.map((message): TimelineEntry => ({
+            kind: 'message',
+            at: message.at,
+            message,
+        })),
+        ...thread.notes.map((note): TimelineEntry => ({
+            kind: 'note',
+            at: note.at ?? '',
+            note,
+        })),
+    ];
+
+    // Stable sort by time: messages and notes written in the same minute keep their order.
+    return entries
+        .map((entry, index) => ({ entry, index }))
+        .sort(
+            (a, b) => a.entry.at.localeCompare(b.entry.at) || a.index - b.index,
+        )
+        .map(({ entry }) => entry);
+}
+
+function NoteForm({ conversationId }: { conversationId: string }) {
+    const form = useForm({ body: '' });
+    const [open, setOpen] = useState(false);
+
+    if (!open) {
+        return (
+            <div className="border-t px-3 pt-2">
+                <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
+                    {t('Add an internal note')}
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                form.post(InboxController.note.url(conversationId), {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        form.reset();
+                        setOpen(false);
+                    },
+                });
+            }}
+            className="flex flex-col gap-1 border-t px-3 pt-2"
+        >
+            <textarea
+                aria-label={t('Internal note')}
+                placeholder={t('Only staff see this note.')}
+                className="min-h-10 rounded-md border border-dashed border-amber-400 bg-transparent px-3 py-2 text-sm"
+                maxLength={2000}
+                value={form.data.body}
+                onChange={(e) => form.setData('body', e.target.value)}
+            />
+            <InputError message={form.errors.body} />
+            <div className="flex gap-2">
+                <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={form.processing || form.data.body.trim() === ''}
+                >
+                    {t('Save note')}
+                </Button>
+                <Button
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setOpen(false)}
+                >
+                    {t('Cancel')}
+                </Button>
+            </div>
+        </form>
+    );
+}
+
 function ModeControl({
     conversation,
     canReply,
+    assignable,
 }: {
     conversation: Thread;
     canReply: boolean;
+    assignable: { id: string; name: string }[];
 }) {
+    const assign = (userId: string | null) =>
+        router.put(
+            InboxController.assign.url(conversation.id),
+            { user_id: userId },
+            { preserveScroll: true },
+        );
     const setMode = (mode: string) =>
         router.put(
             InboxController.mode.url(conversation.id),
@@ -424,6 +613,23 @@ function ModeControl({
                         reason: conversation.handover_reason,
                     })}
                 </span>
+            )}
+            {canReply && conversation.mode !== 'assistant' && (
+                <select
+                    aria-label={t('Assigned to')}
+                    className="h-7 rounded-md border border-input bg-transparent px-2 text-xs"
+                    value={conversation.assigned_to ?? ''}
+                    onChange={(e) =>
+                        assign(e.target.value === '' ? null : e.target.value)
+                    }
+                >
+                    <option value="">{t('Nobody assigned')}</option>
+                    {assignable.map((member) => (
+                        <option key={member.id} value={member.id}>
+                            {member.name}
+                        </option>
+                    ))}
+                </select>
             )}
             {canReply && conversation.mode === 'assistant' && (
                 <Button
@@ -457,6 +663,9 @@ export default function Inbox({
     requests,
     requestCategories,
     canOverridePrice,
+    staffLanguage,
+    languages,
+    assignable,
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const bottom = useRef<HTMLDivElement>(null);
@@ -518,6 +727,7 @@ export default function Inbox({
                                 ['unread', t('Unread')],
                                 ['closing', t('Window closing')],
                                 ['attention', t('Needs attention')],
+                                ['mine', t('Mine')],
                             ].map(([value, label]) => (
                                 <Button
                                     key={value}
@@ -579,6 +789,8 @@ export default function Inbox({
                                         )}
                                     </div>
                                     <span className="truncate text-xs text-muted-foreground">
+                                        {item.assignee &&
+                                            `→ ${item.assignee} · `}
                                         {item.preview ?? item.phone}
                                     </span>
                                     <span className="text-[11px] text-muted-foreground">
@@ -624,6 +836,7 @@ export default function Inbox({
                                 <ModeControl
                                     conversation={conversation}
                                     canReply={canReply}
+                                    assignable={assignable}
                                 />
                                 <Badge
                                     variant={
@@ -650,12 +863,30 @@ export default function Inbox({
                                 ))}
                             </header>
                             <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
-                                {conversation.messages.map((message) => (
-                                    <Bubble
-                                        key={message.id}
-                                        message={message}
-                                    />
-                                ))}
+                                {timeline(conversation).map((entry) =>
+                                    entry.kind === 'note' ? (
+                                        <div
+                                            key={`note-${entry.note.id}`}
+                                            className="mx-auto max-w-[80%] rounded-lg border border-dashed border-amber-400 bg-amber-50 px-3 py-2 text-sm dark:bg-amber-950"
+                                        >
+                                            <div className="text-xs text-muted-foreground">
+                                                {t('Internal note')} ·{' '}
+                                                {entry.note.by} ·{' '}
+                                                {entry.note.at}
+                                            </div>
+                                            <p className="whitespace-pre-wrap">
+                                                {entry.note.body}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <Bubble
+                                            key={entry.message.id}
+                                            message={entry.message}
+                                            staffLanguage={staffLanguage}
+                                            languages={languages}
+                                        />
+                                    ),
+                                )}
                                 <div ref={bottom} />
                             </div>
                             {requests.length > 0 && (
@@ -670,11 +901,16 @@ export default function Inbox({
                                     ))}
                                 </div>
                             )}
+                            {canReply && (
+                                <NoteForm conversationId={conversation.id} />
+                            )}
                             <Reply
                                 thread={conversation}
                                 canReply={canReply}
                                 connected={connected}
                                 templates={templates}
+                                staffLanguage={staffLanguage}
+                                languages={languages}
                             />
                         </>
                     )}
