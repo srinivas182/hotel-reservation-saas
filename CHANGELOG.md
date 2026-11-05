@@ -15,6 +15,9 @@ All notable changes to this project are documented here. The format follows [Kee
 - `ConversationNeedsStaff` event when a conversation is passed to staff or a guest is waiting (staff alerts in S7.2).
 - English and French text.
 
+#### Security
+- Symfony components updated to 7.4.23 for advisories published on 4 November 2026 (http-foundation, http-kernel, routing, serializer, yaml).
+
 ### S6.3 — Telling the guest, deposits
 
 #### Added
