@@ -141,7 +141,7 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
         };
 
         // Template values cannot be empty or contain line breaks.
-        return array_map(fn (string $value): string => trim(preg_replace('/\s+/', ' ', $value) ?? '') ?: '-', $values);
+        return array_map(fn (string $value): string => MessageTemplate::cleanValue($value), $values);
     }
 
     private static function localized(CarbonImmutable $date, string $locale): CarbonImmutable

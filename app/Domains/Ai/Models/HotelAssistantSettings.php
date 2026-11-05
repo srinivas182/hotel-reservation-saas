@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $deposit_percent
  * @property int $deposit_hours
  * @property int $silence_minutes
+ * @property int $daily_alert_cap
  * @property array<string, string>|null $deposit_instructions
  * @property array<string, array<string, string>>|null $decision_messages
  */
@@ -46,12 +47,13 @@ class HotelAssistantSettings extends Model
         'deposit_percent' => 30,
         'deposit_hours' => 24,
         'silence_minutes' => 15,
+        'daily_alert_cap' => 50,
     ];
 
     protected $fillable = [
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
         'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes',
-        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'decision_messages', 'silence_minutes',
+        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'decision_messages', 'silence_minutes', 'daily_alert_cap',
     ];
 
     /**
@@ -69,6 +71,7 @@ class HotelAssistantSettings extends Model
             'deposit_percent' => 'integer',
             'deposit_hours' => 'integer',
             'silence_minutes' => 'integer',
+            'daily_alert_cap' => 'integer',
             'deposit_instructions' => 'array',
             'decision_messages' => 'array',
             'kill_switch' => 'boolean',

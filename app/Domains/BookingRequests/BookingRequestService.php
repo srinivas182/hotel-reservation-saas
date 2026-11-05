@@ -24,6 +24,8 @@ use App\Domains\Rates\Quote\QuoteIssue;
 use App\Domains\Rates\Quote\QuoteService;
 use App\Domains\Rates\Quote\StayRequest;
 use App\Domains\Rooms\Models\RoomCategory;
+use App\Domains\StaffAlerts\AlertKind;
+use App\Domains\StaffAlerts\StaffAlerts;
 use App\Domains\Tenancy\TenantContext;
 use App\Models\User;
 use Brick\Money\Money;
@@ -291,6 +293,12 @@ final class BookingRequestService
     {
         $hotel = $this->context->hotel();
         $request->loadMissing(['guest', 'category']);
+        app(StaffAlerts::class)->notify(
+            $kind === 'new' ? AlertKind::NewRequest : AlertKind::RequestExpired,
+            sprintf('%s, %s, %s → %s', (string) $request->guest?->name(), (string) $request->category?->localizedName($hotel->default_locale, $hotel->default_locale), $request->check_in->toDateString(), $request->check_out->toDateString()),
+            $request->id,
+        );
+
         $recipients = $hotel->members()->get()->filter(fn (User $user): bool => $user->can('booking_requests.decide'));
 
         foreach ($recipients as $user) {

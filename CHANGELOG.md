@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S7.2 — Staff alerts and the owner's daily summary
+
+#### Added
+
+- "My alerts" (`/hotel/my-alerts`): each person sets the WhatsApp number to alert them for this hotel and chooses which alerts they want (new WhatsApp booking request, conversation passed to staff, guest waiting for a reply, request expired); only alerts they can act on are offered. A test button sends a sample alert. Owners see the team's alert choices. Changes are audited.
+- WhatsApp alerts from the hotel's number: free text to staff who wrote to the hotel number in the last 24 hours, otherwise the approved `staff_alert` template; never stored in the guest inbox; counted in the usage records. At most one alert per person and subject every 10 minutes and a daily maximum per hotel (default 50); every alert sent or skipped is recorded with the reason. Email and in-app alerts are unchanged.
+- Owner's daily summary at each owner's chosen time (hotel time zone), by WhatsApp (`owner_daily_summary` template or free text) and/or email, once a day: arrivals and departures today, rooms occupied tonight, new bookings and their value, WhatsApp requests approved/declined/expired, conversations needing attention, AI cost today (`owners:daily-summary`, every five minutes).
+- Two starter templates in French and English: `staff_alert`, `owner_daily_summary`.
+- English and French text.
+
+#### Fixed
+
+- Template values: a value of "0" was sent as "-", and whitespace clean-up could damage accented text and non-breaking spaces. Values are now cleaned in one place, safely for UTF-8.
+
 ### S7.1 — Staff working together
 
 #### Added

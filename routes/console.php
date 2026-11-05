@@ -64,3 +64,9 @@ Schedule::command('conversations:check-waiting')
     ->name('conversations:check-waiting')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Owners' daily summaries go out at each owner's chosen time.
+Schedule::command('owners:daily-summary')
+    ->name('owners:daily-summary')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

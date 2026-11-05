@@ -7,6 +7,7 @@ import {
     Percent,
     BarChart3,
     BedDouble,
+    BellRing,
     Bot,
     CalendarDays,
     ClipboardList,
@@ -22,6 +23,7 @@ import {
 import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/HotelAuditController';
 import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
 import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsController';
+import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Controllers/AlertSettingsController';
 import AssistantSettingsController from '@/actions/App/Domains/Assistant/Http/Controllers/AssistantSettingsController';
 import CalendarController from '@/actions/App/Domains/Availability/Http/Controllers/CalendarController';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
@@ -154,6 +156,16 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('usage.view')
             ? [{ title: 'Usage', href: UsageController(), icon: BarChart3 }]
+            : []),
+        ...(auth.permissions.includes('conversations.reply') ||
+        auth.permissions.includes('booking_requests.decide')
+            ? [
+                  {
+                      title: 'My alerts',
+                      href: AlertSettingsController.show(),
+                      icon: BellRing,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('assistant.manage')
             ? [

@@ -47,6 +47,17 @@ class MessageTemplate extends Model
         ];
     }
 
+    /**
+     * Meta rejects template values that are empty or contain line breaks,
+     * tabs or long runs of spaces. Zero is a real value and is kept.
+     */
+    public static function cleanValue(string $value): string
+    {
+        $clean = trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+
+        return $clean === '' ? '-' : $clean;
+    }
+
     public function placeholders(): int
     {
         preg_match_all('/\{\{(\d+)\}\}/', $this->body, $matches);
