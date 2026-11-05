@@ -154,6 +154,7 @@ final class BookingController extends Controller
                     ? Money::of((string) $data['override_total'], $hotel->currency, roundingMode: RoundingMode::HalfUp)
                     : null,
                 overrideReason: $data['override_reason'] ?? null,
+                whatsappConsent: (bool) ($data['whatsapp_consent'] ?? false),
             ), $user);
         } catch (BookingNotPossible $exception) {
             throw ValidationException::withMessages(['room_category_id' => $exception->getMessage()]);

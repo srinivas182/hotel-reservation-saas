@@ -70,3 +70,9 @@ Schedule::command('owners:daily-summary')
     ->name('owners:daily-summary')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// Arrival reminders, check-out reminders and thank-you messages.
+Schedule::command('stay-messages:send')
+    ->name('stay-messages:send')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

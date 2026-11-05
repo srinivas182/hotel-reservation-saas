@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S7.3 — Stay messages
+
+#### Added
+
+- Stay messages (Assistant settings), each switched on or off with its own time in the hotel's time zone: arrival reminder the day before (check-in time and directions), check-out reminder on the departure morning (for guests checked in), and a thank-you on the departure day (for guests checked out) with the hotel's review link. Free text when the guest wrote in the last 24 hours, otherwise the approved template in the guest's language. `stay-messages:send` runs every five minutes.
+- Each booking gets each message at most once. Messages go only to guests who contacted the hotel on WhatsApp or whose consent reception recorded; cancelled bookings and no-shows are never targeted. Every message sent or skipped (no consent, no phone, template not approved, no review link) is recorded and shown in the booking's history.
+- "Guest agrees to WhatsApp messages about this stay" on the new-booking form, recorded with date and time on the booking and the guest.
+- The waiting time before a holding message is sent to a guest waiting for staff is now set in the Assistant settings.
+- Three starter templates in French and English: `stay_reminder`, `checkout_reminder`, `stay_thank_you`.
+- A full reception-day test: complaint, staff alert, take over, note, translation, reply, arrival reminder and the owner's summary.
+- English and French text.
+
 ### S7.2 — Staff alerts and the owner's daily summary
 
 #### Added

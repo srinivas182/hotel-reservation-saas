@@ -44,6 +44,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $tentative_until
  * @property string|null $inventory_hold_id
  * @property string|null $created_by
+ * @property CarbonImmutable|null $whatsapp_consent_at
  */
 class Booking extends Model
 {
@@ -73,6 +74,7 @@ class Booking extends Model
             'checked_out_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
             'no_show_at' => 'immutable_datetime',
+            'whatsapp_consent_at' => 'immutable_datetime',
         ];
     }
 
@@ -98,6 +100,14 @@ class Booking extends Model
     public function bookingRooms(): HasMany
     {
         return $this->hasMany(BookingRoom::class)->orderBy('position');
+    }
+
+    /**
+     * @return HasMany<\App\Domains\StayMessages\StayMessage, $this>
+     */
+    public function stayMessages(): HasMany
+    {
+        return $this->hasMany(\App\Domains\StayMessages\StayMessage::class);
     }
 
     public function nights(): int
