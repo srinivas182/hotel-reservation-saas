@@ -149,14 +149,14 @@ it('saves the stay message settings', function (): void {
     $manager = staffMember($this->hotel, SystemRole::Manager);
 
     asStaffOf($this->hotel, $manager)->put(route('hotel.assistant.update'), [
-        'enabled' => true, 'tone' => 'formal', 'languages' => ['fr'], 'daily_budget' => 5, 'kill_switch' => false,
+        'mode' => 'off', 'tone' => 'formal', 'languages' => ['fr'], 'daily_budget' => 5, 'kill_switch' => false,
         'request_hold_minutes' => 120, 'deposit_required' => false, 'deposit_percent' => 30, 'deposit_hours' => 24,
         'silence_minutes' => 20, 'review_url' => 'http://not-secure.example',
         'stay_messages' => ['reminder' => ['enabled' => true, 'time' => '09:30']],
     ])->assertSessionHasErrors('review_url');
 
     asStaffOf($this->hotel, $manager)->put(route('hotel.assistant.update'), [
-        'enabled' => true, 'tone' => 'formal', 'languages' => ['fr'], 'daily_budget' => 5, 'kill_switch' => false,
+        'mode' => 'off', 'tone' => 'formal', 'languages' => ['fr'], 'daily_budget' => 5, 'kill_switch' => false,
         'request_hold_minutes' => 120, 'deposit_required' => false, 'deposit_percent' => 30, 'deposit_hours' => 24,
         'silence_minutes' => 20, 'review_url' => 'https://g.page/r/lodge/review',
         'stay_messages' => ['reminder' => ['enabled' => true, 'time' => '09:30']],

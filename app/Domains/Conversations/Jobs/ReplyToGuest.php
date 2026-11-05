@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Conversations\Jobs;
 
+use App\Domains\Ai\AssistantMode;
 use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Assistant\Engine\AssistantEngine;
 use App\Domains\Assistant\Engine\AssistantTurn;
@@ -116,6 +117,12 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return;
         }
 
+        if ($this->asksForPerson($unanswered)) {
+            $this->handOver($conversation, $latest, 'guest_asked_for_person', $sender, $handover);
+
+            return;
+        }
+
         $result = $engine->respond(
             $this->turns($conversation),
             $conversation->id,
@@ -129,8 +136,17 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return;
         }
 
+        $reply = $this->withDisclosure($conversation, $result->reply, $result->language);
+
+        if (HotelAssistantSettings::current()->mode === AssistantMode::Supervised) {
+            $sender->draft($conversation, $reply);
+            $this->markAnswered($conversation, $latest);
+
+            return;
+        }
+
         try {
-            $sender->sendText($conversation, $result->reply, null, MessageSource::Assistant);
+            $sender->sendText($conversation, $reply, null, MessageSource::Assistant);
         } catch (CannotSend $exception) {
             Log::warning('Assistant reply not sent', ['conversation' => $conversation->id, 'reason' => $exception->getMessage()]);
             $handover->toStaff($conversation, 'send_failed');
@@ -141,7 +157,7 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 
     private function assistantMayAnswer(Conversation $conversation): bool
     {
-        if ($conversation->mode !== ConversationMode::Assistant || ! HotelAssistantSettings::current()->enabled) {
+        if ($conversation->mode !== ConversationMode::Assistant || HotelAssistantSettings::current()->mode === AssistantMode::Off) {
             return false;
         }
 
@@ -256,6 +272,13 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
     {
         $handover->toStaff($conversation, $reason);
 
+        // In supervised mode nothing is sent to guests without staff approval.
+        if (HotelAssistantSettings::current()->mode === AssistantMode::Supervised) {
+            $this->markAnswered($conversation, $latest);
+
+            return;
+        }
+
         $text = $message ?? app(AssistantEngine::class)->handoverMessage(
             HotelAssistantSettings::current(),
             $conversation->contact->guest->preferred_locale ?? app(TenantContext::class)->hotel()->default_locale,
@@ -268,6 +291,58 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         }
 
         $this->markAnswered($conversation, $latest);
+    }
+
+    /**
+     * A guest who writes one of the hotel's keywords ("réception", "human"…)
+     * always reaches a person.
+     *
+     * @param  list<Message>  $messages
+     */
+    private function asksForPerson(array $messages): bool
+    {
+        $keywords = array_map(fn (string $k): string => self::fold($k), HotelAssistantSettings::current()->humanKeywords());
+
+        foreach ($messages as $message) {
+            $text = ' '.self::fold((string) ($message->type === 'audio' ? $message->transcript : $message->body)).' ';
+
+            foreach ($keywords as $keyword) {
+                if ($keyword !== '' && preg_match('/[^a-z0-9]'.preg_quote($keyword, '/').'[^a-z0-9]/', $text) === 1) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static function fold(string $text): string
+    {
+        return strtolower(\Illuminate\Support\Str::ascii($text));
+    }
+
+    /**
+     * The first assistant reply in a conversation says it is a virtual
+     * assistant, how to reach a person, and where the privacy notice is.
+     */
+    private function withDisclosure(Conversation $conversation, string $reply, string $language): string
+    {
+        $already = $conversation->messages()->where('source', MessageSource::Assistant->value)->exists();
+
+        if ($already) {
+            return $reply;
+        }
+
+        $settings = HotelAssistantSettings::current();
+        $hotel = app(TenantContext::class)->hotel();
+        $keyword = $settings->humanKeywords()[0];
+        $line = __('I am the virtual assistant of :hotel. Write « :keyword » to speak to a person.', ['hotel' => $hotel->name, 'keyword' => $keyword], $language);
+
+        if (trim((string) $settings->privacy_url) !== '') {
+            $line .= ' '.__('Privacy: :url', ['url' => $settings->privacy_url], $language);
+        }
+
+        return $reply."\n\n".$line;
     }
 
     private function markAnswered(Conversation $conversation, Message $latest): void

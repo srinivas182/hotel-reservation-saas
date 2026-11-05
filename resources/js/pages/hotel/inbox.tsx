@@ -211,6 +211,66 @@ function StatusIcon({ status }: { status: string }) {
     return <Clock className="size-3.5" aria-label={t('Sending')} />;
 }
 
+function DraftActions({ message }: { message: ThreadMessage }) {
+    const [editing, setEditing] = useState(false);
+    const form = useForm({ body: message.body ?? '' });
+    const errors = form.errors as Record<string, string | undefined>;
+
+    return (
+        <div className="mt-2 flex flex-col gap-2 rounded-lg border border-dashed border-primary-foreground/50 p-2">
+            <span className="text-xs font-medium">
+                {t('Draft by the assistant: not sent yet')}
+            </span>
+            {editing && (
+                <textarea
+                    aria-label={t('Edit the draft')}
+                    className="min-h-20 rounded-md border bg-background px-2 py-1 text-sm text-foreground"
+                    value={form.data.body}
+                    onChange={(e) => form.setData('body', e.target.value)}
+                />
+            )}
+            <div className="flex flex-wrap gap-2">
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={form.processing}
+                    onClick={() => {
+                        form.transform((data) => (editing ? data : {}));
+                        form.post(InboxController.sendDraft.url(message.id), {
+                            preserveScroll: true,
+                        });
+                    }}
+                >
+                    {editing ? t('Send edited reply') : t('Send')}
+                </Button>
+                {!editing && (
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setEditing(true)}
+                    >
+                        {t('Edit')}
+                    </Button>
+                )}
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                        router.post(
+                            InboxController.discardDraft.url(message.id),
+                            {},
+                            { preserveScroll: true },
+                        )
+                    }
+                >
+                    {t('Discard')}
+                </Button>
+            </div>
+            <InputError message={errors.draft} />
+        </div>
+    );
+}
+
 function Bubble({
     message,
     staffLanguage,
@@ -353,6 +413,9 @@ function Bubble({
                     <span>{message.at}</span>
                     {out && <StatusIcon status={message.status} />}
                 </div>
+                {message.status === 'draft' && (
+                    <DraftActions message={message} />
+                )}
                 {message.error && (
                     <p className="mt-1 text-xs text-destructive-foreground">
                         {message.error}

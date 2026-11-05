@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Domains\Assistant\Http\Controllers;
 
 use App\Domains\Ai\AiControls;
+use App\Domains\Ai\AssistantMode;
 use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Assistant\Knowledge\KnowledgePack;
 use App\Domains\Audit\Audit;
 use App\Domains\BookingRequests\DecisionMessages;
+use App\Domains\GoLive\Readiness;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Hotel\Support\Locales;
 use App\Domains\StayMessages\StayMessageKind;
@@ -37,7 +39,9 @@ final class AssistantSettingsController extends Controller
 
         return Inertia::render('hotel/assistant', [
             'settings' => [
-                'enabled' => $settings->enabled,
+                'mode' => $settings->mode->value,
+                'privacy_url' => $settings->privacy_url ?? '',
+                'human_keywords' => implode(', ', $settings->humanKeywords()),
                 'display_name' => $settings->display_name ?? '',
                 'tone' => $settings->tone,
                 'languages' => $settings->languages ?? $enabled,
@@ -55,6 +59,7 @@ final class AssistantSettingsController extends Controller
                 'review_url' => $settings->review_url ?? '',
             ],
             'stayKinds' => collect(StayMessageKind::cases())->map(fn (StayMessageKind $k): array => ['value' => $k->value, 'label' => $k->label()])->values(),
+            'modes' => collect(AssistantMode::cases())->map(fn (AssistantMode $m): array => ['value' => $m->value, 'label' => $m->label()])->values(),
             'decisionKinds' => DecisionMessages::KINDS,
             'placeholders' => DecisionMessages::PLACEHOLDERS,
             'defaultMessages' => collect($enabled)->mapWithKeys(fn (string $locale): array => [
@@ -66,12 +71,15 @@ final class AssistantSettingsController extends Controller
         ]);
     }
 
-    public function update(Request $request, #[CurrentUser] User $user): RedirectResponse
+    public function update(Request $request, Readiness $readiness, #[CurrentUser] User $user): RedirectResponse
     {
         $enabled = HotelSettings::current()->enabled_locales ?? [$this->context->hotel()->default_locale];
 
         $data = $request->validate([
-            'enabled' => ['required', 'boolean'],
+            'mode' => [Rule::requiredIf(! $request->has('enabled')), 'nullable', Rule::enum(AssistantMode::class)],
+            'enabled' => ['nullable', 'boolean'],
+            'privacy_url' => ['nullable', 'url:https', 'max:300'],
+            'human_keywords' => ['nullable', 'string', 'max:300'],
             'display_name' => ['nullable', 'string', 'max:100'],
             'tone' => ['required', Rule::in(['formal', 'friendly'])],
             'languages' => ['required', 'array', 'min:1'],
@@ -101,10 +109,22 @@ final class AssistantSettingsController extends Controller
         }
 
         $settings = HotelAssistantSettings::current();
-        $before = Arr::only($settings->attributesToArray(), ['enabled', 'kill_switch', 'daily_budget_micro_usd', 'deposit_required', 'deposit_percent']);
+        $before = Arr::only($settings->attributesToArray(), ['mode', 'kill_switch', 'daily_budget_micro_usd', 'deposit_required', 'deposit_percent']);
+
+        // Older forms send "enabled"; the mode is what counts.
+        $mode = AssistantMode::tryFrom((string) ($data['mode'] ?? '')) ?? ((bool) ($data['enabled'] ?? false) ? AssistantMode::Automatic : AssistantMode::Off);
+
+        if ($mode !== AssistantMode::Off && $settings->mode === AssistantMode::Off && $settings->readiness_override_at === null && ! $readiness->requiredMet()) {
+            throw ValidationException::withMessages(['mode' => __('Finish the required go-live checks before the assistant answers guests.')]);
+        }
 
         $settings->update([
-            'enabled' => (bool) $data['enabled'],
+            'mode' => $mode,
+            'enabled' => $mode !== AssistantMode::Off,
+            'privacy_url' => $data['privacy_url'] ?? $settings->privacy_url,
+            'human_keywords' => array_key_exists('human_keywords', $data)
+                ? array_values(array_filter(array_map(fn (string $k): string => trim($k), explode(',', (string) $data['human_keywords']))))
+                : $settings->human_keywords,
             'display_name' => $data['display_name'] ?? null,
             'tone' => $data['tone'],
             'languages' => array_values(array_unique($data['languages'])),
@@ -130,7 +150,7 @@ final class AssistantSettingsController extends Controller
 
         Audit::record('assistant.settings_updated', 'Assistant settings updated', subject: $this->context->hotel(), causer: $user, properties: [
             'old' => $before,
-            'new' => Arr::only($settings->attributesToArray(), ['enabled', 'kill_switch', 'daily_budget_micro_usd', 'deposit_required', 'deposit_percent']),
+            'new' => Arr::only($settings->attributesToArray(), ['mode', 'kill_switch', 'daily_budget_micro_usd', 'deposit_required', 'deposit_percent']),
         ]);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Assistant settings saved.')]);
 

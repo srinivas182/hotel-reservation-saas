@@ -5,7 +5,6 @@ import KnowledgeController from '@/actions/App/Domains/Assistant/Http/Controller
 import PracticeController from '@/actions/App/Domains/Assistant/Http/Controllers/PracticeController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +12,9 @@ import { t } from '@/lib/i18n';
 
 type Props = {
     settings: {
-        enabled: boolean;
+        mode: string;
+        privacy_url: string;
+        human_keywords: string;
         display_name: string;
         tone: string;
         languages: string[];
@@ -31,6 +32,7 @@ type Props = {
         review_url: string;
     };
     stayKinds: { value: string; label: string }[];
+    modes: { value: string; label: string }[];
     decisionKinds: string[];
     placeholders: string[];
     defaultMessages: Record<string, Record<string, string>>;
@@ -48,6 +50,7 @@ export default function AssistantSettings({
     placeholders,
     defaultMessages,
     stayKinds,
+    modes,
 }: Props) {
     const form = useForm(settings);
     const errors = form.errors as Record<string, string | undefined>;
@@ -123,20 +126,62 @@ export default function AssistantSettings({
                     onSubmit={submit}
                     className="flex flex-col gap-4 rounded-xl border p-4"
                 >
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            className="size-4"
-                            checked={form.data.enabled}
-                            onChange={(e) =>
-                                form.setData('enabled', e.target.checked)
-                            }
-                        />
-                        {t('Answer guests on WhatsApp')}
-                        <Badge variant="secondary">
-                            {t('from the WhatsApp go-live')}
-                        </Badge>
-                    </label>
+                    <fieldset className="flex flex-col gap-2 text-sm">
+                        <legend className="mb-1 font-medium">
+                            {t('How the assistant answers guests on WhatsApp')}
+                        </legend>
+                        {modes.map((mode) => (
+                            <label
+                                key={mode.value}
+                                className="flex items-center gap-2"
+                            >
+                                <input
+                                    type="radio"
+                                    name="mode"
+                                    checked={form.data.mode === mode.value}
+                                    onChange={() =>
+                                        form.setData('mode', mode.value)
+                                    }
+                                />
+                                {mode.label}
+                            </label>
+                        ))}
+                        <InputError message={errors.mode} />
+                    </fieldset>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-1">
+                            <Label htmlFor="privacy_url">
+                                {t('Privacy notice link')}
+                            </Label>
+                            <Input
+                                id="privacy_url"
+                                type="url"
+                                placeholder="https://"
+                                value={form.data.privacy_url}
+                                onChange={(e) =>
+                                    form.setData('privacy_url', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.privacy_url} />
+                        </div>
+                        <div className="grid gap-1">
+                            <Label htmlFor="human_keywords">
+                                {t(
+                                    'Words that always reach a person (comma-separated)',
+                                )}
+                            </Label>
+                            <Input
+                                id="human_keywords"
+                                value={form.data.human_keywords}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'human_keywords',
+                                        e.target.value,
+                                    )
+                                }
+                            />
+                        </div>
+                    </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-1">
                             <Label htmlFor="display_name">

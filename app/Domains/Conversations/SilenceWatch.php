@@ -64,6 +64,23 @@ final class SilenceWatch
             $count++;
         }
 
+        // Supervised mode: a draft nobody has approved. Staff are alerted;
+        // nothing is sent to the guest without approval.
+        $drafts = Conversation::query()
+            ->where('mode', ConversationMode::Assistant->value)
+            ->whereNotNull('waiting_since')
+            ->where('waiting_since', '<=', now()->subMinutes($settings->silence_minutes))
+            ->where(fn ($q) => $q->whereNull('holding_sent_at')->orWhereColumn('holding_sent_at', '<', 'waiting_since'))
+            ->whereHas('messages', fn ($q) => $q->where('status', MessageStatus::Draft->value))
+            ->get();
+
+        foreach ($drafts as $conversation) {
+            $conversation->forceFill(['holding_sent_at' => now(), 'needs_attention' => true])->save();
+            Audit::record('conversations.draft_waiting', 'Assistant draft waiting for approval', subject: $conversation);
+            ConversationNeedsStaff::dispatch($conversation->id, 'guest_waiting');
+            $count++;
+        }
+
         return $count;
     }
 }

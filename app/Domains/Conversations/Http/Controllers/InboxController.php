@@ -255,6 +255,29 @@ final class InboxController extends Controller
             ?? $this->context->hotel()->default_locale;
     }
 
+    public function sendDraft(Request $request, Message $message, MessageSender $sender, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate(['body' => ['nullable', 'string', 'max:'.MessageSender::MAX_TEXT]]);
+
+        try {
+            $sender->sendDraft($message, $data['body'] ?? null, $user);
+        } catch (CannotSend $exception) {
+            throw ValidationException::withMessages(['draft' => $exception->getMessage()]);
+        }
+
+        Audit::record('conversations.draft_sent', 'Assistant draft sent', subject: $message->conversation, causer: $user, properties: ['outcome' => $message->draft_outcome]);
+
+        return back();
+    }
+
+    public function discardDraft(Message $message, MessageSender $sender, #[CurrentUser] User $user): RedirectResponse
+    {
+        $sender->discardDraft($message);
+        Audit::record('conversations.draft_discarded', 'Assistant draft discarded', subject: $message->conversation, causer: $user);
+
+        return back();
+    }
+
     public function media(Message $message): StreamedResponse
     {
         $path = $message->media['path'] ?? null;

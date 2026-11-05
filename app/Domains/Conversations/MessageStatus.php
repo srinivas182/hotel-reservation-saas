@@ -7,6 +7,8 @@ namespace App\Domains\Conversations;
 enum MessageStatus: string
 {
     case Received = 'received';
+    case Draft = 'draft';
+    case Discarded = 'discarded';
     case Queued = 'queued';
     case Accepted = 'accepted';
     case Sent = 'sent';
@@ -20,7 +22,8 @@ enum MessageStatus: string
     public function rank(): int
     {
         return match ($this) {
-            self::Received, self::Queued => 0,
+            self::Received, self::Queued, self::Draft => 0,
+            self::Discarded => 6,
             self::Accepted => 1,
             self::Sent => 2,
             self::Delivered => 3,
@@ -31,7 +34,7 @@ enum MessageStatus: string
 
     public function canMoveTo(self $next): bool
     {
-        if ($this === self::Failed) {
+        if (in_array($this, [self::Failed, self::Discarded, self::Draft], true)) {
             return false;
         }
 
