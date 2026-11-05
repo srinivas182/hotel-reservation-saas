@@ -87,7 +87,8 @@ final class Readiness
         $queue = HeartbeatCheck::queue()->run();
         $checks[] = new ReadinessCheck('background_jobs', __('Background jobs and scheduler running'), true, $scheduler['ok'] && $queue['ok'], $scheduler['ok'] && $queue['ok'] ? null : trim(($scheduler['detail'] ?? '').' '.($queue['detail'] ?? '')));
 
-        $backup = Cache::get(self::BACKUP_KEY);
+        $lastRun = \App\Domains\Operations\BackupRun::lastSuccess('backup');
+        $backup = $lastRun?->created_at?->toIso8601String() ?? Cache::get(self::BACKUP_KEY);
         $backupOk = is_string($backup) && now()->parse($backup)->gt(now()->subHours(26));
         $checks[] = new ReadinessCheck('backup_recent', __('Backup succeeded in the last 26 hours'), true, $backupOk, is_string($backup) ? $backup : (string) __('No successful backup recorded.'));
 

@@ -6,6 +6,7 @@ use App\Domains\Platform\Http\Controllers\AiController;
 use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
 use App\Domains\Platform\Http\Controllers\MailProviderController;
+use App\Domains\Platform\Http\Controllers\PilotDashboardController;
 use App\Domains\Platform\Http\Controllers\ReadinessController;
 use App\Domains\Platform\Http\Controllers\UserController;
 use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
@@ -40,6 +41,7 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::get('whatsapp', WhatsAppPlatformController::class)->name('whatsapp');
 
         Route::get('readiness', [ReadinessController::class, 'index'])->name('readiness');
+        Route::get('pilot', PilotDashboardController::class)->name('pilot');
         Route::post('readiness/{hotel}/override', [ReadinessController::class, 'override'])->name('readiness.override');
 
         Route::get('ai', [AiController::class, 'index'])->name('ai');

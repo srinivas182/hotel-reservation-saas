@@ -76,3 +76,9 @@ Schedule::command('stay-messages:send')
     ->name('stay-messages:send')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// MCS operations: problems are emailed when they start, every two hours, and when they clear.
+Schedule::command('platform:ops-check')
+    ->name('platform:ops-check')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
