@@ -56,7 +56,8 @@ class AiPlatformSettings extends Model
     public function modelsFor(AiTask $task): array
     {
         $ids = match ($task) {
-            AiTask::Assistant => [$this->assistant_model_id, $this->assistant_fallback_id],
+            // Translation uses the assistant's models.
+            AiTask::Assistant, AiTask::Translation => [$this->assistant_model_id, $this->assistant_fallback_id],
             AiTask::Transcription => [$this->transcription_model_id, $this->transcription_fallback_id],
         };
 

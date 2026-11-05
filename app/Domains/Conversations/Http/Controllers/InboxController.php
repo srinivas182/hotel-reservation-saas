@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Conversations\Http\Controllers;
 
+use App\Domains\Ai\Exceptions\AiUnavailable;
+use App\Domains\Audit\Audit;
 use App\Domains\BookingRequests\BookingRequestPresenter;
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Models\Booking;
@@ -12,7 +14,10 @@ use App\Domains\Conversations\ConversationMode;
 use App\Domains\Conversations\Exceptions\CannotSend;
 use App\Domains\Conversations\MessageSender;
 use App\Domains\Conversations\Models\Conversation;
+use App\Domains\Conversations\Models\ConversationNote;
 use App\Domains\Conversations\Models\Message;
+use App\Domains\Conversations\Translation\Translator;
+use App\Domains\Hotel\Support\Locales;
 use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Tenancy\TenantContext;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
@@ -52,7 +57,7 @@ final class InboxController extends Controller
         $hotel = $this->context->hotel();
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'filter' => ['nullable', 'in:unread,closing,attention'],
+            'filter' => ['nullable', 'in:unread,closing,attention,mine'],
         ]);
         $search = trim((string) ($filters['search'] ?? ''));
         $digits = preg_replace('/\D/', '', $search) ?? '';
@@ -65,6 +70,7 @@ final class InboxController extends Controller
                 ->orWhereHas('guest', fn ($guest) => $guest->where('first_name', 'like', "%{$search}%")->orWhere('last_name', 'like', "%{$search}%"))))
             ->when(($filters['filter'] ?? null) === 'unread', fn ($query) => $query->where('unread_count', '>', 0))
             ->when(($filters['filter'] ?? null) === 'attention', fn ($query) => $query->where('needs_attention', true))
+            ->when(($filters['filter'] ?? null) === 'mine', fn ($query) => $query->where('assigned_to', $request->user()?->getKey()))
             ->when(($filters['filter'] ?? null) === 'closing', fn ($query) => $query
                 ->where('last_inbound_at', '>', now()->subHours(Conversation::WINDOW_HOURS))
                 ->where('last_inbound_at', '<=', now()->subHours(Conversation::WINDOW_HOURS - 2)))
@@ -98,6 +104,7 @@ final class InboxController extends Controller
                     'phone' => '+'.$item->contact?->wa_id,
                     'unread' => $item->unread_count,
                     'mode' => $item->mode->value,
+                    'assignee' => $item->assignee?->name,
                     'needs_attention' => $item->needs_attention,
                     'window_open' => $item->windowOpen(),
                     'last_at' => $item->last_message_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
@@ -112,6 +119,12 @@ final class InboxController extends Controller
             'requestCategories' => RoomCategory::query()->where('active', true)->orderBy('sort_order')->get()
                 ->map(fn (RoomCategory $c): array => ['id' => $c->id, 'name' => $c->localizedName($this->context->hotel()->default_locale, $this->context->hotel()->default_locale)])->values(),
             'canOverridePrice' => $request->user()?->can('bookings.override_price') === true,
+            'staffLanguage' => $request->user()?->preferred_locale ?: $this->context->hotel()->default_locale,
+            'languages' => Locales::SUPPORTED,
+            'assignable' => $conversation === null ? [] : $this->context->hotel()->members()->get()
+                ->filter(fn (User $member): bool => $member->can('conversations.reply'))
+                ->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name])
+                ->values(),
             'templates' => $conversation === null ? [] : MessageTemplate::query()
                 ->where('status', TemplateStatus::Approved->value)
                 ->orderBy('name')
@@ -176,6 +189,72 @@ final class InboxController extends Controller
         return back();
     }
 
+    public function assign(Request $request, Conversation $conversation, ConversationHandover $handover, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate(['user_id' => ['nullable', 'string']]);
+        $assignee = null;
+
+        if (($data['user_id'] ?? null) !== null) {
+            $assignee = $this->context->hotel()->members()->whereKey((string) $data['user_id'])->first();
+
+            if ($assignee === null || ! $assignee->can('conversations.reply')) {
+                throw ValidationException::withMessages(['user_id' => __('This person cannot answer conversations.')]);
+            }
+        }
+
+        $handover->assign($conversation, $assignee, $user);
+
+        return back();
+    }
+
+    public function note(Request $request, Conversation $conversation, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+
+        $note = ConversationNote::query()->create(['conversation_id' => $conversation->id, 'user_id' => $user->id, 'body' => trim((string) $data['body'])]);
+        Audit::record('conversations.note_added', 'Internal note added', subject: $conversation, causer: $user, properties: ['note_id' => $note->id]);
+
+        return back();
+    }
+
+    public function translateDraft(Request $request, Conversation $conversation, Translator $translator): RedirectResponse
+    {
+        $data = $request->validate([
+            'text' => ['required', 'string', 'max:'.MessageSender::MAX_TEXT],
+            'language' => ['required', Rule::in(array_keys(Locales::SUPPORTED))],
+        ]);
+
+        try {
+            Inertia::flash('translation', $translator->translate((string) $data['text'], (string) $data['language'], $conversation->id));
+        } catch (AiUnavailable $exception) {
+            throw ValidationException::withMessages(['body' => __('Translation is not available right now: :reason', ['reason' => $exception->getMessage()])]);
+        }
+
+        return back();
+    }
+
+    public function translateMessage(Message $message, Translator $translator, #[CurrentUser] User $user): RedirectResponse
+    {
+        try {
+            $translator->translateMessage($message, $user->preferred_locale ?: $this->context->hotel()->default_locale);
+        } catch (AiUnavailable $exception) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Translation is not available right now: :reason', ['reason' => $exception->getMessage()])]);
+        }
+
+        return back();
+    }
+
+    /**
+     * The guest's language: their saved language, else the language of their
+     * last message, else the hotel's.
+     */
+    private function guestLanguage(Conversation $conversation): string
+    {
+        return $conversation->contact->guest->preferred_locale
+            ?? $conversation->messages()->where('direction', 'in')->whereNotNull('language')->latest('sent_at')->value('language')
+            ?? $this->context->hotel()->default_locale;
+    }
+
     public function media(Message $message): StreamedResponse
     {
         $path = $message->media['path'] ?? null;
@@ -195,8 +274,9 @@ final class InboxController extends Controller
     private function thread(Conversation $conversation): array
     {
         $hotel = $this->context->hotel();
-        $conversation->load('contact.guest');
+        $conversation->load(['contact.guest', 'assignee']);
         $guest = $conversation->contact?->guest;
+        $notes = $conversation->notes()->with('author')->orderBy('created_at')->get();
 
         $messages = $conversation->messages()
             ->with('sender')
@@ -212,6 +292,16 @@ final class InboxController extends Controller
             'phone' => '+'.$conversation->contact?->wa_id,
             'mode' => $conversation->mode->value,
             'mode_label' => $conversation->mode->label(),
+            'assigned_to' => $conversation->assigned_to,
+            'assignee' => $conversation->assignee?->name,
+            'guest_language' => $this->guestLanguage($conversation),
+            'notes' => $notes->map(fn (ConversationNote $note): array => [
+                'id' => $note->id,
+                'body' => $note->body,
+                'by' => $note->author?->name,
+                'at' => $note->created_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
+                'sort' => $note->created_at?->toIso8601String(),
+            ])->values(),
             'needs_attention' => $conversation->needs_attention,
             'handover_reason' => $conversation->handover_reason,
             'window_open' => $conversation->windowOpen(),
@@ -245,6 +335,8 @@ final class InboxController extends Controller
                 'transcript' => $message->transcript,
                 'transcript_error' => $message->transcript_error,
                 'source' => $message->source->value,
+                'translation' => $message->translation,
+                'translation_language' => $message->translation_language,
                 'by' => $message->sender?->name,
                 'at' => $message->sent_at->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             ])->values(),

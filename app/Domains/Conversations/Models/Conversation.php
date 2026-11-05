@@ -6,6 +6,7 @@ namespace App\Domains\Conversations\Models;
 
 use App\Domains\Conversations\ConversationMode;
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $handed_over_at
  * @property string|null $last_answered_message_id
  * @property CarbonImmutable|null $staff_replied_at
+ * @property string|null $assigned_to
+ * @property CarbonImmutable|null $assigned_at
+ * @property CarbonImmutable|null $waiting_since
+ * @property CarbonImmutable|null $holding_sent_at
  */
 class Conversation extends Model
 {
@@ -53,6 +58,9 @@ class Conversation extends Model
             'needs_attention' => 'boolean',
             'handed_over_at' => 'immutable_datetime',
             'staff_replied_at' => 'immutable_datetime',
+            'assigned_at' => 'immutable_datetime',
+            'waiting_since' => 'immutable_datetime',
+            'holding_sent_at' => 'immutable_datetime',
         ];
     }
 
@@ -62,6 +70,22 @@ class Conversation extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(WhatsAppContact::class, 'whatsapp_contact_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * @return HasMany<ConversationNote, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(ConversationNote::class);
     }
 
     /**

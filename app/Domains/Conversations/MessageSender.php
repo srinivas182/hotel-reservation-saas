@@ -54,7 +54,7 @@ final class MessageSender
 
         $conversation->forceFill([
             'last_message_at' => now(),
-            ...($source === MessageSource::Staff ? ['staff_replied_at' => now(), 'needs_attention' => false] : []),
+            ...($source === MessageSource::Staff ? ['staff_replied_at' => now(), 'needs_attention' => false, 'waiting_since' => null] : []),
         ])->save();
 
         SendMessage::dispatch($message->id);
@@ -109,7 +109,7 @@ final class MessageSender
 
         $conversation->forceFill([
             'last_message_at' => now(),
-            ...($source === MessageSource::Staff ? ['staff_replied_at' => now(), 'needs_attention' => false] : []),
+            ...($source === MessageSource::Staff ? ['staff_replied_at' => now(), 'needs_attention' => false, 'waiting_since' => null] : []),
         ])->save();
 
         SendMessage::dispatch($message->id);

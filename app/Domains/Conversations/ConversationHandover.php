@@ -20,9 +20,31 @@ final class ConversationHandover
             'needs_attention' => $by === null,
             'handover_reason' => mb_substr($reason, 0, 250),
             'handed_over_at' => now(),
+            // Taking over makes the person who clicked the owner.
+            ...($by !== null ? ['assigned_to' => $by->getKey(), 'assigned_at' => now()] : []),
         ])->save();
 
         Audit::record('conversations.handed_to_staff', $by === null ? 'Conversation passed to staff' : 'Staff took over the conversation', subject: $conversation, causer: $by, properties: ['reason' => $reason]);
+
+        if ($by === null) {
+            ConversationNeedsStaff::dispatch($conversation->id, 'handover');
+        }
+    }
+
+    public function assign(Conversation $conversation, ?User $assignee, User $by): void
+    {
+        $previous = $conversation->assigned_to;
+
+        $conversation->forceFill([
+            'assigned_to' => $assignee?->getKey(),
+            'assigned_at' => $assignee === null ? null : now(),
+        ])->save();
+
+        Audit::record('conversations.assigned', $assignee === null ? 'Conversation unassigned' : 'Conversation assigned', subject: $conversation, causer: $by, properties: [
+            'from' => $previous,
+            'to' => $assignee?->getKey(),
+            'to_name' => $assignee?->name,
+        ]);
     }
 
     public function toAssistant(Conversation $conversation, ?User $by = null): void
@@ -33,6 +55,9 @@ final class ConversationHandover
             'mode' => ConversationMode::Assistant,
             'needs_attention' => false,
             'handover_reason' => null,
+            'assigned_to' => null,
+            'assigned_at' => null,
+            'waiting_since' => null,
             // Messages staff have already dealt with are not answered again.
             'last_answered_message_id' => $latest ?? $conversation->last_answered_message_id,
         ])->save();

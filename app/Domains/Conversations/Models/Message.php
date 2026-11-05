@@ -34,6 +34,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $sent_by
  * @property MessageSource $source
  * @property CarbonImmutable $sent_at
+ * @property string|null $translation
+ * @property string|null $translation_language
  * @property string|null $transcript
  * @property string|null $transcript_language
  * @property CarbonImmutable|null $transcribed_at
@@ -58,6 +60,7 @@ class Message extends Model
     {
         return [
             'body' => 'encrypted',
+            'translation' => 'encrypted',
             'media' => 'array',
             'status' => MessageStatus::class,
             'status_at' => 'immutable_datetime',
