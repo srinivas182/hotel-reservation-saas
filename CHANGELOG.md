@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S8.2 — Operations
+
+#### Added
+
+- `platform:ops-check` every five minutes: background jobs backing up, scheduler or workers stopped, no WhatsApp notifications in the daytime, notifications failing after retries, AI providers or WhatsApp sends failing, backups missing or failed, restore drill failed or overdue. Each problem opens an incident: one email to `OPS_ALERT_EMAIL` when it starts, a reminder every two hours, one when it clears (sent directly, not queued).
+- Backups (`docker/backup/backup.sh`): copied off-site to S3-compatible storage when `BACKUP_S3_URI` is set, kept 14 daily, 8 weekly and 6 monthly; every result is recorded in the application (`backup:record`).
+- Restore drill (`docker/backup/verify-restore.sh`, monthly): restores the latest backup into a temporary database and checks it with `backup:verify-restored` (every migration present, core data present, encrypted values readable with this server's key), records the result and drops the temporary database.
+- Platform → Pilot dashboard (7, 14 or 30 days, per hotel): replies within a minute, conversations handled without staff, booking requests, median time to decide, requests that became bookings, draft outcomes, handovers by reason, safety blocks, AI cost (total, per conversation, per booking), WhatsApp replies and templates; open operations problems; last backup and restore drill.
+- Optional error tracking with Sentry (`SENTRY_LARAVEL_DSN`).
+- `docs/operations.md`: what each ops alert means and what to do, backups, restore drill, disaster recovery, rollback.
+- English and French text.
+
 ### S8.1 — Go-live readiness, supervised mode, telling guests
 
 #### Added

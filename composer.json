@@ -20,6 +20,7 @@
         "laravel/horizon": "^5.50",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "sentry/sentry-laravel": "^4.29",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-permission": "^8.3"
     },
