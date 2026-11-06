@@ -232,6 +232,8 @@ final class BookingController extends Controller
                 ],
             ],
             'timeline' => $timeline,
+            'stayPhones' => \App\Domains\Orders\Models\StayPhone::query()->where('booking_id', $booking->id)->get(['id', 'phone']),
+            'canEditStayPhones' => $request->user()?->can('bookings.frontdesk') === true && in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::CheckedIn], true),
             'actions' => $this->actions($request, $booking),
             'eligibleRooms' => in_array($booking->status, [BookingStatus::Tentative, BookingStatus::Confirmed, BookingStatus::CheckedIn], true)
                 ? $assignments->eligibleRooms($booking)->map(fn (Room $room): array => [

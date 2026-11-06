@@ -24,6 +24,7 @@ type Item = {
     photo_url: string | null;
     available_today: boolean;
     active: boolean;
+    orderable: boolean;
 };
 type Section = { id: number; name: Record<string, string>; items: Item[] };
 type Props = {
@@ -107,6 +108,7 @@ function ItemForm({
         allergens: item?.allergens ?? [],
         period_names: item?.period_names ?? '',
         active: item?.active ?? true,
+        orderable: item?.orderable ?? true,
     });
     const errors = form.errors as Record<string, string | undefined>;
 
@@ -210,6 +212,17 @@ function ItemForm({
                     onChange={(e) => form.setData('active', e.target.checked)}
                 />
                 {t('On the menu')}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+                <input
+                    type="checkbox"
+                    className="size-4"
+                    checked={form.data.orderable}
+                    onChange={(e) =>
+                        form.setData('orderable', e.target.checked)
+                    }
+                />
+                {t('Can be ordered (room service, bar)')}
             </label>
             <div className="flex gap-2">
                 <Button size="sm" disabled={form.processing}>

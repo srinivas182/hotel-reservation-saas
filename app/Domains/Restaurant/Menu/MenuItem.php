@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $photo_path
  * @property CarbonImmutable|null $unavailable_on
  * @property bool $active
+ * @property bool $orderable
  * @property int $sort_order
  * @property-read MenuSection|null $section
  */
@@ -35,7 +36,7 @@ class MenuItem extends Model
 {
     use BelongsToHotel;
 
-    protected $fillable = ['menu_section_id', 'name', 'description', 'price_minor', 'labels', 'allergens', 'period_names', 'photo_path', 'unavailable_on', 'active', 'sort_order'];
+    protected $fillable = ['menu_section_id', 'name', 'description', 'price_minor', 'labels', 'allergens', 'period_names', 'photo_path', 'unavailable_on', 'active', 'sort_order', 'orderable'];
 
     /**
      * @return array<string, string>
@@ -51,6 +52,7 @@ class MenuItem extends Model
             'period_names' => 'array',
             'unavailable_on' => DateOnly::class,
             'active' => 'boolean',
+            'orderable' => 'boolean',
             'sort_order' => 'integer',
         ];
     }

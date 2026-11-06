@@ -23,6 +23,8 @@ use App\Domains\GoLive\Http\Controllers\GoLiveController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
 use App\Domains\Messaging\Http\Controllers\UsageController;
+use App\Domains\Orders\Http\Controllers\OrderBoardController;
+use App\Domains\Orders\Http\Controllers\StayPhoneController;
 use App\Domains\Rates\Http\Controllers\CategoryRateController;
 use App\Domains\Rates\Http\Controllers\RateOverrideController;
 use App\Domains\Rates\Http\Controllers\RatesController;
@@ -170,6 +172,15 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/restaurant/bookings', [TableBookingController::class, 'store'])->name('hotel.restaurant.bookings.store');
         Route::put('hotel/restaurant/bookings/{tableBooking}', [TableBookingController::class, 'update'])->name('hotel.restaurant.bookings.update');
         Route::post('hotel/restaurant/bookings/{tableBooking}/status', [TableBookingController::class, 'status'])->name('hotel.restaurant.bookings.status');
+    });
+    Route::middleware(['can:restaurant.orders', 'throttle:240,1'])->group(function (): void {
+        Route::get('hotel/restaurant/orders', [OrderBoardController::class, 'index'])->name('hotel.restaurant.orders');
+        Route::post('hotel/restaurant/orders', [OrderBoardController::class, 'store'])->name('hotel.restaurant.orders.store');
+        Route::post('hotel/restaurant/orders/{order}/status', [OrderBoardController::class, 'status'])->name('hotel.restaurant.orders.status');
+    });
+    Route::middleware('can:bookings.frontdesk')->group(function (): void {
+        Route::post('hotel/bookings/{booking}/phones', [StayPhoneController::class, 'store'])->name('hotel.bookings.phones.store');
+        Route::delete('hotel/stay-phones/{stayPhone}', [StayPhoneController::class, 'destroy'])->name('hotel.stay-phones.destroy');
     });
     Route::middleware(['can:restaurant.menu', 'throttle:120,1'])->group(function (): void {
         Route::get('hotel/restaurant/menu', [MenuController::class, 'index'])->name('hotel.restaurant.menu');

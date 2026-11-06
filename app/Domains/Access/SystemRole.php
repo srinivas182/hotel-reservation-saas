@@ -55,8 +55,9 @@ enum SystemRole: string
                 Permission::BookingRequestsDecide,
                 Permission::RestaurantView,
                 Permission::RestaurantBookings,
+                Permission::RestaurantOrders,
             ],
-            self::RestaurantBar => [Permission::BookingsView, Permission::RestaurantView, Permission::RestaurantBookings, Permission::RestaurantMenu],
+            self::RestaurantBar => [Permission::BookingsView, Permission::RestaurantView, Permission::RestaurantBookings, Permission::RestaurantMenu, Permission::RestaurantOrders],
             self::EventsCoordinator => [],
             self::ReadOnly => [
                 Permission::HotelSettingsView,

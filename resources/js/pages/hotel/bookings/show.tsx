@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import BookingActionController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingActionController';
 import {
@@ -11,7 +11,10 @@ import type { QuoteResult } from '@/components/rates/try-a-stay';
 import { Button } from '@/components/ui/button';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
+import StayPhoneController from '@/actions/App/Domains/Orders/Http/Controllers/StayPhoneController';
 import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
+import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 
 type Booking = {
@@ -71,6 +74,8 @@ type Props = {
     categories: { id: string; name: string; extra_bed_allowed: boolean }[];
     today: string;
     quote?: QuoteResult;
+    stayPhones: { id: number; phone: string }[];
+    canEditStayPhones: boolean;
 };
 
 function Row({
@@ -88,6 +93,84 @@ function Row({
     );
 }
 
+function StayPhones({
+    bookingId,
+    phones,
+    canEdit,
+}: {
+    bookingId: string;
+    phones: { id: number; phone: string }[];
+    canEdit: boolean;
+}) {
+    const form = useForm({ phone: '' });
+
+    if (!canEdit && phones.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="flex flex-col gap-2 text-sm">
+            <Heading
+                variant="small"
+                title={t('Other WhatsApp numbers for this stay')}
+                description={t(
+                    'They can order and see the room bill on WhatsApp.',
+                )}
+            />
+            <ul>
+                {phones.map((p) => (
+                    <li key={p.id} className="flex items-center gap-2">
+                        {p.phone}
+                        {canEdit && (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                    router.delete(
+                                        StayPhoneController.destroy.url(p.id),
+                                        { preserveScroll: true },
+                                    )
+                                }
+                            >
+                                {t('Remove')}
+                            </Button>
+                        )}
+                    </li>
+                ))}
+            </ul>
+            {canEdit && (
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        form.post(StayPhoneController.store.url(bookingId), {
+                            preserveScroll: true,
+                            onSuccess: () => form.reset(),
+                        });
+                    }}
+                    className="flex gap-2"
+                >
+                    <Input
+                        type="tel"
+                        aria-label={t('Phone')}
+                        placeholder="+2250700000000"
+                        className="w-56"
+                        value={form.data.phone}
+                        onChange={(e) => form.setData('phone', e.target.value)}
+                    />
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={form.data.phone === ''}
+                    >
+                        {t('Add number')}
+                    </Button>
+                    <InputError message={form.errors.phone} />
+                </form>
+            )}
+        </div>
+    );
+}
+
 export default function ShowBooking({
     booking,
     timeline,
@@ -97,6 +180,8 @@ export default function ShowBooking({
     editStay,
     categories,
     quote,
+    stayPhones,
+    canEditStayPhones,
 }: Props) {
     const [panel, setPanel] = useState<'modify' | 'cancel' | null>(null);
     const post = (url: string, message?: string) => {
@@ -313,6 +398,11 @@ export default function ShowBooking({
                     </section>
 
                     <section className="flex flex-col gap-2 rounded-xl border p-4 text-sm">
+                        <StayPhones
+                            bookingId={booking.id}
+                            phones={stayPhones}
+                            canEdit={canEditStayPhones}
+                        />
                         <Heading variant="small" title={t('History')} />
                         <ul className="divide-y">
                             {timeline.map((entry, index) => (

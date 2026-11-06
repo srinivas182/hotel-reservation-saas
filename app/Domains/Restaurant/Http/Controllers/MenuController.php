@@ -73,6 +73,7 @@ final class MenuController extends Controller
                         'photo_url' => $i->photo_path === null ? null : route('menu.public.photo', [$hotel->slug, $outlet->public_slug, $i->id]),
                         'available_today' => $i->availableToday($hotel),
                         'active' => $i->active,
+                        'orderable' => $i->orderable,
                     ])->values(),
                 ])->values(),
             'labels' => array_map(fn (string $k): array => ['value' => $k, 'label' => MenuLabel::label($k)], MenuLabel::LABELS),
@@ -209,6 +210,7 @@ final class MenuController extends Controller
             'allergens.*' => [Rule::in(MenuLabel::ALLERGENS)],
             'period_names' => ['nullable', 'string', 'max:200'],
             'active' => ['required', 'boolean'],
+            'orderable' => ['sometimes', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
@@ -224,6 +226,7 @@ final class MenuController extends Controller
             'allergens' => array_values(array_unique((array) ($data['allergens'] ?? []))),
             'period_names' => array_values(array_filter(array_map('trim', explode(',', (string) ($data['period_names'] ?? ''))))),
             'active' => (bool) $data['active'],
+            'orderable' => array_key_exists('orderable', $data) ? (bool) $data['orderable'] : null,
             'sort_order' => $data['sort_order'] ?? null,
         ], fn ($v): bool => $v !== null);
     }
