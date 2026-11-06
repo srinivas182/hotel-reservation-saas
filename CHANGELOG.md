@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Hotfix — WhatsApp webhook blocked by CSRF protection
+
+#### Fixed
+
+- Meta's WhatsApp notifications (`POST /webhooks/whatsapp`) and browsers' CSP reports (`POST /csp-report`) were exempted from the old CSRF middleware name (`ValidateCsrfToken`), but Laravel 13 runs `PreventRequestForgery`, so both would have been rejected with "419" outside tests. They now exempt `PreventRequestForgery`. A test checks the exemption on the routes, because Laravel skips CSRF checks while tests run. Found by the S8.3 load smoke test against a real server; nothing had been deployed.
+
 ### S8.2 — Operations
 
 #### Added

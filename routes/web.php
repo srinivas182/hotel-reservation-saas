@@ -7,7 +7,7 @@ use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Tenancy\Http\Controllers\SwitchHotelController;
 use App\Domains\WhatsApp\Http\Controllers\WebhookController as WhatsAppWebhookController;
 use App\Http\Controllers\CspReportController;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => auth()->check() ? to_route('dashboard') : to_route('login'))->name('home');
@@ -18,13 +18,13 @@ Route::get('health', HealthController::class)->middleware('throttle:30,1')->name
 
 Route::get('webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
 Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])
-    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:600,1')
     ->name('webhooks.whatsapp.receive');
 
 Route::post('csp-report', CspReportController::class)
     ->middleware('throttle:60,1')
-    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->withoutMiddleware(PreventRequestForgery::class)
     ->name('csp.report');
 
 Route::middleware(['auth', 'verified'])->group(function () {
