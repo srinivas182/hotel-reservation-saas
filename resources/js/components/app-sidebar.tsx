@@ -3,6 +3,7 @@ import {
     Building2,
     LayoutGrid,
     MessageCircle,
+    PartyPopper,
     Rocket,
     UtensilsCrossed,
     Sparkles,
@@ -27,6 +28,7 @@ import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/H
 import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
 import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsController';
 import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Controllers/AlertSettingsController';
+import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
 import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
 import PilotDashboardController from '@/actions/App/Domains/Platform/Http/Controllers/PilotDashboardController';
 import RestaurantController from '@/actions/App/Domains/Restaurant/Http/Controllers/RestaurantController';
@@ -173,6 +175,15 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('usage.view')
             ? [{ title: 'Usage', href: UsageController(), icon: BarChart3 }]
+            : []),
+        ...(auth.permissions.includes('events.view')
+            ? [
+                  {
+                      title: 'Events',
+                      href: EventController.index(),
+                      icon: PartyPopper,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('restaurant.view')
             ? [

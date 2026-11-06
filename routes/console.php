@@ -88,3 +88,9 @@ Schedule::command('table-requests:expire')
     ->name('table-requests:expire')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Event options past their date release the space to the waiting list.
+Schedule::command('events:expire-options')
+    ->name('events:expire-options')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
