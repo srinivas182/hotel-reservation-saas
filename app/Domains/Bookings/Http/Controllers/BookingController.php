@@ -232,6 +232,23 @@ final class BookingController extends Controller
                 ],
             ],
             'timeline' => $timeline,
+            'folio' => $request->user()?->can('folio.view') === true && $booking->status !== BookingStatus::Cancelled ? (function () use ($booking, $hotel): array {
+                $statement = app(\App\Domains\Folio\Folio::class)->statement($booking);
+                $fmt = fn (int $minor): string => MoneyFormatter::format(Money::ofMinor($minor, $hotel->currency), $hotel->default_locale);
+
+                return [
+                    'lines' => array_map(fn (array $l): array => [...$l, 'amount' => $fmt($l['amount_minor']), 'method_label' => $l['method'] === null ? null : \App\Domains\Folio\RestaurantSettings::methodLabel($l['method'])], $statement['lines']),
+                    'charges' => $fmt($statement['charges_minor']),
+                    'payments' => $fmt($statement['payments_minor']),
+                    'balance' => $fmt($statement['balance_minor']),
+                    'balance_minor' => $statement['balance_minor'],
+                    'statement_url' => route('hotel.bookings.statement', $booking),
+                    'methods' => array_map(fn (string $m): array => ['value' => $m, 'label' => \App\Domains\Folio\RestaurantSettings::methodLabel($m)], \App\Domains\Folio\RestaurantSettings::current()->methods()),
+                    'can_charge' => request()->user()?->can('folio.charge') === true,
+                    'can_pay' => request()->user()?->can('folio.payments') === true,
+                    'currency' => $hotel->currency,
+                ];
+            })() : null,
             'stayPhones' => \App\Domains\Orders\Models\StayPhone::query()->where('booking_id', $booking->id)->get(['id', 'phone']),
             'canEditStayPhones' => $request->user()?->can('bookings.frontdesk') === true && in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::CheckedIn], true),
             'actions' => $this->actions($request, $booking),

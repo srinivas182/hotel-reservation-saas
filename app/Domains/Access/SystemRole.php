@@ -56,6 +56,9 @@ enum SystemRole: string
                 Permission::RestaurantView,
                 Permission::RestaurantBookings,
                 Permission::RestaurantOrders,
+                Permission::FolioView,
+                Permission::FolioCharge,
+                Permission::FolioPayments,
             ],
             self::RestaurantBar => [Permission::BookingsView, Permission::RestaurantView, Permission::RestaurantBookings, Permission::RestaurantMenu, Permission::RestaurantOrders],
             self::EventsCoordinator => [],
@@ -72,6 +75,7 @@ enum SystemRole: string
                 Permission::BookingsExport,
                 Permission::ConversationsView,
                 Permission::RestaurantView,
+                Permission::FolioView,
             ],
         };
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Restaurant\Http\Controllers;
 
 use App\Domains\Audit\Audit;
+use App\Domains\Folio\RestaurantSettings;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Restaurant\Models\Outlet;
 use App\Domains\Restaurant\Models\OutletClosure;
@@ -13,6 +14,8 @@ use App\Domains\Restaurant\OutletType;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Brick\Math\RoundingMode;
+use Brick\Money\Money;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,6 +55,20 @@ final class OutletController extends Controller
                 ])->values(),
                 'closures' => $o->closures->map(fn (OutletClosure $c): array => ['id' => $c->id, 'date' => $c->date->toDateString(), 'reason' => $c->reason])->values(),
             ])->values(),
+            'roomCharges' => (function (): array {
+                $settings = RestaurantSettings::current();
+                $digits = Money::zero($this->context->hotel()->currency)->getCurrency()->getDefaultFractionDigits();
+
+                return [
+                    'room_charge_enabled' => $settings->room_charge_enabled,
+                    'order_limit' => $settings->room_charge_order_limit_minor === null ? null : $settings->room_charge_order_limit_minor / 10 ** $digits,
+                    'stay_limit' => $settings->room_charge_stay_limit_minor === null ? null : $settings->room_charge_stay_limit_minor / 10 ** $digits,
+                    'accept_outside_orders' => $settings->accept_outside_orders,
+                    'payment_methods' => $settings->methods(),
+                ];
+            })(),
+            'allMethods' => array_map(fn (string $m): array => ['value' => $m, 'label' => RestaurantSettings::methodLabel($m)], RestaurantSettings::METHODS),
+            'currency' => $this->context->hotel()->currency,
             'types' => collect(OutletType::cases())->map(fn (OutletType $t): array => ['value' => $t->value, 'label' => $t->label()])->values(),
             'locales' => $locales,
         ]);
@@ -108,6 +125,33 @@ final class OutletController extends Controller
 
         Audit::record('outlets.periods_updated', 'Outlet services updated', subject: $outlet, causer: $user, properties: ['count' => count($data['periods'])]);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Services saved.')]);
+
+        return back();
+    }
+
+    public function roomCharges(Request $request, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'room_charge_enabled' => ['required', 'boolean'],
+            'order_limit' => ['nullable', 'numeric', 'min:0', 'max:1000000000'],
+            'stay_limit' => ['nullable', 'numeric', 'min:0', 'max:1000000000'],
+            'accept_outside_orders' => ['required', 'boolean'],
+            'payment_methods' => ['required', 'array', 'min:1'],
+            'payment_methods.*' => [Rule::in(RestaurantSettings::METHODS)],
+        ]);
+        $currency = $this->context->hotel()->currency;
+        $minor = fn ($v): ?int => $v === null || $v === '' ? null : Money::of((string) $v, $currency, roundingMode: RoundingMode::HalfUp)->getMinorAmount()->toInt();
+
+        $settings = RestaurantSettings::current();
+        $settings->update([
+            'room_charge_enabled' => (bool) $data['room_charge_enabled'],
+            'room_charge_order_limit_minor' => $minor($data['order_limit'] ?? null),
+            'room_charge_stay_limit_minor' => $minor($data['stay_limit'] ?? null),
+            'accept_outside_orders' => (bool) $data['accept_outside_orders'],
+            'payment_methods' => array_values(array_unique($data['payment_methods'])),
+        ]);
+        Audit::record('restaurant.room_charges_updated', 'Room charge settings updated', subject: $this->context->hotel(), causer: $user, properties: $settings->only(['room_charge_enabled', 'room_charge_order_limit_minor', 'room_charge_stay_limit_minor', 'accept_outside_orders', 'payment_methods']));
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Room charge settings saved.')]);
 
         return back();
     }

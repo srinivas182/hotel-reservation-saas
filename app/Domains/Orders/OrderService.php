@@ -10,6 +10,8 @@ use App\Domains\Bookings\Models\Booking;
 use App\Domains\Finance\Taxes\TaxCalculator;
 use App\Domains\Finance\Taxes\TaxRate;
 use App\Domains\Finance\Taxes\TaxScope;
+use App\Domains\Folio\Folio;
+use App\Domains\Folio\RestaurantSettings;
 use App\Domains\Orders\Exceptions\OrderNotPossible;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\Models\OrderLine;
@@ -71,6 +73,10 @@ final class OrderService
             $unit = Money::ofMinor($dish->price_minor, $hotel->currency);
             $line = $unit->multipliedBy($item['quantity']);
             $lines[] = ['dish' => $dish, 'quantity' => $item['quantity'], 'net' => $line, 'paid' => $this->taxes->calculate($rates, $line, TaxScope::FoodBeverage, $now)];
+        }
+
+        if ($data->payment === OrderPayment::RoomCharge) {
+            $this->checkRoomChargeLimits($booking, array_sum(array_map(fn (array $l): int => $l['paid']->total->getMinorAmount()->toInt(), $lines)));
         }
 
         $order = DB::transaction(function () use ($data, $outlet, $booking, $lines, $hotel, $by): Order {
@@ -150,6 +156,28 @@ final class OrderService
         OrderChanged::dispatch($order->id);
 
         return $order;
+    }
+
+    /**
+     * Room charges are allowed only when the hotel allows them and the order
+     * stays within the per-order and per-stay limits.
+     */
+    public function checkRoomChargeLimits(Booking $booking, int $orderTotalMinor): void
+    {
+        $settings = RestaurantSettings::current();
+
+        if (! $settings->room_charge_enabled) {
+            throw OrderNotPossible::because('room_charge_off');
+        }
+
+        if ($settings->room_charge_order_limit_minor !== null && $orderTotalMinor > $settings->room_charge_order_limit_minor) {
+            throw OrderNotPossible::because('room_charge_limit');
+        }
+
+        if ($settings->room_charge_stay_limit_minor !== null
+            && app(Folio::class)->roomChargesUsed($booking) + $orderTotalMinor > $settings->room_charge_stay_limit_minor) {
+            throw OrderNotPossible::because('room_charge_limit');
+        }
     }
 
     private function nextReference(): string

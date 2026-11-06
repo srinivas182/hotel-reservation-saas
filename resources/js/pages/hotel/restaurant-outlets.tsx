@@ -32,10 +32,20 @@ type OutletRow = {
     periods: PeriodRow[];
     closures: { id: number; date: string; reason: string | null }[];
 };
+type RoomCharges = {
+    room_charge_enabled: boolean;
+    order_limit: number | null;
+    stay_limit: number | null;
+    accept_outside_orders: boolean;
+    payment_methods: string[];
+};
 type Props = {
     outlets: OutletRow[];
     types: { value: string; label: string }[];
     locales: string[];
+    roomCharges: RoomCharges;
+    allMethods: { value: string; label: string }[];
+    currency: string;
 };
 
 const WEEKDAYS = [
@@ -498,7 +508,138 @@ function Closures({ outlet }: { outlet: OutletRow }) {
     );
 }
 
-export default function RestaurantOutlets({ outlets, types, locales }: Props) {
+function RoomChargesForm({
+    settings,
+    methods,
+    currency,
+}: {
+    settings: RoomCharges;
+    methods: { value: string; label: string }[];
+    currency: string;
+}) {
+    const form = useForm(settings);
+    const errors = form.errors as Record<string, string | undefined>;
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                form.put(OutletController.roomCharges.url(), {
+                    preserveScroll: true,
+                });
+            }}
+            className="grid gap-3 rounded-xl border p-4 text-sm sm:grid-cols-2"
+        >
+            <label className="flex items-center gap-2 sm:col-span-2">
+                <input
+                    type="checkbox"
+                    className="size-4"
+                    checked={form.data.room_charge_enabled}
+                    onChange={(e) =>
+                        form.setData('room_charge_enabled', e.target.checked)
+                    }
+                />
+                {t('Guests staying can put orders on their room bill')}
+            </label>
+            <div className="grid gap-1">
+                <Label>
+                    {t('Limit per order (:currency, empty for none)', {
+                        currency,
+                    })}
+                </Label>
+                <Input
+                    type="number"
+                    min={0}
+                    value={form.data.order_limit ?? ''}
+                    onChange={(e) =>
+                        form.setData(
+                            'order_limit',
+                            e.target.value === ''
+                                ? null
+                                : Number(e.target.value),
+                        )
+                    }
+                />
+            </div>
+            <div className="grid gap-1">
+                <Label>
+                    {t('Limit per stay (:currency, empty for none)', {
+                        currency,
+                    })}
+                </Label>
+                <Input
+                    type="number"
+                    min={0}
+                    value={form.data.stay_limit ?? ''}
+                    onChange={(e) =>
+                        form.setData(
+                            'stay_limit',
+                            e.target.value === ''
+                                ? null
+                                : Number(e.target.value),
+                        )
+                    }
+                />
+            </div>
+            <label className="flex items-center gap-2 sm:col-span-2">
+                <input
+                    type="checkbox"
+                    className="size-4"
+                    checked={form.data.accept_outside_orders}
+                    onChange={(e) =>
+                        form.setData('accept_outside_orders', e.target.checked)
+                    }
+                />
+                {t(
+                    'Accept WhatsApp orders from people not staying (paid on delivery)',
+                )}
+            </label>
+            <fieldset className="flex flex-wrap gap-3 sm:col-span-2">
+                <legend className="mb-1 font-medium">
+                    {t('Payment methods recorded at the hotel')}
+                </legend>
+                {methods.map((m) => (
+                    <label key={m.value} className="flex items-center gap-1">
+                        <input
+                            type="checkbox"
+                            className="size-4"
+                            checked={form.data.payment_methods.includes(
+                                m.value,
+                            )}
+                            onChange={() =>
+                                form.setData(
+                                    'payment_methods',
+                                    form.data.payment_methods.includes(m.value)
+                                        ? form.data.payment_methods.filter(
+                                              (v) => v !== m.value,
+                                          )
+                                        : [
+                                              ...form.data.payment_methods,
+                                              m.value,
+                                          ],
+                                )
+                            }
+                        />
+                        {m.label}
+                    </label>
+                ))}
+                <InputError message={errors.payment_methods} />
+            </fieldset>
+            <div>
+                <Button disabled={form.processing}>{t('Save')}</Button>
+            </div>
+        </form>
+    );
+}
+
+export default function RestaurantOutlets({
+    outlets,
+    types,
+    locales,
+    roomCharges,
+    allMethods,
+    currency,
+}: Props) {
     const [adding, setAdding] = useState(outlets.length === 0);
 
     return (
@@ -528,6 +669,12 @@ export default function RestaurantOutlets({ outlets, types, locales }: Props) {
                         />
                     </section>
                 )}
+                <Heading variant="small" title={t('Room bill and payments')} />
+                <RoomChargesForm
+                    settings={roomCharges}
+                    methods={allMethods}
+                    currency={currency}
+                />
                 {outlets.map((outlet) => (
                     <section
                         key={outlet.id}
