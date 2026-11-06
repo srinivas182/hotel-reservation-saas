@@ -27,6 +27,7 @@ use App\Domains\Rates\Http\Controllers\CategoryRateController;
 use App\Domains\Rates\Http\Controllers\RateOverrideController;
 use App\Domains\Rates\Http\Controllers\RatesController;
 use App\Domains\Rates\Http\Controllers\RateSettingsController;
+use App\Domains\Restaurant\Http\Controllers\MenuController;
 use App\Domains\Restaurant\Http\Controllers\OutletController;
 use App\Domains\Restaurant\Http\Controllers\RestaurantController;
 use App\Domains\Restaurant\Http\Controllers\TableBookingController;
@@ -169,6 +170,19 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/restaurant/bookings', [TableBookingController::class, 'store'])->name('hotel.restaurant.bookings.store');
         Route::put('hotel/restaurant/bookings/{tableBooking}', [TableBookingController::class, 'update'])->name('hotel.restaurant.bookings.update');
         Route::post('hotel/restaurant/bookings/{tableBooking}/status', [TableBookingController::class, 'status'])->name('hotel.restaurant.bookings.status');
+    });
+    Route::middleware(['can:restaurant.menu', 'throttle:120,1'])->group(function (): void {
+        Route::get('hotel/restaurant/menu', [MenuController::class, 'index'])->name('hotel.restaurant.menu');
+        Route::get('hotel/restaurant/menu/{outlet}/qr', [MenuController::class, 'qr'])->name('hotel.restaurant.menu.qr');
+        Route::post('hotel/restaurant/menu/sections', [MenuController::class, 'storeSection'])->name('hotel.restaurant.menu.sections.store');
+        Route::put('hotel/restaurant/menu/sections/{section}', [MenuController::class, 'updateSection'])->name('hotel.restaurant.menu.sections.update');
+        Route::delete('hotel/restaurant/menu/sections/{section}', [MenuController::class, 'destroySection'])->name('hotel.restaurant.menu.sections.destroy');
+        Route::post('hotel/restaurant/menu/items', [MenuController::class, 'storeItem'])->name('hotel.restaurant.menu.items.store');
+        Route::put('hotel/restaurant/menu/items/{item}', [MenuController::class, 'updateItem'])->name('hotel.restaurant.menu.items.update');
+        Route::delete('hotel/restaurant/menu/items/{item}', [MenuController::class, 'destroyItem'])->name('hotel.restaurant.menu.items.destroy');
+        Route::put('hotel/restaurant/menu/items/{item}/today', [MenuController::class, 'today'])->name('hotel.restaurant.menu.items.today');
+        Route::post('hotel/restaurant/menu/items/{item}/photo', [MenuController::class, 'photo'])->name('hotel.restaurant.menu.items.photo');
+        Route::delete('hotel/restaurant/menu/items/{item}/photo', [MenuController::class, 'removePhoto'])->name('hotel.restaurant.menu.items.photo.destroy');
     });
     Route::middleware('can:restaurant.manage')->group(function (): void {
         Route::get('hotel/restaurant/outlets', [OutletController::class, 'index'])->name('hotel.restaurant.outlets');

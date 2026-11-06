@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S10.2 — Restaurant & Bar: menu
+
+#### Added
+
+- Menu per outlet (Restaurant & Bar → Menu, new permission `restaurant.menu` for Owner, Manager and the Restaurant & Bar role): sections and dishes with names and descriptions per language, price, labels (vegetarian, vegan, spicy, halal, house special), allergen labels (the 14 common allergens), the services a dish is served at, an optional photo (JPEG, PNG or WebP up to 3 MB, stored privately), and on/off. Price changes are audited.
+- "Not available today": stores today's date (hotel time zone), so the dish comes back by itself the next morning with no scheduled job.
+- The price the guest pays: the hotel's food and drink taxes applied as set up (added taxes included in the shown price).
+- Public menu page per outlet (`/m/{hotel}/{outlet}`): mobile, light and dark, French/English switch, the dishes served now or the whole menu, photos, labels and allergens; no login, no personal data, separate per hotel. QR code (SVG) to print, from the menu screen.
+- English and French text.
+
 ### S10.1 — Restaurant & Bar: outlets, opening hours, table bookings
 
 #### Added
