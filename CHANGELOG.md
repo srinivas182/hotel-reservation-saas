@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S10.3 — Restaurant & Bar on WhatsApp
+
+#### Added
+
+- Assistant tools: `restaurant_availability` (outlets, and free times for a party on a date), `book_table` (needs the guest's name; nothing is booked from the practice screen) and `get_menu` (dishes served now with the price the guest pays, labels, allergens and the full menu link). Menu prices returned by the tool pass the price check; invented prices are still blocked.
+- Small ordinary parties (up to the outlet's limit, default 6) are confirmed automatically; larger parties, outlets without automatic confirmation, and notes about occasions, groups or private events become a request for the restaurant team, holding the seats for two hours and never later than one hour before the booking. New staff alert "New table request". `table-requests:expire` (every minute) releases unanswered requests, tells the guest the team will contact them and marks the conversation "needs attention".
+- The system, never the AI, tells the guest a table is confirmed or declined: free text within 24 hours (sent a few seconds after the assistant's reply), otherwise the new `table_booking_confirmed` / `table_booking_declined` templates (French and English). The "never say confirmed" check now covers tables too.
+- The information pack lists outlets with their services and the menu link; the assistant's rules include the restaurant.
+- English and French text.
+
 ### S10.2 — Restaurant & Bar: menu
 
 #### Added
