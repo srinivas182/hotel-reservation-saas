@@ -53,8 +53,10 @@ enum SystemRole: string
                 Permission::ConversationsView,
                 Permission::ConversationsReply,
                 Permission::BookingRequestsDecide,
+                Permission::RestaurantView,
+                Permission::RestaurantBookings,
             ],
-            self::RestaurantBar => [Permission::BookingsView],
+            self::RestaurantBar => [Permission::BookingsView, Permission::RestaurantView, Permission::RestaurantBookings],
             self::EventsCoordinator => [],
             self::ReadOnly => [
                 Permission::HotelSettingsView,
@@ -68,6 +70,7 @@ enum SystemRole: string
                 Permission::BookingsView,
                 Permission::BookingsExport,
                 Permission::ConversationsView,
+                Permission::RestaurantView,
             ],
         };
     }
