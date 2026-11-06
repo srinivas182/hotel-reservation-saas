@@ -76,6 +76,7 @@ final class RestaurantController extends Controller
                 'bookings' => $request->user()?->can('restaurant.bookings') === true,
                 'manage' => $request->user()?->can('restaurant.manage') === true,
                 'menu' => $request->user()?->can('restaurant.menu') === true,
+                'orders' => $request->user()?->can('restaurant.orders') === true,
             ],
         ]);
     }

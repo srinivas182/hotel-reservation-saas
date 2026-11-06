@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S11.1 — Orders during the stay
+
+#### Added
+
+- Assistant test suite: 15 restaurant cases (free times, small and large parties, occasions, closed date, menu and prices, vegetarian and allergy questions, "confirmed" wording, invented menu prices); the test hotel now has a restaurant with lunch, dinner, a closed date and a short menu. 80 cases, 31 safety cases.
+- Guests staying: a WhatsApp number counts as staying when it matches a checked-in booking's guest or an extra number reception added to the stay (booking page, `bookings.frontdesk`, audited).
+- Food and drink orders (`O-YY-NNNN`): outlets with ordering switched on, dishes marked "can be ordered", available today and served now; prices with food and drink tax copied onto the order; delivery to a room or at the outlet; paid on delivery, or on the room bill for a checked-in guest only. Statuses new → accepted (with a waiting time) → ready → delivered, or declined / cancelled; every step audited.
+- Restaurant & Bar → Orders (`restaurant.orders`: Restaurant & Bar role, Reception, Manager, Owner): New / Accepted / Ready columns refreshed every 10 seconds, waiting time, optional browser alert, print, today's finished orders, and taking orders by phone or at the counter.
+- English and French text.
+
 ### S10.3 — Restaurant & Bar on WhatsApp
 
 #### Added

@@ -25,12 +25,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $active
  * @property string $public_slug
  * @property int $sort_order
+ * @property bool $orders_enabled
  */
 class Outlet extends Model
 {
     use BelongsToHotel, HasUlids;
 
-    protected $fillable = ['name', 'type', 'seats', 'default_duration_minutes', 'slot_arrival_limit', 'auto_confirm_max_party', 'auto_confirm', 'active', 'public_slug', 'sort_order'];
+    protected $fillable = ['name', 'type', 'seats', 'default_duration_minutes', 'slot_arrival_limit', 'auto_confirm_max_party', 'auto_confirm', 'active', 'public_slug', 'sort_order', 'orders_enabled'];
 
     /**
      * @return array<string, string>
@@ -47,6 +48,7 @@ class Outlet extends Model
             'auto_confirm' => 'boolean',
             'active' => 'boolean',
             'sort_order' => 'integer',
+            'orders_enabled' => 'boolean',
         ];
     }
 

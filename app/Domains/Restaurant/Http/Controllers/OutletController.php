@@ -45,6 +45,7 @@ final class OutletController extends Controller
                 'auto_confirm' => $o->auto_confirm,
                 'auto_confirm_max_party' => $o->auto_confirm_max_party,
                 'active' => $o->active,
+                'orders_enabled' => $o->orders_enabled,
                 'periods' => $o->periods->map(fn (ServicePeriod $p): array => [
                     'weekday' => $p->weekday, 'name' => (object) $p->name, 'starts_at' => $p->starts_at, 'ends_at' => $p->ends_at,
                     'slot_minutes' => $p->slot_minutes, 'last_seating_minutes' => $p->last_seating_minutes,
@@ -143,6 +144,7 @@ final class OutletController extends Controller
             'auto_confirm' => ['required', 'boolean'],
             'auto_confirm_max_party' => ['required', 'integer', 'min:1', 'max:100'],
             'active' => ['required', 'boolean'],
+            'orders_enabled' => ['sometimes', 'boolean'],
         ]);
 
         $data['name'] = array_filter((array) $data['name'], fn ($v): bool => is_string($v) && trim($v) !== '');

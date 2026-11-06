@@ -11,10 +11,16 @@ use App\Domains\Finance\Taxes\TaxRate;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Rates\BreakfastMode;
 use App\Domains\Rates\Models\CategoryRate;
+use App\Domains\Restaurant\Menu\MenuItem;
+use App\Domains\Restaurant\Menu\MenuSection;
+use App\Domains\Restaurant\Models\Outlet;
+use App\Domains\Restaurant\Models\OutletClosure;
+use App\Domains\Restaurant\Models\ServicePeriod;
 use App\Domains\Rooms\Models\Room;
 use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Rooms\RoomStatus;
 use App\Domains\Tenancy\Enums\HotelStatus;
+use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Domains\Tenancy\TenantContext;
 use Illuminate\Support\Str;
@@ -94,6 +100,28 @@ final class EvalFixture
                 foreach ($entries as $i => [$section, $question, $content]) {
                     KnowledgeEntry::query()->create(['locale' => $locale, 'section' => $section, 'question' => $question, 'content' => $content, 'sort_order' => $i]);
                 }
+            }
+
+            // Restaurant (S10): lunch and dinner every day, closed in 4 days for a private event, a short menu.
+            $outlet = Outlet::query()->create([
+                'name' => ['fr' => 'Le Restaurant', 'en' => 'The Restaurant'], 'type' => 'restaurant', 'seats' => 40,
+                'default_duration_minutes' => 90, 'auto_confirm' => true, 'auto_confirm_max_party' => 6, 'active' => true, 'public_slug' => 'restaurant',
+            ]);
+            foreach (range(1, 7) as $weekday) {
+                ServicePeriod::query()->create(['outlet_id' => $outlet->id, 'weekday' => $weekday, 'name' => ['fr' => 'Déjeuner', 'en' => 'Lunch'], 'starts_at' => '12:00', 'ends_at' => '15:00', 'slot_minutes' => 30, 'last_seating_minutes' => 60]);
+                ServicePeriod::query()->create(['outlet_id' => $outlet->id, 'weekday' => $weekday, 'name' => ['fr' => 'Dîner', 'en' => 'Dinner'], 'starts_at' => '19:00', 'ends_at' => '22:30', 'slot_minutes' => 30, 'last_seating_minutes' => 60]);
+            }
+            OutletClosure::query()->create(['outlet_id' => $outlet->id, 'date' => HotelClock::today(app(TenantContext::class)->hotel())->addDays(4), 'reason' => 'Private event']);
+            $mains = MenuSection::query()->create(['outlet_id' => $outlet->id, 'name' => ['fr' => 'Plats', 'en' => 'Mains'], 'sort_order' => 1]);
+            $drinks = MenuSection::query()->create(['outlet_id' => $outlet->id, 'name' => ['fr' => 'Boissons', 'en' => 'Drinks'], 'sort_order' => 2]);
+            foreach ([
+                [$mains, 'Poulet braisé', 'Braised chicken', 5500, ['spicy'], ['peanuts']],
+                [$mains, 'Attiéké poisson', 'Attiéké with fish', 4500, [], ['fish']],
+                [$mains, 'Riz sauce graine', 'Rice with palm-nut sauce', 3000, ['vegetarian'], []],
+                [$drinks, 'Bière Flag', 'Flag beer', 1000, [], []],
+                [$drinks, 'Jus de bissap', 'Bissap juice', 800, ['vegan'], []],
+            ] as $i => [$section, $fr, $en, $price, $labels, $allergens]) {
+                MenuItem::query()->create(['menu_section_id' => $section->id, 'name' => ['fr' => $fr, 'en' => $en], 'price_minor' => $price, 'labels' => $labels, 'allergens' => $allergens, 'active' => true, 'sort_order' => $i]);
             }
 
             app(KnowledgePack::class)->publish();

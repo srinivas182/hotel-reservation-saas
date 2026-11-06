@@ -28,6 +28,7 @@ type OutletRow = {
     auto_confirm: boolean;
     auto_confirm_max_party: number;
     active: boolean;
+    orders_enabled: boolean;
     periods: PeriodRow[];
     closures: { id: number; date: string; reason: string | null }[];
 };
@@ -60,6 +61,7 @@ const blank = (locales: string[]) => ({
     auto_confirm: true,
     auto_confirm_max_party: 6,
     active: true,
+    orders_enabled: false,
 });
 
 function OutletForm({
@@ -84,6 +86,7 @@ function OutletForm({
                   auto_confirm: outlet.auto_confirm,
                   auto_confirm_max_party: outlet.auto_confirm_max_party,
                   active: outlet.active,
+                  orders_enabled: outlet.orders_enabled,
               }
             : blank(locales),
     );
@@ -208,6 +211,17 @@ function OutletForm({
                     onChange={(e) => form.setData('active', e.target.checked)}
                 />
                 {t('Taking bookings')}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+                <input
+                    type="checkbox"
+                    className="size-4"
+                    checked={form.data.orders_enabled}
+                    onChange={(e) =>
+                        form.setData('orders_enabled', e.target.checked)
+                    }
+                />
+                {t('Taking food and drink orders')}
             </label>
             <div className="self-end">
                 <Button disabled={form.processing}>
