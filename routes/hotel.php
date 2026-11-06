@@ -19,6 +19,7 @@ use App\Domains\Bookings\Http\Controllers\BookingExportController;
 use App\Domains\Bookings\Http\Controllers\TodayController;
 use App\Domains\Conversations\Http\Controllers\InboxController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
+use App\Domains\Folio\Http\Controllers\FolioController;
 use App\Domains\GoLive\Http\Controllers\GoLiveController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
@@ -178,6 +179,10 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/restaurant/orders', [OrderBoardController::class, 'store'])->name('hotel.restaurant.orders.store');
         Route::post('hotel/restaurant/orders/{order}/status', [OrderBoardController::class, 'status'])->name('hotel.restaurant.orders.status');
     });
+    Route::middleware('can:folio.view')->get('hotel/bookings/{booking}/statement', [FolioController::class, 'statement'])->name('hotel.bookings.statement');
+    Route::middleware(['can:folio.charge', 'throttle:120,1'])->post('hotel/bookings/{booking}/charges', [FolioController::class, 'charge'])->name('hotel.bookings.charges.store');
+    Route::middleware(['can:folio.payments', 'throttle:120,1'])->post('hotel/bookings/{booking}/payments', [FolioController::class, 'pay'])->name('hotel.bookings.payments.store');
+    Route::middleware('throttle:60,1')->post('hotel/folio-lines/{line}/correct', [FolioController::class, 'correct'])->name('hotel.folio-lines.correct');
     Route::middleware('can:bookings.frontdesk')->group(function (): void {
         Route::post('hotel/bookings/{booking}/phones', [StayPhoneController::class, 'store'])->name('hotel.bookings.phones.store');
         Route::delete('hotel/stay-phones/{stayPhone}', [StayPhoneController::class, 'destroy'])->name('hotel.stay-phones.destroy');
@@ -197,6 +202,7 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     });
     Route::middleware('can:restaurant.manage')->group(function (): void {
         Route::get('hotel/restaurant/outlets', [OutletController::class, 'index'])->name('hotel.restaurant.outlets');
+        Route::put('hotel/restaurant/room-charges', [OutletController::class, 'roomCharges'])->name('hotel.restaurant.room-charges');
         Route::post('hotel/restaurant/outlets', [OutletController::class, 'store'])->name('hotel.restaurant.outlets.store');
         Route::put('hotel/restaurant/outlets/{outlet}', [OutletController::class, 'update'])->name('hotel.restaurant.outlets.update');
         Route::put('hotel/restaurant/outlets/{outlet}/periods', [OutletController::class, 'periods'])->name('hotel.restaurant.outlets.periods');

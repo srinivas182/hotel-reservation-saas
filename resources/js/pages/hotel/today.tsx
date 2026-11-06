@@ -6,6 +6,7 @@ import type { FormEvent } from 'react';
 import BookingActionController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingActionController';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/TodayController';
+import { checkOut } from '@/components/bookings/check-out';
 import { RequestCard } from '@/components/booking-requests/request-card';
 import type { PendingRequest } from '@/components/booking-requests/request-card';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
@@ -384,11 +385,7 @@ export default function Today(props: Props) {
                                                 size="sm"
                                                 variant="outline"
                                                 onClick={() =>
-                                                    post(
-                                                        BookingActionController.checkOut.url(
-                                                            item.id,
-                                                        ),
-                                                    )
+                                                    checkOut(item.id)
                                                 }
                                             >
                                                 {t('Check out')}

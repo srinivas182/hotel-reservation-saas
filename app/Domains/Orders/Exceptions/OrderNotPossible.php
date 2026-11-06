@@ -22,6 +22,9 @@ final class OrderNotPossible extends RuntimeException
             'not_staying' => __('Only guests staying at the hotel can charge an order to their room.'),
             'no_room' => __('Say which room the order goes to.'),
             'status' => __('This order cannot be changed that way.'),
+            'room_charge_off' => __('The hotel does not put orders on the room bill. The order can be paid on delivery.'),
+            'room_charge_limit' => __('This order is above the room bill limit. It can be paid on delivery.'),
+            'outside_guests' => __('Orders are only for guests staying at the hotel.'),
             default => __('This order is not possible.'),
         });
     }

@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S11.2 — Room bill
+
+#### Added
+
+- Room bill for each stay (booking page): the nights (always the booking's current total, so it follows date changes), orders delivered and charged to the room (posted once), extra charges (minibar, laundry…, with food and drink or room taxes added if chosen), and payments (cash, Orange Money, MTN MoMo, Moov Money, Wave, card, bank transfer, as the hotel chooses, with a reference). Balance = charges − payments. Lines are never edited or deleted: a correction adds the opposite amount with a reason. Every line is audited.
+- Room charges: on or off, a limit per order and per stay (orders not yet delivered count against the stay limit); above a limit the order is paid on delivery. Setting for WhatsApp orders from people not staying (used in S11.3). Set in Restaurant & Bar → Outlets and opening hours (`restaurant.manage`).
+- Check-out with a balance asks staff to record the payment or give a reason (audited) — on the booking page and the Today screen.
+- Printable statement of account (A4 and phone), clearly marked "not a tax invoice".
+- Permissions `folio.view` (Reception, Read-only, Manager, Owner), `folio.charge` and `folio.payments` (Reception, Manager, Owner).
+- English and French text.
+
 ### S11.1 — Orders during the stay
 
 #### Added

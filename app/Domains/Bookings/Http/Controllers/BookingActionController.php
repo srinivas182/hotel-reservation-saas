@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domains\Bookings\Http\Controllers;
 
+use App\Domains\Audit\Audit;
 use App\Domains\Bookings\BookingLifecycle;
+use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Exceptions\BookingActionNotAllowed;
 use App\Domains\Bookings\Exceptions\BookingNotPossible;
 use App\Domains\Bookings\Models\Booking;
+use App\Domains\Finance\Money\MoneyFormatter;
+use App\Domains\Folio\Folio;
 use App\Domains\Rates\Quote\StayRequest;
 use App\Domains\Rooms\Models\Room;
 use App\Domains\Tenancy\TenantContext;
@@ -133,9 +137,24 @@ final class BookingActionController extends Controller
         return $this->attempt(fn () => $this->lifecycle->checkIn($booking, $rooms, $user), __('Guest checked in.'));
     }
 
-    public function checkOut(Booking $booking, #[CurrentUser] User $user): RedirectResponse
+    public function checkOut(Request $request, Booking $booking, Folio $folio, #[CurrentUser] User $user): RedirectResponse
     {
-        return $this->attempt(fn () => $this->lifecycle->checkOut($booking, $user), __('Guest checked out.'));
+        $reason = trim((string) $request->input('balance_reason', ''));
+        $balance = $folio->balance($booking);
+
+        if ($balance !== 0 && $reason === '') {
+            $amount = MoneyFormatter::format(Money::ofMinor($balance, $booking->currency ?? $this->context->hotel()->currency), $this->context->hotel()->default_locale);
+
+            throw ValidationException::withMessages(['balance' => __('The room bill shows :amount still due. Record the payment, or give a reason to check out anyway.', ['amount' => $amount])]);
+        }
+
+        $response = $this->attempt(fn () => $this->lifecycle->checkOut($booking, $user), __('Guest checked out.'));
+
+        if ($balance !== 0 && $booking->fresh()?->status === BookingStatus::CheckedOut) {
+            Audit::record('bookings.checked_out_with_balance', 'Checked out with a balance on the room bill', subject: $booking, causer: $user, properties: ['balance_minor' => $balance, 'reason' => mb_substr($reason, 0, 300)]);
+        }
+
+        return $response;
     }
 
     private function attempt(Closure $action, string $success): RedirectResponse

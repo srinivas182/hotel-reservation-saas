@@ -43,6 +43,9 @@ enum Permission: string
     case RestaurantManage = 'restaurant.manage';
     case RestaurantMenu = 'restaurant.menu';
     case RestaurantOrders = 'restaurant.orders';
+    case FolioView = 'folio.view';
+    case FolioCharge = 'folio.charge';
+    case FolioPayments = 'folio.payments';
 
     public function group(): string
     {
@@ -84,6 +87,9 @@ enum Permission: string
             self::RestaurantManage => __('Set up restaurants, bars and their opening hours'),
             self::RestaurantMenu => __('Edit menus and what is available today'),
             self::RestaurantOrders => __('Take and handle food and drink orders'),
+            self::FolioView => __('View room bills'),
+            self::FolioCharge => __('Add charges and corrections to room bills'),
+            self::FolioPayments => __('Record payments on room bills'),
         };
     }
 

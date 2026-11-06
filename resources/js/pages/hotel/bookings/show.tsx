@@ -11,6 +11,9 @@ import type { QuoteResult } from '@/components/rates/try-a-stay';
 import { Button } from '@/components/ui/button';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
+import { checkOut } from '@/components/bookings/check-out';
+import { RoomBill } from '@/components/bookings/room-bill';
+import type { Folio } from '@/components/bookings/room-bill';
 import StayPhoneController from '@/actions/App/Domains/Orders/Http/Controllers/StayPhoneController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -76,6 +79,7 @@ type Props = {
     quote?: QuoteResult;
     stayPhones: { id: number; phone: string }[];
     canEditStayPhones: boolean;
+    folio: Folio | null;
 };
 
 function Row({
@@ -182,6 +186,7 @@ export default function ShowBooking({
     quote,
     stayPhones,
     canEditStayPhones,
+    folio,
 }: Props) {
     const [panel, setPanel] = useState<'modify' | 'cancel' | null>(null);
     const post = (url: string, message?: string) => {
@@ -223,10 +228,8 @@ export default function ShowBooking({
                         {actions.check_out && (
                             <Button
                                 onClick={() =>
-                                    post(
-                                        BookingActionController.checkOut.url(
-                                            booking.id,
-                                        ),
+                                    checkOut(
+                                        booking.id,
                                         actions.early_departure
                                             ? t(
                                                   'Check out early? The remaining nights go back on sale.',
@@ -398,6 +401,9 @@ export default function ShowBooking({
                     </section>
 
                     <section className="flex flex-col gap-2 rounded-xl border p-4 text-sm">
+                        {folio && (
+                            <RoomBill bookingId={booking.id} folio={folio} />
+                        )}
                         <StayPhones
                             bookingId={booking.id}
                             phones={stayPhones}
