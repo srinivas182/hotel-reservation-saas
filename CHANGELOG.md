@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S8.3 — Simulation, load tests, failure drills, launch documents
+
+#### Added
+
+- Simulation mode for staging (`SIMULATION_MODE=true`; the application refuses to start with it in production): a fake Meta Graph API that accepts sends and plays back "sent", "delivered" and "read" receipts through the normal webhook processing, serves media, and injects failures and delay (`SIMULATION_META_*`); a fake AI that gives plausible replies without prices, translations and transcripts, with configurable delay and failure rate (`SIMULATION_AI_*`).
+- `simulation:prepare` (demo hotels, a simulated WhatsApp number for First Class Lodge, published information pack, assistant on; `--report --expect-replies` checks every conversation was answered with nothing failed or duplicated) and `simulation:guests` (signed guest messages to the webhook).
+- k6 load tests (`tests/load/`): 50 messages per second burst, a 1,000-guest day, 20 receptionists on the dashboard, and a smoke test. CI runs the smoke test against a real server with the simulated stack, only when those files change (k6 1.4.2, checksum verified).
+- `docs/failure-drills.md`: twelve drills with expected results and a results table.
+- Launch documents (`docs/launch/`, Markdown and PDF): reception guide and one-page cheat sheet (French), owner guide (French), cut-over plan, and drafts of the data processing agreement (French) and guest privacy notice (French and English) for review by CNH's legal adviser. `scripts/build_launch_pdfs.py` rebuilds the PDFs.
+
 ### Hotfix — WhatsApp webhook blocked by CSRF protection
 
 #### Fixed

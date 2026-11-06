@@ -8,4 +8,5 @@ return [
     App\Providers\HorizonServiceProvider::class,
     App\Providers\TenancyServiceProvider::class,
     App\Providers\MessagingServiceProvider::class,
+    App\Providers\SimulationServiceProvider::class,
 ];

@@ -43,6 +43,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
       docker: ${{ steps.filter.outputs.docker }}
+      load: ${{ steps.filter.outputs.load }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -62,10 +63,12 @@ jobs:
           backend=$(match '^(app|bootstrap|config|database|routes|tests|lang|resources/views|resources/js/pages)/|^(composer\.(json|lock)|phpunit\.xml|phpstan\.neon|artisan)$')
           frontend=$(match '^resources/(js|css)/|^(package(-lock)?\.json|vite\.config\.ts|tsconfig\.json|components\.json)$')
           docker=$(match '^docker/|^(compose(\.prod)?\.yaml|\.dockerignore|deploy\.sh)$')
-          [ "$all" = true ] && backend=true && frontend=true && docker=true
+          load=$(match '^tests/load/|^app/Domains/Simulation/|^app/Providers/SimulationServiceProvider\.php$|^config/simulation\.php$|^app/Console/Commands/(PrepareSimulation|SimulateGuests)\.php$')
+          [ "$all" = true ] && backend=true && frontend=true && docker=true && load=true
           echo "backend=$backend"   >> "$GITHUB_OUTPUT"
           echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
           echo "docker=$docker"     >> "$GITHUB_OUTPUT"
+          echo "load=$load"         >> "$GITHUB_OUTPUT"
 
   quick:
     name: Quick checks
@@ -291,10 +294,83 @@ jobs:
           # "app" is the PHP-FPM service name on the Compose network; map it for the config test.
           .github/scripts/run-annotated.sh "Nginx config test" docker run --rm --add-host app:127.0.0.1 hotel-saas-web:prod nginx -t
 
+  load:
+    name: Load smoke (k6, simulation)
+    needs: [changes, quick]
+    if: github.event.pull_request.draft == false && needs.changes.outputs.load == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      K6_VERSION: '1.4.2'
+      APP_ENV: staging
+      SIMULATION_MODE: 'true'
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /tmp/simulation.sqlite
+      QUEUE_CONNECTION: database
+      PHP_CLI_SERVER_WORKERS: '4'
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      APP_URL: http://127.0.0.1:8000
+      WHATSAPP_APP_SECRET: simulation-secret
+      SIMULATION_META_LATENCY_MIN: '5'
+      SIMULATION_META_LATENCY_MAX: '20'
+      SIMULATION_AI_LATENCY_MIN: '5'
+      SIMULATION_AI_LATENCY_MAX: '20'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_sqlite, intl, bcmath
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install k6 (checksum verified)
+        run: |
+          base="https://github.com/grafana/k6/releases/download/v${K6_VERSION}"
+          tarball="k6-v${K6_VERSION}-linux-amd64.tar.gz"
+          curl -sSfLO "$base/$tarball"
+          curl -sSfL "$base/k6-v${K6_VERSION}-checksums.txt" | grep " $tarball\$" | sha256sum -c -
+          tar -xzf "$tarball" --strip-components=1 "k6-v${K6_VERSION}-linux-amd64/k6"
+
+      - name: Prepare simulated staging
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          touch /tmp/simulation.sqlite
+          php artisan migrate --force --no-interaction
+          php artisan simulation:prepare
+
+      - name: k6 smoke
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > /tmp/serve.log 2>&1 &
+          php artisan queue:work --sleep=1 > /tmp/worker.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/up > /dev/null && break; sleep 1; done
+          ./k6 run --quiet -e BASE_URL=http://127.0.0.1:8000 -e APP_SECRET=simulation-secret -e INERTIA_JSON=1 tests/load/smoke.js
+          sleep 15  # replies are sent 8 seconds after a guest message
+          php artisan simulation:prepare --report --expect-replies
+
+      - name: Server log on failure
+        if: failure()
+        run: tail -n 60 /tmp/serve.log; tail -n 60 /tmp/worker.log; tail -n 80 storage/logs/*.log || true
+
   gate:
     name: CI gate
     if: always()
-    needs: [changes, quick, backend, frontend, docker]
+    needs: [changes, quick, backend, frontend, docker, load]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
