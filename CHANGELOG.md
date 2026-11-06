@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S12.1 — Events: spaces, time blocks, options and enquiries
+
+#### Added
+
+- Event spaces with a name per language and a capacity per layout (theatre, classroom, U-shape, banquet, cocktail); combined spaces (e.g. two rooms opened into one) use their parts. Time blocks set by the hotel (morning, afternoon, evening…); a block can also take others (a full day takes the morning and afternoon). Prices per space and block, and packages (per person) and extras (per person, per unit or per event) for quotes (Events → Spaces, prices and packages).
+- Events (`E-YY-NNNN`): enquiries by phone, email or in person with contact, company or family, type, date, time block, space, layout, people and encrypted notes; statuses enquiry, quoted, option, confirmed, done, lost (with reason), cancelled; every step audited.
+- Options hold a space until a date (7 days by default). Two events clash when they use a common physical space at overlapping blocks on the same day; holds lock the hotel's spaces, so two events can never hold the same space at once (MySQL two-connection test). A second option for a held space joins a waiting list, and moves up automatically when the space is freed (lost, cancelled or option expired). `events:expire-options` (every 5 minutes) returns expired options to "quoted" and alerts the team (new staff alert). Confirming checks the space is free, big enough for the layout and the date is ahead.
+- Events calendar (month, spaces × days: confirmed, on option, waiting list) and the list of open enquiries and options.
+- Permissions `events.view` (Reception, Read-only), `events.manage` and `events.discount`; the Events coordinator role views and manages events.
+- English and French text.
+
 ### S11.3 — Ordering on WhatsApp
 
 #### Added
