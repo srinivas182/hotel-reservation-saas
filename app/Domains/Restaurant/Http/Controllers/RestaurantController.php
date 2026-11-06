@@ -96,7 +96,7 @@ final class RestaurantController extends Controller
             'status_label' => $b->status->label(),
             'source' => $b->source->label(),
             'notes' => $b->notes,
-            'next' => array_map(fn (TableBookingStatus $s): array => ['value' => $s->value, 'label' => $s->label()], $b->status->allowedNext()),
+            'next' => array_values(array_map(fn (TableBookingStatus $s): array => ['value' => $s->value, 'label' => $s->label()], array_filter($b->status->allowedNext(), fn (TableBookingStatus $s): bool => $s !== TableBookingStatus::Expired))),
         ];
     }
 }

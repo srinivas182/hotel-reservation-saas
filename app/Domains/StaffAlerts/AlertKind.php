@@ -12,6 +12,7 @@ enum AlertKind: string
     case Handover = 'handover';
     case GuestWaiting = 'guest_waiting';
     case RequestExpired = 'request_expired';
+    case TableRequest = 'table_request';
     case Test = 'test';
 
     public function label(): string
@@ -21,6 +22,7 @@ enum AlertKind: string
             self::Handover => __('Conversation passed to staff'),
             self::GuestWaiting => __('Guest waiting for a reply'),
             self::RequestExpired => __('Booking request expired without an answer'),
+            self::TableRequest => __('New table request'),
             self::Test => __('Test alert'),
         };
     }
@@ -32,6 +34,7 @@ enum AlertKind: string
     {
         return match ($this) {
             self::NewRequest, self::RequestExpired => Permission::BookingRequestsDecide,
+            self::TableRequest => Permission::RestaurantBookings,
             default => Permission::ConversationsReply,
         };
     }
@@ -41,6 +44,6 @@ enum AlertKind: string
      */
     public static function choosable(): array
     {
-        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired];
+        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired, self::TableRequest];
     }
 }

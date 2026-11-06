@@ -14,12 +14,12 @@ final class Guardrails
 
     private const CONFIRMATION_PATTERNS = [
         // English
-        '/\b(booking|reservation|room|stay)\s+(is|has been|was)\s+(now\s+)?(confirmed|booked|reserved|secured)\b/i',
+        '/\b(booking|reservation|room|stay|table)\s+(is|has been|was)\s+(now\s+)?(confirmed|booked|reserved|secured)\b/i',
         '/\b(i|we)\s+(have|\'ve)\s+(confirmed|booked|reserved|secured)\b/i',
-        '/\bconfirmed\s+your\s+(booking|reservation|room|stay)\b/i',
+        '/\bconfirmed\s+your\s+(booking|reservation|room|stay|table)\b/i',
         '/\byou(\'re| are)\s+(all\s+)?(booked|confirmed)\b/i',
         // French
-        '/\b(réservation|chambre|séjour)\s+(est|a été|sont|ont été)\s+(bien\s+)?(confirmée?s?|réservée?s?|validée?s?|bloquée?s?)\b/iu',
+        '/\b(réservation|chambre|séjour|table)\s+(est|a été|sont|ont été)\s+(bien\s+)?(confirmée?s?|réservée?s?|validée?s?|bloquée?s?)\b/iu',
         '/\b(nous|j\')\s*(avons|ai)\s+(bien\s+)?(confirmé|réservé|validé|bloqué)\b/iu',
         '/\bc\'est\s+(bien\s+)?(réservé|confirmé)\b/iu',
         '/\bvous\s+êtes\s+(bien\s+)?(réservée?s?|confirmée?s?)\b/iu',

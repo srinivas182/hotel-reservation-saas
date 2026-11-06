@@ -82,3 +82,9 @@ Schedule::command('platform:ops-check')
     ->name('platform:ops-check')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// WhatsApp table requests nobody answered in time release their seats.
+Schedule::command('table-requests:expire')
+    ->name('table-requests:expire')
+    ->everyMinute()
+    ->withoutOverlapping();

@@ -113,6 +113,10 @@ final class TableBookingService
             ...($to === TableBookingStatus::Declined ? ['decline_reason' => $reason] : []),
         ])->save();
 
+        if ($from === TableBookingStatus::Requested && in_array($to, [TableBookingStatus::Confirmed, TableBookingStatus::Declined], true)) {
+            TableBookingChanged::dispatch($booking->id);
+        }
+
         Audit::record('table_bookings.'.$to->value, 'Table booking: '.$to->label(), subject: $booking, causer: $by, properties: [
             'reference' => $booking->reference,
             'from' => $from->value,

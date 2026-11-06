@@ -106,6 +106,26 @@ final class StarterTemplates
                 ],
                 'examples' => ['Awa', 'First Class Lodge', 'https://g.page/r/first-class-lodge/review'],
             ],
+            'table_booking_confirmed' => [
+                'name' => 'table_booking_confirmed',
+                'category' => 'UTILITY',
+                'label' => __('Table booking confirmed'),
+                'bodies' => [
+                    'en' => 'Hello {{1}}, your table at {{2}} is confirmed for {{3}} at {{4}}, for {{5}} people. Reference {{6}}. See you soon at {{7}}!',
+                    'fr' => 'Bonjour {{1}}, votre table au {{2}} est confirmée pour le {{3}} à {{4}}, pour {{5}} personnes. Référence {{6}}. À bientôt à {{7}} !',
+                ],
+                'examples' => ['Awa', 'Le Restaurant', 'Friday 13 November', '20:00', '4', 'T-26-0042', 'First Class Lodge'],
+            ],
+            'table_booking_declined' => [
+                'name' => 'table_booking_declined',
+                'category' => 'UTILITY',
+                'label' => __('Table booking declined'),
+                'bodies' => [
+                    'en' => 'Hello {{1}}, we are sorry: {{2}} cannot take your booking for {{3}} at {{4}}. Do not hesitate to ask us for another time.',
+                    'fr' => 'Bonjour {{1}}, nous sommes désolés : {{2}} ne peut pas accepter votre réservation du {{3}} à {{4}}. N\'hésitez pas à nous demander un autre horaire.',
+                ],
+                'examples' => ['Awa', 'Le Restaurant', 'Friday 13 November', '20:00'],
+            ],
             'request_expired' => [
                 'name' => 'request_expired',
                 'category' => 'UTILITY',

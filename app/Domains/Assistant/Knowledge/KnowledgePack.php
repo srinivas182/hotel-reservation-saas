@@ -137,6 +137,20 @@ final class KnowledgePack
             );
         }
 
+        $outlets = \App\Domains\Restaurant\Models\Outlet::query()->with('periods')->where('active', true)->orderBy('sort_order')->get();
+
+        if ($outlets->isNotEmpty()) {
+            $facts[] = 'Restaurants and bars (book with restaurant_availability and book_table; menu with get_menu):';
+            $days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+            foreach ($outlets as $outlet) {
+                $hours = $outlet->periods->groupBy(fn ($p): string => $p->localizedName($locale, $hotel->default_locale).' '.$p->starts_at.'–'.$p->ends_at)
+                    ->map(fn ($group, string $label): string => $label.' ('.$group->map(fn ($p): string => $days[$p->weekday])->implode(', ').')')
+                    ->implode('; ');
+                $facts[] = sprintf('- %s (code %s, %s, %d seats): %s. Full menu: %s', $outlet->localizedName($locale, $hotel->default_locale), $outlet->public_slug, $outlet->type->value, $outlet->seats, $hours ?: 'no services set', route('menu.public', [$hotel->slug, $outlet->public_slug]));
+            }
+        }
+
         return $facts;
     }
 }
