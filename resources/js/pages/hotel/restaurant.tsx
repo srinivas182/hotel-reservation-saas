@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import MenuController from '@/actions/App/Domains/Restaurant/Http/Controllers/MenuController';
 import OutletController from '@/actions/App/Domains/Restaurant/Http/Controllers/OutletController';
 import RestaurantController from '@/actions/App/Domains/Restaurant/Http/Controllers/RestaurantController';
 import TableBookingController from '@/actions/App/Domains/Restaurant/Http/Controllers/TableBookingController';
@@ -47,7 +48,7 @@ type Props = {
     periods: Period[];
     occupancy: Record<string, number>;
     slots?: Slot[];
-    can: { bookings: boolean; manage: boolean };
+    can: { bookings: boolean; manage: boolean; menu: boolean };
 };
 
 const selectClass =
@@ -255,14 +256,24 @@ export default function Restaurant({
                                   )
                         }
                     />
-                    {can.manage && (
-                        <Link
-                            href={OutletController.index()}
-                            className="text-sm underline"
-                        >
-                            {t('Outlets and opening hours')}
-                        </Link>
-                    )}
+                    <div className="flex gap-4 text-sm">
+                        {can.menu && (
+                            <Link
+                                href={MenuController.index()}
+                                className="underline"
+                            >
+                                {t('Menu')}
+                            </Link>
+                        )}
+                        {can.manage && (
+                            <Link
+                                href={OutletController.index()}
+                                className="underline"
+                            >
+                                {t('Outlets and opening hours')}
+                            </Link>
+                        )}
+                    </div>
                 </div>
 
                 {outlet && (

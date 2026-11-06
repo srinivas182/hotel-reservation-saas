@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Identity\Http\Controllers\LocaleController;
 use App\Domains\Platform\Http\Controllers\HealthController;
+use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
 use App\Domains\Tenancy\Http\Controllers\SwitchHotelController;
 use App\Domains\WhatsApp\Http\Controllers\WebhookController as WhatsAppWebhookController;
 use App\Http\Controllers\CspReportController;
@@ -15,6 +16,12 @@ Route::get('/', fn () => auth()->check() ? to_route('dashboard') : to_route('log
 Route::post('locale', LocaleController::class)->middleware('throttle:30,1')->name('locale.update');
 
 Route::get('health', HealthController::class)->middleware('throttle:30,1')->name('health');
+
+// Public menu pages (no login, no personal data), linked from WhatsApp and QR codes.
+Route::middleware('throttle:120,1')->group(function (): void {
+    Route::get('m/{hotel}/{outlet}', [PublicMenuController::class, 'show'])->name('menu.public');
+    Route::get('m/{hotel}/{outlet}/photos/{item}', [PublicMenuController::class, 'photo'])->whereNumber('item')->name('menu.public.photo');
+});
 
 Route::get('webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
 Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])
