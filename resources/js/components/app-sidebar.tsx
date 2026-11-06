@@ -4,6 +4,7 @@ import {
     LayoutGrid,
     MessageCircle,
     Rocket,
+    UtensilsCrossed,
     Sparkles,
     Percent,
     BarChart3,
@@ -28,6 +29,7 @@ import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsC
 import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Controllers/AlertSettingsController';
 import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
 import PilotDashboardController from '@/actions/App/Domains/Platform/Http/Controllers/PilotDashboardController';
+import RestaurantController from '@/actions/App/Domains/Restaurant/Http/Controllers/RestaurantController';
 import ReadinessController from '@/actions/App/Domains/Platform/Http/Controllers/ReadinessController';
 import AssistantSettingsController from '@/actions/App/Domains/Assistant/Http/Controllers/AssistantSettingsController';
 import CalendarController from '@/actions/App/Domains/Availability/Http/Controllers/CalendarController';
@@ -171,6 +173,15 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('usage.view')
             ? [{ title: 'Usage', href: UsageController(), icon: BarChart3 }]
+            : []),
+        ...(auth.permissions.includes('restaurant.view')
+            ? [
+                  {
+                      title: 'Restaurant & Bar',
+                      href: RestaurantController(),
+                      icon: UtensilsCrossed,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('conversations.reply') ||
         auth.permissions.includes('booking_requests.decide')

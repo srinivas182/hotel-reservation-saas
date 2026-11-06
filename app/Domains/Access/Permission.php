@@ -38,6 +38,9 @@ enum Permission: string
     case ConversationsReply = 'conversations.reply';
     case AssistantManage = 'assistant.manage';
     case BookingRequestsDecide = 'booking_requests.decide';
+    case RestaurantView = 'restaurant.view';
+    case RestaurantBookings = 'restaurant.bookings';
+    case RestaurantManage = 'restaurant.manage';
 
     public function group(): string
     {
@@ -74,6 +77,9 @@ enum Permission: string
             self::ConversationsReply => __('Reply to WhatsApp conversations'),
             self::AssistantManage => __('Manage the AI assistant and its information pack'),
             self::BookingRequestsDecide => __('Approve or decline WhatsApp booking requests'),
+            self::RestaurantView => __('View restaurant and bar bookings'),
+            self::RestaurantBookings => __('Take and manage restaurant and bar bookings'),
+            self::RestaurantManage => __('Set up restaurants, bars and their opening hours'),
         };
     }
 

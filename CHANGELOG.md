@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S10.1 — Restaurant & Bar: outlets, opening hours, table bookings
+
+#### Added
+
+- Outlets (restaurant, bar, terrace, room service) with names per language, seats, how long a table is kept, an optional limit on guests arriving at one time, the automatic-confirmation party limit for WhatsApp (used in S10.3), and an on/off switch. Services per weekday (e.g. dinner 19:00–22:30, bookings every 15/30/60 minutes, last seating before closing) and closed dates for the whole day or one service (Restaurant & Bar → Outlets and opening hours, `restaurant.manage`).
+- Table availability counted by seats in use over time: a time is offered when the seats in use throughout the booking stay within the outlet's seats and arrivals stay within the limit; pending requests hold seats until they expire; past times are not offered today (hotel time zone). Bookings lock the outlet row, so two bookings can never take the same seats (MySQL two-connection test).
+- Table bookings (`T-YY-NNNN`) with guest (found or created from the phone number), number of people, source (WhatsApp, phone, walk-in), encrypted notes, and statuses (waiting for staff, confirmed, arrived, finished, no-show, cancelled, declined, expired) with allowed moves; arrival and no-show only on the day. Every change is audited.
+- Restaurant & Bar screen (`restaurant.view`): outlet and day, seats in use per booking time, bookings by service with the next possible actions; quick booking for phone and walk-in guests showing only times that fit (`restaurant.bookings`).
+- Permissions `restaurant.view`, `restaurant.bookings`, `restaurant.manage`: Owner and Manager all; Reception and the Restaurant & Bar role view and take bookings; Read-only views.
+- English and French text.
+
 ### S8.3 — Simulation, load tests, failure drills, launch documents
 
 #### Added

@@ -27,6 +27,9 @@ use App\Domains\Rates\Http\Controllers\CategoryRateController;
 use App\Domains\Rates\Http\Controllers\RateOverrideController;
 use App\Domains\Rates\Http\Controllers\RatesController;
 use App\Domains\Rates\Http\Controllers\RateSettingsController;
+use App\Domains\Restaurant\Http\Controllers\OutletController;
+use App\Domains\Restaurant\Http\Controllers\RestaurantController;
+use App\Domains\Restaurant\Http\Controllers\TableBookingController;
 use App\Domains\Rooms\Http\Controllers\RoomCategoryController;
 use App\Domains\Rooms\Http\Controllers\RoomClosureController;
 use App\Domains\Rooms\Http\Controllers\RoomController;
@@ -160,6 +163,21 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::get('hotel/my-alerts', [AlertSettingsController::class, 'show'])->name('hotel.my-alerts');
     Route::put('hotel/my-alerts', [AlertSettingsController::class, 'update'])->name('hotel.my-alerts.update');
     Route::post('hotel/my-alerts/test', [AlertSettingsController::class, 'test'])->middleware('throttle:5,1')->name('hotel.my-alerts.test');
+
+    Route::middleware('can:restaurant.view')->get('hotel/restaurant', RestaurantController::class)->name('hotel.restaurant');
+    Route::middleware(['can:restaurant.bookings', 'throttle:120,1'])->group(function (): void {
+        Route::post('hotel/restaurant/bookings', [TableBookingController::class, 'store'])->name('hotel.restaurant.bookings.store');
+        Route::put('hotel/restaurant/bookings/{tableBooking}', [TableBookingController::class, 'update'])->name('hotel.restaurant.bookings.update');
+        Route::post('hotel/restaurant/bookings/{tableBooking}/status', [TableBookingController::class, 'status'])->name('hotel.restaurant.bookings.status');
+    });
+    Route::middleware('can:restaurant.manage')->group(function (): void {
+        Route::get('hotel/restaurant/outlets', [OutletController::class, 'index'])->name('hotel.restaurant.outlets');
+        Route::post('hotel/restaurant/outlets', [OutletController::class, 'store'])->name('hotel.restaurant.outlets.store');
+        Route::put('hotel/restaurant/outlets/{outlet}', [OutletController::class, 'update'])->name('hotel.restaurant.outlets.update');
+        Route::put('hotel/restaurant/outlets/{outlet}/periods', [OutletController::class, 'periods'])->name('hotel.restaurant.outlets.periods');
+        Route::post('hotel/restaurant/outlets/{outlet}/closures', [OutletController::class, 'close'])->name('hotel.restaurant.outlets.close');
+        Route::delete('hotel/restaurant/closures/{closure}', [OutletController::class, 'reopen'])->name('hotel.restaurant.closures.destroy');
+    });
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');
