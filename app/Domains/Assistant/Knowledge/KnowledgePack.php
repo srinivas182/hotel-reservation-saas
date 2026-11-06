@@ -147,7 +147,7 @@ final class KnowledgePack
                 $hours = $outlet->periods->groupBy(fn ($p): string => $p->localizedName($locale, $hotel->default_locale).' '.$p->starts_at.'–'.$p->ends_at)
                     ->map(fn ($group, string $label): string => $label.' ('.$group->map(fn ($p): string => $days[$p->weekday])->implode(', ').')')
                     ->implode('; ');
-                $facts[] = sprintf('- %s (code %s, %s, %d seats): %s. Full menu: %s', $outlet->localizedName($locale, $hotel->default_locale), $outlet->public_slug, $outlet->type->value, $outlet->seats, $hours ?: 'no services set', route('menu.public', [$hotel->slug, $outlet->public_slug]));
+                $facts[] = sprintf('- %s (code %s, %s, %d seats'.($outlet->orders_enabled ? ', takes food and drink orders' : '').'): %s. Full menu: %s', $outlet->localizedName($locale, $hotel->default_locale), $outlet->public_slug, $outlet->type->value, $outlet->seats, $hours ?: 'no services set', route('menu.public', [$hotel->slug, $outlet->public_slug]));
             }
         }
 

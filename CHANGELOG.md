@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S11.3 — Ordering on WhatsApp
+
+#### Added
+
+- `place_order` assistant tool: dishes are matched to what can be ordered now (unknown dishes get the list of what exists); the first call returns the dishes and exact total to repeat to the guest, and the order is sent only when called again after the guest agrees. Room delivery and the room bill only for numbers that belong to a stay; other people can order at the outlet and pay on delivery, unless the hotel turned that off; room-bill limits are explained so the guest can pay on delivery instead. Nothing is sent from the practice screen. New staff alert "New food or drink order".
+- `get_my_bill` assistant tool: the room bill (lines, charges, payments, balance) only for a number that belongs to the stay; any other number learns nothing.
+- The system, never the AI, tells the guest when the kitchen accepts the order (with the waiting time), declines or cancels it, or has it ready at the outlet. The "never say confirmed" check now also covers "order accepted" (French and English).
+- Assistant test suite: 10 ordering and bill cases (90 cases, 35 safety); the test hotel's restaurant takes orders. A test checks that every tool the suite expects exists.
+- The information pack says which outlets take orders; the assistant's rules cover orders and bills.
+- A full stay scenario test: order, preview and agreement, kitchen, delivery, the bill on the room and on WhatsApp, mobile money payment and check-out.
+- English and French text.
+
 ### S11.2 — Room bill
 
 #### Added

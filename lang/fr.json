@@ -741,6 +741,7 @@
     "New booking request": "Nouvelle demande de réservation",
     "New bookings": "Nouvelles réservations",
     "New custom role": "Nouveau rôle personnalisé",
+    "New food or drink order": "Nouvelle commande de repas ou boissons",
     "New hotel": "Nouvel hôtel",
     "New order": "Nouvelle commande",
     "New password": "Nouveau mot de passe",
@@ -1269,6 +1270,7 @@
     "The currency cannot be changed once room rates are set.": "La devise ne peut plus être modifiée une fois les tarifs des chambres définis.",
     "The default language must be one of the enabled languages.": "La langue par défaut doit faire partie des langues activées.",
     "The guest could not be told the decision on WhatsApp": "Le client n'a pas pu être informé de la décision sur WhatsApp",
+    "The guest was told about the order on WhatsApp": "Le client a été informé de sa commande sur WhatsApp",
     "The guest was told about the table on WhatsApp": "Le client a été informé pour sa table sur WhatsApp",
     "The guest was told the decision on WhatsApp": "Le client a été informé de la décision sur WhatsApp",
     "The hold has ended and the rooms are no longer free.": "Le blocage a pris fin et les chambres ne sont plus libres.",
@@ -1431,6 +1433,7 @@
     "Walk-in, phone, email or another booking site.": "Sur place, par téléphone, par e-mail ou depuis un autre site de réservation.",
     "Warm and friendly": "Chaleureux et amical",
     "Warning": "Attention",
+    "We are sorry, your order :reference cannot be prepared. :reason": "Nous sommes désolés, votre commande :reference ne peut pas être préparée. :reason",
     "We received your message": "Nous avons reçu votre message",
     "Webhook address for Meta:": "Adresse webhook pour Meta :",
     "Webhook verify token": "Jeton de vérification du webhook",
@@ -1490,5 +1493,8 @@
     "You have been invited to join :hotel as :role.": "Vous avez été invité(e) à rejoindre :hotel en tant que :role.",
     "You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.": "Un code sécurisé et aléatoire vous sera demandé à la connexion. Vous le trouverez dans l’application compatible TOTP de votre téléphone.",
     "Your email address is unverified.": "Votre adresse e-mail n'est pas vérifiée.",
+    "Your order :reference has been cancelled. :reason": "Votre commande :reference a été annulée. :reason",
+    "Your order :reference is accepted. It will be ready in about :minutes minutes. Total: :total.": "Votre commande :reference est acceptée. Elle sera prête dans environ :minutes minutes. Total : :total.",
+    "Your order :reference is ready at :outlet.": "Votre commande :reference est prête au :outlet.",
     "••• saved – leave blank to keep": "••• enregistré – laisser vide pour conserver"
 }

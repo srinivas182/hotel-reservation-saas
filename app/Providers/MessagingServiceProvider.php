@@ -33,6 +33,7 @@ final class MessagingServiceProvider extends ServiceProvider
     {
         \Illuminate\Support\Facades\Event::listen(\App\Domains\BookingRequests\BookingRequestDecided::class, \App\Domains\BookingRequests\Listeners\TellGuest::class);
         \Illuminate\Support\Facades\Event::listen(\App\Domains\Orders\OrderChanged::class, \App\Domains\Folio\Listeners\PostDeliveredOrder::class);
+        \Illuminate\Support\Facades\Event::listen(\App\Domains\Orders\OrderChanged::class, \App\Domains\Orders\Listeners\TellGuestAboutOrderListener::class);
         \Illuminate\Support\Facades\Event::listen(\App\Domains\Restaurant\TableBookingChanged::class, \App\Domains\Restaurant\Listeners\TellGuestAboutTableListener::class);
         \Illuminate\Support\Facades\Event::listen(\App\Domains\Conversations\ConversationNeedsStaff::class, \App\Domains\StaffAlerts\Listeners\AlertStaffAboutConversation::class);
 
