@@ -741,6 +741,7 @@
     "New booking request": "New booking request",
     "New bookings": "New bookings",
     "New custom role": "New custom role",
+    "New food or drink order": "New food or drink order",
     "New hotel": "New hotel",
     "New order": "New order",
     "New password": "New password",
@@ -1269,6 +1270,7 @@
     "The currency cannot be changed once room rates are set.": "The currency cannot be changed once room rates are set.",
     "The default language must be one of the enabled languages.": "The default language must be one of the enabled languages.",
     "The guest could not be told the decision on WhatsApp": "The guest could not be told the decision on WhatsApp",
+    "The guest was told about the order on WhatsApp": "The guest was told about the order on WhatsApp",
     "The guest was told about the table on WhatsApp": "The guest was told about the table on WhatsApp",
     "The guest was told the decision on WhatsApp": "The guest was told the decision on WhatsApp",
     "The hold has ended and the rooms are no longer free.": "The hold has ended and the rooms are no longer free.",
@@ -1431,6 +1433,7 @@
     "Walk-in, phone, email or another booking site.": "Walk-in, phone, email or another booking site.",
     "Warm and friendly": "Warm and friendly",
     "Warning": "Warning",
+    "We are sorry, your order :reference cannot be prepared. :reason": "We are sorry, your order :reference cannot be prepared. :reason",
     "We received your message": "We received your message",
     "Webhook address for Meta:": "Webhook address for Meta:",
     "Webhook verify token": "Webhook verify token",
@@ -1490,5 +1493,8 @@
     "You have been invited to join :hotel as :role.": "You have been invited to join :hotel as :role.",
     "You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.": "You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.",
     "Your email address is unverified.": "Your email address is unverified.",
+    "Your order :reference has been cancelled. :reason": "Your order :reference has been cancelled. :reason",
+    "Your order :reference is accepted. It will be ready in about :minutes minutes. Total: :total.": "Your order :reference is accepted. It will be ready in about :minutes minutes. Total: :total.",
+    "Your order :reference is ready at :outlet.": "Your order :reference is ready at :outlet.",
     "••• saved – leave blank to keep": "••• saved – leave blank to keep"
 }

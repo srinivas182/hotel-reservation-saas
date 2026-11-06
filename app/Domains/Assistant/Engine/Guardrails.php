@@ -15,6 +15,8 @@ final class Guardrails
     private const CONFIRMATION_PATTERNS = [
         // English
         '/\b(booking|reservation|room|stay|table)\s+(is|has been|was)\s+(now\s+)?(confirmed|booked|reserved|secured)\b/i',
+        '/\border\s+(is|has been|was)\s+(now\s+)?(accepted|confirmed)\b/i',
+        '/\bcommande\s+(est|a été)\s+(bien\s+)?(acceptée|confirmée|validée)\b/iu',
         '/\b(i|we)\s+(have|\'ve)\s+(confirmed|booked|reserved|secured)\b/i',
         '/\bconfirmed\s+your\s+(booking|reservation|room|stay|table)\b/i',
         '/\byou(\'re| are)\s+(all\s+)?(booked|confirmed)\b/i',

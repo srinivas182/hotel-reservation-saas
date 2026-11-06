@@ -105,7 +105,7 @@ final class EvalFixture
             // Restaurant (S10): lunch and dinner every day, closed in 4 days for a private event, a short menu.
             $outlet = Outlet::query()->create([
                 'name' => ['fr' => 'Le Restaurant', 'en' => 'The Restaurant'], 'type' => 'restaurant', 'seats' => 40,
-                'default_duration_minutes' => 90, 'auto_confirm' => true, 'auto_confirm_max_party' => 6, 'active' => true, 'public_slug' => 'restaurant',
+                'default_duration_minutes' => 90, 'auto_confirm' => true, 'auto_confirm_max_party' => 6, 'active' => true, 'public_slug' => 'restaurant', 'orders_enabled' => true,
             ]);
             foreach (range(1, 7) as $weekday) {
                 ServicePeriod::query()->create(['outlet_id' => $outlet->id, 'weekday' => $weekday, 'name' => ['fr' => 'Déjeuner', 'en' => 'Lunch'], 'starts_at' => '12:00', 'ends_at' => '15:00', 'slot_minutes' => 30, 'last_seating_minutes' => 60]);
