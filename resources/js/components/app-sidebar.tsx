@@ -5,6 +5,7 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    CreditCard,
     UtensilsCrossed,
     Sparkles,
     Percent,
@@ -30,6 +31,8 @@ import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsC
 import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Controllers/AlertSettingsController';
 import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
 import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
+import BillingController from '@/actions/App/Domains/Billing/Http/Controllers/BillingController';
+import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
 import PilotDashboardController from '@/actions/App/Domains/Platform/Http/Controllers/PilotDashboardController';
 import RestaurantController from '@/actions/App/Domains/Restaurant/Http/Controllers/RestaurantController';
 import ReadinessController from '@/actions/App/Domains/Platform/Http/Controllers/ReadinessController';
@@ -99,10 +102,15 @@ const platformNavItems: NavItem[] = [
         href: PilotDashboardController(),
         icon: Activity,
     },
+    {
+        title: 'Billing',
+        href: PlatformBillingController.index(),
+        icon: CreditCard,
+    },
 ];
 
 export function AppSidebar() {
-    const { auth, inboxUnread } = usePage().props;
+    const { auth, inboxUnread, modules = [] } = usePage().props;
     const isPlatformStaff = auth.user.platform_role !== null;
     const hotelNavItems: NavItem[] = [
         ...mainNavItems,
@@ -176,7 +184,8 @@ export function AppSidebar() {
         ...(auth.permissions.includes('usage.view')
             ? [{ title: 'Usage', href: UsageController(), icon: BarChart3 }]
             : []),
-        ...(auth.permissions.includes('events.view')
+        ...(auth.permissions.includes('events.view') &&
+        modules.includes('events')
             ? [
                   {
                       title: 'Events',
@@ -185,7 +194,17 @@ export function AppSidebar() {
                   },
               ]
             : []),
-        ...(auth.permissions.includes('restaurant.view')
+        ...(auth.permissions.includes('billing.view')
+            ? [
+                  {
+                      title: 'Plan and credits',
+                      href: BillingController(),
+                      icon: CreditCard,
+                  },
+              ]
+            : []),
+        ...(auth.permissions.includes('restaurant.view') &&
+        modules.includes('restaurant')
             ? [
                   {
                       title: 'Restaurant & Bar',

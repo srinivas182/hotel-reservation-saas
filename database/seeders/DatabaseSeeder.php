@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
 
         if (app()->environment('local')) {
             $this->call(LocalDemoSeeder::class);
+            // After the demo hotels, so they keep every module (no subscription).
+            $this->call(BillingCatalogSeeder::class);
         }
     }
 }

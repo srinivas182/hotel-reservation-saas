@@ -45,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'module' => App\Domains\Billing\Http\Middleware\RequireModule::class,
             'hotel' => EnsureHotelSelected::class,
             'platform' => EnsurePlatformStaff::class,
         ]);

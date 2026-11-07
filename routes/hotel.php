@@ -12,6 +12,7 @@ use App\Domains\Assistant\Http\Controllers\PracticeController;
 use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Availability\Http\Controllers\CalendarController;
 use App\Domains\Availability\Http\Controllers\InventoryController;
+use App\Domains\Billing\Http\Controllers\BillingController;
 use App\Domains\BookingRequests\Http\Controllers\BookingRequestController;
 use App\Domains\Bookings\Http\Controllers\BookingActionController;
 use App\Domains\Bookings\Http\Controllers\BookingController;
@@ -174,13 +175,13 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::put('hotel/my-alerts', [AlertSettingsController::class, 'update'])->name('hotel.my-alerts.update');
     Route::post('hotel/my-alerts/test', [AlertSettingsController::class, 'test'])->middleware('throttle:5,1')->name('hotel.my-alerts.test');
 
-    Route::middleware('can:restaurant.view')->get('hotel/restaurant', RestaurantController::class)->name('hotel.restaurant');
-    Route::middleware(['can:restaurant.bookings', 'throttle:120,1'])->group(function (): void {
+    Route::middleware(['module:restaurant', 'can:restaurant.view'])->get('hotel/restaurant', RestaurantController::class)->name('hotel.restaurant');
+    Route::middleware(['module:restaurant', 'can:restaurant.bookings', 'throttle:120,1'])->group(function (): void {
         Route::post('hotel/restaurant/bookings', [TableBookingController::class, 'store'])->name('hotel.restaurant.bookings.store');
         Route::put('hotel/restaurant/bookings/{tableBooking}', [TableBookingController::class, 'update'])->name('hotel.restaurant.bookings.update');
         Route::post('hotel/restaurant/bookings/{tableBooking}/status', [TableBookingController::class, 'status'])->name('hotel.restaurant.bookings.status');
     });
-    Route::middleware(['can:restaurant.orders', 'throttle:240,1'])->group(function (): void {
+    Route::middleware(['module:ordering', 'can:restaurant.orders', 'throttle:240,1'])->group(function (): void {
         Route::get('hotel/restaurant/orders', [OrderBoardController::class, 'index'])->name('hotel.restaurant.orders');
         Route::post('hotel/restaurant/orders', [OrderBoardController::class, 'store'])->name('hotel.restaurant.orders.store');
         Route::post('hotel/restaurant/orders/{order}/status', [OrderBoardController::class, 'status'])->name('hotel.restaurant.orders.status');
@@ -196,7 +197,7 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/bookings/{booking}/phones', [StayPhoneController::class, 'store'])->name('hotel.bookings.phones.store');
         Route::delete('hotel/stay-phones/{stayPhone}', [StayPhoneController::class, 'destroy'])->name('hotel.stay-phones.destroy');
     });
-    Route::middleware(['can:restaurant.menu', 'throttle:120,1'])->group(function (): void {
+    Route::middleware(['module:restaurant', 'can:restaurant.menu', 'throttle:120,1'])->group(function (): void {
         Route::get('hotel/restaurant/menu', [MenuController::class, 'index'])->name('hotel.restaurant.menu');
         Route::get('hotel/restaurant/menu/{outlet}/qr', [MenuController::class, 'qr'])->name('hotel.restaurant.menu.qr');
         Route::post('hotel/restaurant/menu/sections', [MenuController::class, 'storeSection'])->name('hotel.restaurant.menu.sections.store');
@@ -209,7 +210,7 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/restaurant/menu/items/{item}/photo', [MenuController::class, 'photo'])->name('hotel.restaurant.menu.items.photo');
         Route::delete('hotel/restaurant/menu/items/{item}/photo', [MenuController::class, 'removePhoto'])->name('hotel.restaurant.menu.items.photo.destroy');
     });
-    Route::middleware('can:restaurant.manage')->group(function (): void {
+    Route::middleware(['module:restaurant', 'can:restaurant.manage'])->group(function (): void {
         Route::get('hotel/restaurant/outlets', [OutletController::class, 'index'])->name('hotel.restaurant.outlets');
         Route::put('hotel/restaurant/room-charges', [OutletController::class, 'roomCharges'])->name('hotel.restaurant.room-charges');
         Route::post('hotel/restaurant/outlets', [OutletController::class, 'store'])->name('hotel.restaurant.outlets.store');
@@ -219,13 +220,13 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::delete('hotel/restaurant/closures/{closure}', [OutletController::class, 'reopen'])->name('hotel.restaurant.closures.destroy');
     });
 
-    Route::middleware('can:events.view')->group(function (): void {
+    Route::middleware(['module:events', 'can:events.view'])->group(function (): void {
         Route::get('hotel/events', [EventController::class, 'index'])->name('hotel.events');
         Route::get('hotel/events/{event}', [EventController::class, 'show'])->whereUlid('event')->name('hotel.events.show');
         Route::get('hotel/events/{event}/sheet', [EventSheetController::class, 'print'])->name('hotel.events.sheet');
     });
     Route::middleware(['can:bookings.create', 'throttle:120,1'])->post('hotel/room-blocks/{block}/book', [RoomBlockController::class, 'book'])->name('hotel.room-blocks.book');
-    Route::middleware(['can:events.manage', 'throttle:120,1'])->group(function (): void {
+    Route::middleware(['module:events', 'can:events.manage', 'throttle:120,1'])->group(function (): void {
         Route::post('hotel/events', [EventController::class, 'store'])->name('hotel.events.store');
         Route::put('hotel/events/{event}', [EventController::class, 'update'])->whereUlid('event')->name('hotel.events.update');
         Route::post('hotel/events/{event}/option', [EventController::class, 'option'])->name('hotel.events.option');
@@ -247,6 +248,8 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/events/packages', [EventSetupController::class, 'storePackage'])->name('hotel.events.packages.store');
         Route::put('hotel/events/packages/{package}', [EventSetupController::class, 'updatePackage'])->name('hotel.events.packages.update');
     });
+
+    Route::middleware('can:billing.view')->get('hotel/billing', BillingController::class)->name('hotel.billing');
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');

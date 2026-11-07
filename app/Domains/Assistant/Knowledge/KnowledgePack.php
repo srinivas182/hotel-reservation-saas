@@ -139,7 +139,7 @@ final class KnowledgePack
 
         $outlets = \App\Domains\Restaurant\Models\Outlet::query()->with('periods')->where('active', true)->orderBy('sort_order')->get();
 
-        if ($outlets->isNotEmpty()) {
+        if ($outlets->isNotEmpty() && app(\App\Domains\Billing\Entitlements::class)->has(\App\Domains\Billing\Module::Restaurant)) {
             $facts[] = 'Restaurants and bars (book with restaurant_availability and book_table; menu with get_menu):';
             $days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -153,7 +153,7 @@ final class KnowledgePack
 
         $spaces = \App\Domains\Events\Models\EventSpace::query()->where('active', true)->orderBy('sort_order')->get();
 
-        if ($spaces->isNotEmpty()) {
+        if ($spaces->isNotEmpty() && app(\App\Domains\Billing\Entitlements::class)->has(\App\Domains\Billing\Module::Events)) {
             $facts[] = 'Event spaces (events team quotes them; no prices to guests; use event_enquiry):';
             foreach ($spaces as $space) {
                 $capacities = collect($space->capacities)->map(fn (int $n, string $layout): string => \App\Domains\Events\Layout::from($layout)->label().' '.$n)->implode(', ');

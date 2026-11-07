@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S13.1 — Plans, subscriptions, credits and limits
+
+#### Added
+
+- Platform → Billing: plans (name per language, modules, staff limit, monthly AI and email credits, prices per currency monthly and yearly, trial days, default plan for new hotels), credit packs (AI or email, valid 12 months by default), and how AI credits are counted (assistant reply and voice note 1 credit, translation 0.5 by default; 5% buffer). Example plans Essentiel, Pro and Complet and three packs are seeded; the platform can change everything.
+- Subscriptions per hotel: trial (14 days, trial credits), monthly or yearly periods with the period's credits, immediate pro-rata upgrades (with the extra credits for the rest of the period), downgrades at the end of the period only when the hotel fits the lower plan (staff count, restaurants, upcoming events), trial extension, packs and credit adjustments with a reason. `billing:renew` (hourly) starts due periods and applies scheduled downgrades. Every change is recorded for invoicing (S13.2) and audited. New hotels start a trial on the default plan when one is set.
+- Credits from the existing usage counts: the month's credits first, then packs; warnings to the owner at 80% and 100% (new staff alert "AI or email credits running low"), re-armed when credits are added. When AI credits are used up (after the buffer), the assistant passes guests to staff with the hotel's handover message; staff translation also stops. Guest, operational and marketing emails stop and are logged as blocked; security and system emails are never counted or blocked. Hotels without a subscription are not limited.
+- Modules (restaurant & bar, orders, events): screens, routes and assistant tools of modules the plan does not include are hidden (data is kept); staff accounts limited by the plan.
+- Hotel → Billing (`billing.view`): plan, period, staff accounts, AI and email credits left, credit packs, WhatsApp messages this period (billed by Meta to the hotel), plans available.
+- English and French text.
+
+#### Fixed (before merge)
+
+- A credit pack created without an explicit validity expired immediately; packs now default to 12 months.
+
 ### S12.3 — Events: attendee rooms, WhatsApp, test suite
 
 #### Added

@@ -51,6 +51,7 @@ final class StaffService
     public function assign(Hotel $hotel, User $user, Role $role): void
     {
         $this->guardRoleBelongsTo($hotel, $role);
+        $this->guardStaffLimit($hotel, $user);
 
         DB::transaction(function () use ($hotel, $user, $role): void {
             $this->memberships->add($hotel, $user);
@@ -195,5 +196,27 @@ final class StaffService
     private function guardRoleBelongsTo(Hotel $hotel, Role $role): void
     {
         abort_unless($role->hotel_id === $hotel->getKey(), 404);
+    }
+
+    /**
+     * The hotel's plan may limit how many people have an account.
+     */
+    public function guardStaffLimit(Hotel $hotel, ?User $user = null): void
+    {
+        $limit = app(TenantContext::class)->run($hotel, fn (): ?int => app(\App\Domains\Billing\Entitlements::class)->staffLimit());
+
+        if ($limit === null) {
+            return;
+        }
+
+        $members = \App\Domains\Tenancy\Models\HotelMembership::query()->where('hotel_id', $hotel->getKey());
+
+        if ($user !== null && (clone $members)->where('user_id', $user->getKey())->exists()) {
+            return;
+        }
+
+        if ($members->count() >= $limit) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['email' => __('Your plan allows :limit staff accounts. Remove one or change plan to add more.', ['limit' => $limit])]);
+        }
     }
 }

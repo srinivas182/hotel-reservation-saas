@@ -42,6 +42,7 @@ final class InvitationController extends Controller
 
         $role = $this->roles->find($hotel, (int) $validated['role_id'])
             ?? throw ValidationException::withMessages(['role_id' => __('Choose a valid role.')]);
+        app(\App\Domains\Access\StaffService::class)->guardStaffLimit($hotel);
 
         $key = 'invitations:'.$hotel->getKey();
 

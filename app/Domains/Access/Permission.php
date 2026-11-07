@@ -49,6 +49,7 @@ enum Permission: string
     case EventsView = 'events.view';
     case EventsManage = 'events.manage';
     case EventsDiscount = 'events.discount';
+    case BillingView = 'billing.view';
 
     public function group(): string
     {
@@ -96,6 +97,7 @@ enum Permission: string
             self::EventsView => __('View events'),
             self::EventsManage => __('Handle event enquiries, quotes and options'),
             self::EventsDiscount => __('Give discounts on event quotes'),
+            self::BillingView => __('See the plan, credits and invoices'),
         };
     }
 

@@ -36,6 +36,10 @@ final class AiControls
             throw new AiUnavailable('hotel_off', __('AI is switched off for this hotel.'));
         }
 
+        if (! app(\App\Domains\Billing\Credits::class)->canUse(\App\Domains\Billing\CreditKind::Ai)) {
+            throw new AiUnavailable('no_credits', __('The hotel’s AI credits are used up.'));
+        }
+
         if ($this->spentToday() >= $settings->daily_budget_micro_usd) {
             throw new AiUnavailable('budget', __('Today’s AI spending limit has been reached.'));
         }
