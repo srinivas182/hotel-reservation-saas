@@ -10,6 +10,7 @@ import { checkOut } from '@/components/bookings/check-out';
 import { RequestCard } from '@/components/booking-requests/request-card';
 import type { PendingRequest } from '@/components/booking-requests/request-card';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
+import SetupController from '@/actions/App/Domains/Onboarding/Http/Controllers/SetupController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +49,7 @@ type BoardRoom = {
 };
 
 type Props = {
+    setup?: { done: number; total: number; complete: boolean } | null;
     date: string;
     dateLabel: string;
     arrivals: Item[];
@@ -254,6 +256,25 @@ export default function Today(props: Props) {
         <>
             <Head title={t('Today')} />
             <div className="flex flex-col gap-6 p-4">
+                {props.setup && (
+                    <Link
+                        href={SetupController.show()}
+                        className="flex flex-wrap items-center gap-3 rounded-xl border border-primary px-4 py-3 text-sm hover:bg-muted/50"
+                    >
+                        <span className="font-medium">
+                            {t('Set up your hotel')}
+                        </span>
+                        <span className="text-muted-foreground">
+                            {t(':done of :total steps done', {
+                                done: props.setup.done,
+                                total: props.setup.total,
+                            })}
+                        </span>
+                        <span className="ml-auto underline">
+                            {t('Continue')}
+                        </span>
+                    </Link>
+                )}
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <Heading title={t('Today')} description={props.dateLabel} />
                     {props.can.create && (

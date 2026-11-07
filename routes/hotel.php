@@ -32,6 +32,7 @@ use App\Domains\GoLive\Http\Controllers\GoLiveController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
 use App\Domains\Messaging\Http\Controllers\UsageController;
+use App\Domains\Onboarding\Http\Controllers\SetupController;
 use App\Domains\Orders\Http\Controllers\OrderBoardController;
 use App\Domains\Orders\Http\Controllers\StayPhoneController;
 use App\Domains\Rates\Http\Controllers\CategoryRateController;
@@ -256,6 +257,16 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
         Route::post('hotel/billing/invoices/{invoice}/pay', [HotelPaymentController::class, 'payInvoice'])->name('hotel.billing.invoices.pay');
         Route::post('hotel/billing/packs/{pack}/buy', [HotelPaymentController::class, 'buyPack'])->name('hotel.billing.packs.buy');
         Route::put('hotel/billing/plan', [HotelPaymentController::class, 'changePlan'])->name('hotel.billing.plan');
+    });
+
+    Route::middleware('can:hotel.settings.manage')->group(function (): void {
+        Route::get('hotel/setup', [SetupController::class, 'show'])->name('hotel.setup');
+        Route::post('hotel/setup/steps/{step}/skip', [SetupController::class, 'skip'])->name('hotel.setup.skip');
+        Route::post('hotel/setup/taxes', [SetupController::class, 'confirmTaxes'])->name('hotel.setup.taxes');
+        Route::get('hotel/setup/templates/{kind}', [SetupController::class, 'template'])->name('hotel.setup.template');
+        Route::post('hotel/setup/rooms', [SetupController::class, 'quickRooms'])->middleware('can:rooms.manage')->name('hotel.setup.rooms');
+        Route::post('hotel/setup/import/{kind}', [SetupController::class, 'preview'])->middleware('throttle:20,1')->name('hotel.setup.import');
+        Route::post('hotel/setup/import-confirm', [SetupController::class, 'confirm'])->middleware('throttle:20,1')->name('hotel.setup.import.confirm');
     });
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
