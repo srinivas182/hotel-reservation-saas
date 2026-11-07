@@ -37,6 +37,10 @@ final class BillingController extends Controller
                 ->map(fn (CreditPack $p): array => ['id' => $p->id, 'name' => $p->localizedName($locale), 'kind' => $p->kind->label(), 'credits' => $p->credits, 'price' => MoneyFormatter::format(Money::ofMinor((int) $p->prices[$currency], $currency), $locale)])
                 ->values(),
             'invoices' => InvoiceRows::forHotel($context->id(), false),
+            'gateways' => \App\Domains\Billing\Payments\PaymentGateway::query()->where('active', true)->orderBy('sort_order')->get()
+                ->filter(fn (\App\Domains\Billing\Payments\PaymentGateway $g): bool => $g->supports($currency))
+                ->map(fn (\App\Domains\Billing\Payments\PaymentGateway $g): array => ['id' => $g->id, 'name' => $g->name, 'test' => $g->mode !== 'live'])->values(),
+            'canManage' => request()->user()?->can('billing.manage') === true,
             'reduced' => Dunning::isReduced(),
         ]);
     }

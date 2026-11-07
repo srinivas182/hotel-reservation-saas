@@ -116,16 +116,15 @@ final class Subscriptions
     /**
      * A credit pack sold to the hotel (paid outside or invoiced in S13.2).
      */
-    public function addPack(CreditPack $pack, User $by): void
+    public function addPack(CreditPack $pack, ?User $by): ?SubscriptionChange
     {
         $subscription = Subscription::query()->first();
         $this->credits->grant($pack->kind, 'pack', $pack->credits, now()->addMonths(max(1, (int) $pack->valid_months))->toImmutable(), $pack->code, $pack->id, $by);
-
-        if ($subscription !== null) {
-            $this->log($subscription, 'pack:'.$pack->code, null, null, (int) ($pack->prices[$subscription->currency] ?? 0), $by);
-        }
+        $change = $subscription === null ? null : $this->log($subscription, 'pack:'.$pack->code, null, null, (int) ($pack->prices[$subscription->currency] ?? 0), $by);
 
         Audit::record('billing.pack_added', 'Credit pack added', subject: $this->context->hotel(), causer: $by, properties: ['pack' => $pack->code]);
+
+        return $change;
     }
 
     /**
@@ -214,9 +213,9 @@ final class Subscriptions
         return max(0.0, min(1.0, now()->diffInSeconds($subscription->period_end, false) / $total));
     }
 
-    private function log(Subscription $subscription, string $kind, ?Plan $from, ?Plan $to, int $amount, ?User $by): void
+    private function log(Subscription $subscription, string $kind, ?Plan $from, ?Plan $to, int $amount, ?User $by): SubscriptionChange
     {
-        SubscriptionChange::query()->create([
+        return SubscriptionChange::query()->create([
             'subscription_id' => $subscription->id, 'kind' => $kind, 'from_plan_id' => $from?->id, 'to_plan_id' => $to?->id,
             'amount_minor' => $amount, 'currency' => $subscription->currency, 'created_by' => $by?->getKey(),
         ]);

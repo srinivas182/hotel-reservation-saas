@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Billing\Http\Controllers\PaymentReturnController;
 use App\Domains\Events\Http\Controllers\PublicQuoteController;
 use App\Domains\Identity\Http\Controllers\LocaleController;
 use App\Domains\Platform\Http\Controllers\HealthController;
@@ -35,6 +36,13 @@ Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])
     ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:600,1')
     ->name('webhooks.whatsapp.receive');
+
+// Online payments: the payer comes back here; providers post notifications.
+Route::get('payments/return/{checkout}', [PaymentReturnController::class, 'back'])->middleware('throttle:30,1')->name('payments.return');
+Route::post('webhooks/payments/{driver}', [PaymentReturnController::class, 'notify'])
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->middleware('throttle:120,1')
+    ->name('webhooks.payments');
 
 Route::post('csp-report', CspReportController::class)
     ->middleware('throttle:60,1')

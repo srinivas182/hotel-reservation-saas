@@ -38,7 +38,7 @@ enum SystemRole: string
             self::Owner => Permission::cases(),
             self::Manager => array_values(array_filter(
                 Permission::cases(),
-                fn (Permission $permission): bool => ! in_array($permission, [Permission::RolesManage, Permission::WhatsAppConnect], true),
+                fn (Permission $permission): bool => ! in_array($permission, [Permission::RolesManage, Permission::WhatsAppConnect, Permission::BillingManage], true),
             )),
             self::Reception => [
                 Permission::StaffView,
