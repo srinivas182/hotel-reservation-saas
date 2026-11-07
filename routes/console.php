@@ -106,3 +106,15 @@ Schedule::command('billing:renew')
     ->name('billing:renew')
     ->hourly()
     ->withoutOverlapping();
+
+// Invoices for renewals, upgrades and packs.
+Schedule::command('billing:invoice')
+    ->name('billing:invoice')
+    ->hourly()
+    ->withoutOverlapping();
+
+// Payment reminders and reduced mode.
+Schedule::command('billing:dunning')
+    ->name('billing:dunning')
+    ->dailyAt('07:00')
+    ->withoutOverlapping();

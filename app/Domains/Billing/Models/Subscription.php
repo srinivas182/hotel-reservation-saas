@@ -23,6 +23,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $trial_ends_at
  * @property string|null $pending_plan_id
  * @property array<string, string>|null $warnings
+ * @property int|null $billing_entity_id
+ * @property array{name?: string, address?: string, tax_id?: string, email?: string}|null $billing_details
+ * @property CarbonImmutable|null $reduced_at
+ * @property CarbonImmutable|null $grace_until
  * @property-read Plan|null $plan
  * @property-read Plan|null $pendingPlan
  */
@@ -43,6 +47,9 @@ class Subscription extends Model
             'period_end' => 'immutable_datetime',
             'trial_ends_at' => 'immutable_datetime',
             'warnings' => 'array',
+            'billing_details' => 'array',
+            'reduced_at' => 'immutable_datetime',
+            'grace_until' => \App\Support\Casts\DateOnly::class,
         ];
     }
 

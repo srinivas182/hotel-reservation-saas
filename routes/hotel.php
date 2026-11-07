@@ -56,7 +56,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
+Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): void {
     Route::get('staff', [StaffController::class, 'index'])->middleware('can:staff.view')->name('staff.index');
 
     Route::middleware('can:staff.manage')->group(function (): void {
@@ -250,6 +250,7 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     });
 
     Route::middleware('can:billing.view')->get('hotel/billing', BillingController::class)->name('hotel.billing');
+    Route::middleware('can:billing.view')->get('hotel/billing/invoices/{invoice}', [BillingController::class, 'invoice'])->name('hotel.billing.invoice');
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');

@@ -36,6 +36,10 @@ final class AiControls
             throw new AiUnavailable('hotel_off', __('AI is switched off for this hotel.'));
         }
 
+        if (\App\Domains\Billing\Invoices\Dunning::isReduced()) {
+            throw new AiUnavailable('reduced_mode', __('An invoice is unpaid: the assistant is paused.'));
+        }
+
         if (! app(\App\Domains\Billing\Credits::class)->canUse(\App\Domains\Billing\CreditKind::Ai)) {
             throw new AiUnavailable('no_credits', __('The hotel’s AI credits are used up.'));
         }

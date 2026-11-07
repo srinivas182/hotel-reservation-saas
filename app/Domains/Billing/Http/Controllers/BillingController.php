@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace App\Domains\Billing\Http\Controllers;
 
 use App\Domains\Billing\BillingOverview;
+use App\Domains\Billing\Invoices\Dunning;
+use App\Domains\Billing\Invoices\InvoicePdf;
+use App\Domains\Billing\Invoices\InvoiceRows;
 use App\Domains\Billing\Models\CreditPack;
+use App\Domains\Billing\Models\Invoice;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use Brick\Money\Money;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,6 +36,15 @@ final class BillingController extends Controller
                 ->filter(fn (CreditPack $p): bool => isset($p->prices[$currency]))
                 ->map(fn (CreditPack $p): array => ['id' => $p->id, 'name' => $p->localizedName($locale), 'kind' => $p->kind->label(), 'credits' => $p->credits, 'price' => MoneyFormatter::format(Money::ofMinor((int) $p->prices[$currency], $currency), $locale)])
                 ->values(),
+            'invoices' => InvoiceRows::forHotel($context->id(), false),
+            'reduced' => Dunning::isReduced(),
         ]);
+    }
+
+    public function invoice(string $invoice, TenantContext $context, InvoicePdf $pdf): HttpResponse
+    {
+        $found = Invoice::query()->where('hotel_id', $context->id())->findOrFail($invoice);
+
+        return response($pdf->render($found), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$found->number.'.pdf"']);
     }
 }

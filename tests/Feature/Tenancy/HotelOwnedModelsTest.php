@@ -26,6 +26,9 @@ const HOTEL_SCOPING_ALLOWLIST = [
     Role::class,
     // The email log includes platform emails (no hotel); hotel pages filter it explicitly.
     EmailMessage::class,
+    // Invoices are issued by the platform (dunning and revenue read across
+    // hotels); hotel pages always filter by the current hotel explicitly.
+    App\Domains\Billing\Models\Invoice::class,
 ];
 
 it('scopes every model that has a hotel_id column', function (): void {
