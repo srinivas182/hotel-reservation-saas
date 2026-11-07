@@ -100,3 +100,9 @@ Schedule::command('events:release-room-blocks')
     ->name('events:release-room-blocks')
     ->hourly()
     ->withoutOverlapping();
+
+// Subscriptions: trial end, renewal, scheduled downgrades, the period's credits.
+Schedule::command('billing:renew')
+    ->name('billing:renew')
+    ->hourly()
+    ->withoutOverlapping();

@@ -7,7 +7,6 @@ namespace App\Providers;
 use App\Domains\Messaging\Email\EmailAllowance;
 use App\Domains\Messaging\Email\MailTransportFactory;
 use App\Domains\Messaging\Email\PlatformTransport;
-use App\Domains\Messaging\Email\UnlimitedEmailAllowance;
 use App\Domains\Messaging\Usage\UsageLedger;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
@@ -16,7 +15,7 @@ final class MessagingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(EmailAllowance::class, UnlimitedEmailAllowance::class);
+        $this->app->bind(EmailAllowance::class, \App\Domains\Billing\CreditEmailAllowance::class);
         $this->app->bind(MailTransportFactory::class);
         $this->app->bind(\App\Domains\WhatsApp\Graph\GraphClient::class);
         $this->app->bind(\App\Domains\Ai\Gateway\AiGateway::class, \App\Domains\Ai\Gateway\LaravelAiGateway::class);

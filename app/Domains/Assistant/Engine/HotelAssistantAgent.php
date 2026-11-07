@@ -71,13 +71,33 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
             new GetQuote($this->context),
             new GetHotelInfo($this->context),
             new RequestBooking($this->context),
-            new RestaurantAvailability($this->context),
-            new BookTable($this->context),
-            new GetMenu($this->context),
-            new PlaceOrder($this->context),
-            new GetMyBill($this->context),
-            new EventEnquiry($this->context),
+            ...$this->moduleTools(),
         ];
+    }
+
+    /**
+     * Tools of optional modules, only when the hotel's plan includes them.
+     *
+     * @return list<\Laravel\Ai\Contracts\Tool>
+     */
+    private function moduleTools(): array
+    {
+        $entitlements = app(\App\Domains\Billing\Entitlements::class);
+        $tools = [new GetMyBill($this->context)];
+
+        if ($entitlements->has(\App\Domains\Billing\Module::Restaurant)) {
+            array_push($tools, new RestaurantAvailability($this->context), new BookTable($this->context), new GetMenu($this->context));
+        }
+
+        if ($entitlements->has(\App\Domains\Billing\Module::Ordering)) {
+            $tools[] = new PlaceOrder($this->context);
+        }
+
+        if ($entitlements->has(\App\Domains\Billing\Module::Events)) {
+            $tools[] = new EventEnquiry($this->context);
+        }
+
+        return $tools;
     }
 
     public function schema(JsonSchema $schema): array

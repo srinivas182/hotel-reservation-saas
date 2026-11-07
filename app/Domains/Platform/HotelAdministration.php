@@ -43,6 +43,12 @@ final class HotelAdministration
                 $this->staff->assign($hotel, $owner, $this->roles->system($hotel, SystemRole::Owner));
             }
 
+            // New hotels start a trial on the default plan, when one is set.
+            $plan = \App\Domains\Billing\Models\Plan::query()->where('is_default', true)->where('active', true)->first();
+            if ($plan !== null && $plan->price($hotel->currency, 'monthly') !== null) {
+                app(\App\Domains\Tenancy\TenantContext::class)->run($hotel, fn () => app(\App\Domains\Billing\Subscriptions::class)->start($plan, 'monthly', $hotel->currency, true));
+            }
+
             return $hotel;
         });
     }

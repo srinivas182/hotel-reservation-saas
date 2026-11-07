@@ -16,6 +16,7 @@ enum AlertKind: string
     case NewOrder = 'new_order';
     case EventOptionExpired = 'event_option';
     case EventEnquiry = 'event_enquiry';
+    case CreditsLow = 'credits_low';
     case Test = 'test';
 
     public function label(): string
@@ -29,6 +30,7 @@ enum AlertKind: string
             self::NewOrder => __('New food or drink order'),
             self::EventOptionExpired => __('Event option expired or space freed'),
             self::EventEnquiry => __('New event enquiry'),
+            self::CreditsLow => __('AI or email credits running low'),
             self::Test => __('Test alert'),
         };
     }
@@ -43,6 +45,7 @@ enum AlertKind: string
             self::TableRequest => Permission::RestaurantBookings,
             self::NewOrder => Permission::RestaurantOrders,
             self::EventOptionExpired, self::EventEnquiry => Permission::EventsManage,
+            self::CreditsLow => Permission::BillingView,
             default => Permission::ConversationsReply,
         };
     }
@@ -52,6 +55,6 @@ enum AlertKind: string
      */
     public static function choosable(): array
     {
-        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired, self::TableRequest, self::NewOrder, self::EventOptionExpired, self::EventEnquiry];
+        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired, self::TableRequest, self::NewOrder, self::EventOptionExpired, self::EventEnquiry, self::CreditsLow];
     }
 }

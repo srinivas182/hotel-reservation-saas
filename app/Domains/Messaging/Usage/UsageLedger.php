@@ -24,6 +24,15 @@ final class UsageLedger
             ]);
         } catch (UniqueConstraintViolationException) {
             // Already counted.
+            return;
+        }
+
+        // Plan credits (S13): AI actions and guest/operational emails.
+        $credits = app(\App\Domains\Billing\Credits::class);
+        if (preg_match('/^ai\.(assistant|transcription|translation)$/', $meter, $m) === 1) {
+            $credits->consume(\App\Domains\Billing\CreditKind::Ai, \App\Domains\Billing\Models\BillingSettings::current()->weight($m[1]) * $quantity);
+        } elseif (in_array($meter, ['email.guest', 'email.operational', 'email.marketing'], true)) {
+            $credits->consume(\App\Domains\Billing\CreditKind::Email, \App\Domains\Billing\Credits::UNIT * $quantity);
         }
     }
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Billing\Http\Controllers\PlatformBillingController;
 use App\Domains\Platform\Http\Controllers\AiController;
 use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
@@ -23,6 +24,17 @@ Route::middleware(['auth', 'verified', 'platform'])
     ->name('platform.')
     ->group(function (): void {
         Route::get('hotels', [HotelController::class, 'index'])->name('hotels.index');
+        Route::get('billing', [PlatformBillingController::class, 'index'])->name('billing.index');
+        Route::post('billing/plans', [PlatformBillingController::class, 'storePlan'])->name('billing.plans.store');
+        Route::put('billing/plans/{plan}', [PlatformBillingController::class, 'updatePlan'])->name('billing.plans.update');
+        Route::post('billing/packs', [PlatformBillingController::class, 'storePack'])->name('billing.packs.store');
+        Route::put('billing/packs/{pack}', [PlatformBillingController::class, 'updatePack'])->name('billing.packs.update');
+        Route::put('billing/settings', [PlatformBillingController::class, 'settings'])->name('billing.settings');
+        Route::get('hotels/{hotel}/billing', [PlatformBillingController::class, 'hotel'])->name('hotels.billing');
+        Route::post('hotels/{hotel}/billing/subscribe', [PlatformBillingController::class, 'subscribe'])->name('hotels.billing.subscribe');
+        Route::post('hotels/{hotel}/billing/trial', [PlatformBillingController::class, 'extendTrial'])->name('hotels.billing.trial');
+        Route::post('hotels/{hotel}/billing/adjust', [PlatformBillingController::class, 'adjust'])->name('hotels.billing.adjust');
+        Route::post('hotels/{hotel}/billing/packs', [PlatformBillingController::class, 'addPack'])->name('hotels.billing.packs');
         Route::get('hotels/create', [HotelController::class, 'create'])->name('hotels.create');
         Route::post('hotels', [HotelController::class, 'store'])->name('hotels.store');
         Route::get('hotels/{hotel}', [HotelController::class, 'edit'])->name('hotels.edit');
