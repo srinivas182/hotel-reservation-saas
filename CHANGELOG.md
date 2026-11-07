@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S14.2 — Setup assistant and imports
+
+#### Added
+
+- Hotel → Set up your hotel (`hotel.settings.manage`): nine steps worked out from the hotel's real data — hotel details, rooms, prices and breakfast, taxes (confirmed by the owner), reception hours, team, WhatsApp, information pack, trying the assistant. Each step links to the existing screen; steps can be skipped and resumed (team and details are optional). A card on Today shows progress until every step is done or skipped.
+- Quick room creation: categories with a count and maximum adults; room numbers are created from a first number, skipping numbers already used; category codes are unique.
+- File imports (CSV, comma or semicolon, UTF-8 or Excel's Windows encoding, up to 1,000 lines) with a downloadable template and a preview that lists every problem before anything is saved: rooms (category code or name, number, floor) and upcoming bookings (guest, dates as YYYY-MM-DD or DD/MM/YYYY, category, rooms, adults, optional total and old reference). Bookings go through the normal booking rules: lines that no longer fit are refused and reported, never forced; a total from the old system is kept with its reason. Imports are audited.
+- English and French text.
+
+#### Decided
+
+- When email credits run out, guest emails are not sent and are logged as blocked (the owner is warned at 80% and 100%), as recommended.
+
 ### S14.1 — Sign-up, country templates, legal texts
 
 #### Added

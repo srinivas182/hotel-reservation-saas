@@ -64,6 +64,11 @@ final class TodayController extends Controller
         $localized = $today->locale($locale);
 
         return Inertia::render('hotel/today', [
+            'setup' => request()->user()?->can('hotel.settings.manage') === true ? (function (): ?array {
+                $summary = app(\App\Domains\Onboarding\SetupChecklist::class)->summary();
+
+                return $summary['complete'] ? null : $summary;
+            })() : null,
             'date' => $today->toDateString(),
             'dateLabel' => $localized->isoFormat('dddd D MMMM YYYY'),
             'arrivals' => $this->desk->arrivals()->map(fn (Booking $b): array => $present($b, true))->values(),
