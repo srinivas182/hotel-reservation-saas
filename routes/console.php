@@ -94,3 +94,9 @@ Schedule::command('events:expire-options')
     ->name('events:expire-options')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// Attendee room blocks past their cut-off are recorded as released.
+Schedule::command('events:release-room-blocks')
+    ->name('events:release-room-blocks')
+    ->hourly()
+    ->withoutOverlapping();

@@ -88,6 +88,7 @@ final class EventQuoteController extends Controller
 
         // The link is shown once; only its hash is kept.
         Inertia::flash('quote_link', Quotes::link($token));
+        \App\Domains\Events\Jobs\TellClientAboutQuote::dispatch($quote->event_id, 'sent', Quotes::link($token));
 
         return back();
     }

@@ -124,6 +124,12 @@ final class EvalFixture
                 MenuItem::query()->create(['menu_section_id' => $section->id, 'name' => ['fr' => $fr, 'en' => $en], 'price_minor' => $price, 'labels' => $labels, 'allergens' => $allergens, 'active' => true, 'sort_order' => $i]);
             }
 
+            // Events (S12): one conference room and the usual time blocks.
+            \App\Domains\Events\Models\EventSpace::query()->create(['name' => ['fr' => 'Salle de conférence', 'en' => 'Conference room'], 'capacities' => ['theatre' => 80, 'classroom' => 40, 'banquet' => 60]]);
+            $morning = \App\Domains\Events\Models\EventBlock::query()->create(['name' => ['fr' => 'Matinée', 'en' => 'Morning'], 'starts_at' => '08:00', 'ends_at' => '13:00']);
+            $afternoon = \App\Domains\Events\Models\EventBlock::query()->create(['name' => ['fr' => 'Après-midi', 'en' => 'Afternoon'], 'starts_at' => '14:00', 'ends_at' => '18:00']);
+            \App\Domains\Events\Models\EventBlock::query()->create(['name' => ['fr' => 'Journée complète', 'en' => 'Full day'], 'starts_at' => '08:00', 'ends_at' => '18:00', 'covers' => [$morning->id, $afternoon->id]]);
+
             app(KnowledgePack::class)->publish();
 
             HotelAssistantSettings::current()->update([

@@ -6,6 +6,7 @@ namespace App\Domains\Assistant\Engine;
 
 use App\Domains\Assistant\Engine\Tools\BookTable;
 use App\Domains\Assistant\Engine\Tools\CheckAvailability;
+use App\Domains\Assistant\Engine\Tools\EventEnquiry;
 use App\Domains\Assistant\Engine\Tools\GetHotelInfo;
 use App\Domains\Assistant\Engine\Tools\GetMenu;
 use App\Domains\Assistant\Engine\Tools\GetMyBill;
@@ -34,7 +35,7 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
 
     public const INTENTS = [
         'greeting', 'availability_question', 'price_question', 'booking_request', 'information_question',
-        'modification_or_cancellation', 'complaint', 'human_request', 'group_or_special_request', 'table_booking', 'menu_question', 'food_order', 'bill_question', 'other',
+        'modification_or_cancellation', 'complaint', 'human_request', 'group_or_special_request', 'table_booking', 'menu_question', 'food_order', 'bill_question', 'event_enquiry', 'other',
     ];
 
     /**
@@ -75,6 +76,7 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
             new GetMenu($this->context),
             new PlaceOrder($this->context),
             new GetMyBill($this->context),
+            new EventEnquiry($this->context),
         ];
     }
 
