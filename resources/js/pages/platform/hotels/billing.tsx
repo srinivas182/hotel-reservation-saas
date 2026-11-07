@@ -2,6 +2,10 @@ import { Head, useForm } from '@inertiajs/react';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
 import { CreditBars, PlanSummary } from '@/components/billing/usage';
 import type { Overview } from '@/components/billing/usage';
+import { BillingDetailsForm } from '@/components/billing/billing-details';
+import type { BillingDetails } from '@/components/billing/billing-details';
+import { Invoices } from '@/components/billing/invoices';
+import type { InvoiceRow } from '@/components/billing/invoices';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -9,6 +13,10 @@ import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 
 type Props = Overview & {
+    invoices: InvoiceRow[];
+    entities: { id: number; name: string }[];
+    billingDetails: BillingDetails;
+    paymentMethods: string[];
     hotel: { id: string; name: string; currency: string };
     plans: { id: string; code: string; currencies: string[] }[];
     packsForSale: { id: number; code: string; kind: string; credits: number }[];
@@ -296,6 +304,17 @@ export default function HotelBilling(props: Props) {
                         </form>
                     </section>
                 )}
+
+                <BillingDetailsForm
+                    hotelId={hotel.id}
+                    details={props.billingDetails}
+                    entities={props.entities}
+                />
+                <Invoices
+                    invoices={props.invoices}
+                    platform
+                    methods={props.paymentMethods}
+                />
 
                 <section className="flex flex-col gap-2 text-sm">
                     <Heading variant="small" title={t('History')} />

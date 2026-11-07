@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S13.2 — Invoices, payments, reduced mode
+
+#### Added
+
+- Issuing companies set by the platform (Platform → Billing): legal name, country, address, RCCM, tax number (NCC), contact, invoice prefix, taxes (e.g. TVA 18%), whether plan prices include tax, payment terms, how to pay (bank, mobile money) and legal footer; one is the default (CNH Global Tech for now), and each hotel can be assigned another. Hotels' billing details (invoice name, address, tax number, email for invoices) on the platform's hotel billing page.
+- Invoices from what the subscription records (new periods, pro-rata upgrades, credit packs): `billing:invoice` (hourly) or "Invoice now". Numbering per issuing company and year with no gaps (`CNH-2026-00001`); credit notes share the sequence (`CNH-AV-2026-00002`) and are the only way to correct an invoice (invoices can never be deleted). Issuer and customer details are frozen on each invoice. PDF (DomPDF, `barryvdh/laravel-dompdf` 3.1) emailed to the hotel's billing email and downloadable by the owner (Hotel → Billing) and the platform.
+- Payments recorded by the platform (cash, mobile money, card, transfer, with reference and date), partial or full; audited.
+- `billing:dunning` (daily): reminders 3, 7 and 10 days after the due date; reduced mode after 14 days unless the platform granted a delay. In reduced mode the assistant is paused (guests are passed to staff), set-up is read-only, and day-to-day work (inbox, bookings, front desk, orders, payments, billing) goes on, with a banner on every page. Paying (or a credit note) lifts it at once.
+- Revenue report on Platform → Billing: monthly recurring revenue per currency, overdue totals, and per hotel plan, status, monthly amount, AI cost this month and overdue amount.
+- English and French text.
+
 ### S13.1 — Plans, subscriptions, credits and limits
 
 #### Added

@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'tenancy' => fn (): array => $this->tenancy($request),
             'inboxUnread' => fn (): int => $this->inboxUnread($request),
+            'billingReduced' => fn (): bool => \App\Domains\Billing\Invoices\Dunning::isReduced(),
             'modules' => fn (): array => app(TenantContext::class)->has() ? app(\App\Domains\Billing\Entitlements::class)->modules() : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

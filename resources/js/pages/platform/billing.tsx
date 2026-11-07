@@ -1,6 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
+import { Entities } from '@/components/billing/entities';
+import type { Entity, Report } from '@/components/billing/entities';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +35,8 @@ type PackRow = {
     active: boolean;
 };
 type Props = {
+    entities: Entity[];
+    report: Report;
     plans: PlanRow[];
     packs: PackRow[];
     settings: { ai_weights: Record<string, number>; buffer_percent: number };
@@ -461,6 +465,8 @@ export default function PlatformBilling({
     settings,
     modules,
     subscriptions,
+    entities,
+    report,
 }: Props) {
     const [adding, setAdding] = useState(false);
 
@@ -538,6 +544,7 @@ export default function PlatformBilling({
                         )}
                     </ul>
                 </section>
+                <Entities entities={entities} report={report} />
             </div>
         </>
     );

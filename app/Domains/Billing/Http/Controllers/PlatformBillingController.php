@@ -52,6 +52,11 @@ final class PlatformBillingController extends Controller
             ])->values(),
             'settings' => ['ai_weights' => array_merge(BillingSettings::DEFAULT_WEIGHTS, $settings->ai_weights ?? []), 'buffer_percent' => $settings->buffer_percent],
             'modules' => array_map(fn (Module $m): array => ['value' => $m->value, 'label' => $m->label()], Module::cases()),
+            'entities' => \App\Domains\Billing\Models\BillingEntity::query()->orderByDesc('is_default')->get()->map(fn (\App\Domains\Billing\Models\BillingEntity $e): array => [
+                ...$e->only(['id', 'name', 'legal_name', 'country_code', 'address', 'registration', 'tax_id', 'email', 'phone', 'invoice_prefix', 'prices_include_tax', 'payment_terms_days', 'payment_instructions', 'footer', 'is_default', 'active']),
+                'tax_rules' => array_map(fn (array $r): array => ['name' => $r['name'], 'rate' => $r['rate_bps'] / 100], $e->tax_rules ?? []),
+            ])->values(),
+            'report' => \App\Domains\Billing\Invoices\RevenueReport::build(),
             'subscriptions' => Subscription::query()->withoutGlobalScopes()->with('plan')->get()->map(fn (Subscription $s): array => [
                 'hotel_id' => $s->hotel_id, 'hotel' => Hotel::query()->find($s->hotel_id)?->name, 'plan' => $s->plan?->code, 'status' => $s->status,
                 'period_end' => $s->period_end->toDateString(), 'price_minor' => $s->price_minor, 'currency' => $s->currency,
@@ -134,6 +139,14 @@ final class PlatformBillingController extends Controller
                 'hotel' => ['id' => $hotel->id, 'name' => $hotel->name, 'currency' => $hotel->currency],
                 'plans' => Plan::query()->where('active', true)->orderBy('sort_order')->get(['id', 'code', 'name', 'prices'])->map(fn (Plan $p): array => ['id' => $p->id, 'code' => $p->code, 'currencies' => array_keys($p->prices)])->values(),
                 'packsForSale' => CreditPack::query()->where('active', true)->get()->map(fn (CreditPack $p): array => ['id' => $p->id, 'code' => $p->code, 'kind' => $p->kind->value, 'credits' => $p->credits])->values(),
+                'invoices' => \App\Domains\Billing\Invoices\InvoiceRows::forHotel($hotel->id, true),
+                'entities' => \App\Domains\Billing\Models\BillingEntity::query()->where('active', true)->get(['id', 'name'])->values(),
+                'billingDetails' => (function (): array {
+                    $s = Subscription::query()->first();
+
+                    return ['billing_entity_id' => $s?->billing_entity_id, ...($s->billing_details ?? []), 'grace_until' => $s?->grace_until?->toDateString(), 'reduced' => $s?->reduced_at !== null];
+                })(),
+                'paymentMethods' => [...\App\Domains\Folio\RestaurantSettings::METHODS, 'other'],
                 'changes' => SubscriptionChange::query()->latest('id')->limit(30)->get()->map(fn (SubscriptionChange $c): array => [
                     'kind' => $c->kind, 'amount_minor' => $c->amount_minor, 'currency' => $c->currency, 'at' => $c->created_at?->toDateTimeString(), 'invoiced' => $c->invoiced_at !== null,
                 ])->values(),

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Billing\Http\Controllers\PlatformBillingController;
+use App\Domains\Billing\Http\Controllers\PlatformInvoiceController;
 use App\Domains\Platform\Http\Controllers\AiController;
 use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
@@ -31,6 +32,14 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::put('billing/packs/{pack}', [PlatformBillingController::class, 'updatePack'])->name('billing.packs.update');
         Route::put('billing/settings', [PlatformBillingController::class, 'settings'])->name('billing.settings');
         Route::get('hotels/{hotel}/billing', [PlatformBillingController::class, 'hotel'])->name('hotels.billing');
+        Route::post('billing/entities', [PlatformInvoiceController::class, 'storeEntity'])->name('billing.entities.store');
+        Route::put('billing/entities/{entity}', [PlatformInvoiceController::class, 'updateEntity'])->name('billing.entities.update');
+        Route::put('hotels/{hotel}/billing/details', [PlatformInvoiceController::class, 'details'])->name('hotels.billing.details');
+        Route::post('hotels/{hotel}/billing/invoice-now', [PlatformInvoiceController::class, 'issueNow'])->name('hotels.billing.invoice-now');
+        Route::post('hotels/{hotel}/billing/delay', [PlatformInvoiceController::class, 'delay'])->name('hotels.billing.delay');
+        Route::post('invoices/{invoice}/payments', [PlatformInvoiceController::class, 'payment'])->name('invoices.payments');
+        Route::post('invoices/{invoice}/credit-note', [PlatformInvoiceController::class, 'creditNote'])->name('invoices.credit-note');
+        Route::get('invoices/{invoice}/pdf', [PlatformInvoiceController::class, 'pdf'])->name('invoices.pdf');
         Route::post('hotels/{hotel}/billing/subscribe', [PlatformBillingController::class, 'subscribe'])->name('hotels.billing.subscribe');
         Route::post('hotels/{hotel}/billing/trial', [PlatformBillingController::class, 'extendTrial'])->name('hotels.billing.trial');
         Route::post('hotels/{hotel}/billing/adjust', [PlatformBillingController::class, 'adjust'])->name('hotels.billing.adjust');

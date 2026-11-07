@@ -2,10 +2,14 @@ import { Head } from '@inertiajs/react';
 import BillingController from '@/actions/App/Domains/Billing/Http/Controllers/BillingController';
 import { CreditBars, PlanSummary } from '@/components/billing/usage';
 import type { Overview } from '@/components/billing/usage';
+import { Invoices } from '@/components/billing/invoices';
+import type { InvoiceRow } from '@/components/billing/invoices';
 import Heading from '@/components/heading';
 import { t } from '@/lib/i18n';
 
 type Props = Overview & {
+    invoices: InvoiceRow[];
+    reduced: boolean;
     plans: {
         id: string;
         code: string;
@@ -113,6 +117,7 @@ export default function Billing(props: Props) {
                         </ul>
                     </section>
                 )}
+                <Invoices invoices={props.invoices} />
             </div>
         </>
     );
