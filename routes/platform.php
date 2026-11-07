@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\Billing\Http\Controllers\PaymentGatewayController;
 use App\Domains\Billing\Http\Controllers\PlatformBillingController;
 use App\Domains\Billing\Http\Controllers\PlatformInvoiceController;
+use App\Domains\Onboarding\Http\Controllers\PlatformSignupController;
 use App\Domains\Platform\Http\Controllers\AiController;
 use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
@@ -27,6 +28,14 @@ Route::middleware(['auth', 'verified', 'platform'])
     ->group(function (): void {
         Route::get('hotels', [HotelController::class, 'index'])->name('hotels.index');
         Route::get('billing', [PlatformBillingController::class, 'index'])->name('billing.index');
+        Route::get('signups', [PlatformSignupController::class, 'index'])->name('signups.index');
+        Route::put('signups/settings', [PlatformSignupController::class, 'settings'])->name('signups.settings');
+        Route::post('signups/codes', [PlatformSignupController::class, 'storeCode'])->name('signups.codes.store');
+        Route::post('signups/codes/{code}/revoke', [PlatformSignupController::class, 'revokeCode'])->name('signups.codes.revoke');
+        Route::post('hotels/{hotel}/suspend', [PlatformSignupController::class, 'suspend'])->name('hotels.suspend');
+        Route::post('country-templates', [PlatformSignupController::class, 'storeTemplate'])->name('country-templates.store');
+        Route::put('country-templates/{template}', [PlatformSignupController::class, 'updateTemplate'])->name('country-templates.update');
+        Route::post('legal/{kind}', [PlatformSignupController::class, 'publishLegal'])->whereIn('kind', ['terms', 'privacy', 'dpa'])->name('legal.publish');
         Route::post('billing/plans', [PlatformBillingController::class, 'storePlan'])->name('billing.plans.store');
         Route::put('billing/plans/{plan}', [PlatformBillingController::class, 'updatePlan'])->name('billing.plans.update');
         Route::post('billing/packs', [PlatformBillingController::class, 'storePack'])->name('billing.packs.store');

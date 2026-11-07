@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             SetLocale::class,
             EnsureAccountActive::class,
             EnsureTwoFactorEnrolled::class,
+            App\Domains\Onboarding\Http\Middleware\EnsureLegalAccepted::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

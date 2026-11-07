@@ -69,6 +69,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
+            'canSignUp' => \App\Domains\Onboarding\Models\SignupSettings::current()->mode !== 'closed',
             'status' => $request->session()->get('status'),
         ]));
 
