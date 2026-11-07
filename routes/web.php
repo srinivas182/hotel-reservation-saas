@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Domains\Billing\Http\Controllers\PaymentReturnController;
 use App\Domains\Events\Http\Controllers\PublicQuoteController;
 use App\Domains\Identity\Http\Controllers\LocaleController;
+use App\Domains\Onboarding\Http\Controllers\LegalController;
+use App\Domains\Onboarding\Http\Controllers\SignupController;
 use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
 use App\Domains\Tenancy\Http\Controllers\SwitchHotelController;
@@ -12,6 +14,17 @@ use App\Domains\WhatsApp\Http\Controllers\WebhookController as WhatsAppWebhookCo
 use App\Http\Controllers\CspReportController;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
+
+// Hotel owners sign up; legal texts are public.
+Route::middleware('guest')->group(function (): void {
+    Route::get('signup', [SignupController::class, 'show'])->name('signup');
+    Route::post('signup', [SignupController::class, 'store'])->middleware('throttle:5,60')->name('signup.store');
+});
+Route::get('legal/{kind}', [LegalController::class, 'show'])->whereIn('kind', ['terms', 'privacy', 'dpa'])->name('legal.show');
+Route::middleware('auth')->group(function (): void {
+    Route::get('legal-accept', [LegalController::class, 'acceptPage'])->name('legal.accept');
+    Route::post('legal-accept', [LegalController::class, 'accept'])->name('legal.accept.store');
+});
 
 Route::get('/', fn () => auth()->check() ? to_route('dashboard') : to_route('login'))->name('home');
 

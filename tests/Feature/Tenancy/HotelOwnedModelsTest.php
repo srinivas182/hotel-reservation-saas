@@ -29,6 +29,10 @@ const HOTEL_SCOPING_ALLOWLIST = [
     // Invoices are issued by the platform (dunning and revenue read across
     // hotels); hotel pages always filter by the current hotel explicitly.
     App\Domains\Billing\Models\Invoice::class,
+    // Sign-up records belong to a user (the hotel is created after the email
+    // check) and are read only by the platform.
+    App\Domains\Onboarding\Models\PendingSignup::class,
+    App\Domains\Onboarding\Models\LegalAcceptance::class,
 ];
 
 it('scopes every model that has a hotel_id column', function (): void {

@@ -14,9 +14,10 @@ import { t } from '@/lib/i18n';
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    canSignUp?: boolean;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({ status, canResetPassword, canSignUp }: Props) {
     return (
         <>
             <Head title={t('Log in')} />
@@ -102,6 +103,14 @@ export default function Login({ status, canResetPassword }: Props) {
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
                     {status}
                 </div>
+            )}
+            {canSignUp && (
+                <p className="text-center text-sm text-muted-foreground">
+                    {t('New hotel?')}{' '}
+                    <a href="/signup" className="underline">
+                        {t('Create an account')}
+                    </a>
+                </p>
             )}
         </>
     );

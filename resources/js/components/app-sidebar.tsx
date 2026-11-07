@@ -6,6 +6,7 @@ import {
     PartyPopper,
     Rocket,
     CreditCard,
+    UserPlus,
     UtensilsCrossed,
     Sparkles,
     Percent,
@@ -32,6 +33,7 @@ import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Cont
 import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
 import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
 import BillingController from '@/actions/App/Domains/Billing/Http/Controllers/BillingController';
+import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
 import PilotDashboardController from '@/actions/App/Domains/Platform/Http/Controllers/PilotDashboardController';
 import RestaurantController from '@/actions/App/Domains/Restaurant/Http/Controllers/RestaurantController';
@@ -106,6 +108,11 @@ const platformNavItems: NavItem[] = [
         title: 'Billing',
         href: PlatformBillingController.index(),
         icon: CreditCard,
+    },
+    {
+        title: 'Sign-ups',
+        href: PlatformSignupController.index(),
+        icon: UserPlus,
     },
 ];
 

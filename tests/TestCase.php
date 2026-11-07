@@ -37,6 +37,12 @@ abstract class TestCase extends BaseTestCase
 
         // Tests never reach real services (Meta, AI providers): every HTTP call must be faked.
         \Illuminate\Support\Facades\Http::preventStrayRequests();
+
+        // Legal texts (S14) are published by a migration; most tests are not
+        // about them, so they start without any. Legal tests publish their own.
+        if (in_array(\Illuminate\Foundation\Testing\RefreshDatabase::class, class_uses_recursive($this), true)) {
+            \Illuminate\Support\Facades\DB::table('legal_documents')->delete();
+        }
     }
 
     protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void

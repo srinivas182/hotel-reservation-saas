@@ -36,6 +36,10 @@ final class AiControls
             throw new AiUnavailable('hotel_off', __('AI is switched off for this hotel.'));
         }
 
+        if (! $this->context->hotel()->status->allowsAccess()) {
+            throw new AiUnavailable('suspended', __('This hotel is suspended.'));
+        }
+
         if (\App\Domains\Billing\Invoices\Dunning::isReduced()) {
             throw new AiUnavailable('reduced_mode', __('An invoice is unpaid: the assistant is paused.'));
         }

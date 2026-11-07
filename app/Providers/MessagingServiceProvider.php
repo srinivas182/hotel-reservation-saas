@@ -31,6 +31,7 @@ final class MessagingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \Illuminate\Support\Facades\Event::listen(\App\Domains\BookingRequests\BookingRequestDecided::class, \App\Domains\BookingRequests\Listeners\TellGuest::class);
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Verified::class, \App\Domains\Onboarding\Listeners\CompleteSignup::class);
         \Illuminate\Support\Facades\Event::listen(\App\Domains\Orders\OrderChanged::class, \App\Domains\Folio\Listeners\PostDeliveredOrder::class);
         \Illuminate\Support\Facades\Event::listen(\App\Domains\Orders\OrderChanged::class, \App\Domains\Orders\Listeners\TellGuestAboutOrderListener::class);
         \Illuminate\Support\Facades\Event::listen(\App\Domains\Restaurant\TableBookingChanged::class, \App\Domains\Restaurant\Listeners\TellGuestAboutTableListener::class);

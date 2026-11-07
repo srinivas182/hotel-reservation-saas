@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S14.1 — Sign-up, country templates, legal texts
+
+#### Added
+
+- Public sign-up page for hotel owners (`/signup`, French and English): owner, hotel, country, city, number of rooms, invitation code, acceptance of the terms, privacy notice and data processing agreement. Platform setting: open, invitation code only (default) or closed; invitation codes with optional use limit and expiry. Protection: hidden spam field, throwaway email domains blocked (setting), 5 attempts per hour per IP, password rules. Login page links to sign-up when it is open.
+- The hotel is created only after the email address is confirmed, from the country template: currency, time zone, language, check-in/out times and taxes, with the trial on the default plan (S13). The platform team is emailed (addresses set in Platform → Sign-ups).
+- 32 country templates: UEMOA and other West African countries, CEMAC, North, East and Southern Africa, with the usual VAT rates as starting values (to be checked with a local accountant; included in prices by default). The platform can edit them or add countries.
+- Versioned legal texts (terms of service, privacy notice, data processing agreement, French and English, Markdown) with default drafts for legal review; public pages `/legal/{terms|privacy|dpa}`. Acceptances are recorded (version, time, IP). Publishing a new version asks owners (all three texts) and staff (privacy notice) to accept it at their next request.
+- Platform → Sign-ups: sign-up rules and notification addresses (also used for go-live requests in S14.3), invitation codes, new hotels (email confirmed, status, trial end) with suspend and reactivate (suspended hotels: no access, no AI; data kept), country templates, legal texts.
+- English and French text.
+
 ### S13.3 — Online payment (Paystack, Flutterwave, CinetPay, PayDunya)
 
 #### Added
