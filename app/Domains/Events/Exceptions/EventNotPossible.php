@@ -21,6 +21,7 @@ final class EventNotPossible extends RuntimeException
             'capacity' => __('The space is too small for this number of people in this layout.'),
             'status' => __('This event cannot be changed that way.'),
             'past' => __('The date has passed.'),
+            'no_quote' => __('The client must accept a quote first.'),
             default => __('This is not possible.'),
         });
     }

@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
+import EventQuoteController from '@/actions/App/Domains/Events/Http/Controllers/EventQuoteController';
 import EventSetupController from '@/actions/App/Domains/Events/Http/Controllers/EventSetupController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -39,6 +40,12 @@ type Props = {
     layouts: Option[];
     locales: string[];
     currency: string;
+    settings: {
+        deposit_percent: number;
+        option_days: number;
+        quote_valid_days: number;
+        terms: Record<string, string>;
+    };
 };
 
 const selectClass =
@@ -348,6 +355,85 @@ function PackageForm({
     );
 }
 
+function SettingsForm({
+    settings,
+    locales,
+}: {
+    settings: Props['settings'];
+    locales: string[];
+}) {
+    const form = useForm(settings);
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                form.put(EventQuoteController.settings.url(), {
+                    preserveScroll: true,
+                });
+            }}
+            className="grid gap-3 rounded-xl border p-3 text-sm sm:grid-cols-3"
+        >
+            <label className="grid gap-1">
+                {t('Deposit before confirming (%)')}
+                <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={form.data.deposit_percent}
+                    onChange={(e) =>
+                        form.setData('deposit_percent', Number(e.target.value))
+                    }
+                />
+            </label>
+            <label className="grid gap-1">
+                {t('Option lasts (days)')}
+                <Input
+                    type="number"
+                    min={1}
+                    value={form.data.option_days}
+                    onChange={(e) =>
+                        form.setData('option_days', Number(e.target.value))
+                    }
+                />
+            </label>
+            <label className="grid gap-1">
+                {t('Quotes valid for (days)')}
+                <Input
+                    type="number"
+                    min={1}
+                    value={form.data.quote_valid_days}
+                    onChange={(e) =>
+                        form.setData('quote_valid_days', Number(e.target.value))
+                    }
+                />
+            </label>
+            {locales.map((l) => (
+                <label key={l} className="grid gap-1 sm:col-span-3">
+                    {t('Event terms (:language)', {
+                        language: l.toUpperCase(),
+                    })}
+                    <textarea
+                        className="min-h-20 rounded-md border border-input bg-transparent px-3 py-2"
+                        value={form.data.terms[l] ?? ''}
+                        onChange={(e) =>
+                            form.setData('terms', {
+                                ...form.data.terms,
+                                [l]: e.target.value,
+                            })
+                        }
+                    />
+                </label>
+            ))}
+            <div>
+                <Button size="sm" disabled={form.processing}>
+                    {t('Save')}
+                </Button>
+            </div>
+        </form>
+    );
+}
+
 export default function EventsSetup({
     spaces,
     blocks,
@@ -356,6 +442,7 @@ export default function EventsSetup({
     layouts,
     locales,
     currency,
+    settings,
 }: Props) {
     const [grid, setGrid] = useState<Record<string, string>>(() =>
         Object.fromEntries(
@@ -389,6 +476,14 @@ export default function EventsSetup({
                     title={t('Spaces, prices and packages')}
                     description={t('What event quotes are built from.')}
                 />
+
+                <section className="flex flex-col gap-2">
+                    <Heading
+                        variant="small"
+                        title={t('Deposits, options and terms')}
+                    />
+                    <SettingsForm settings={settings} locales={locales} />
+                </section>
 
                 <section className="flex flex-col gap-2">
                     <Heading

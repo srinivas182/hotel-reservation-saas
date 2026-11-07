@@ -6,6 +6,8 @@ namespace App\Domains\Folio;
 
 use App\Domains\Audit\Audit;
 use App\Domains\Bookings\Models\Booking;
+use App\Domains\Events\Models\Event;
+use App\Domains\Events\Models\EventQuote;
 use App\Domains\Finance\Taxes\TaxCalculator;
 use App\Domains\Finance\Taxes\TaxRate;
 use App\Domains\Finance\Taxes\TaxScope;
@@ -33,27 +35,12 @@ final class Folio
     /**
      * @return array{lines: list<array{id: int|null, type: string, description: string, quantity: int, amount_minor: int, tax_minor: int, method: string|null, reference: string|null, reason: string|null, by: string|null, at: string|null, corrected: bool, is_correction: bool}>, charges_minor: int, payments_minor: int, balance_minor: int}
      */
-    public function statement(Booking $booking): array
+    public function statement(Booking|Event $owner): array
     {
         $hotel = $this->context->hotel();
-        $nights = (int) $booking->check_in->diffInDays($booking->check_out);
-        $lines = [[
-            'id' => null,
-            'type' => 'charge',
-            'description' => __('Accommodation: :nights night(s)', ['nights' => $nights]),
-            'quantity' => 1,
-            'amount_minor' => $booking->total_minor,
-            'tax_minor' => 0,
-            'method' => null,
-            'reference' => $booking->reference,
-            'reason' => null,
-            'by' => null,
-            'at' => $booking->check_in->toDateString(),
-            'corrected' => false,
-            'is_correction' => false,
-        ]];
+        $lines = $owner instanceof Booking ? $this->accommodation($owner) : [];
 
-        $stored = FolioLine::query()->with('author')->where('booking_id', $booking->id)->orderBy('created_at')->orderBy('id')->get();
+        $stored = FolioLine::query()->with('author')->where($this->column($owner), $owner->id)->orderBy('created_at')->orderBy('id')->get();
         $corrected = $stored->pluck('corrects_line_id')->filter()->all();
 
         foreach ($stored as $line) {
@@ -87,16 +74,66 @@ final class Folio
         return ['lines' => $lines, 'charges_minor' => $charges, 'payments_minor' => $payments, 'balance_minor' => $charges - $payments];
     }
 
-    public function balance(Booking $booking): int
+    public function payments(Booking|Event $owner): int
     {
-        return $this->statement($booking)['balance_minor'];
+        return (int) FolioLine::query()->where($this->column($owner), $owner->id)->where('type', 'payment')->sum('amount_minor');
+    }
+
+    /**
+     * Post an accepted event quote to the event's account (once).
+     */
+    public function postQuote(Event $event, EventQuote $quote): ?FolioLine
+    {
+        try {
+            return FolioLine::query()->create([
+                'event_id' => $event->id, 'type' => 'charge', 'source' => 'quote', 'source_id' => (string) $quote->id,
+                'description' => (string) __('Quote V:version', ['version' => $quote->version]),
+                'amount_minor' => $quote->total_minor, 'tax_minor' => $quote->tax_minor, 'reference' => $event->reference,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return null;
+        }
+    }
+
+    private function column(Booking|Event $owner): string
+    {
+        return $owner instanceof Booking ? 'booking_id' : 'event_id';
+    }
+
+    /**
+     * @return list<array{id: int|null, type: string, description: string, quantity: int, amount_minor: int, tax_minor: int, method: string|null, reference: string|null, reason: string|null, by: string|null, at: string|null, corrected: bool, is_correction: bool}>
+     */
+    private function accommodation(Booking $booking): array
+    {
+        $nights = (int) $booking->check_in->diffInDays($booking->check_out);
+
+        return [[
+            'id' => null,
+            'type' => 'charge',
+            'description' => __('Accommodation: :nights night(s)', ['nights' => $nights]),
+            'quantity' => 1,
+            'amount_minor' => $booking->total_minor,
+            'tax_minor' => 0,
+            'method' => null,
+            'reference' => $booking->reference,
+            'reason' => null,
+            'by' => null,
+            'at' => $booking->check_in->toDateString(),
+            'corrected' => false,
+            'is_correction' => false,
+        ]];
+    }
+
+    public function balance(Booking|Event $owner): int
+    {
+        return $this->statement($owner)['balance_minor'];
     }
 
     /**
      * An extra charge (minibar, laundry…), with the taxes of a scope added
      * as the hotel set them up.
      */
-    public function charge(Booking $booking, string $description, int $quantity, Money $unitPrice, ?TaxScope $scope, User $by): FolioLine
+    public function charge(Booking|Event $owner, string $description, int $quantity, Money $unitPrice, ?TaxScope $scope, User $by): FolioLine
     {
         if ($quantity < 1 || $unitPrice->isNegativeOrZero()) {
             throw new InvalidArgumentException('A charge needs a quantity and a positive price.');
@@ -113,31 +150,31 @@ final class Folio
         }
 
         $line = FolioLine::query()->create([
-            'booking_id' => $booking->id, 'type' => 'charge', 'source' => 'manual',
+            $this->column($owner) => $owner->id, 'type' => 'charge', 'source' => 'manual',
             'description' => $description, 'quantity' => $quantity,
             'amount_minor' => $total->getMinorAmount()->toInt(), 'tax_minor' => $tax->getMinorAmount()->toInt(),
             'created_by' => $by->getKey(),
         ]);
 
-        Audit::record('folio.charge', 'Charge added to the room bill', subject: $booking, causer: $by, properties: ['line' => $line->id, 'description' => $description, 'amount_minor' => $line->amount_minor]);
+        Audit::record('folio.charge', 'Charge added to the room bill', subject: $owner, causer: $by, properties: ['line' => $line->id, 'description' => $description, 'amount_minor' => $line->amount_minor]);
 
         return $line;
     }
 
-    public function pay(Booking $booking, Money $amount, string $method, ?string $reference, User $by): FolioLine
+    public function pay(Booking|Event $owner, Money $amount, string $method, ?string $reference, User $by): FolioLine
     {
         if ($amount->isNegativeOrZero()) {
             throw new InvalidArgumentException('A payment must be positive.');
         }
 
         $line = FolioLine::query()->create([
-            'booking_id' => $booking->id, 'type' => 'payment', 'source' => 'manual',
+            $this->column($owner) => $owner->id, 'type' => 'payment', 'source' => 'manual',
             'description' => (string) __('Payment: :method', ['method' => RestaurantSettings::methodLabel($method)]),
             'amount_minor' => $amount->getMinorAmount()->toInt(), 'method' => $method, 'reference' => $reference,
             'created_by' => $by->getKey(),
         ]);
 
-        Audit::record('folio.payment', 'Payment recorded on the room bill', subject: $booking, causer: $by, properties: ['line' => $line->id, 'method' => $method, 'amount_minor' => $line->amount_minor, 'reference' => $reference]);
+        Audit::record('folio.payment', 'Payment recorded on the room bill', subject: $owner, causer: $by, properties: ['line' => $line->id, 'method' => $method, 'amount_minor' => $line->amount_minor, 'reference' => $reference]);
 
         return $line;
     }
@@ -153,6 +190,7 @@ final class Folio
 
         $correction = FolioLine::query()->create([
             'booking_id' => $line->booking_id,
+            'event_id' => $line->event_id,
             'type' => $line->type === 'payment' ? 'payment' : 'correction',
             'source' => 'manual',
             'description' => (string) __('Correction: :description', ['description' => $line->description]),
@@ -164,7 +202,7 @@ final class Folio
             'created_by' => $by->getKey(),
         ]);
 
-        Audit::record('folio.correction', 'Room bill line corrected', subject: Booking::query()->find($line->booking_id), causer: $by, properties: ['line' => $line->id, 'reason' => $reason, 'amount_minor' => $correction->amount_minor]);
+        Audit::record('folio.correction', 'Room bill line corrected', subject: $line->booking_id !== null ? Booking::query()->find($line->booking_id) : Event::query()->find($line->event_id), causer: $by, properties: ['line' => $line->id, 'reason' => $reason, 'amount_minor' => $correction->amount_minor]);
 
         return $correction;
     }

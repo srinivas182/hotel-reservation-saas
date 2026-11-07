@@ -38,3 +38,23 @@ function eventFor(Hotel $hotel, EventSpace $space, EventBlock $block, string $da
         'date' => $date, 'event_space_id' => $space->id, 'event_block_id' => $block->id, 'people' => $people, 'layout' => $layout,
     ]));
 }
+
+/**
+ * A sent and accepted quote for the event (a single free line), with the
+ * deposit recorded, so the event can be confirmed.
+ */
+function acceptQuoteAndPayDeposit(Hotel $hotel, Event $event, App\Models\User $user, int $amountMinor = 100000): App\Domains\Events\Models\EventQuote
+{
+    return app(TenantContext::class)->run($hotel, function () use ($hotel, $event, $user, $amountMinor) {
+        $quotes = app(App\Domains\Events\Quotes::class);
+        $quote = $quotes->create($event, [['kind' => 'free', 'description' => 'Forfait', 'quantity' => 1, 'unit_price' => $amountMinor]], 0, null, null, null, $user);
+        $quotes->send($quote, $user);
+        $quotes->accept($quote->fresh(), 'Awa Koné', null, null, 'staff', $user);
+        $deposit = $quotes->depositDue($quote->fresh());
+        if ($deposit > 0) {
+            app(App\Domains\Folio\Folio::class)->pay($event, Brick\Money\Money::ofMinor($deposit, $hotel->currency), 'cash', null, $user);
+        }
+
+        return $quote->fresh();
+    });
+}

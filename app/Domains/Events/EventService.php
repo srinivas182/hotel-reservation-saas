@@ -9,11 +9,14 @@ use App\Domains\Events\Exceptions\EventNotPossible;
 use App\Domains\Events\Models\Event;
 use App\Domains\Events\Models\EventBlock;
 use App\Domains\Events\Models\EventSpace;
+use App\Domains\Finance\Money\MoneyFormatter;
+use App\Domains\Folio\Folio;
 use App\Domains\StaffAlerts\AlertKind;
 use App\Domains\StaffAlerts\StaffAlerts;
 use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
 use App\Models\User;
+use Brick\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -57,7 +60,7 @@ final class EventService
             throw EventNotPossible::because('status');
         }
 
-        $until ??= now()->addDays(self::OPTION_DAYS)->toImmutable();
+        $until ??= now()->addDays(Models\EventSettings::current()->option_days)->toImmutable();
 
         DB::transaction(function () use ($event, $until): void {
             [$space, $block] = $this->lockAndLoad($event);
@@ -79,7 +82,15 @@ final class EventService
             throw EventNotPossible::because('status');
         }
 
-        DB::transaction(function () use ($event): void {
+        // An accepted quote and the deposit come first.
+        $quote = app(Quotes::class)->accepted($event) ?? throw EventNotPossible::because('no_quote');
+        $deposit = app(Quotes::class)->depositDue($quote);
+
+        if (app(Folio::class)->payments($event) < $deposit) {
+            throw new EventNotPossible('deposit', (string) __('Record the deposit of :amount first.', ['amount' => MoneyFormatter::format(Money::ofMinor($deposit, $quote->currency), $this->context->hotel()->default_locale)]));
+        }
+
+        DB::transaction(function () use ($event, $quote): void {
             [$space, $block] = $this->lockAndLoad($event);
 
             if ($this->availability->clash($space, $block, $event->date, $event->id) !== null) {
@@ -87,6 +98,7 @@ final class EventService
             }
 
             $event->forceFill(['status' => EventStatus::Confirmed, 'waitlisted' => false, 'waitlisted_at' => null, 'option_until' => null])->save();
+            app(Folio::class)->postQuote($event, $quote);
         });
 
         Audit::record('events.confirmed', 'Event confirmed', subject: $event, causer: $by);

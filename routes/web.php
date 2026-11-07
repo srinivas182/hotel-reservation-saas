@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Events\Http\Controllers\PublicQuoteController;
 use App\Domains\Identity\Http\Controllers\LocaleController;
 use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
@@ -16,6 +17,12 @@ Route::get('/', fn () => auth()->check() ? to_route('dashboard') : to_route('log
 Route::post('locale', LocaleController::class)->middleware('throttle:30,1')->name('locale.update');
 
 Route::get('health', HealthController::class)->middleware('throttle:30,1')->name('health');
+
+// The client's private quote page (the link is the key).
+Route::middleware('throttle:30,1')->group(function (): void {
+    Route::get('q/{token}', [PublicQuoteController::class, 'show'])->name('quotes.public');
+    Route::post('q/{token}', [PublicQuoteController::class, 'accept'])->name('quotes.public.accept');
+});
 
 // Public menu pages (no login, no personal data), linked from WhatsApp and QR codes.
 Route::middleware('throttle:120,1')->group(function (): void {

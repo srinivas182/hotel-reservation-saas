@@ -31,6 +31,8 @@ export type Folio = {
     can_charge: boolean;
     can_pay: boolean;
     currency: string;
+    charge_url?: string;
+    pay_url?: string;
 };
 
 const selectClass =
@@ -39,8 +41,10 @@ const selectClass =
 export function RoomBill({
     bookingId,
     folio,
+    title,
 }: {
     bookingId: string;
+    title?: string;
     folio: Folio;
 }) {
     const [panel, setPanel] = useState<'charge' | 'payment' | null>(null);
@@ -59,7 +63,7 @@ export function RoomBill({
     return (
         <section className="flex flex-col gap-2 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <Heading variant="small" title={t('Room bill')} />
+                <Heading variant="small" title={title ?? t('Room bill')} />
                 <div className="flex gap-2">
                     {folio.can_charge && (
                         <Button
@@ -102,13 +106,17 @@ export function RoomBill({
                             ...d,
                             tax_scope: d.tax_scope === '' ? null : d.tax_scope,
                         }));
-                        charge.post(FolioController.charge.url(bookingId), {
-                            preserveScroll: true,
-                            onSuccess: () => {
-                                charge.reset();
-                                setPanel(null);
+                        charge.post(
+                            folio.charge_url ??
+                                FolioController.charge.url(bookingId),
+                            {
+                                preserveScroll: true,
+                                onSuccess: () => {
+                                    charge.reset();
+                                    setPanel(null);
+                                },
                             },
-                        });
+                        );
                     }}
                     className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
                 >
@@ -177,13 +185,16 @@ export function RoomBill({
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        payment.post(FolioController.pay.url(bookingId), {
-                            preserveScroll: true,
-                            onSuccess: () => {
-                                payment.reset();
-                                setPanel(null);
+                        payment.post(
+                            folio.pay_url ?? FolioController.pay.url(bookingId),
+                            {
+                                preserveScroll: true,
+                                onSuccess: () => {
+                                    payment.reset();
+                                    setPanel(null);
+                                },
                             },
-                        });
+                        );
                     }}
                     className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
                 >

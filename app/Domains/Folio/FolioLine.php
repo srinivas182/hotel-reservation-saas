@@ -16,7 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property string $hotel_id
- * @property string $booking_id
+ * @property string|null $booking_id
+ * @property string|null $event_id
  * @property string $type charge, payment, correction
  * @property string $source manual, order
  * @property string|null $source_id
@@ -38,7 +39,7 @@ class FolioLine extends Model
 
     public const UPDATED_AT = null;
 
-    protected $fillable = ['booking_id', 'type', 'source', 'source_id', 'description', 'quantity', 'amount_minor', 'tax_minor', 'method', 'reference', 'reason', 'corrects_line_id', 'created_by'];
+    protected $fillable = ['booking_id', 'event_id', 'type', 'source', 'source_id', 'description', 'quantity', 'amount_minor', 'tax_minor', 'method', 'reference', 'reason', 'corrects_line_id', 'created_by'];
 
     /**
      * @return array<string, string>

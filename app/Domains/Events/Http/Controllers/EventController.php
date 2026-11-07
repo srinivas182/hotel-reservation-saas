@@ -87,8 +87,84 @@ final class EventController extends Controller
             'blocks' => EventBlock::query()->orderBy('sort_order')->get()->map(fn (EventBlock $b): array => ['id' => $b->id, 'name' => $b->localizedName($locale, $locale)])->values(),
             'types' => collect(EventType::cases())->map(fn (EventType $t): array => ['value' => $t->value, 'label' => $t->label()])->values(),
             'layouts' => collect(Layout::cases())->map(fn (Layout $l): array => ['value' => $l->value, 'label' => $l->label()])->values(),
-            'can' => ['manage' => $request->user()?->can('events.manage') === true],
+            'can' => [
+                'manage' => $request->user()?->can('events.manage') === true,
+                'discount' => $request->user()?->can('events.discount') === true,
+            ],
+            'quotes' => $this->quotes($event),
+            'catalog' => \App\Domains\Events\Models\EventPackage::query()->where('active', true)->orderBy('kind')->orderBy('sort_order')->get()
+                ->map(fn (\App\Domains\Events\Models\EventPackage $p): array => ['id' => $p->id, 'kind' => $p->kind, 'name' => $p->localizedName($locale, $locale), 'unit' => $p->unit])->values(),
+            'account' => $request->user()?->can('folio.view') === true ? $this->account($event) : null,
+            'sheet' => $this->sheet($event),
+            'settings' => (function (): array {
+                $s = \App\Domains\Events\Models\EventSettings::current();
+
+                return ['deposit_percent' => $s->deposit_percent, 'option_days' => $s->option_days, 'quote_valid_days' => $s->quote_valid_days, 'terms' => (object) ($s->terms ?? [])];
+            })(),
+            'quoteLink' => null,
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function quotes(Event $event): array
+    {
+        $hotel = $this->context->hotel();
+        $fmt = fn (int $minor): string => \App\Domains\Finance\Money\MoneyFormatter::format(\Brick\Money\Money::ofMinor($minor, $hotel->currency), $hotel->default_locale);
+
+        return \App\Domains\Events\Models\EventQuote::query()->with('lines')->where('event_id', $event->id)->orderByDesc('version')->get()
+            ->map(fn (\App\Domains\Events\Models\EventQuote $q): array => [
+                'id' => $q->id, 'version' => $q->version, 'status' => $q->status, 'status_label' => match ($q->status) {
+                    'draft' => __('Draft'), 'sent' => __('Sent'), 'accepted' => __('Accepted'), default => __('Replaced'),
+                }, 'valid_until' => $q->valid_until->toDateString(),
+                'subtotal' => $fmt($q->subtotal_minor), 'discount' => $q->discount_minor > 0 ? $fmt($q->discount_minor) : null, 'discount_reason' => $q->discount_reason,
+                'tax' => $fmt($q->tax_minor), 'total' => $fmt($q->total_minor), 'deposit' => $fmt(app(\App\Domains\Events\Quotes::class)->depositDue($q)),
+                'accepted' => $q->accepted_at === null ? null : ['name' => $q->accepted_name, 'title' => $q->accepted_title, 'via' => $q->accepted_via, 'at' => $q->accepted_at->setTimezone($hotel->timezone)->format('Y-m-d H:i')],
+                'lines' => $q->lines->map(fn (\App\Domains\Events\Models\EventQuoteLine $l): array => ['description' => $l->description, 'quantity' => $l->quantity, 'unit' => $fmt($l->unit_price_minor), 'total' => $fmt($l->total_minor)])->values()->all(),
+            ])->values()->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function account(Event $event): array
+    {
+        $hotel = $this->context->hotel();
+        $statement = app(\App\Domains\Folio\Folio::class)->statement($event);
+        $fmt = fn (int $minor): string => \App\Domains\Finance\Money\MoneyFormatter::format(\Brick\Money\Money::ofMinor($minor, $hotel->currency), $hotel->default_locale);
+
+        return [
+            'lines' => array_map(fn (array $l): array => [...$l, 'amount' => $fmt($l['amount_minor']), 'method_label' => $l['method'] === null ? null : \App\Domains\Folio\RestaurantSettings::methodLabel($l['method'])], $statement['lines']),
+            'charges' => $fmt($statement['charges_minor']),
+            'payments' => $fmt($statement['payments_minor']),
+            'balance' => $fmt($statement['balance_minor']),
+            'balance_minor' => $statement['balance_minor'],
+            'statement_url' => route('hotel.events.statement', $event),
+            'charge_url' => route('hotel.events.charges.store', $event),
+            'pay_url' => route('hotel.events.payments.store', $event),
+            'methods' => array_map(fn (string $m): array => ['value' => $m, 'label' => \App\Domains\Folio\RestaurantSettings::methodLabel($m)], \App\Domains\Folio\RestaurantSettings::current()->methods()),
+            'can_charge' => request()->user()?->can('folio.charge') === true,
+            'can_pay' => request()->user()?->can('folio.payments') === true,
+            'currency' => $hotel->currency,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function sheet(Event $event): array
+    {
+        $sheets = \App\Domains\Events\Models\EventSheet::query()->with('author')->where('event_id', $event->id)->orderByDesc('version')->get();
+        $latest = $sheets->first();
+
+        return [
+            'content' => $latest?->content,
+            'version' => $latest?->version,
+            'changes_after_confirmation' => $sheets->where('after_confirmation', true)->count(),
+            'history' => $sheets->map(fn (\App\Domains\Events\Models\EventSheet $s): array => ['version' => $s->version, 'by' => $s->author?->name, 'at' => $s->created_at?->setTimezone($this->context->hotel()->timezone)->format('Y-m-d H:i'), 'after_confirmation' => $s->after_confirmation])->values()->all(),
+            'print_url' => route('hotel.events.sheet', $event),
+        ];
     }
 
     public function store(Request $request, #[CurrentUser] User $user): RedirectResponse
