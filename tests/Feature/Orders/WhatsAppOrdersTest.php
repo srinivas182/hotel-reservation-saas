@@ -163,7 +163,7 @@ it('ships test-suite cases that only expect tools the assistant has', function (
     $expected = collect($suite['cases'])->flatMap(fn (array $c) => $c['expect']['tools'] ?? [])->unique()->values()->all();
 
     expect(array_diff($expected, $tools))->toBe([])
-        ->and(collect($suite['cases'])->count())->toBe(90);
+        ->and(collect($suite['cases'])->count())->toBe(100);
 });
 
 it('runs a stay: order, kitchen, delivery, the bill on WhatsApp, payment and check-out', function (): void {

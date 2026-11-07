@@ -102,6 +102,14 @@ final class EventController extends Controller
                 return ['deposit_percent' => $s->deposit_percent, 'option_days' => $s->option_days, 'quote_valid_days' => $s->quote_valid_days, 'terms' => (object) ($s->terms ?? [])];
             })(),
             'quoteLink' => null,
+            'roomBlocks' => \App\Domains\Events\Models\RoomBlock::query()->with('category')->where('event_id', $event->id)->orderBy('check_in')->get()->map(fn (\App\Domains\Events\Models\RoomBlock $b): array => [
+                'id' => $b->id, 'category' => $b->category?->localizedName($locale, $locale), 'check_in' => $b->check_in->toDateString(), 'check_out' => $b->check_out->toDateString(),
+                'rooms' => $b->rooms, 'booked' => $b->booked_rooms, 'remaining' => $b->remaining(), 'cutoff' => $b->cutoff_date->toDateString(), 'released' => $b->released_at !== null,
+                'rate' => \App\Domains\Finance\Money\MoneyFormatter::format(\Brick\Money\Money::ofMinor($b->rate_minor, $this->context->hotel()->currency), $locale),
+                'bookings' => \App\Domains\Bookings\Models\Booking::query()->with('guest')->where('event_id', $event->id)->where('room_category_id', $b->room_category_id)->get()->map(fn ($bk): array => ['id' => $bk->id, 'reference' => $bk->reference, 'guest' => $bk->guest?->name()])->values()->all(),
+            ])->values(),
+            'categories' => \App\Domains\Rooms\Models\RoomCategory::query()->orderBy('code')->get()->map(fn (\App\Domains\Rooms\Models\RoomCategory $c): array => ['id' => $c->id, 'name' => $c->localizedName($locale, $locale)])->values(),
+            'canBook' => $request->user()?->can('bookings.create') === true,
         ]);
     }
 

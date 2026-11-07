@@ -149,6 +149,8 @@ final class Quotes
             'accepted_title' => $title === null ? null : mb_substr(trim($title), 0, 150), 'accepted_ip' => $ip, 'accepted_via' => $via,
         ])->save();
 
+        Jobs\TellClientAboutQuote::dispatch($quote->event_id, 'accepted');
+
         Audit::record('events.quote_accepted', 'Event quote accepted', subject: $quote->event, causer: $by, properties: ['version' => $quote->version, 'name' => $quote->accepted_name, 'via' => $via]);
 
         return $quote;

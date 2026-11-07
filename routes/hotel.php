@@ -23,6 +23,7 @@ use App\Domains\Events\Http\Controllers\EventController;
 use App\Domains\Events\Http\Controllers\EventQuoteController;
 use App\Domains\Events\Http\Controllers\EventSetupController;
 use App\Domains\Events\Http\Controllers\EventSheetController;
+use App\Domains\Events\Http\Controllers\RoomBlockController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Folio\Http\Controllers\FolioController;
 use App\Domains\GoLive\Http\Controllers\GoLiveController;
@@ -223,6 +224,7 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::get('hotel/events/{event}', [EventController::class, 'show'])->whereUlid('event')->name('hotel.events.show');
         Route::get('hotel/events/{event}/sheet', [EventSheetController::class, 'print'])->name('hotel.events.sheet');
     });
+    Route::middleware(['can:bookings.create', 'throttle:120,1'])->post('hotel/room-blocks/{block}/book', [RoomBlockController::class, 'book'])->name('hotel.room-blocks.book');
     Route::middleware(['can:events.manage', 'throttle:120,1'])->group(function (): void {
         Route::post('hotel/events', [EventController::class, 'store'])->name('hotel.events.store');
         Route::put('hotel/events/{event}', [EventController::class, 'update'])->whereUlid('event')->name('hotel.events.update');
@@ -235,6 +237,8 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/event-quotes/{quote}/send', [EventQuoteController::class, 'send'])->name('hotel.event-quotes.send');
         Route::post('hotel/event-quotes/{quote}/accept', [EventQuoteController::class, 'accept'])->name('hotel.event-quotes.accept');
         Route::post('hotel/events/{event}/sheet', [EventSheetController::class, 'save'])->name('hotel.events.sheet.save');
+        Route::post('hotel/events/{event}/room-blocks', [RoomBlockController::class, 'store'])->name('hotel.events.room-blocks.store');
+        Route::post('hotel/room-blocks/{block}/release', [RoomBlockController::class, 'release'])->name('hotel.room-blocks.release');
         Route::post('hotel/events/spaces', [EventSetupController::class, 'storeSpace'])->name('hotel.events.spaces.store');
         Route::put('hotel/events/spaces/{space}', [EventSetupController::class, 'updateSpace'])->name('hotel.events.spaces.update');
         Route::post('hotel/events/blocks', [EventSetupController::class, 'storeBlock'])->name('hotel.events.blocks.store');

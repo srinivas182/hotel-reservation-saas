@@ -126,6 +126,16 @@ final class StarterTemplates
                 ],
                 'examples' => ['Awa', 'Le Restaurant', 'Friday 13 November', '20:00'],
             ],
+            'event_quote_ready' => [
+                'name' => 'event_quote_ready',
+                'category' => 'UTILITY',
+                'label' => __('Event quote ready'),
+                'bodies' => [
+                    'en' => 'Hello {{1}}, your quote {{2}} from {{3}} is ready. You can read it and accept it here: {{4}} We remain at your disposal.',
+                    'fr' => 'Bonjour {{1}}, votre devis {{2}} de {{3}} est prêt. Vous pouvez le consulter et l\'accepter ici : {{4}} Nous restons à votre disposition.',
+                ],
+                'examples' => ['Awa', 'E-26-0012', 'First Class Lodge', 'https://app.example.com/q/abc'],
+            ],
             'request_expired' => [
                 'name' => 'request_expired',
                 'category' => 'UTILITY',

@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S12.3 — Events: attendee rooms, WhatsApp, test suite
+
+#### Added
+
+- Rooms for attendees: block N rooms of a category for the event's nights at a group rate, until a cut-off date. The block is an inventory hold, so the rooms leave sale at once; reception books attendees from the block (`bookings.create`), each booking marked with the event and priced at the group rate (with the reason recorded); after the cut-off day the unused rooms are back on sale by themselves, and `events:release-room-blocks` (hourly) records the release. Staff can release early.
+- `event_enquiry` assistant tool: collects the date, type, people, time of day, needs, contact name and company, and creates the enquiry for the events team (time block matched by name, WhatsApp number and conversation linked); new staff alert "New event enquiry". Nothing is created from the practice screen. The assistant never gives an event price (no tool returns one, so the price check blocks any amount) and never promises a space is free.
+- WhatsApp messages to the client: the quote link when a quote is sent (template `event_quote_ready` after 24 hours, French and English) and a thank-you when it is accepted; the job carrying the link is encrypted on the queue.
+- The information pack lists event spaces and capacities (no prices); the assistant's rules cover events.
+- Assistant test suite: 10 event cases (100 cases, 39 safety); the test hotel has a conference room and time blocks.
+- A full event scenario test: WhatsApp enquiry, quote, option, link on WhatsApp, online acceptance, deposit, confirmation, event sheet, attendee rooms booked and the rest released at the cut-off.
+- English and French text.
+
 ### S12.2 — Events: quotes, online acceptance, accounts, event sheet
 
 #### Added

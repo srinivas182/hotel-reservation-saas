@@ -6,6 +6,8 @@ import { RoomBill } from '@/components/bookings/room-bill';
 import type { Folio } from '@/components/bookings/room-bill';
 import { EventSheetEditor } from '@/components/events/event-sheet';
 import type { Sheet } from '@/components/events/event-sheet';
+import { RoomBlocks } from '@/components/events/room-blocks';
+import type { Block } from '@/components/events/room-blocks';
 import { EventQuotes } from '@/components/events/quotes';
 import type { Quote } from '@/components/events/quotes';
 import Heading from '@/components/heading';
@@ -55,6 +57,9 @@ type Props = {
     catalog: { id: number; kind: string; name: string; unit: string }[];
     account: Folio | null;
     sheet: Sheet;
+    roomBlocks: Block[];
+    categories: { id: string; name: string }[];
+    canBook: boolean;
 };
 
 const selectClass =
@@ -72,6 +77,9 @@ export default function ShowEvent({
     catalog,
     account,
     sheet,
+    roomBlocks,
+    categories,
+    canBook,
 }: Props) {
     const open = ['enquiry', 'quoted', 'option'].includes(event.status);
     const [optionUntil, setOptionUntil] = useState('');
@@ -437,6 +445,14 @@ export default function ShowEvent({
                         title={t('Event account')}
                     />
                 )}
+                <RoomBlocks
+                    eventId={event.id}
+                    eventDate={event.date}
+                    blocks={roomBlocks}
+                    categories={categories}
+                    canManage={can.manage}
+                    canBook={canBook}
+                />
                 <EventSheetEditor
                     eventId={event.id}
                     sheet={sheet}
