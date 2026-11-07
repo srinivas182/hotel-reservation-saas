@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Billing\Http\Controllers\PaymentGatewayController;
 use App\Domains\Billing\Http\Controllers\PlatformBillingController;
 use App\Domains\Billing\Http\Controllers\PlatformInvoiceController;
 use App\Domains\Platform\Http\Controllers\AiController;
@@ -33,6 +34,8 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::put('billing/settings', [PlatformBillingController::class, 'settings'])->name('billing.settings');
         Route::get('hotels/{hotel}/billing', [PlatformBillingController::class, 'hotel'])->name('hotels.billing');
         Route::post('billing/entities', [PlatformInvoiceController::class, 'storeEntity'])->name('billing.entities.store');
+        Route::post('billing/gateways', [PaymentGatewayController::class, 'store'])->name('billing.gateways.store');
+        Route::put('billing/gateways/{gateway}', [PaymentGatewayController::class, 'update'])->name('billing.gateways.update');
         Route::put('billing/entities/{entity}', [PlatformInvoiceController::class, 'updateEntity'])->name('billing.entities.update');
         Route::put('hotels/{hotel}/billing/details', [PlatformInvoiceController::class, 'details'])->name('hotels.billing.details');
         Route::post('hotels/{hotel}/billing/invoice-now', [PlatformInvoiceController::class, 'issueNow'])->name('hotels.billing.invoice-now');

@@ -57,6 +57,11 @@ final class PlatformBillingController extends Controller
                 'tax_rules' => array_map(fn (array $r): array => ['name' => $r['name'], 'rate' => $r['rate_bps'] / 100], $e->tax_rules ?? []),
             ])->values(),
             'report' => \App\Domains\Billing\Invoices\RevenueReport::build(),
+            'gateways' => \App\Domains\Billing\Payments\PaymentGateway::query()->orderBy('sort_order')->orderBy('id')->get()->map(fn (\App\Domains\Billing\Payments\PaymentGateway $g): array => [
+                'id' => $g->id, 'driver' => $g->driver, 'name' => $g->name, 'mode' => $g->mode, 'currencies' => $g->currencies, 'active' => $g->active,
+                'configured' => array_map(fn (string $f): bool => $g->credential($f) !== '', array_combine(\App\Domains\Billing\Payments\PaymentGateway::DRIVERS[$g->driver]['fields'], \App\Domains\Billing\Payments\PaymentGateway::DRIVERS[$g->driver]['fields'])),
+            ])->values(),
+            'drivers' => collect(\App\Domains\Billing\Payments\PaymentGateway::DRIVERS)->map(fn (array $d, string $key): array => ['value' => $key, 'label' => $d['label'], 'fields' => $d['fields'], 'webhook' => route('webhooks.payments', $key)])->values(),
             'subscriptions' => Subscription::query()->withoutGlobalScopes()->with('plan')->get()->map(fn (Subscription $s): array => [
                 'hotel_id' => $s->hotel_id, 'hotel' => Hotel::query()->find($s->hotel_id)?->name, 'plan' => $s->plan?->code, 'status' => $s->status,
                 'period_end' => $s->period_end->toDateString(), 'price_minor' => $s->price_minor, 'currency' => $s->currency,

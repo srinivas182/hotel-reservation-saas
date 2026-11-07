@@ -13,6 +13,7 @@ use App\Domains\Audit\Http\Controllers\HotelAuditController;
 use App\Domains\Availability\Http\Controllers\CalendarController;
 use App\Domains\Availability\Http\Controllers\InventoryController;
 use App\Domains\Billing\Http\Controllers\BillingController;
+use App\Domains\Billing\Http\Controllers\HotelPaymentController;
 use App\Domains\BookingRequests\Http\Controllers\BookingRequestController;
 use App\Domains\Bookings\Http\Controllers\BookingActionController;
 use App\Domains\Bookings\Http\Controllers\BookingController;
@@ -251,6 +252,11 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
 
     Route::middleware('can:billing.view')->get('hotel/billing', BillingController::class)->name('hotel.billing');
     Route::middleware('can:billing.view')->get('hotel/billing/invoices/{invoice}', [BillingController::class, 'invoice'])->name('hotel.billing.invoice');
+    Route::middleware(['can:billing.manage', 'throttle:20,1'])->group(function (): void {
+        Route::post('hotel/billing/invoices/{invoice}/pay', [HotelPaymentController::class, 'payInvoice'])->name('hotel.billing.invoices.pay');
+        Route::post('hotel/billing/packs/{pack}/buy', [HotelPaymentController::class, 'buyPack'])->name('hotel.billing.packs.buy');
+        Route::put('hotel/billing/plan', [HotelPaymentController::class, 'changePlan'])->name('hotel.billing.plan');
+    });
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');

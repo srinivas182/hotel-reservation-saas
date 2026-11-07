@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S13.3 — Online payment (Paystack, Flutterwave, CinetPay, PayDunya)
+
+#### Added
+
+- Online payment providers set by the platform (Platform → Billing): Paystack, Flutterwave, CinetPay and PayDunya, each with test or live mode, its keys (stored encrypted, write-only), the currencies it accepts and on/off; the notification URL to give each provider is shown.
+- Hotel → Billing (`billing.manage`, owner only): pay an open invoice or buy a credit pack with any active provider in the hotel's currency (redirect to the provider's page), and change plan (an upgrade is invoiced at once).
+- Payments count only after a server-to-server confirmation from the provider, for exactly the expected amount and currency; notifications are authenticated (Paystack HMAC-SHA512 signature, Flutterwave secret hash, CinetPay site ID, PayDunya master-key hash) and only trigger that check. A payment is applied once whatever the number of notifications; mismatches are refused and audited. Paying lifts reduced mode at once.
+- Credit packs bought online: credits are added only after payment, with their own paid invoice.
+- `docs/payments.md`: set-up per provider and how payments are counted.
+- English and French text.
+
 ### S13.2 — Invoices, payments, reduced mode
 
 #### Added

@@ -35,7 +35,10 @@ final class Invoicing
     /**
      * Invoice everything the current hotel owes and has not been invoiced.
      */
-    public function issueDue(?User $by = null): ?Invoice
+    /**
+     * @param  list<int>|null  $onlyChangeIds  invoice just these changes (e.g. a pack paid online)
+     */
+    public function issueDue(?User $by = null, ?array $onlyChangeIds = null): ?Invoice
     {
         $hotel = $this->context->hotel();
         $subscription = Subscription::query()->first();
@@ -44,7 +47,7 @@ final class Invoicing
             return null;
         }
 
-        $changes = SubscriptionChange::query()->whereNull('invoiced_at')->orderBy('id')->get();
+        $changes = SubscriptionChange::query()->whereNull('invoiced_at')->when($onlyChangeIds !== null, fn ($q) => $q->whereIn('id', $onlyChangeIds))->orderBy('id')->get();
         // Nothing to charge (trial start, scheduled downgrade…): just mark them.
         $free = $changes->where('amount_minor', '<=', 0);
         if ($free->isNotEmpty()) {
@@ -183,6 +186,23 @@ final class Invoicing
         }
 
         return $invoice;
+    }
+
+    /**
+     * What the hotel pays for an amount once the issuing company's taxes apply.
+     */
+    public function totalFor(int $amountMinor): int
+    {
+        $subscription = Subscription::query()->first();
+        $entity = ($subscription?->billing_entity_id !== null ? BillingEntity::query()->find($subscription->billing_entity_id) : null) ?? BillingEntity::default();
+
+        if ($entity === null) {
+            return $amountMinor;
+        }
+
+        [$subtotal, , $tax] = $this->taxes($entity, $amountMinor);
+
+        return $subtotal + $tax;
     }
 
     /**
