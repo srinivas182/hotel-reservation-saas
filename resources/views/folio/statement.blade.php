@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>{{ __('Statement of account') }} · {{ $booking->reference }}</title>
+    <title>{{ __('Statement of account') }} · {{ $reference }}</title>
     <style>
         body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#111827; margin:0; }
         main { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
@@ -30,17 +30,14 @@
         </div>
         <div style="text-align:right">
             <strong>{{ __('Statement of account') }}</strong><br>
-            <span class="muted">{{ __('Booking') }} {{ $booking->reference }}</span><br>
+            <span class="muted">{{ $referenceLabel }} {{ $reference }}</span><br>
             <span class="muted">{{ now($hotel->timezone)->format('Y-m-d H:i') }}</span>
         </div>
     </header>
 
     <p>
-        <strong>{{ $booking->guest?->name() }}</strong><br>
-        <span class="muted">{{ $booking->check_in->toDateString() }} → {{ $booking->check_out->toDateString() }}
-            @php($rooms = $booking->bookingRooms->map(fn ($r) => $r->room?->number)->filter()->implode(', '))
-            @if ($rooms) · {{ __('Room') }} {{ $rooms }} @endif
-        </span>
+        <strong>{{ $who }}</strong><br>
+        <span class="muted">{{ $when }}</span>
     </p>
 
     <table>

@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S12.2 — Events: quotes, online acceptance, accounts, event sheet
+
+#### Added
+
+- Versioned event quotes built from the space's price for the time block, packages and extras from the catalogue, free lines, a discount (needs `events.discount` and a reason) and the Events tax; valid for a number of days set by the hotel; the hotel's event terms are copied onto each quote. Earlier versions stay readable; sending a new version replaces the previous link.
+- Private quote link (`/q/…`, a 40-character key of which only a hash is stored): a mobile page with the lines, totals, deposit and terms, where the client accepts online with their name, title and a tick for the terms; time and IP are recorded. Expired, replaced or already accepted quotes cannot be accepted. Staff can record an acceptance made on paper.
+- Confirming an event now needs an accepted quote and the deposit (hotel setting, 30% by default) recorded on the event's account; on confirmation the quote total is posted to the account.
+- Event accounts: the room-bill ledger now belongs to a stay or an event (`folio_lines.event_id`; existing room-bill lines are untouched). Extras on the day, payments, corrections and a printable statement work as for room bills.
+- Event sheet for the teams (timings, menu, equipment, notes for kitchen, setup and reception), saved as versions; versions saved after confirmation are flagged and the printed sheet says it was updated.
+- Settings: deposit %, option length, quote validity and event terms per language (Events → Spaces, prices and packages).
+- English and French text.
+
+#### Changed
+
+- The spec proposed renaming `folio_lines`; adding `event_id` instead gives the same result with no data moved, so nothing can be lost.
+
 ### S12.1 — Events: spaces, time blocks, options and enquiries
 
 #### Added

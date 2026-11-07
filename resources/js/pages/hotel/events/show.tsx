@@ -2,6 +2,12 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
+import { RoomBill } from '@/components/bookings/room-bill';
+import type { Folio } from '@/components/bookings/room-bill';
+import { EventSheetEditor } from '@/components/events/event-sheet';
+import type { Sheet } from '@/components/events/event-sheet';
+import { EventQuotes } from '@/components/events/quotes';
+import type { Quote } from '@/components/events/quotes';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +50,11 @@ type Props = {
     blocks: { id: number; name: string }[];
     types: Option[];
     layouts: Option[];
-    can: { manage: boolean };
+    can: { manage: boolean; discount: boolean };
+    quotes: Quote[];
+    catalog: { id: number; kind: string; name: string; unit: string }[];
+    account: Folio | null;
+    sheet: Sheet;
 };
 
 const selectClass =
@@ -58,6 +68,10 @@ export default function ShowEvent({
     types,
     layouts,
     can,
+    quotes,
+    catalog,
+    account,
+    sheet,
 }: Props) {
     const open = ['enquiry', 'quoted', 'option'].includes(event.status);
     const [optionUntil, setOptionUntil] = useState('');
@@ -408,6 +422,26 @@ export default function ShowEvent({
                         </div>
                     )}
                 </form>
+                <EventQuotes
+                    eventId={event.id}
+                    people={event.people}
+                    quotes={quotes}
+                    catalog={catalog}
+                    canManage={can.manage}
+                    canDiscount={can.discount}
+                />
+                {account && (
+                    <RoomBill
+                        bookingId={event.id}
+                        folio={account}
+                        title={t('Event account')}
+                    />
+                )}
+                <EventSheetEditor
+                    eventId={event.id}
+                    sheet={sheet}
+                    canManage={can.manage}
+                />
                 {event.lost_reason && (
                     <p className="text-sm text-muted-foreground">
                         {t('Reason: :reason', { reason: event.lost_reason })}

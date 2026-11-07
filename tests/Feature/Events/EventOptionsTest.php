@@ -67,9 +67,13 @@ it('releases options past their date and moves up the waiting list', function ()
 });
 
 it('confirms only when the space is free, the room is big enough and the date is ahead', function (): void {
-    ($this->in)(fn () => app(EventService::class)->confirm(eventFor($this->hotel, $this->s['grande'], $this->s['evening']), $this->user));
+    $grande = eventFor($this->hotel, $this->s['grande'], $this->s['evening']);
+    acceptQuoteAndPayDeposit($this->hotel, $grande, $this->user);
+    ($this->in)(fn () => app(EventService::class)->confirm($grande, $this->user));
 
-    expect(fn () => ($this->in)(fn () => app(EventService::class)->confirm(eventFor($this->hotel, $this->s['b'], $this->s['evening']), $this->user)))
+    $b = eventFor($this->hotel, $this->s['b'], $this->s['evening']);
+    acceptQuoteAndPayDeposit($this->hotel, $b, $this->user);
+    expect(fn () => ($this->in)(fn () => app(EventService::class)->confirm($b, $this->user)))
         ->toThrow(fn (EventNotPossible $e) => expect($e->reason)->toBe('taken'))
         ->and(fn () => ($this->option)(eventFor($this->hotel, $this->s['a'], $this->s['morning'], people: 50, layout: 'banquet')))
         ->toThrow(fn (EventNotPossible $e) => expect($e->reason)->toBe('capacity'))
@@ -89,6 +93,7 @@ it('takes enquiries and runs the event from the screens', function (): void {
     expect(($this->in)(fn () => $event->fresh()->option_until?->toDateString()))->toBe('2026-11-25');
 
     asStaffOf($this->hotel, $this->user)->get(route('hotel.events', ['month' => '2026-12']))->assertInertia(fn ($page) => $page->has('calendar', 1)->where('calendar.0.day', 12));
+    acceptQuoteAndPayDeposit($this->hotel, $event, $this->user);
     asStaffOf($this->hotel, $this->user)->post(route('hotel.events.confirm', $event))->assertSessionHasNoErrors();
     expect(($this->in)(fn () => $event->fresh()->status))->toBe(EventStatus::Confirmed);
 

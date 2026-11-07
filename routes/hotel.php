@@ -18,8 +18,11 @@ use App\Domains\Bookings\Http\Controllers\BookingController;
 use App\Domains\Bookings\Http\Controllers\BookingExportController;
 use App\Domains\Bookings\Http\Controllers\TodayController;
 use App\Domains\Conversations\Http\Controllers\InboxController;
+use App\Domains\Events\Http\Controllers\EventAccountController;
 use App\Domains\Events\Http\Controllers\EventController;
+use App\Domains\Events\Http\Controllers\EventQuoteController;
 use App\Domains\Events\Http\Controllers\EventSetupController;
+use App\Domains\Events\Http\Controllers\EventSheetController;
 use App\Domains\Finance\Http\Controllers\TaxRateController;
 use App\Domains\Folio\Http\Controllers\FolioController;
 use App\Domains\GoLive\Http\Controllers\GoLiveController;
@@ -181,6 +184,9 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/restaurant/orders', [OrderBoardController::class, 'store'])->name('hotel.restaurant.orders.store');
         Route::post('hotel/restaurant/orders/{order}/status', [OrderBoardController::class, 'status'])->name('hotel.restaurant.orders.status');
     });
+    Route::middleware('can:folio.view')->get('hotel/events/{event}/statement', [EventAccountController::class, 'statement'])->name('hotel.events.statement');
+    Route::middleware(['can:folio.charge', 'throttle:120,1'])->post('hotel/events/{event}/charges', [EventAccountController::class, 'charge'])->name('hotel.events.charges.store');
+    Route::middleware(['can:folio.payments', 'throttle:120,1'])->post('hotel/events/{event}/payments', [EventAccountController::class, 'pay'])->name('hotel.events.payments.store');
     Route::middleware('can:folio.view')->get('hotel/bookings/{booking}/statement', [FolioController::class, 'statement'])->name('hotel.bookings.statement');
     Route::middleware(['can:folio.charge', 'throttle:120,1'])->post('hotel/bookings/{booking}/charges', [FolioController::class, 'charge'])->name('hotel.bookings.charges.store');
     Route::middleware(['can:folio.payments', 'throttle:120,1'])->post('hotel/bookings/{booking}/payments', [FolioController::class, 'pay'])->name('hotel.bookings.payments.store');
@@ -215,6 +221,7 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
     Route::middleware('can:events.view')->group(function (): void {
         Route::get('hotel/events', [EventController::class, 'index'])->name('hotel.events');
         Route::get('hotel/events/{event}', [EventController::class, 'show'])->whereUlid('event')->name('hotel.events.show');
+        Route::get('hotel/events/{event}/sheet', [EventSheetController::class, 'print'])->name('hotel.events.sheet');
     });
     Route::middleware(['can:events.manage', 'throttle:120,1'])->group(function (): void {
         Route::post('hotel/events', [EventController::class, 'store'])->name('hotel.events.store');
@@ -223,6 +230,11 @@ Route::middleware(['auth', 'verified', 'hotel'])->group(function (): void {
         Route::post('hotel/events/{event}/confirm', [EventController::class, 'confirm'])->name('hotel.events.confirm');
         Route::post('hotel/events/{event}/close', [EventController::class, 'close'])->name('hotel.events.close');
         Route::get('hotel/events/setup', [EventSetupController::class, 'index'])->name('hotel.events.setup');
+        Route::put('hotel/events/settings', [EventQuoteController::class, 'settings'])->name('hotel.events.settings');
+        Route::post('hotel/events/{event}/quotes', [EventQuoteController::class, 'store'])->name('hotel.events.quotes.store');
+        Route::post('hotel/event-quotes/{quote}/send', [EventQuoteController::class, 'send'])->name('hotel.event-quotes.send');
+        Route::post('hotel/event-quotes/{quote}/accept', [EventQuoteController::class, 'accept'])->name('hotel.event-quotes.accept');
+        Route::post('hotel/events/{event}/sheet', [EventSheetController::class, 'save'])->name('hotel.events.sheet.save');
         Route::post('hotel/events/spaces', [EventSetupController::class, 'storeSpace'])->name('hotel.events.spaces.store');
         Route::put('hotel/events/spaces/{space}', [EventSetupController::class, 'updateSpace'])->name('hotel.events.spaces.update');
         Route::post('hotel/events/blocks', [EventSetupController::class, 'storeBlock'])->name('hotel.events.blocks.store');

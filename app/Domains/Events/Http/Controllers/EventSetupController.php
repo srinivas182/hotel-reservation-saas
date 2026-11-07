@@ -51,6 +51,11 @@ final class EventSetupController extends Controller
             ])->values(),
             'layouts' => collect(Layout::cases())->map(fn (Layout $l): array => ['value' => $l->value, 'label' => $l->label()])->values(),
             'locales' => $locales,
+            'settings' => (function (): array {
+                $s = \App\Domains\Events\Models\EventSettings::current();
+
+                return ['deposit_percent' => $s->deposit_percent, 'option_days' => $s->option_days, 'quote_valid_days' => $s->quote_valid_days, 'terms' => (object) ($s->terms ?? [])];
+            })(),
             'currency' => $this->context->hotel()->currency,
         ]);
     }

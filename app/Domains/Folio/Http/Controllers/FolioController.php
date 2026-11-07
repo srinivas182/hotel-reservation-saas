@@ -89,12 +89,17 @@ final class FolioController extends Controller
         $statement = $this->folio->statement($booking);
         $money = fn (int $minor): string => MoneyFormatter::format(Money::ofMinor($minor, $booking->currency ?? $hotel->currency), $hotel->default_locale);
 
+        $rooms = $booking->bookingRooms->map(fn ($r) => $r->room?->number)->filter()->implode(', ');
+
         return view('folio.statement', [
             'hotel' => $hotel,
             'settings' => HotelSettings::current(),
-            'booking' => $booking,
             'statement' => $statement,
             'money' => $money,
+            'reference' => $booking->reference,
+            'referenceLabel' => __('Booking'),
+            'who' => (string) $booking->guest?->name(),
+            'when' => $booking->check_in->toDateString().' → '.$booking->check_out->toDateString().($rooms !== '' ? ' · '.__('Room').' '.$rooms : ''),
         ]);
     }
 
