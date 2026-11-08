@@ -531,7 +531,7 @@ export default function EventsSetup({
                             variant="small"
                             title={t('Space prices (:currency)', { currency })}
                         />
-                        <div className="overflow-x-auto">
+                        <div tabIndex={0} className="overflow-x-auto">
                             <table className="text-sm">
                                 <thead>
                                     <tr>

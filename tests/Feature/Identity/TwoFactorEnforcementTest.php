@@ -25,7 +25,7 @@ it('sends hotel owners without two-factor to the security page', function (): vo
 it('lets owners and platform staff in once two-factor is confirmed', function (): void {
     $admin = User::factory()->platformAdmin()->withTwoFactor()->create();
 
-    $this->actingAs($admin)->get(route('dashboard'))->assertOk();
+    $this->actingAs($admin)->get(route('dashboard'))->assertRedirect(route('platform.home')); // let in (platform staff start on the platform home)
 });
 
 it('does not require two-factor for regular staff', function (): void {

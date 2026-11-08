@@ -12,6 +12,11 @@
 - **Migrations add, never remove or rename.** `tests/Unit/MigrationSafetyTest.php` fails on a dropped or renamed column or table, or a column change, inside `up()` unless the same `up()` explains why it is safe with `// migration-safety: <reason>`. A rollback switches code back but does not reverse migrations, so the previous release must keep working on the new schema.
 - Removing something takes two releases: first stop using it, then drop it in a later release with a `migration-safety` note.
 
+## Browser tests
+
+- `tests/e2e` (Playwright): run in CI on pull requests that touch screens, and nightly.
+- Locally: prepare a simulated staging (`SIMULATION_MODE=true php artisan e2e:prepare`), start `php artisan serve` and a queue worker, then `npx playwright test` (set `PW_CHROMIUM_PATH` to use a local Chromium).
+
 ## Releasing (staging first, then production)
 
 1. Update `VERSION` and the `CHANGELOG.md` heading; merge.

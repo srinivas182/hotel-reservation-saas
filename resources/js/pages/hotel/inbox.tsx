@@ -398,9 +398,10 @@ function Bubble({
                 <div
                     className={cn(
                         'mt-1 flex items-center justify-end gap-1 text-[11px]',
+                        // Readable on the grey bubble (WCAG AA contrast).
                         out
                             ? 'text-primary-foreground/80'
-                            : 'text-muted-foreground',
+                            : 'text-foreground/80',
                     )}
                 >
                     {out && message.source === 'business_app' && (
@@ -784,7 +785,7 @@ export default function Inbox({
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </form>
-                        <div className="flex gap-1 text-xs">
+                        <div className="flex flex-wrap gap-1 text-xs">
                             {[
                                 ['', t('All')],
                                 ['unread', t('Unread')],

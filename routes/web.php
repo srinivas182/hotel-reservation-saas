@@ -77,9 +77,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('account/hotels/{hotel}/reopen', [AccountHotelsController::class, 'reopen'])->name('account.hotels.reopen');
     Route::get('account/hotels/{hotel}/export', [AccountHotelsController::class, 'export'])->name('account.hotels.export');
     // Hotel staff who handle bookings start on the Today screen.
-    Route::get('dashboard', fn () => request()->user()?->can('bookings.view') === true
-        ? to_route('hotel.today')
-        : Inertia\Inertia::render('dashboard'))->name('dashboard');
+    // Platform staff without a hotel start on the platform home.
+    Route::get('dashboard', fn () => match (true) {
+        request()->user()?->can('bookings.view') === true => to_route('hotel.today'),
+        request()->user()?->isPlatformStaff() === true => to_route('platform.home'),
+        default => Inertia\Inertia::render('dashboard'),
+    })->name('dashboard');
 
     Route::post('hotels/{hotel}/switch', SwitchHotelController::class)->name('hotels.switch');
 });

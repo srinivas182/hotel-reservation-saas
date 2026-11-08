@@ -145,7 +145,10 @@ export default function StaffIndex({
                         variant="small"
                         title={t('Team (:count)', { count: members.length })}
                     />
-                    <div className="overflow-x-auto rounded-xl border">
+                    <div
+                        tabIndex={0}
+                        className="overflow-x-auto rounded-xl border"
+                    >
                         <table className="w-full text-sm">
                             <thead className="bg-muted/50 text-left text-muted-foreground">
                                 <tr>

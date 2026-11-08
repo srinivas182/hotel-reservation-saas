@@ -333,7 +333,10 @@ export default function Events({
                             {t('Add event spaces to see the calendar.')}
                         </p>
                     ) : (
-                        <div className="overflow-x-auto rounded-xl border">
+                        <div
+                            tabIndex={0}
+                            className="overflow-x-auto rounded-xl border"
+                        >
                             <table className="w-full min-w-max text-xs">
                                 <thead>
                                     <tr>

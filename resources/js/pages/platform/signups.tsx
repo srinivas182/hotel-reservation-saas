@@ -476,16 +476,17 @@ function LegalEditor({ doc }: { doc: Legal }) {
         <details className="rounded-xl border p-2 text-sm">
             <summary className="cursor-pointer">
                 {doc.label} ·{' '}
-                {t('version :version', { version: doc.version ?? 0 })}{' '}
-                <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline"
-                >
-                    {t('View')}
-                </a>
+                {t('version :version', { version: doc.version ?? 0 })}
             </summary>
+            {/* Outside the summary: links may not sit inside it (accessibility). */}
+            <a
+                href={doc.url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-block underline"
+            >
+                {t('View')}
+            </a>
             <form
                 onSubmit={(e) => {
                     e.preventDefault();

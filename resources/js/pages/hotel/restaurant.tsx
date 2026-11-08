@@ -347,7 +347,7 @@ export default function Restaurant({
                         )}
 
                         {Object.keys(occupancy).length > 0 && (
-                            <div className="overflow-x-auto">
+                            <div tabIndex={0} className="overflow-x-auto">
                                 <div className="flex min-w-max gap-1">
                                     {Object.entries(occupancy).map(
                                         ([time, used]) => (

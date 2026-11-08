@@ -108,7 +108,7 @@ export default function Usage({
                     </div>
                 </section>
 
-                <div className="overflow-x-auto rounded-xl border">
+                <div tabIndex={0} className="overflow-x-auto rounded-xl border">
                     <table className="w-full text-sm">
                         <thead className="bg-muted/50 text-left text-muted-foreground">
                             <tr>

@@ -522,7 +522,7 @@ export default function Today(props: Props) {
                                         {room.state === 'out_of_service'
                                             ? t('Out of service')
                                             : room.state === 'free'
-                                              ? t('Free')
+                                              ? t('Vacant')
                                               : room.guest}
                                     </div>
                                 </>

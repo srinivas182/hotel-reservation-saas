@@ -331,7 +331,7 @@ final class InboxController extends Controller
                 'sort' => $note->created_at?->toIso8601String(),
             ])->values(),
             'needs_attention' => $conversation->needs_attention,
-            'handover_reason' => $conversation->handover_reason,
+            'handover_reason' => \App\Domains\Conversations\HandoverReason::label($conversation->handover_reason),
             'window_open' => $conversation->windowOpen(),
             'window_closes_at' => $conversation->windowClosesAt()?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             'bookings' => $guest === null ? [] : Booking::query()
