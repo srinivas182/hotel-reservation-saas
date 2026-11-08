@@ -92,6 +92,51 @@ final class Signups
     }
 
     /**
+     * A hotel from its country template, owned by the user, on a trial.
+     *
+     * @param  array{hotel_name: string, country_code: string, city: string, phone: string, rooms: int}  $details
+     */
+    public function createHotel(User $user, array $details, string $source): Hotel
+    {
+        $template = CountryTemplate::query()->where('country_code', $details['country_code'])->firstOrFail();
+
+        $hotel = $this->hotels->create([
+            'name' => $details['hotel_name'],
+            'country_code' => $template->country_code,
+            'timezone' => $template->timezone,
+            'currency' => $template->currency,
+            'default_locale' => $template->locale,
+            'owner_email' => $user->email,
+            'status' => HotelStatus::Trial->value,
+        ]);
+        $hotel->forceFill(['signup_source' => $source])->save();
+
+        app(TenantContext::class)->run($hotel, function () use ($template, $details): void {
+            HotelSettings::current()->update([
+                'city' => $details['city'],
+                'phone_e164' => $details['phone'],
+                'check_in_time' => $template->check_in,
+                'check_out_time' => $template->check_out,
+                'enabled_locales' => array_values(array_unique([$template->locale, 'fr', 'en'])),
+            ]);
+
+            foreach ($template->tax_rules as $i => $rule) {
+                TaxRate::query()->create([
+                    'name' => ['fr' => $rule['name'], 'en' => $rule['name']],
+                    'type' => 'percentage',
+                    'percentage_bps' => (int) round(((float) $rule['rate']) * 100),
+                    'inclusive' => (bool) $rule['inclusive'],
+                    'applies_to' => $rule['applies_to'],
+                    'active' => true,
+                    'sort_order' => $i,
+                ]);
+            }
+        });
+
+        return $hotel;
+    }
+
+    /**
      * Create the hotel once the owner's email is confirmed (once).
      */
     public function complete(User $user): ?Hotel
@@ -102,48 +147,14 @@ final class Signups
             return null;
         }
 
-        $details = $pending->details;
-        $template = CountryTemplate::query()->where('country_code', $details['country_code'])->firstOrFail();
-
-        $hotel = DB::transaction(function () use ($pending, $details, $template, $user): Hotel {
-            $hotel = $this->hotels->create([
-                'name' => $details['hotel_name'],
-                'country_code' => $template->country_code,
-                'timezone' => $template->timezone,
-                'currency' => $template->currency,
-                'default_locale' => $template->locale,
-                'owner_email' => $user->email,
-                'status' => HotelStatus::Trial->value,
-            ]);
-            $hotel->forceFill(['signup_source' => $pending->signup_code_id !== null ? 'code' : 'self'])->save();
-
-            app(TenantContext::class)->run($hotel, function () use ($template, $details): void {
-                HotelSettings::current()->update([
-                    'city' => $details['city'],
-                    'phone_e164' => $details['phone'],
-                    'check_in_time' => $template->check_in,
-                    'check_out_time' => $template->check_out,
-                    'enabled_locales' => array_values(array_unique([$template->locale, 'fr', 'en'])),
-                ]);
-
-                foreach ($template->tax_rules as $i => $rule) {
-                    TaxRate::query()->create([
-                        'name' => ['fr' => $rule['name'], 'en' => $rule['name']],
-                        'type' => 'percentage',
-                        'percentage_bps' => (int) round(((float) $rule['rate']) * 100),
-                        'inclusive' => (bool) $rule['inclusive'],
-                        'applies_to' => $rule['applies_to'],
-                        'active' => true,
-                        'sort_order' => $i,
-                    ]);
-                }
-            });
-
+        $hotel = DB::transaction(function () use ($pending, $user): Hotel {
+            $hotel = $this->createHotel($user, $pending->details, $pending->signup_code_id !== null ? 'code' : 'self');
             LegalAcceptance::query()->where('user_id', $user->getKey())->whereNull('hotel_id')->update(['hotel_id' => $hotel->id]);
             $pending->forceFill(['hotel_id' => $hotel->id, 'completed_at' => now()])->save();
 
             return $hotel;
         });
+        $template = CountryTemplate::query()->where('country_code', $pending->details['country_code'])->firstOrFail();
 
         Audit::record('signup.hotel_created', 'Hotel created from a self sign-up', subject: $hotel, causer: $user, properties: ['country' => $template->country_code]);
 

@@ -7,6 +7,7 @@ use App\Domains\Events\Http\Controllers\PublicQuoteController;
 use App\Domains\Identity\Http\Controllers\LocaleController;
 use App\Domains\Onboarding\Http\Controllers\LegalController;
 use App\Domains\Onboarding\Http\Controllers\SignupController;
+use App\Domains\Platform\Http\Controllers\AccountHotelsController;
 use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
 use App\Domains\Tenancy\Http\Controllers\SwitchHotelController;
@@ -69,6 +70,12 @@ Route::post('csp-report', CspReportController::class)
     ->name('csp.report');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // The owner's hotels: add, close, export, reopen (works for closed hotels too).
+    Route::get('account/hotels', [AccountHotelsController::class, 'index'])->name('account.hotels');
+    Route::post('account/hotels', [AccountHotelsController::class, 'store'])->middleware('throttle:5,60')->name('account.hotels.store');
+    Route::post('account/hotels/{hotel}/close', [AccountHotelsController::class, 'close'])->middleware('throttle:5,10')->name('account.hotels.close');
+    Route::post('account/hotels/{hotel}/reopen', [AccountHotelsController::class, 'reopen'])->name('account.hotels.reopen');
+    Route::get('account/hotels/{hotel}/export', [AccountHotelsController::class, 'export'])->name('account.hotels.export');
     // Hotel staff who handle bookings start on the Today screen.
     Route::get('dashboard', fn () => request()->user()?->can('bookings.view') === true
         ? to_route('hotel.today')

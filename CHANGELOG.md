@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S15.3 — Several hotels, closing a hotel, guest data, operations page
+
+#### Added
+
+- My hotels (account menu): owners see all their hotels and **add another** (country template, trial on the default plan, setup checklist; the new hotel opens straight away). Hotel creation is shared with sign-up.
+- Closing a hotel — by the owner (password, typed hotel name, two-step login required) or a super admin (with a reason): status closed (staff lose access), subscription cancelled (nothing new invoiced), assistant off, WhatsApp token removed. A ZIP export is prepared at once (one JSON and one CSV file per table plus uploaded files; WhatsApp credentials, platform notes and support records left out) and can be downloaded by the owner or a super admin. Emails on closure and 30 and 7 days before deletion; `hotels:closures` (daily 03:30) deletes the data 90 days after closure — children before parents, including rows without a hotel_id, so nothing is left behind — keeping invoices, the subscription record and the closure record; the hotel is renamed and the deletion is recorded on the platform side. Reopening before deletion restores the hotel's previous status.
+- Guest data requests (Owner and Manager): find a guest by name, phone or email; download their data (guest, bookings, WhatsApp numbers, messages) as JSON; or anonymise them (name, contact details, notes, WhatsApp number, message text and media, stay phones removed; bookings and amounts kept). Typed confirmation; audited.
+- Platform → Operations (Super admin, Operations): live ops checks, scheduler and queue heartbeats, jobs waiting, failed jobs with retry and discard (audited), latest backups and restore drills, recent incidents, WhatsApp connections of every hotel (status, quality, limit, last error, token check).
+- English and French text.
+
 ### S15.2 — Support sessions, announcements, feature switches
 
 #### Added

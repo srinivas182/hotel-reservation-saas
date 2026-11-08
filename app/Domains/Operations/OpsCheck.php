@@ -181,7 +181,7 @@ final class OpsCheck
         return $problems;
     }
 
-    private function queueSize(): int
+    public function queueSize(): int
     {
         try {
             return Queue::size();
