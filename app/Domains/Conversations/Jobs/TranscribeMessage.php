@@ -20,6 +20,12 @@ final class TranscribeMessage implements RequiresHotelContext, ShouldQueue
 {
     use Queueable;
 
+    /** @var list<int> seconds between attempts */
+    public array $backoff = [10];
+
+    /** Seconds before a stuck attempt is stopped. */
+    public int $timeout = 120;
+
     public int $tries = 2;
 
     public function __construct(public readonly string $messageId) {}

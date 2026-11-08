@@ -26,6 +26,9 @@ final class SendMessage implements RequiresHotelContext, ShouldQueue
 {
     use Queueable;
 
+    /** Seconds before a stuck attempt is stopped. */
+    public int $timeout = 60;
+
     public int $tries = 4;
 
     /**

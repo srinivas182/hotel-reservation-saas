@@ -14,7 +14,13 @@ export const BASE_URL = (__ENV.BASE_URL || 'http://127.0.0.1:8000').replace(
 );
 // INERTIA_JSON=1 asks for page data as JSON (CI, where the frontend is not
 // built). On staging leave it unset: full pages are loaded, as staff would.
-const PAGE_HEADERS = __ENV.INERTIA_JSON ? { 'X-Inertia': 'true' } : {};
+// Inertia answers 409 when the asset version differs, so the version is
+// read from the login page once (it is empty when no frontend is built).
+let inertiaVersion = __ENV.INERTIA_VERSION || '';
+const pageHeaders = () =>
+    __ENV.INERTIA_JSON
+        ? { 'X-Inertia': 'true', 'X-Inertia-Version': inertiaVersion }
+        : {};
 const SECRET = __ENV.APP_SECRET || 'simulation-secret';
 const PHONE_NUMBER_ID = __ENV.PHONE_NUMBER_ID || 'SIM-5550001';
 
@@ -95,10 +101,14 @@ export function sendGuestMessage(from, text) {
  */
 export function login() {
     const jar = http.cookieJar();
-    http.get(`${BASE_URL}/login`, {
-        headers: PAGE_HEADERS,
+    const loginPage = http.get(`${BASE_URL}/login`, {
         tags: { name: 'login-page' },
     });
+    const version =
+        /&quot;version&quot;:&quot;([^&]*)&quot;|"version":"([^"]*)"/.exec(
+            String(loginPage.body || ''),
+        );
+    inertiaVersion = version ? version[1] || version[2] || '' : inertiaVersion;
     const xsrf = decodeURIComponent(
         (jar.cookiesForURL(BASE_URL)['XSRF-TOKEN'] || [''])[0],
     );
@@ -111,7 +121,7 @@ export function login() {
         }),
         {
             headers: {
-                ...PAGE_HEADERS,
+                ...pageHeaders(),
                 'Content-Type': 'application/json',
                 'X-XSRF-TOKEN': xsrf,
             },
@@ -121,9 +131,28 @@ export function login() {
     );
 }
 
+/**
+ * Log in once (in setup) and hand the session cookies to every virtual
+ * user: one staff account, without hitting the login rate limit.
+ */
+export function sharedSession() {
+    const response = login();
+    const cookies = http.cookieJar().cookiesForURL(BASE_URL);
+
+    return { ok: response.status === 200, cookies, version: inertiaVersion };
+}
+
+export function useSession(session) {
+    inertiaVersion = session.version || '';
+    const jar = http.cookieJar();
+    for (const [name, values] of Object.entries(session.cookies)) {
+        jar.set(BASE_URL, name, values[0]);
+    }
+}
+
 export function page(path) {
     return http.get(`${BASE_URL}${path}`, {
-        headers: PAGE_HEADERS,
+        headers: pageHeaders(),
         tags: { name: path },
     });
 }

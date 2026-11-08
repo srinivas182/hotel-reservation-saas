@@ -4,6 +4,28 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S16.2 — Speed and reliability
+
+#### Added
+
+- Lazy-loading guard (fails in development and tests, logged in production); query budgets for Today, inbox, conversation, bookings, booking page, calendar, orders board and platform home.
+- Indexes: WhatsApp notifications per number and date, audit log by event and date, subscriptions by status and period end.
+- AI circuit breaker: a model failing 3 times in 2 minutes is skipped for a minute; the next model answers; if all fail, staff take over.
+- Retry, back-off and time limits on every background job (test enforces it); queued emails retried 4 times; SMTP timeout 15 s; a test enforces a timeout on every outside HTTP call.
+- Outage tests: Meta down (reply waits, sent once), email down (retried), payment provider down (clear message, nothing counted), unconfirmable payment (pending, then counted once).
+- Load test at scale (`tests/load/scale.js`): weekly small run in CI (`load-weekly.yml`), full size on staging; checks that every conversation is answered with no failed or duplicated sends.
+- `docs/reliability.md`.
+
+#### Changed
+
+- Today page: room suggestions for all arrivals in one pass (one availability check per category and dates; never the same room for two arrivals); inbox loads assignees up front.
+
+#### Fixed (before merge)
+
+- The load test lost its staff session after each iteration (k6 clears cookies between iterations), so most page checks failed; it now restores the session every iteration.
+- The load test now sends Inertia's asset version, so it also works where the frontend is built (staging).
+- Starting an online payment while the provider is down showed an error page; the owner now gets a clear message and the attempt is recorded as failed.
+
 ### S16.1 — Security hardening
 
 #### Added

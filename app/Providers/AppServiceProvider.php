@@ -27,6 +27,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Hidden extra queries (lazy loading) fail in development and tests;
+        // in production they are only logged, never shown to a hotel (S16).
+        \Illuminate\Database\Eloquent\Model::preventLazyLoading();
+        if ($this->app->isProduction()) {
+            \Illuminate\Database\Eloquent\Model::handleLazyLoadingViolationUsing(function ($model, string $relation): void {
+                \Illuminate\Support\Facades\Log::warning('Lazy loading', ['model' => $model::class, 'relation' => $relation]);
+            });
+        }
+
         // Inside a support session, hotel permissions come from the session.
         \Illuminate\Support\Facades\Gate::before(function ($user, string $ability): ?bool {
             $support = app(\App\Domains\Platform\Support\SupportAccess::class);

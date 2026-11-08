@@ -21,6 +21,9 @@ final class DownloadMedia implements RequiresHotelContext, ShouldQueue
 {
     use Queueable;
 
+    /** Seconds before a stuck attempt is stopped. */
+    public int $timeout = 120;
+
     public const MAX_BYTES = 16 * 1024 * 1024;
 
     public int $tries = 4;

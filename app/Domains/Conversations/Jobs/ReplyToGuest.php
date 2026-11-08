@@ -35,6 +35,12 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 {
     use Queueable;
 
+    /** @var list<int> seconds between attempts */
+    public array $backoff = [5, 20];
+
+    /** Seconds before a stuck attempt is stopped. */
+    public int $timeout = 120;
+
     public const DELAY_SECONDS = 8;
 
     public const MAX_REPLIES_PER_HOUR = 30;

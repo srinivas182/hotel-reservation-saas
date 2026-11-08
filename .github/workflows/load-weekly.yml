@@ -1,0 +1,98 @@
+# ---------------------------------------------------------------------
+# Weekly load test at small scale (S16): tests/load/scale.js against a
+# simulated staging (no Meta, no AI), with queue workers running. About
+# 6 minutes a week. The full-size run (SCALE=full) is done on staging.
+# ---------------------------------------------------------------------
+name: Load (weekly)
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.4'
+  K6_VERSION: '1.4.2'
+  APP_ENV: staging
+  SIMULATION_MODE: 'true'
+  DB_CONNECTION: sqlite
+  DB_DATABASE: /tmp/simulation.sqlite
+  QUEUE_CONNECTION: database
+  PHP_CLI_SERVER_WORKERS: '8'
+  CACHE_STORE: file
+  SESSION_DRIVER: file
+  SESSION_SECURE_COOKIE: 'false'  # plain http on the CI runner
+  APP_URL: http://127.0.0.1:8000
+  WHATSAPP_APP_SECRET: simulation-secret
+  SIMULATION_META_LATENCY_MIN: '5'
+  SIMULATION_META_LATENCY_MAX: '20'
+  SIMULATION_AI_LATENCY_MIN: '5'
+  SIMULATION_AI_LATENCY_MAX: '20'
+
+jobs:
+  load:
+    name: k6 at small scale
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_sqlite, intl, bcmath
+          tools: composer:v2
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install k6 (checksum verified)
+        run: |
+          base="https://github.com/grafana/k6/releases/download/v${K6_VERSION}"
+          tarball="k6-v${K6_VERSION}-linux-amd64.tar.gz"
+          curl -sSfLO "$base/$tarball"
+          curl -sSfL "$base/k6-v${K6_VERSION}-checksums.txt" | grep " $tarball\$" | sha256sum -c -
+          tar -xzf "$tarball" --strip-components=1 "k6-v${K6_VERSION}-linux-amd64/k6"
+
+      - name: Prepare simulated staging
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          touch /tmp/simulation.sqlite
+          php artisan migrate --force --no-interaction
+          php artisan simulation:prepare
+
+      - name: k6 scale (small)
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > /tmp/serve.log 2>&1 &
+          for w in 1 2 3; do php artisan queue:work --sleep=1 > /tmp/worker$w.log 2>&1 & done
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/up > /dev/null && break; sleep 1; done
+          ./k6 run --quiet -e SCALE=small -e BASE_URL=http://127.0.0.1:8000 -e APP_SECRET=simulation-secret -e INERTIA_JSON=1 \
+            --summary-export=summary.json tests/load/scale.js
+          sleep 20
+          php artisan simulation:prepare --report --expect-replies
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          try:
+              m = json.load(open('summary.json'))['metrics']
+          except Exception as e:
+              print(f'No k6 summary: {e}'); raise SystemExit
+          print('## Weekly load (small scale)\n')
+          for k, v in sorted(m.items()):
+              if k.startswith('http_req_duration{') or k in ('http_req_failed', 'iterations'):
+                  print(f"- {k}: {json.dumps({x: round(y, 1) if isinstance(y, float) else y for x, y in v.items() if x in ('p(95)', 'avg', 'rate', 'count')})}")
+          PY
+
+      - name: Logs on failure
+        if: failure()
+        run: tail -n 60 /tmp/serve.log; tail -n 40 /tmp/worker1.log; tail -n 80 storage/logs/*.log || true

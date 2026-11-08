@@ -120,13 +120,25 @@ final class Checkouts
             'amount_minor' => $amount, 'currency' => $currency, 'reference' => 'HRS-'.Str::upper(Str::random(20)), 'status' => 'pending', 'created_by' => $by->getKey(),
         ]);
 
-        $started = $gateway->driver()->start($checkout, [
-            'email' => (string) $by->email,
-            'name' => (string) $by->name,
-            'description' => $description,
-            'return_url' => route('payments.return', $checkout),
-            'notify_url' => route('webhooks.payments', $gateway->driver),
-        ]);
+        try {
+            $started = $gateway->driver()->start($checkout, [
+                'email' => (string) $by->email,
+                'name' => (string) $by->name,
+                'description' => $description,
+                'return_url' => route('payments.return', $checkout),
+                'notify_url' => route('webhooks.payments', $gateway->driver),
+            ]);
+        } catch (PaymentFailed $e) {
+            $checkout->forceFill(['status' => 'failed', 'failure' => mb_substr($e->getMessage(), 0, 300)])->save();
+
+            throw $e;
+        } catch (\Throwable $e) {
+            // The provider is down or not answering: nothing was charged.
+            report($e);
+            $checkout->forceFill(['status' => 'failed', 'failure' => 'Provider unreachable'])->save();
+
+            throw new PaymentFailed((string) __('The payment service is not answering. Please try again in a few minutes.'));
+        }
 
         $checkout->forceFill(['checkout_url' => $started['url'], 'provider_token' => $started['token']])->save();
         Audit::record('billing.online_payment_started', 'Online payment started', subject: $this->context->hotel(), causer: $by, properties: ['reference' => $checkout->reference, 'gateway' => $gateway->driver, 'amount_minor' => $amount]);
