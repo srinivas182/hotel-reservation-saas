@@ -5,7 +5,7 @@ export type User = {
     name: string;
     phone_e164: string | null;
     preferred_locale: string;
-    platform_role: 'super_admin' | 'support' | null;
+    platform_role: 'super_admin' | 'operations' | 'finance' | 'sales' | null;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
@@ -18,6 +18,7 @@ export type User = {
 export type Auth = {
     user: User;
     permissions: string[];
+    platform?: string[];
 };
 
 export type HotelSummary = {

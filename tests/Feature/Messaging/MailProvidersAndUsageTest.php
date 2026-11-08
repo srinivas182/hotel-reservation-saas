@@ -62,7 +62,7 @@ it('requires credentials for a new provider', function (): void {
 });
 
 it('limits providers to super admins', function (): void {
-    $support = User::factory()->platformAdmin(PlatformRole::Support)->withTwoFactor()->create();
+    $support = User::factory()->platformAdmin(PlatformRole::Operations)->withTwoFactor()->create();
 
     $this->actingAs($support)->get(route('platform.mail-providers.index'))->assertForbidden();
     $this->actingAs(User::factory()->create())->get(route('platform.mail-providers.index'))->assertForbidden();

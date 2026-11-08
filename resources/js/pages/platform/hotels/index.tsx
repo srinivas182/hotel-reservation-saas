@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/HotelController';
@@ -108,7 +109,7 @@ export default function HotelsIndex({ hotels, filters, canCreate }: Props) {
                                 <tr key={hotel.id} className="border-t">
                                     <td className="px-4 py-3">
                                         <Link
-                                            href={HotelController.edit(
+                                            href={HotelOverviewController.show(
                                                 hotel.id,
                                             )}
                                             className="font-medium hover:underline"

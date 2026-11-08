@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S15.1 — Platform roles, platform home, hotel page, audit log
+
+#### Added
+
+- Four platform roles: Super admin (everything), Operations (hotels, go-live, readiness, sign-up codes, audit log; billing read-only), Finance (billing, invoices, payments, issuing companies; hotels read-only), Sales (sign-ups, invitation codes, funnel; hotels read-only). Existing Support users become Operations. Every platform route now checks an ability (`platform.can:…`, `PlatformAbility`); a test fails if a platform route is left without one. The sidebar shows only what the role can open.
+- Platform home: needs attention (WhatsApp not connected, no WhatsApp notification for 24 hours on a live hotel, AI credits used up, overdue invoice, go-live request, open operations incidents), today across all hotels (guest messages, messages sent, bookings, AI calls and cost), business (hotels, live, trials ending this week, sign-ups this week, monthly revenue and overdue per currency); filters by country and issuing company.
+- Hotel page: overview (owner, plan, trial, assistant mode, setup), health (WhatsApp status, quality and limit, last error, last notification, AI failure rate, AI and email credits left), this month (conversations, messages, bookings, passed to staff), staff, recent history, and internal notes (encrypted, platform-only; authors remove their own, super admins any). Hotels list links to it.
+- Audit log viewer for all hotels and the platform: filter by hotel, user email, event and dates; CSV export for super admins (audited).
+- English and French text.
+
+#### Changed
+
+- Platform routes previously open to any platform user (e.g. billing changes by Support) now follow the roles above.
+
 ### S14.3 — Information pack questionnaire, go-live request, onboarding emails
 
 #### Added

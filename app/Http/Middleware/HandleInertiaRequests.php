@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'permissions' => fn (): array => $this->permissions($request),
+                'platform' => fn (): array => \App\Domains\Platform\PlatformAbility::for($request->user()?->platform_role),
             ],
             'tenancy' => fn (): array => $this->tenancy($request),
             'inboxUnread' => fn (): int => $this->inboxUnread($request),

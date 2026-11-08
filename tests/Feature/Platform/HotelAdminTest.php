@@ -27,7 +27,7 @@ function validHotelPayload(array $overrides = []): array
 
 beforeEach(function (): void {
     $this->admin = User::factory()->platformAdmin()->withTwoFactor()->create();
-    $this->support = User::factory()->platformAdmin(PlatformRole::Support)->withTwoFactor()->create();
+    $this->support = User::factory()->platformAdmin(PlatformRole::Operations)->withTwoFactor()->create();
 });
 
 it('is closed to hotel staff', function (): void {

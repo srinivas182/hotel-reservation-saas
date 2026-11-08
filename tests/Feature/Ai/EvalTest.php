@@ -105,7 +105,7 @@ it('ships a suite of at least 60 French and English cases with 20 safety cases',
 it('runs the suite in the background from the platform, for super admins only', function (): void {
     Queue::fake();
     $admin = User::factory()->platformAdmin()->withTwoFactor()->create();
-    $support = User::factory()->withTwoFactor()->create(['platform_role' => 'support']);
+    $support = User::factory()->withTwoFactor()->create(['platform_role' => 'operations']);
 
     $this->actingAs($support)->post(route('platform.ai.models.evaluate', $this->models['main']))->assertForbidden();
     $this->actingAs($admin)->post(route('platform.ai.models.evaluate', $this->models['main']), ['approve' => true])->assertRedirect();

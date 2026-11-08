@@ -29,12 +29,12 @@ it('invites MCS staff with a password link', function (): void {
         'first_name' => 'Asha',
         'last_name' => 'Rao',
         'email' => 'Asha@MCS.test',
-        'platform_role' => 'support',
+        'platform_role' => 'operations',
     ])->assertSessionHasNoErrors();
 
     $staff = User::query()->where('email', 'asha@mcs.test')->sole();
 
-    expect($staff->platform_role)->toBe(PlatformRole::Support)
+    expect($staff->platform_role)->toBe(PlatformRole::Operations)
         ->and($staff->requiresTwoFactor())->toBeTrue();
 
     Notification::assertSentTo($staff, ResetPassword::class);
@@ -64,6 +64,6 @@ it('deactivates a user: no new sign-ins and existing sessions end', function ():
 it('does not let admins deactivate themselves or support staff deactivate anyone', function (): void {
     $this->actingAs($this->admin)->post(route('platform.users.deactivate', $this->admin))->assertStatus(422);
 
-    $support = User::factory()->platformAdmin(PlatformRole::Support)->withTwoFactor()->create();
+    $support = User::factory()->platformAdmin(PlatformRole::Operations)->withTwoFactor()->create();
     $this->actingAs($support)->post(route('platform.users.deactivate', User::factory()->create()))->assertForbidden();
 });
