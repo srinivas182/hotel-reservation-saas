@@ -152,6 +152,10 @@ final class Signups
             Mail::to($to)->queue(new NewSignupMail($hotel->id));
         }
 
+        if ($settings->emails_enabled) {
+            Mail::to($user->email)->queue(new \App\Domains\Onboarding\Mail\OnboardingMail($hotel->id, 'welcome'));
+        }
+
         return $hotel;
     }
 }

@@ -50,6 +50,22 @@ final class SetupController extends Controller
             'firstNumber' => $numbers->isEmpty() ? 101 : $numbers->max() + 1,
             'columns' => ['rooms' => RoomImport::COLUMNS, 'bookings' => BookingImport::COLUMNS],
             'can' => ['rooms' => $request->user()?->can('rooms.manage') === true, 'bookings' => $request->user()?->can('bookings.create') === true],
+            'questionnaire' => [
+                'questions' => \App\Domains\Onboarding\Questionnaire::questions(),
+                'answers' => (object) (OnboardingProgress::current()->questionnaire ?? []),
+            ],
+            'golive' => (function () use ($request): array {
+                $progress = OnboardingProgress::current();
+                $user = $request->user();
+
+                return [
+                    'requested_at' => $progress->golive_requested_at?->toDateTimeString(),
+                    'decision' => $progress->golive_decision,
+                    'reason' => $progress->golive_reason,
+                    'blockers' => $user instanceof User ? app(\App\Domains\Onboarding\GoLive::class)->blockers($user) : [],
+                    'approval_required' => \App\Domains\Onboarding\Models\SignupSettings::current()->approval_required,
+                ];
+            })(),
         ]);
     }
 
@@ -144,6 +160,32 @@ final class SetupController extends Controller
             $result = $bookings->save($stored['preview'], $user);
             Inertia::flash('import_result', $result);
             Inertia::flash('toast', ['type' => $result['refused'] === [] ? 'success' : 'warning', 'message' => __(':saved bookings imported, :refused refused.', ['saved' => $result['saved'], 'refused' => count($result['refused'])])]);
+        }
+
+        return back();
+    }
+
+    public function draftPack(Request $request, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate(['answers' => ['required', 'array'], 'answers.*' => ['nullable', 'string', 'max:1500']]);
+
+        try {
+            $count = app(\App\Domains\Onboarding\PackDrafter::class)->draft(array_map(fn ($v): string => (string) $v, array_filter((array) $data['answers'])), $user);
+        } catch (\RuntimeException $e) {
+            throw ValidationException::withMessages(['answers' => $e->getMessage()]);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Draft ready (:count entries). Review it, then publish it.', ['count' => $count])]);
+
+        return to_route('hotel.assistant.knowledge');
+    }
+
+    public function requestGoLive(#[CurrentUser] User $user): RedirectResponse
+    {
+        try {
+            app(\App\Domains\Onboarding\GoLive::class)->request($user);
+        } catch (\RuntimeException $e) {
+            throw ValidationException::withMessages(['golive' => $e->getMessage()]);
         }
 
         return back();

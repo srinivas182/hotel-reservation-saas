@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S14.3 — Information pack questionnaire, go-live request, onboarding emails
+
+#### Added
+
+- Information pack questionnaire (15 questions: description, location, directions, check-in, breakfast, restaurant, payment, cancellation, deposit, children, pets, parking, transfers, facilities, house rules) on the setup page. The AI drafts entries in French and English from the answers, using only the facts given; the draft replaces the entries of the sections it covers and is **not published** until the owner publishes it. Answers are kept.
+- New setup step "Ask to go live" (cannot be skipped; the Today card stays until the hotel is live). The page lists what still blocks: the required go-live checks (lifted by a platform override, as in S8.1) and two-step login for the owner. The request emails the addresses set in Platform → Sign-ups; the platform approves (assistant switches to supervised mode) or refuses with a reason, and the owner is emailed either way. With "Going live needs platform approval" off, supervised mode starts at once.
+- Onboarding emails (can be switched off): welcome after the email is confirmed; setup reminders on trial days 2, 5 and 9 while setup is unfinished (self sign-ups only, never a burst); trial ending in 3 days and on the last day. `onboarding:nudges` daily at 08:00.
+- Platform → Sign-ups: funnel (signed up, email confirmed, rooms set, WhatsApp connected, information pack published, asked to go live, live, paying), setup progress per hotel, go-live approval and refusal.
+- A full test from sign-up to going live.
+- English and French text.
+
 ### S14.2 — Setup assistant and imports
 
 #### Added

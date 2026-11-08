@@ -45,10 +45,13 @@ it('works each step out from the hotel\'s real data, and lets steps be skipped',
         ->and($steps['whatsapp']['done'])->toBeFalse()
         ->and(AuditLog::query()->where('event', 'setup.taxes_confirmed')->exists())->toBeTrue();
 
-    asStaffOf($this->hotel, $this->owner)->get(route('hotel.today'))->assertInertia(fn ($page) => $page->where('setup.done', 6)->where('setup.total', 9));
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.today'))->assertInertia(fn ($page) => $page->where('setup.done', 6)->where('setup.total', 10));
     foreach (['whatsapp', 'knowledge', 'practice'] as $step) {
         asStaffOf($this->hotel, $this->owner)->post(route('hotel.setup.skip', $step), ['skip' => true]);
     }
+    // Going live cannot be skipped: the card stays until the hotel is live.
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.today'))->assertInertia(fn ($page) => $page->where('setup.done', 9));
+    ($this->in)(fn () => App\Domains\Onboarding\Models\OnboardingProgress::current()->forceFill(['golive_requested_at' => now(), 'golive_decision' => 'approved'])->save());
     asStaffOf($this->hotel, $this->owner)->get(route('hotel.today'))->assertInertia(fn ($page) => $page->where('setup', null));
 
     asStaffOf($this->hotel, staffMember($this->hotel, SystemRole::Reception))->get(route('hotel.setup'))->assertForbidden();

@@ -267,6 +267,8 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
         Route::post('hotel/setup/rooms', [SetupController::class, 'quickRooms'])->middleware('can:rooms.manage')->name('hotel.setup.rooms');
         Route::post('hotel/setup/import/{kind}', [SetupController::class, 'preview'])->middleware('throttle:20,1')->name('hotel.setup.import');
         Route::post('hotel/setup/import-confirm', [SetupController::class, 'confirm'])->middleware('throttle:20,1')->name('hotel.setup.import.confirm');
+        Route::post('hotel/setup/pack-draft', [SetupController::class, 'draftPack'])->middleware(['can:assistant.manage', 'throttle:5,10'])->name('hotel.setup.pack-draft');
+        Route::post('hotel/setup/golive', [SetupController::class, 'requestGoLive'])->middleware('throttle:10,1')->name('hotel.setup.golive');
     });
 
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
