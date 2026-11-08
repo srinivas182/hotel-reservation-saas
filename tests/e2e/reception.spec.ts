@@ -63,3 +63,14 @@ test('reception creates a booking', async ({ page }, info) => {
     ).toBeVisible();
     await expectAccessible(page);
 });
+
+test('the help panel shows the article for the screen', async ({ page }) => {
+    await page.goto('/hotel/inbox');
+    await page.getByRole('button', { name: 'Aide' }).click();
+    await expect(
+        page.getByRole('heading', {
+            name: 'Répondre aux clients dans Messages',
+        }),
+    ).toBeVisible();
+    await expectAccessible(page);
+});

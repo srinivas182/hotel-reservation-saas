@@ -1,7 +1,7 @@
 @php
     $alt = fn (string $p) => $p === 'home' ? ['fr' => url('/'), 'en' => url('/en')] : ['fr' => url('/'.$p), 'en' => url('/en/'.$p)];
     $link = fn (string $p) => $locale === 'en' ? ($p === 'home' ? '/en' : '/en/'.$p) : ($p === 'home' ? '/' : '/'.$p);
-    $nav = ['features' => __('Features'), 'pricing' => __('Pricing'), 'countries' => __('Countries'), 'faq' => __('FAQ')];
+    $nav = ['features' => __('Features'), 'pricing' => __('Pricing'), 'countries' => __('Countries'), 'faq' => __('FAQ'), 'help' => __('Help')];
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $locale }}">

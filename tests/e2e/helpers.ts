@@ -105,8 +105,12 @@ export async function guestWrites(
 
 /** No serious or critical accessibility problems (WCAG 2.1 A and AA). */
 export async function expectAccessible(page: Page): Promise<void> {
+    // Toasts are left out: axe measures them mid fade-in (half transparent) and
+    // reports low contrast that people never see; their colours are the
+    // popover colours, which pass. Everything else on the page is checked.
     const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .exclude('[data-sonner-toaster]')
         .analyze();
     const problems = results.violations.filter(
         (v) => v.impact === 'serious' || v.impact === 'critical',

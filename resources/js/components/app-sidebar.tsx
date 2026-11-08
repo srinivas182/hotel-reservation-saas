@@ -47,6 +47,7 @@ import GuestDataController from '@/actions/App/Domains/Privacy/Http/Controllers/
 import OperationsController from '@/actions/App/Domains/Platform/Http/Controllers/OperationsController';
 import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
 import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
+import PlatformHelpController from '@/actions/App/Domains/Help/Http/Controllers/PlatformHelpController';
 import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
@@ -153,6 +154,12 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         href: PlatformSiteController.website(),
         icon: Globe,
         ability: 'website',
+    },
+    {
+        title: 'Help centre',
+        href: PlatformHelpController.index(),
+        icon: LifeBuoy,
+        ability: 'help',
     },
     {
         title: 'Audit log',

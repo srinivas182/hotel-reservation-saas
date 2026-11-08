@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\Billing\Http\Controllers\PaymentGatewayController;
 use App\Domains\Billing\Http\Controllers\PlatformBillingController;
 use App\Domains\Billing\Http\Controllers\PlatformInvoiceController;
+use App\Domains\Help\Http\Controllers\PlatformHelpController;
 use App\Domains\Onboarding\Http\Controllers\PlatformSignupController;
 use App\Domains\Platform\Http\Controllers\AiController;
 use App\Domains\Platform\Http\Controllers\AnnouncementController;
@@ -132,6 +133,13 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::get('leads', [PlatformSiteController::class, 'leads'])->name('leads');
             Route::put('leads/{lead}', [PlatformSiteController::class, 'updateLead'])->name('leads.update');
             Route::post('leads/{lead}/convert', [PlatformSiteController::class, 'convertLead'])->name('leads.convert');
+        });
+
+        Route::middleware('platform.can:help')->group(function (): void {
+            Route::get('help', [PlatformHelpController::class, 'index'])->name('help');
+            Route::post('help/articles', [PlatformHelpController::class, 'store'])->name('help.store');
+            Route::put('help/articles/{article}', [PlatformHelpController::class, 'update'])->name('help.update');
+            Route::post('help/media', [PlatformHelpController::class, 'media'])->middleware('throttle:30,1')->name('help.media');
         });
 
         Route::middleware('platform.can:website')->group(function (): void {

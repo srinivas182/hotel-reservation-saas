@@ -31,3 +31,18 @@ test('the website in English', async ({ page }) => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expectAccessible(page);
 });
+
+test('the help centre: search and an article', async ({ page }) => {
+    await page.goto('/help');
+    await expectAccessible(page);
+    await page.getByRole('searchbox').fill('whatsapp');
+    await page.getByRole('button', { name: 'Rechercher' }).click();
+    await page
+        .getByRole('link', { name: /Connecter le numéro WhatsApp/ })
+        .first()
+        .click();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+        'WhatsApp',
+    );
+    await expectAccessible(page);
+});
