@@ -1,4 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import AccountHotelsController from '@/actions/App/Domains/Platform/Http/Controllers/AccountHotelsController';
+import PlatformLifecycleController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformLifecycleController';
 import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
 import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/HotelController';
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
@@ -78,11 +80,19 @@ type Props = {
         live: boolean;
         at: string | null;
     }[];
+    closure: {
+        closed_at: string;
+        delete_after: string;
+        by: string;
+        reason: string | null;
+        export: boolean;
+    } | null;
     can: {
         support: boolean;
         manage: boolean;
         billing: boolean;
         audit: boolean;
+        lifecycle: boolean;
     };
 };
 
@@ -197,6 +207,7 @@ export default function HotelShow({
     history,
     notes,
     supportSessions,
+    closure,
     can,
 }: Props) {
     const form = useForm({ body: '' });
@@ -352,6 +363,70 @@ export default function HotelShow({
                     </section>
                 </div>
 
+                {closure && (
+                    <p className="rounded-lg border border-destructive px-3 py-2 text-sm text-destructive">
+                        {t('Closed on :closed (:by). Data deleted on :date.', {
+                            closed: closure.closed_at,
+                            by: closure.by,
+                            date: closure.delete_after,
+                        })}{' '}
+                        {closure.reason}
+                    </p>
+                )}
+                {can.lifecycle && (
+                    <div className="flex gap-2 text-sm">
+                        {closure ? (
+                            <>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                        router.post(
+                                            PlatformLifecycleController.reopen.url(
+                                                hotel.id,
+                                            ),
+                                            {},
+                                            { preserveScroll: true },
+                                        )
+                                    }
+                                >
+                                    {t('Reopen')}
+                                </Button>
+                                {closure.export && (
+                                    <a
+                                        href={AccountHotelsController.export.url(
+                                            hotel.id,
+                                        )}
+                                        className="self-center underline"
+                                    >
+                                        {t('Download all data')}
+                                    </a>
+                                )}
+                            </>
+                        ) : (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                    const reason = window.prompt(
+                                        t('Close this hotel? Reason:'),
+                                    );
+                                    if (reason) {
+                                        router.post(
+                                            PlatformLifecycleController.close.url(
+                                                hotel.id,
+                                            ),
+                                            { reason },
+                                            { preserveScroll: true },
+                                        );
+                                    }
+                                }}
+                            >
+                                {t('Close hotel…')}
+                            </Button>
+                        )}
+                    </div>
+                )}
                 {can.support && (
                     <HelpThisHotel
                         hotelId={hotel.id}

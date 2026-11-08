@@ -5,6 +5,8 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    ShieldCheck,
+    Gauge,
     LifeBuoy,
     ToggleRight,
     Megaphone,
@@ -39,6 +41,8 @@ import BillingController from '@/actions/App/Domains/Billing/Http/Controllers/Bi
 import AnnouncementController from '@/actions/App/Domains/Platform/Http/Controllers/AnnouncementController';
 import FeatureController from '@/actions/App/Domains/Platform/Http/Controllers/FeatureController';
 import SupportSessionController from '@/actions/App/Domains/Platform/Http/Controllers/SupportSessionController';
+import GuestDataController from '@/actions/App/Domains/Privacy/Http/Controllers/GuestDataController';
+import OperationsController from '@/actions/App/Domains/Platform/Http/Controllers/OperationsController';
 import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
 import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
@@ -142,6 +146,12 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         ability: 'audit.view',
     },
     {
+        title: 'Operations',
+        href: OperationsController.index(),
+        icon: Gauge,
+        ability: 'readiness',
+    },
+    {
         title: 'Announcements',
         href: AnnouncementController.index(),
         icon: Megaphone,
@@ -177,6 +187,15 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('bookings.view')
             ? [{ title: 'Today', href: TodayController.index(), icon: Sun }]
+            : []),
+        ...(auth.permissions.includes('hotel.settings.manage')
+            ? [
+                  {
+                      title: 'Guest data requests',
+                      href: GuestDataController.index(),
+                      icon: ShieldCheck,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('conversations.view')
             ? [

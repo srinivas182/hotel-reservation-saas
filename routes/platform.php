@@ -14,8 +14,10 @@ use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
 use App\Domains\Platform\Http\Controllers\HotelOverviewController;
 use App\Domains\Platform\Http\Controllers\MailProviderController;
+use App\Domains\Platform\Http\Controllers\OperationsController;
 use App\Domains\Platform\Http\Controllers\PilotDashboardController;
 use App\Domains\Platform\Http\Controllers\PlatformHomeController;
+use App\Domains\Platform\Http\Controllers\PlatformLifecycleController;
 use App\Domains\Platform\Http\Controllers\ReadinessController;
 use App\Domains\Platform\Http\Controllers\SupportSessionController;
 use App\Domains\Platform\Http\Controllers\UserController;
@@ -99,6 +101,8 @@ Route::middleware(['auth', 'verified', 'platform'])
         });
 
         Route::middleware('platform.can:configuration')->group(function (): void {
+            Route::post('hotels/{hotel}/close', [PlatformLifecycleController::class, 'close'])->name('hotels.close');
+            Route::post('hotels/{hotel}/reopen', [PlatformLifecycleController::class, 'reopen'])->name('hotels.reopen');
             Route::get('mail-providers', [MailProviderController::class, 'index'])->name('mail-providers.index');
             Route::post('mail-providers', [MailProviderController::class, 'store'])->name('mail-providers.store');
             Route::put('mail-providers/{mailProvider}', [MailProviderController::class, 'update'])->name('mail-providers.update');
@@ -149,6 +153,9 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::middleware('platform.can:audit.export')->get('audit/export', [AuditLogController::class, 'export'])->name('audit.export');
 
         Route::middleware('platform.can:readiness')->group(function (): void {
+            Route::get('operations', [OperationsController::class, 'index'])->name('operations');
+            Route::post('operations/failed/{uuid}/retry', [OperationsController::class, 'retry'])->name('operations.retry');
+            Route::delete('operations/failed/{uuid}', [OperationsController::class, 'forget'])->name('operations.forget');
             Route::get('whatsapp', WhatsAppPlatformController::class)->name('whatsapp');
             Route::get('readiness', [ReadinessController::class, 'index'])->name('readiness');
             Route::get('pilot', PilotDashboardController::class)->name('pilot');

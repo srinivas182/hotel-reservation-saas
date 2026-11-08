@@ -1,4 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import { Building2 } from 'lucide-react';
+import AccountHotelsController from '@/actions/App/Domains/Platform/Http/Controllers/AccountHotelsController';
 import { Check, Languages, LogOut, Settings } from 'lucide-react';
 import LocaleController from '@/actions/App/Domains/Identity/Http/Controllers/LocaleController';
 import {
@@ -45,6 +47,16 @@ export function UserMenuContent({ user }: Props) {
                     >
                         <Settings className="mr-2" />
                         {t('Settings')}
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href={AccountHotelsController.index()}
+                        onClick={cleanup}
+                    >
+                        <Building2 className="mr-2" />
+                        {t('My hotels')}
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>

@@ -130,3 +130,9 @@ Schedule::command('announcements:send')
     ->name('announcements:send')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// Closed hotels: reminders before deletion, deletion after 90 days.
+Schedule::command('hotels:closures')
+    ->name('hotels:closures')
+    ->dailyAt('03:30')
+    ->withoutOverlapping();

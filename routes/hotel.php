@@ -35,6 +35,7 @@ use App\Domains\Messaging\Http\Controllers\UsageController;
 use App\Domains\Onboarding\Http\Controllers\SetupController;
 use App\Domains\Orders\Http\Controllers\OrderBoardController;
 use App\Domains\Orders\Http\Controllers\StayPhoneController;
+use App\Domains\Privacy\Http\Controllers\GuestDataController;
 use App\Domains\Rates\Http\Controllers\CategoryRateController;
 use App\Domains\Rates\Http\Controllers\RateOverrideController;
 use App\Domains\Rates\Http\Controllers\RatesController;
@@ -252,6 +253,11 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     });
 
     Route::middleware('can:billing.view')->get('hotel/billing', BillingController::class)->name('hotel.billing');
+    Route::middleware('can:hotel.settings.manage')->group(function (): void {
+        Route::get('hotel/privacy', [GuestDataController::class, 'index'])->name('hotel.privacy');
+        Route::get('hotel/privacy/guests/{guest}/export', [GuestDataController::class, 'export'])->name('hotel.privacy.export');
+        Route::post('hotel/privacy/guests/{guest}/anonymise', [GuestDataController::class, 'anonymise'])->middleware('throttle:10,1')->name('hotel.privacy.anonymise');
+    });
     Route::middleware('can:billing.view')->get('hotel/billing/invoices/{invoice}', [BillingController::class, 'invoice'])->name('hotel.billing.invoice');
     Route::middleware(['can:billing.manage', 'throttle:20,1'])->group(function (): void {
         Route::post('hotel/billing/invoices/{invoice}/pay', [HotelPaymentController::class, 'payInvoice'])->name('hotel.billing.invoices.pay');
