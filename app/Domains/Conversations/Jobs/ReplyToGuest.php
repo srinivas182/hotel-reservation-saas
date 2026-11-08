@@ -138,7 +138,7 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 
         $reply = $this->withDisclosure($conversation, $result->reply, $result->language);
 
-        if (HotelAssistantSettings::current()->mode === AssistantMode::Supervised) {
+        if (HotelAssistantSettings::current()->effectiveMode() === AssistantMode::Supervised) {
             $sender->draft($conversation, $reply);
             $this->markAnswered($conversation, $latest);
 
@@ -273,7 +273,7 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         $handover->toStaff($conversation, $reason);
 
         // In supervised mode nothing is sent to guests without staff approval.
-        if (HotelAssistantSettings::current()->mode === AssistantMode::Supervised) {
+        if (HotelAssistantSettings::current()->effectiveMode() === AssistantMode::Supervised) {
             $this->markAnswered($conversation, $latest);
 
             return;

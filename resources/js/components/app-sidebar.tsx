@@ -5,6 +5,9 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    LifeBuoy,
+    ToggleRight,
+    Megaphone,
     CreditCard,
     UserPlus,
     UtensilsCrossed,
@@ -33,6 +36,9 @@ import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Cont
 import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
 import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
 import BillingController from '@/actions/App/Domains/Billing/Http/Controllers/BillingController';
+import AnnouncementController from '@/actions/App/Domains/Platform/Http/Controllers/AnnouncementController';
+import FeatureController from '@/actions/App/Domains/Platform/Http/Controllers/FeatureController';
+import SupportSessionController from '@/actions/App/Domains/Platform/Http/Controllers/SupportSessionController';
 import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
 import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
@@ -136,6 +142,18 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         ability: 'audit.view',
     },
     {
+        title: 'Announcements',
+        href: AnnouncementController.index(),
+        icon: Megaphone,
+        ability: 'announcements',
+    },
+    {
+        title: 'Feature switches',
+        href: FeatureController.index(),
+        icon: ToggleRight,
+        ability: 'configuration',
+    },
+    {
         title: 'Email providers',
         href: MailProviderController.index(),
         icon: Mail,
@@ -190,6 +208,15 @@ export function AppSidebar() {
             : []),
         ...(auth.permissions.includes('rates.view')
             ? [{ title: 'Rates', href: RatesController(), icon: Tags }]
+            : []),
+        ...(auth.permissions.includes('staff.manage')
+            ? [
+                  {
+                      title: 'Support access',
+                      href: SupportSessionController.index(),
+                      icon: LifeBuoy,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('staff.view')
             ? [{ title: 'Staff', href: StaffController.index(), icon: Users }]

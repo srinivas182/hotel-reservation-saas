@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S15.2 — Support sessions, announcements, feature switches
+
+#### Added
+
+- Support sessions: from the platform's hotel page, Operations and Super admins start a 30-minute session (extendable once) with a reason, read-only by default or with changes. The platform user then sees the hotel's screens with a red banner (time left, extend, end). Read-only sessions cannot change anything; no session can manage roles, staff, the WhatsApp connection or billing. The owner is emailed; every action is recorded in the hotel's history with the session. Hotel → Support access (owner and managers): past and current sessions with their number of actions, end a session, and the setting "allowed with notification" (default) or "ask me first" (the owner approves or refuses each session before it can be entered).
+- Announcements (Operations, Super admin): title and text in French and English, information, warning or maintenance, for all hotels or chosen countries, plans or hotels, between two dates, optionally emailed once to the owners (`announcements:send`, every 5 minutes). Shown as banners in every hotel page; information and warning banners can be hidden per user, maintenance banners cannot.
+- Feature switches (Super admin): automatic mode, voice notes, restaurant tables/menu/orders on WhatsApp and event enquiries on WhatsApp, each on for everyone (default), off, or on for chosen countries, plans or hotels; checked together with plan modules. When automatic mode is off for a hotel, the assistant works in supervised mode and the hotel cannot switch to automatic; when voice notes are off, they go to staff.
+- English and French text.
+
 ### S15.1 — Platform roles, platform home, hotel page, audit log
 
 #### Added

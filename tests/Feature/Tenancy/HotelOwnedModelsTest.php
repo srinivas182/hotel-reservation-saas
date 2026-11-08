@@ -35,6 +35,9 @@ const HOTEL_SCOPING_ALLOWLIST = [
     App\Domains\Onboarding\Models\LegalAcceptance::class,
     // Platform-only notes about a hotel; never read in a hotel's context.
     App\Domains\Platform\Models\HotelNote::class,
+    // Support sessions decide which hotel a platform user enters, so they
+    // are read before any hotel is selected; hotel pages filter explicitly.
+    App\Domains\Platform\Support\SupportSession::class,
 ];
 
 it('scopes every model that has a hotel_id column', function (): void {

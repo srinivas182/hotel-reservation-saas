@@ -124,3 +124,9 @@ Schedule::command('onboarding:nudges')
     ->name('onboarding:nudges')
     ->dailyAt('08:00')
     ->withoutOverlapping();
+
+// Announcement emails (once, when an announcement starts).
+Schedule::command('announcements:send')
+    ->name('announcements:send')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

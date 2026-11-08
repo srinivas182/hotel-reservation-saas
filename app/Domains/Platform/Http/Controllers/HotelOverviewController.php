@@ -41,7 +41,10 @@ final class HotelOverviewController extends Controller
                 ->map(fn (AuditLog $a): array => ['id' => $a->id, 'event' => $a->event, 'description' => __($a->description), 'by' => $a->causer instanceof User ? $a->causer->name : null, 'at' => $a->created_at?->toDateTimeString()])->values(),
             'notes' => HotelNote::query()->with('author')->where('hotel_id', $hotel->id)->latest('id')->get()
                 ->map(fn (HotelNote $n): array => ['id' => $n->id, 'body' => $n->body, 'by' => $n->author?->name, 'at' => $n->created_at?->toDateTimeString(), 'mine' => $n->author_id === $user->id])->values(),
+            'supportSessions' => \App\Domains\Platform\Support\SupportSession::query()->with('user')->where('hotel_id', $hotel->id)->latest('created_at')->limit(10)->get()
+                ->map(fn (\App\Domains\Platform\Support\SupportSession $s): array => ['id' => $s->id, 'by' => $s->user?->name, 'mine' => $s->user_id === $user->id, 'reason' => $s->reason, 'mode' => $s->mode, 'status' => $s->status, 'live' => $s->isLive(), 'at' => $s->created_at?->toDateTimeString()])->values(),
             'can' => [
+                'support' => $user->platformCan(PlatformAbility::Support),
                 'manage' => $user->platformCan(PlatformAbility::HotelsManage),
                 'billing' => $user->platformCan(PlatformAbility::BillingView),
                 'audit' => $user->platformCan(PlatformAbility::AuditView),

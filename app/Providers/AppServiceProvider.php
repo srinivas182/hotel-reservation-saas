@@ -17,6 +17,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(\App\Domains\Platform\Support\SupportAccess::class);
+        $this->app->scoped(\App\Domains\Platform\Features\Features::class);
         //
     }
 
@@ -25,6 +27,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Inside a support session, hotel permissions come from the session.
+        \Illuminate\Support\Facades\Gate::before(function ($user, string $ability): ?bool {
+            $support = app(\App\Domains\Platform\Support\SupportAccess::class);
+
+            if ($support->current() === null || \App\Domains\Access\Permission::tryFrom($ability) === null) {
+                return null;
+            }
+
+            return $support->allows($ability);
+        });
         $this->configureDefaults();
     }
 

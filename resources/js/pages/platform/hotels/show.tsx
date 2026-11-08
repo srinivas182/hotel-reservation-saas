@@ -3,6 +3,7 @@ import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/
 import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/HotelController';
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
+import SupportSessionController from '@/actions/App/Domains/Platform/Http/Controllers/SupportSessionController';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,22 @@ type Props = {
         at: string | null;
         mine: boolean;
     }[];
-    can: { manage: boolean; billing: boolean; audit: boolean };
+    supportSessions: {
+        id: string;
+        by: string | null;
+        mine: boolean;
+        reason: string;
+        mode: string;
+        status: string;
+        live: boolean;
+        at: string | null;
+    }[];
+    can: {
+        support: boolean;
+        manage: boolean;
+        billing: boolean;
+        audit: boolean;
+    };
 };
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -82,6 +98,97 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 const credit = (c: Credit) =>
     c ? `${Math.floor(c.left / 100)} / ${Math.floor(c.granted / 100)}` : '—';
 
+function HelpThisHotel({
+    hotelId,
+    sessions,
+}: {
+    hotelId: string;
+    sessions: Props['supportSessions'];
+}) {
+    const form = useForm({ reason: '', mode: 'read' });
+
+    return (
+        <section className="flex flex-col gap-2 text-sm">
+            <Heading
+                variant="small"
+                title={t('Help this hotel')}
+                description={t(
+                    'Open the hotel’s screens for 30 minutes. The owner is told, and everything you do is recorded in the hotel’s history.',
+                )}
+            />
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    form.post(SupportSessionController.start.url(hotelId));
+                }}
+                className="flex flex-wrap items-end gap-2"
+            >
+                <input
+                    aria-label={t('Reason')}
+                    placeholder={t(
+                        'Reason (e.g. owner called: rates not showing)',
+                    )}
+                    className="h-9 min-w-72 flex-1 rounded-md border border-input bg-transparent px-3"
+                    value={form.data.reason}
+                    onChange={(e) => form.setData('reason', e.target.value)}
+                />
+                <select
+                    aria-label={t('Access')}
+                    className="flex h-9 rounded-md border border-input bg-transparent px-3"
+                    value={form.data.mode}
+                    onChange={(e) => form.setData('mode', e.target.value)}
+                >
+                    <option value="read">{t('Read-only')}</option>
+                    <option value="write">{t('Can make changes')}</option>
+                </select>
+                <Button
+                    size="sm"
+                    disabled={
+                        form.processing || form.data.reason.trim().length < 5
+                    }
+                >
+                    {t('Start session')}
+                </Button>
+            </form>
+            {sessions.length > 0 && (
+                <ul className="divide-y rounded-xl border">
+                    {sessions.map((s) => (
+                        <li
+                            key={s.id}
+                            className="flex flex-wrap items-center gap-2 px-3 py-1.5"
+                        >
+                            <span className="text-xs text-muted-foreground">
+                                {s.at}
+                            </span>
+                            <span>{s.by}</span>
+                            <span className="flex-1">{s.reason}</span>
+                            <Badge variant="outline">{s.mode}</Badge>
+                            <Badge variant={s.live ? 'default' : 'secondary'}>
+                                {s.live ? t('In progress') : s.status}
+                            </Badge>
+                            {s.mine && s.live && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                        router.post(
+                                            SupportSessionController.enter.url(
+                                                s.id,
+                                            ),
+                                        )
+                                    }
+                                >
+                                    {t('Enter')}
+                                </Button>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </section>
+    );
+}
+
 export default function HotelShow({
     hotel,
     health,
@@ -89,6 +196,7 @@ export default function HotelShow({
     staff,
     history,
     notes,
+    supportSessions,
     can,
 }: Props) {
     const form = useForm({ body: '' });
@@ -243,6 +351,13 @@ export default function HotelShow({
                         />
                     </section>
                 </div>
+
+                {can.support && (
+                    <HelpThisHotel
+                        hotelId={hotel.id}
+                        sessions={supportSessions}
+                    />
+                )}
 
                 <section className="flex flex-col gap-2 text-sm">
                     <Heading

@@ -7,7 +7,9 @@ use App\Domains\Billing\Http\Controllers\PlatformBillingController;
 use App\Domains\Billing\Http\Controllers\PlatformInvoiceController;
 use App\Domains\Onboarding\Http\Controllers\PlatformSignupController;
 use App\Domains\Platform\Http\Controllers\AiController;
+use App\Domains\Platform\Http\Controllers\AnnouncementController;
 use App\Domains\Platform\Http\Controllers\AuditLogController;
+use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
 use App\Domains\Platform\Http\Controllers\HotelOverviewController;
@@ -15,6 +17,7 @@ use App\Domains\Platform\Http\Controllers\MailProviderController;
 use App\Domains\Platform\Http\Controllers\PilotDashboardController;
 use App\Domains\Platform\Http\Controllers\PlatformHomeController;
 use App\Domains\Platform\Http\Controllers\ReadinessController;
+use App\Domains\Platform\Http\Controllers\SupportSessionController;
 use App\Domains\Platform\Http\Controllers\UserController;
 use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
 use Illuminate\Support\Facades\Route;
@@ -123,6 +126,23 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::middleware('platform.can:notes')->group(function (): void {
             Route::post('hotels/{hotel}/notes', [HotelOverviewController::class, 'storeNote'])->name('hotels.notes.store');
             Route::delete('hotels/{hotel}/notes/{note}', [HotelOverviewController::class, 'destroyNote'])->name('hotels.notes.destroy');
+        });
+
+        Route::middleware('platform.can:support')->group(function (): void {
+            Route::post('hotels/{hotel}/support', [SupportSessionController::class, 'start'])->middleware('throttle:20,1')->name('hotels.support.start');
+            Route::post('support/{session}/enter', [SupportSessionController::class, 'enter'])->name('support.enter');
+        });
+
+        Route::middleware('platform.can:announcements')->group(function (): void {
+            Route::get('announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+            Route::post('announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+            Route::put('announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
+            Route::delete('announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+        });
+
+        Route::middleware('platform.can:configuration')->group(function (): void {
+            Route::get('features', [FeatureController::class, 'index'])->name('features.index');
+            Route::put('features/{feature}', [FeatureController::class, 'update'])->name('features.update');
         });
 
         Route::middleware('platform.can:audit.view')->get('audit', [AuditLogController::class, 'index'])->name('audit');
