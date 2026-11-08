@@ -424,7 +424,10 @@ export default function Calendar(props: Props) {
                         {t('Add room categories first.')}
                     </p>
                 ) : (
-                    <div className="overflow-x-auto rounded-xl border">
+                    <div
+                        tabIndex={0}
+                        className="overflow-x-auto rounded-xl border"
+                    >
                         <table className="w-full border-collapse text-xs">
                             <thead>
                                 <tr>

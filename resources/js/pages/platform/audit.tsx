@@ -137,7 +137,7 @@ export default function Audit({
                 <p className="text-muted-foreground">
                     {t(':total entries', { total: pagination.total })}
                 </p>
-                <div className="overflow-x-auto rounded-xl border">
+                <div tabIndex={0} className="overflow-x-auto rounded-xl border">
                     <table className="w-full min-w-max">
                         <thead className="text-left text-xs text-muted-foreground">
                             <tr>

@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S16.3b — Browser tests and accessibility (0.16.4)
+
+#### Added
+
+- Playwright browser tests (`tests/e2e`, `playwright.config.ts`) in French on a phone (Pixel 7) and a desktop: reception's Today and bookings, a guest's WhatsApp message answered from the inbox, creating a booking, the platform home and sign-ups with a go-live request after a two-step login, and the branded 404 page. Every page visited is checked with axe (WCAG 2.1 A and AA; serious and critical problems fail). Sessions are prepared once per role (login is rate limited).
+- `php artisan e2e:prepare`: simulated staging plus a platform admin with a known two-step secret and a go-live request (refuses to run in production).
+- `.github/workflows/e2e.yml`: on ready pull requests that touch screens, routes or translations, and nightly.
+
+#### Fixed (found by the browser tests)
+
+- Room plan on Today said "Gratuit" (free of charge) for vacant rooms; it now says "Libre".
+- The inbox showed the internal handover code (e.g. `ai_unavailable:no_credits`) to staff; it now explains it in plain words.
+- The inbox filter buttons overflowed into the conversation on narrow desktops; they now wrap.
+- Low-contrast time stamps on guest messages (accessibility).
+- Scrollable tables (15 screens) could not be scrolled with the keyboard (accessibility).
+- A link inside an expandable section on the sign-ups page (accessibility).
+- Platform staff without a hotel landed on an empty placeholder page after login; they now land on the platform home.
+
 ### S16.3 — Error pages, error tracking, versions, migration safety (0.16.3)
 
 #### Added

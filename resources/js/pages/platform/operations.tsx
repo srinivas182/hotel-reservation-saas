@@ -228,7 +228,10 @@ export default function Operations({
                         variant="small"
                         title={t('WhatsApp connections')}
                     />
-                    <div className="overflow-x-auto rounded-xl border">
+                    <div
+                        tabIndex={0}
+                        className="overflow-x-auto rounded-xl border"
+                    >
                         <table className="w-full min-w-max text-left">
                             <thead className="text-xs text-muted-foreground">
                                 <tr>

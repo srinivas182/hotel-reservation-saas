@@ -373,7 +373,10 @@ export default function MailProviders({
                         variant="small"
                         title={t('All hotels, last 30 days')}
                     />
-                    <div className="overflow-x-auto rounded-xl border">
+                    <div
+                        tabIndex={0}
+                        className="overflow-x-auto rounded-xl border"
+                    >
                         <table className="w-full text-sm">
                             <thead className="bg-muted/50 text-left text-muted-foreground">
                                 <tr>
