@@ -66,6 +66,8 @@ final class Signups
                 }
 
                 $code->increment('uses');
+                // A lead turned into a trial (S17).
+                \App\Domains\Site\Models\Lead::query()->where('signup_code_id', $code->id)->whereIn('status', ['new', 'contacted', 'demo_done'])->update(['status' => 'trial']);
             }
 
             $user = User::query()->forceCreate([

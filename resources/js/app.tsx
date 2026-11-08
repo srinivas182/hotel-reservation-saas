@@ -6,7 +6,12 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+// The brand name is set in Platform → Website (S17); the page carries it.
+const appName =
+    document.querySelector<HTMLMetaElement>('meta[name="application-name"]')
+        ?.content ||
+    import.meta.env.VITE_APP_NAME ||
+    '';
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

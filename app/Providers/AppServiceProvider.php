@@ -27,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The product's brand (S17) names the app everywhere: screens, emails, PDFs.
+        \App\Domains\Site\Models\BrandSettings::applyToConfig();
+
         // Hidden extra queries (lazy loading) fail in development and tests;
         // in production they are only logged, never shown to a hotel (S16).
         \Illuminate\Database\Eloquent\Model::preventLazyLoading();

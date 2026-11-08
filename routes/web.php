@@ -10,6 +10,7 @@ use App\Domains\Onboarding\Http\Controllers\SignupController;
 use App\Domains\Platform\Http\Controllers\AccountHotelsController;
 use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
+use App\Domains\Site\Http\Controllers\SiteController;
 use App\Domains\Tenancy\Http\Controllers\SwitchHotelController;
 use App\Domains\WhatsApp\Http\Controllers\WebhookController as WhatsAppWebhookController;
 use App\Http\Controllers\CspReportController;
@@ -33,7 +34,17 @@ Route::middleware('auth')->group(function (): void {
     Route::post('support/end', [App\Domains\Platform\Http\Controllers\SupportSessionController::class, 'end'])->name('support.end');
 });
 
-Route::get('/', fn () => auth()->check() ? to_route('dashboard') : to_route('login'))->name('home');
+// Public website (S17): French at /, English at /en.
+Route::middleware('throttle:120,1')->group(function (): void {
+    Route::get('/', [SiteController::class, 'home'])->name('home');
+    Route::get('en', [SiteController::class, 'home'])->name('site.home.en');
+    Route::get('{page}', [SiteController::class, 'page'])->whereIn('page', ['features', 'pricing', 'countries', 'faq', 'demo'])->name('site.page');
+    Route::get('en/{page}', [SiteController::class, 'page'])->whereIn('page', ['features', 'pricing', 'countries', 'faq', 'demo'])->name('site.page.en');
+    Route::get('sitemap.xml', [SiteController::class, 'sitemap'])->name('site.sitemap');
+    Route::get('brand/logo', [SiteController::class, 'logo'])->name('brand.logo');
+});
+Route::post('demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo');
+Route::post('en/demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo.en');
 
 Route::post('locale', LocaleController::class)->middleware('throttle:30,1')->name('locale.update');
 

@@ -1,9 +1,9 @@
 /**
- * Lightweight translations shared with Laravel.
+ * Lightweight translations shared with the backend.
  *
- * Keys are the English text (as with Laravel's __()), stored in
+ * Keys are the English text (as with the backend's __()), stored in
  * lang/{locale}.json and used by both the server and the frontend.
- * Placeholders use Laravel's syntax: t('Welcome, :name', { name }).
+ * Placeholders use the backend's syntax: t('Welcome, :name', { name }).
  * A key without a translation falls back to the English text, so dynamic
  * values passed through t() (for example a hotel name) are left unchanged.
  */

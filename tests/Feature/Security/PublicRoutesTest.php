@@ -29,3 +29,12 @@ it('never serves the private file store directly', function (): void {
 it('keeps developer tools closed', function (): void {
     expect($this->get('/_inertia/devtools/entries')->getStatusCode())->toBeIn([403, 404]);
 });
+
+it('keeps a separate rate-limit counter for each route', function (): void {
+    // Browsing the website must not use up the demo form's small allowance.
+    foreach (range(1, 8) as $i) {
+        $this->get('/pricing')->assertOk();
+    }
+
+    $this->post('/demo', ['name' => 'A', 'hotel_name' => 'B', 'whatsapp' => '+225 07 00 00 00 01'])->assertRedirect('/demo');
+});

@@ -5,6 +5,8 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    Globe,
+    Target,
     ShieldCheck,
     Gauge,
     LifeBuoy,
@@ -45,6 +47,7 @@ import GuestDataController from '@/actions/App/Domains/Privacy/Http/Controllers/
 import OperationsController from '@/actions/App/Domains/Platform/Http/Controllers/OperationsController';
 import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
 import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
+import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
 import PilotDashboardController from '@/actions/App/Domains/Platform/Http/Controllers/PilotDashboardController';
@@ -138,6 +141,18 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         href: PlatformSignupController.index(),
         icon: UserPlus,
         ability: 'signups.view',
+    },
+    {
+        title: 'Leads',
+        href: PlatformSiteController.leads(),
+        icon: Target,
+        ability: 'leads',
+    },
+    {
+        title: 'Website',
+        href: PlatformSiteController.website(),
+        icon: Globe,
+        ability: 'website',
     },
     {
         title: 'Audit log',

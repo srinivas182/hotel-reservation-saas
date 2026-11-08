@@ -136,3 +136,9 @@ Schedule::command('hotels:closures')
     ->name('hotels:closures')
     ->dailyAt('03:30')
     ->withoutOverlapping();
+
+// New leads and follow-ups due, to the sales team.
+Schedule::command('leads:digest')
+    ->name('leads:digest')
+    ->dailyAt('07:30')
+    ->withoutOverlapping();

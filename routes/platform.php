@@ -22,6 +22,7 @@ use App\Domains\Platform\Http\Controllers\ReadinessController;
 use App\Domains\Platform\Http\Controllers\SupportSessionController;
 use App\Domains\Platform\Http\Controllers\UserController;
 use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
+use App\Domains\Site\Http\Controllers\PlatformSiteController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -126,6 +127,18 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::post('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
             Route::post('users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
         });
+
+        Route::middleware('platform.can:leads')->group(function (): void {
+            Route::get('leads', [PlatformSiteController::class, 'leads'])->name('leads');
+            Route::put('leads/{lead}', [PlatformSiteController::class, 'updateLead'])->name('leads.update');
+            Route::post('leads/{lead}/convert', [PlatformSiteController::class, 'convertLead'])->name('leads.convert');
+        });
+
+        Route::middleware('platform.can:website')->group(function (): void {
+            Route::get('website', [PlatformSiteController::class, 'website'])->name('website');
+            Route::put('website/pages/{page}', [PlatformSiteController::class, 'updatePage'])->name('website.pages.update');
+        });
+        Route::middleware('platform.can:configuration')->post('website/brand', [PlatformSiteController::class, 'updateBrand'])->name('website.brand');
 
         Route::middleware('platform.can:notes')->group(function (): void {
             Route::post('hotels/{hotel}/notes', [HotelOverviewController::class, 'storeNote'])->name('hotels.notes.store');
