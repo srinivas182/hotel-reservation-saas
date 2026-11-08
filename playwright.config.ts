@@ -17,6 +17,8 @@ export default defineConfig({
     retries: process.env.CI ? 1 : 0,
     reporter: process.env.CI
         ? [
+              // Failures become annotations, readable from the pull request and the API.
+              ['github'],
               ['list'],
               ['html', { open: 'never', outputFolder: 'playwright-report' }],
           ]
