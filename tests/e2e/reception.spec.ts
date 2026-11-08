@@ -25,8 +25,14 @@ test('a guest writes on WhatsApp and staff reply from the inbox', async ({
 
     await guestWrites(page, guest, text, name);
 
-    await page.goto('/hotel/inbox');
-    await page.getByText(name).first().click({ timeout: 20_000 });
+    // The message is processed by a background worker: reload until it shows.
+    await expect(async () => {
+        await page.goto('/hotel/inbox');
+        await expect(page.getByText(name).first()).toBeVisible({
+            timeout: 3_000,
+        });
+    }).toPass({ timeout: 45_000 });
+    await page.getByText(name).first().click();
     await expect(page.getByText(text)).toBeVisible();
     await expectAccessible(page);
 

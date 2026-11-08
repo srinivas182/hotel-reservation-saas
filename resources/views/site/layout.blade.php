@@ -96,6 +96,7 @@
             <a href="/legal/terms?lang={{ $locale }}">{{ __('Terms of service') }}</a>
             <a href="/legal/privacy?lang={{ $locale }}">{{ __('Privacy notice') }}</a>
             <a href="/legal/dpa?lang={{ $locale }}">{{ __('Data processing agreement') }}</a>
+            <a href="{{ $locale === 'en' ? '/en/status' : '/status' }}">{{ __('Service status') }}</a>
             @if ($brand['support_email'])<a href="mailto:{{ $brand['support_email'] }}">{{ $brand['support_email'] }}</a>@endif
         </div>
     </div>

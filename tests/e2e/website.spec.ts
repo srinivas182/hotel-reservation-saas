@@ -46,3 +46,11 @@ test('the help centre: search and an article', async ({ page }) => {
     );
     await expectAccessible(page);
 });
+
+test('the status page', async ({ page }) => {
+    await page.goto('/status');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        'État des services',
+    );
+    await expectAccessible(page);
+});

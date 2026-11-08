@@ -5,6 +5,7 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    Signal,
     Headset,
     Globe,
     Target,
@@ -50,6 +51,7 @@ import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/
 import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
 import HotelSupportController from '@/actions/App/Domains/Support/Http/Controllers/HotelSupportController';
 import PlatformSupportController from '@/actions/App/Domains/Support/Http/Controllers/PlatformSupportController';
+import PlatformStatusController from '@/actions/App/Domains/Status/Http/Controllers/PlatformStatusController';
 import PlatformHelpController from '@/actions/App/Domains/Help/Http/Controllers/PlatformHelpController';
 import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
@@ -169,6 +171,12 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         href: PlatformSupportController.index(),
         icon: Headset,
         ability: 'support',
+    },
+    {
+        title: 'Service status',
+        href: PlatformStatusController.index(),
+        icon: Signal,
+        ability: 'readiness',
     },
     {
         title: 'Audit log',

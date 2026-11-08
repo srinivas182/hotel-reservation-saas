@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.2c — Status page and alerts (0.17.4)
+
+#### Added
+
+- Public status page at `/status` and `/en/status`: application, WhatsApp messages (Meta), assistant (AI), emails, online payments — each operational, maintenance, slower than usual, or not working; filter by country; current incidents with their updates; the last 90 days. States follow the operations checks automatically (open incidents for queues, WhatsApp and AI) and the notices the team posts.
+- Platform → Service status (Operations, super admin): post an incident or planned maintenance (French and English, services, countries, start and planned end), post updates (investigating, cause found, fixed and watching, resolved).
+- Email alerts: anyone subscribes from the status page (choosing a country or all), with a confirmation email; updates go to confirmed subscribers concerned; one-click unsubscribe.
+- In the app: a banner for active incidents and maintenance concerning the hotel's country, linking to the status page.
+- "Service status" in the website footer. Browser test for the status page.
+
 ### S17.2b — Support requests (0.17.3)
 
 #### Added
