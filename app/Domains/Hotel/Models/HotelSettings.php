@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property string $hotel_id
  * @property string|null $phone_e164
+ * @property string $support_access notify, ask_first
  * @property string|null $whatsapp_display_e164
  * @property string|null $email
  * @property string|null $address_line1
@@ -41,6 +42,7 @@ class HotelSettings extends Model
     protected $table = 'hotel_settings';
 
     protected $fillable = [
+        'support_access',
         'phone_e164', 'whatsapp_display_e164', 'email',
         'address_line1', 'address_line2', 'city', 'map_url',
         'check_in_time', 'check_out_time', 'late_checkout_until',

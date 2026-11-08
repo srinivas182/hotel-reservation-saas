@@ -26,6 +26,8 @@ enum PlatformAbility: string
     case AuditExport = 'audit.export';
     case Notes = 'notes';
     case Configuration = 'configuration';
+    case Support = 'support';
+    case Announcements = 'announcements';
 
     /**
      * @return list<PlatformRole>
@@ -38,7 +40,7 @@ enum PlatformAbility: string
 
         return [PlatformRole::SuperAdmin, ...match ($this) {
             self::HotelsView, self::Notes => [$ops, $finance, $sales],
-            self::HotelsManage, self::GoLive, self::Readiness, self::AuditView => [$ops],
+            self::HotelsManage, self::GoLive, self::Readiness, self::AuditView, self::Support, self::Announcements => [$ops],
             self::BillingView => [$ops, $finance],
             self::BillingManage => [$finance],
             self::SignupsView => [$ops, $sales],

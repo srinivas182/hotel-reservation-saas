@@ -114,6 +114,10 @@ final class AssistantSettingsController extends Controller
         // Older forms send "enabled"; the mode is what counts.
         $mode = AssistantMode::tryFrom((string) ($data['mode'] ?? '')) ?? ((bool) ($data['enabled'] ?? false) ? AssistantMode::Automatic : AssistantMode::Off);
 
+        if ($mode === AssistantMode::Automatic && $settings->mode !== AssistantMode::Automatic && ! app(\App\Domains\Platform\Features\Features::class)->enabled(\App\Domains\Platform\Features\Feature::AutomaticMode)) {
+            throw ValidationException::withMessages(['mode' => __('Automatic mode is not available for your hotel yet.')]);
+        }
+
         if ($mode !== AssistantMode::Off && $settings->mode === AssistantMode::Off && $settings->readiness_override_at === null && ! $readiness->requiredMet()) {
             throw ValidationException::withMessages(['mode' => __('Finish the required go-live checks before the assistant answers guests.')]);
         }

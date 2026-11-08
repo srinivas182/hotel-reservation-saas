@@ -122,4 +122,17 @@ class HotelAssistantSettings extends Model
     {
         return self::query()->firstOrCreate([]);
     }
+
+    /**
+     * The mode in effect: automatic falls back to supervised while the
+     * platform has the automatic-mode feature off for this hotel.
+     */
+    public function effectiveMode(): AssistantMode
+    {
+        if ($this->mode === AssistantMode::Automatic && ! app(\App\Domains\Platform\Features\Features::class)->enabled(\App\Domains\Platform\Features\Feature::AutomaticMode)) {
+            return AssistantMode::Supervised;
+        }
+
+        return $this->mode;
+    }
 }

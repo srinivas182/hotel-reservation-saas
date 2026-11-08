@@ -271,6 +271,14 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
         Route::post('hotel/setup/golive', [SetupController::class, 'requestGoLive'])->middleware('throttle:10,1')->name('hotel.setup.golive');
     });
 
+    Route::post('hotel/announcements/{announcement}/dismiss', [App\Domains\Platform\Http\Controllers\AnnouncementController::class, 'dismiss'])->name('hotel.announcements.dismiss');
+    Route::middleware('can:staff.manage')->group(function (): void {
+        Route::get('hotel/support', [App\Domains\Platform\Http\Controllers\SupportSessionController::class, 'index'])->name('hotel.support.index');
+        Route::post('hotel/support/{session}/decide', [App\Domains\Platform\Http\Controllers\SupportSessionController::class, 'decide'])->name('hotel.support.decide');
+        Route::post('hotel/support/{session}/stop', [App\Domains\Platform\Http\Controllers\SupportSessionController::class, 'stop'])->name('hotel.support.stop');
+        Route::put('hotel/support/setting', [App\Domains\Platform\Http\Controllers\SupportSessionController::class, 'setting'])->name('hotel.support.setting');
+    });
+
     Route::get('hotel/today', [TodayController::class, 'index'])->middleware('can:bookings.view')->name('hotel.today');
     Route::post('hotel/today/register-check', [TodayController::class, 'registerCheck'])->middleware('can:bookings.frontdesk')->name('hotel.today.register-check');
     Route::get('hotel/bookings/export', BookingExportController::class)->middleware(['can:bookings.export', 'throttle:10,1'])->name('hotel.bookings.export');

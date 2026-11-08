@@ -83,17 +83,19 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
     private function moduleTools(): array
     {
         $entitlements = app(\App\Domains\Billing\Entitlements::class);
+        $features = app(\App\Domains\Platform\Features\Features::class);
         $tools = [new GetMyBill($this->context)];
+        $restaurantOn = $features->enabled(\App\Domains\Platform\Features\Feature::WhatsAppRestaurant);
 
-        if ($entitlements->has(\App\Domains\Billing\Module::Restaurant)) {
+        if ($restaurantOn && $entitlements->has(\App\Domains\Billing\Module::Restaurant)) {
             array_push($tools, new RestaurantAvailability($this->context), new BookTable($this->context), new GetMenu($this->context));
         }
 
-        if ($entitlements->has(\App\Domains\Billing\Module::Ordering)) {
+        if ($restaurantOn && $entitlements->has(\App\Domains\Billing\Module::Ordering)) {
             $tools[] = new PlaceOrder($this->context);
         }
 
-        if ($entitlements->has(\App\Domains\Billing\Module::Events)) {
+        if ($features->enabled(\App\Domains\Platform\Features\Feature::WhatsAppEvents) && $entitlements->has(\App\Domains\Billing\Module::Events)) {
             $tools[] = new EventEnquiry($this->context);
         }
 

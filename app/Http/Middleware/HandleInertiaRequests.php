@@ -54,6 +54,12 @@ class HandleInertiaRequests extends Middleware
             ],
             'tenancy' => fn (): array => $this->tenancy($request),
             'inboxUnread' => fn (): int => $this->inboxUnread($request),
+            'supportSession' => function (): ?array {
+                $s = app(\App\Domains\Platform\Support\SupportAccess::class)->current();
+
+                return $s === null ? null : ['id' => $s->id, 'mode' => $s->mode, 'expires_at' => $s->expires_at?->toIso8601String(), 'extended' => $s->extended, 'hotel' => $s->hotel?->name];
+            },
+            'announcements' => fn (): array => $request->user() instanceof User ? app(\App\Domains\Platform\Announcements\Announcements::class)->forCurrent($request->user(), app()->getLocale()) : [],
             'billingReduced' => fn (): bool => \App\Domains\Billing\Invoices\Dunning::isReduced(),
             'modules' => fn (): array => app(TenantContext::class)->has() ? app(\App\Domains\Billing\Entitlements::class)->modules() : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
@@ -110,6 +116,11 @@ class HandleInertiaRequests extends Middleware
 
         if (! $user instanceof User || ! app(TenantContext::class)->has()) {
             return [];
+        }
+
+        $support = app(\App\Domains\Platform\Support\SupportAccess::class);
+        if ($support->current() !== null) {
+            return $support->permissions();
         }
 
         $user->unsetRelation('roles')->unsetRelation('permissions');

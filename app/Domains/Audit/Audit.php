@@ -25,6 +25,12 @@ final class Audit
         ?Model $causer = null,
         array $properties = [],
     ): AuditLog {
+        // Actions taken in a support session are marked with it.
+        $support = app(\App\Domains\Platform\Support\SupportAccess::class)->current();
+        if ($support !== null && ! isset($properties['support_session'])) {
+            $properties['support_session'] = $support->id;
+        }
+
         $logger = activity('audit')
             ->event($event)
             ->withProperties($properties);

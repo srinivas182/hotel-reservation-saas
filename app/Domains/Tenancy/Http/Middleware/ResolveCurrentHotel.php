@@ -44,6 +44,28 @@ final class ResolveCurrentHotel
 
         Context::add('user_id', $user->getKey());
 
+        // A platform user inside a support session enters that hotel only.
+        $supportId = $request->session()->get(\App\Domains\Platform\Support\SupportAccess::SESSION_KEY);
+
+        if (is_string($supportId) && $user->isPlatformStaff()) {
+            $support = \App\Domains\Platform\Support\SupportSession::query()->with('hotel')->where('user_id', $user->getKey())->find($supportId);
+
+            if ($support !== null && $support->isLive() && $support->hotel !== null) {
+                $this->context->set($support->hotel);
+                app(\App\Domains\Platform\Support\SupportAccess::class)->setCurrent($support);
+                $user->unsetRelation('roles')->unsetRelation('permissions');
+
+                // Read-only sessions change nothing (ending or extending the session aside).
+                if ($support->mode === 'read' && ! $request->isMethodSafe() && ! in_array($request->route()?->getName(), ['support.end', 'support.extend', 'logout'], true)) {
+                    abort(403, 'This support session is read-only.');
+                }
+
+                return $next($request);
+            }
+
+            $request->session()->forget(\App\Domains\Platform\Support\SupportAccess::SESSION_KEY);
+        }
+
         $storedId = $request->session()->get(self::SESSION_KEY);
 
         if (is_string($storedId)) {

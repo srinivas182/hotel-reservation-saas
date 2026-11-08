@@ -26,6 +26,12 @@ Route::middleware('auth')->group(function (): void {
     Route::post('legal-accept', [LegalController::class, 'accept'])->name('legal.accept.store');
 });
 
+// Inside a support session (platform user in a hotel's account).
+Route::middleware('auth')->group(function (): void {
+    Route::post('support/extend', [App\Domains\Platform\Http\Controllers\SupportSessionController::class, 'extend'])->name('support.extend');
+    Route::post('support/end', [App\Domains\Platform\Http\Controllers\SupportSessionController::class, 'end'])->name('support.end');
+});
+
 Route::get('/', fn () => auth()->check() ? to_route('dashboard') : to_route('login'))->name('home');
 
 Route::post('locale', LocaleController::class)->middleware('throttle:30,1')->name('locale.update');

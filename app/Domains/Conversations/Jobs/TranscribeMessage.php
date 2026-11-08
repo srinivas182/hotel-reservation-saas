@@ -33,6 +33,14 @@ final class TranscribeMessage implements RequiresHotelContext, ShouldQueue
             return;
         }
 
+        // Voice notes switched off by the platform: staff listen to them.
+        if (! app(\App\Domains\Platform\Features\Features::class)->enabled(\App\Domains\Platform\Features\Feature::VoiceNotes)) {
+            $message->forceFill(['transcript_error' => __('Voice notes are not available for the assistant yet.')])->save();
+            ReplyToGuest::schedule($message);
+
+            return;
+        }
+
         try {
             $result = $gateway->transcribe($path, $message->conversation_id);
         } catch (AiUnavailable $exception) {
