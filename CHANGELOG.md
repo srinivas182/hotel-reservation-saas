@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S16.3 — Error pages, error tracking, versions, migration safety (0.16.3)
+
+#### Added
+
+- Branded error pages (403, 404, 419, 429, 500, 503) in French and English, light and dark, with the request reference to quote to support. Unknown addresses use the visitor's language.
+- Error tracking ready for Sentry or self-hosted GlitchTip (`SENTRY_LARAVEL_DSN`, off when empty): reports carry the version; request bodies, cookies, auth and signature headers, user email and IP are removed; phone numbers, emails and secrets are redacted from messages and exceptions.
+- `VERSION` file (`0.16.3`), shown by `/health` and sent with error reports.
+- Migration safety test: destructive steps in `up()` (drop, rename, column change, truncate) need a reviewed `// migration-safety:` reason; three existing column widenings annotated.
+- `docs/release-process.md`: versions, merging rules, releasing, rolling back, error tracking.
+
 ### S16.2 — Speed and reliability
 
 #### Added

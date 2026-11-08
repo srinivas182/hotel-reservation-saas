@@ -34,6 +34,21 @@ final class SetLocale
         return $next($request);
     }
 
+    /**
+     * Error pages for unknown addresses run without middleware: pick the
+     * visitor's language here so they are not always in English.
+     */
+    public static function forErrorPage(Request $request): void
+    {
+        $supported = Locales::codes();
+        $user = $request->user();
+        $locale = $user instanceof User && in_array($user->preferred_locale, $supported, true)
+            ? (string) $user->preferred_locale
+            : ($request->getPreferredLanguage($supported) ?? App::getLocale());
+
+        App::setLocale($locale);
+    }
+
     private function resolve(Request $request): string
     {
         $supported = Locales::codes();

@@ -10,6 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // migration-safety: makes folio_lines.booking_id nullable (widening only; existing rows unchanged).
         // An account belongs to a stay or to an event. Existing room-bill
         // lines keep their booking and are not moved or rewritten.
         Schema::table('folio_lines', function (Blueprint $table): void {

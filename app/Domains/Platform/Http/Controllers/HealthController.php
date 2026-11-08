@@ -45,6 +45,7 @@ final class HealthController extends Controller
 
         return response()->json([
             'status' => $healthy ? 'ok' : 'failing',
+            'version' => config('app.version'),
             'checks' => $results,
             'checked_at' => now()->toIso8601String(),
         ], $healthy ? 200 : 503);

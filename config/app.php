@@ -31,6 +31,12 @@ return [
     'env' => env('APP_ENV', 'production'),
 
     /*
+    | Release version (file VERSION at the project root), shown by the
+    | health check and sent with error reports.
+    */
+    'version' => is_file(base_path('VERSION')) ? trim((string) file_get_contents(base_path('VERSION'))) : 'dev',
+
+    /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------

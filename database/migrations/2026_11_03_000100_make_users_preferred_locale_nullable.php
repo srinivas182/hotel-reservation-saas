@@ -14,6 +14,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // migration-safety: makes a column nullable (widening only).
         Schema::table('users', function (Blueprint $table): void {
             $table->string('preferred_locale', 10)->nullable()->default(null)->change();
             $table->timestamp('deactivated_at')->nullable()->after('last_login_at');

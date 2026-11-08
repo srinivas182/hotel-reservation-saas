@@ -18,6 +18,7 @@ return new class extends Migration
 
     public function up(): void
     {
+        // migration-safety: widens string to text (no data lost; the previous release reads text the same way).
         foreach (self::COLUMNS as $table => $column) {
             Schema::table($table, fn (Blueprint $t) => $t->text($column)->nullable()->change());
 
