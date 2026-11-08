@@ -1,6 +1,10 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import SetupController from '@/actions/App/Domains/Onboarding/Http/Controllers/SetupController';
+import { GoLivePanel } from '@/components/setup/golive-panel';
+import type { GoLiveState } from '@/components/setup/golive-panel';
+import { Questionnaire } from '@/components/setup/questionnaire';
+import type { QuestionnaireProps } from '@/components/setup/questionnaire';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +38,8 @@ type Props = {
     firstNumber: number;
     columns: { rooms: string[]; bookings: string[] };
     can: { rooms: boolean; bookings: boolean };
+    questionnaire: QuestionnaireProps;
+    golive: GoLiveState;
 };
 
 function QuickRooms({
@@ -329,6 +335,8 @@ export default function Setup({
     firstNumber,
     columns,
     can,
+    questionnaire,
+    golive,
 }: Props) {
     const [open, setOpen] = useState<string | null>(
         steps.find((s) => !s.done && !s.skipped)?.key ?? null,
@@ -393,6 +401,15 @@ export default function Setup({
                                     <p className="text-muted-foreground">
                                         {step.description}
                                     </p>
+                                    {step.key === 'knowledge' && (
+                                        <Questionnaire
+                                            questions={questionnaire.questions}
+                                            answers={questionnaire.answers}
+                                        />
+                                    )}
+                                    {step.key === 'golive' && (
+                                        <GoLivePanel golive={golive} />
+                                    )}
                                     {step.key === 'rooms' && (
                                         <>
                                             {categories.length > 0 && (

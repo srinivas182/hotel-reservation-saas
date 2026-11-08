@@ -57,8 +57,17 @@ final class PlatformSignupController extends Controller
                     'status' => $hotel?->status->value,
                     'trial_ends' => $trialEnds === null ? null : substr((string) $trialEnds, 0, 10),
                     'signed_up' => $p->created_at?->toDateString(),
+                    ...($hotel === null ? ['setup' => null, 'golive' => null] : app(\App\Domains\Tenancy\TenantContext::class)->run($hotel, function (): array {
+                        $progress = \App\Domains\Onboarding\Models\OnboardingProgress::current();
+
+                        return [
+                            'setup' => app(\App\Domains\Onboarding\SetupChecklist::class)->summary(),
+                            'golive' => ['requested_at' => $progress->golive_requested_at?->toDateTimeString(), 'decision' => $progress->golive_decision],
+                        ];
+                    })),
                 ];
             })->values(),
+            'funnel' => \App\Domains\Onboarding\Funnel::build(),
             'templates' => CountryTemplate::query()->orderBy('country_code')->get()->map(fn (CountryTemplate $t): array => [
                 'id' => $t->id, 'country_code' => $t->country_code, 'name' => $t->localizedName($locale), 'name_fr' => $t->name['fr'] ?? '', 'name_en' => $t->name['en'] ?? '',
                 'currency' => $t->currency, 'timezone' => $t->timezone, 'locale' => $t->locale, 'check_in' => $t->check_in, 'check_out' => $t->check_out,
@@ -71,6 +80,19 @@ final class PlatformSignupController extends Controller
                 return ['kind' => $kind, 'label' => LegalDocument::label($kind), 'version' => $current?->version, 'fr' => $current?->body['fr'] ?? '', 'en' => $current?->body['en'] ?? '', 'url' => route('legal.show', $kind)];
             })->values(),
         ]);
+    }
+
+    public function decideGoLive(Request $request, Hotel $hotel, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate(['approve' => ['required', 'boolean'], 'reason' => ['nullable', 'required_if:approve,false', 'string', 'max:500']]);
+
+        try {
+            app(\App\Domains\Onboarding\GoLive::class)->decide($hotel, (bool) $data['approve'], $data['reason'] ?? null, $user);
+        } catch (\RuntimeException $e) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['golive' => $e->getMessage()]);
+        }
+
+        return back();
     }
 
     public function settings(Request $request, #[CurrentUser] User $user): RedirectResponse

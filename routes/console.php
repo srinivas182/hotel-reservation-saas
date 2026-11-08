@@ -118,3 +118,9 @@ Schedule::command('billing:dunning')
     ->name('billing:dunning')
     ->dailyAt('07:00')
     ->withoutOverlapping();
+
+// Setup reminders and trial-ending emails.
+Schedule::command('onboarding:nudges')
+    ->name('onboarding:nudges')
+    ->dailyAt('08:00')
+    ->withoutOverlapping();

@@ -38,6 +38,8 @@ type Signup = {
     status: string | null;
     trial_ends: string | null;
     signed_up: string | null;
+    setup: { done: number; total: number } | null;
+    golive: { requested_at: string | null; decision: string | null } | null;
 };
 type Template = {
     id: number;
@@ -68,6 +70,7 @@ type Props = {
     signups: Signup[];
     templates: Template[];
     legal: Legal[];
+    funnel: { key: string; label: string; count: number }[];
 };
 
 const selectClass =
@@ -529,6 +532,7 @@ export default function PlatformSignups({
     signups,
     templates,
     legal,
+    funnel,
 }: Props) {
     const [addingCountry, setAddingCountry] = useState(false);
 
@@ -543,6 +547,25 @@ export default function PlatformSignups({
                     )}
                 />
                 <SettingsForm settings={settings} />
+
+                <section className="flex flex-col gap-2 text-sm">
+                    <Heading variant="small" title={t('Funnel')} />
+                    <div className="flex flex-wrap gap-2">
+                        {funnel.map((f) => (
+                            <div
+                                key={f.key}
+                                className="min-w-28 rounded-lg border px-3 py-2"
+                            >
+                                <div className="text-lg font-semibold">
+                                    {f.count}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    {f.label}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
 
                 <section className="flex flex-col gap-2 text-sm">
                     <Heading variant="small" title={t('New hotels')} />
@@ -588,6 +611,70 @@ export default function PlatformSignups({
                                         })}
                                     </span>
                                 )}
+                                {s.setup && (
+                                    <span className="text-muted-foreground">
+                                        {t('Setup :done/:total', {
+                                            done: s.setup.done,
+                                            total: s.setup.total,
+                                        })}
+                                    </span>
+                                )}
+                                {s.golive?.decision === 'approved' && (
+                                    <Badge>{t('Live')}</Badge>
+                                )}
+                                {s.hotel_id &&
+                                    s.golive?.requested_at &&
+                                    s.golive.decision === null && (
+                                        <span className="flex gap-1">
+                                            <Badge variant="destructive">
+                                                {t('Asks to go live')}
+                                            </Badge>
+                                            <Button
+                                                size="sm"
+                                                onClick={() =>
+                                                    router.post(
+                                                        PlatformSignupController.decideGoLive.url(
+                                                            s.hotel_id as string,
+                                                        ),
+                                                        { approve: true },
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                            >
+                                                {t('Approve')}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    const reason =
+                                                        window.prompt(
+                                                            t(
+                                                                'What should the hotel change?',
+                                                            ),
+                                                        );
+                                                    if (reason) {
+                                                        router.post(
+                                                            PlatformSignupController.decideGoLive.url(
+                                                                s.hotel_id as string,
+                                                            ),
+                                                            {
+                                                                approve: false,
+                                                                reason,
+                                                            },
+                                                            {
+                                                                preserveScroll: true,
+                                                            },
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                {t('Refuse')}
+                                            </Button>
+                                        </span>
+                                    )}
                                 {s.hotel_id && (
                                     <Button
                                         size="sm"

@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified', 'platform'])
         Route::post('signups/codes', [PlatformSignupController::class, 'storeCode'])->name('signups.codes.store');
         Route::post('signups/codes/{code}/revoke', [PlatformSignupController::class, 'revokeCode'])->name('signups.codes.revoke');
         Route::post('hotels/{hotel}/suspend', [PlatformSignupController::class, 'suspend'])->name('hotels.suspend');
+        Route::post('hotels/{hotel}/golive', [PlatformSignupController::class, 'decideGoLive'])->name('hotels.golive');
         Route::post('country-templates', [PlatformSignupController::class, 'storeTemplate'])->name('country-templates.store');
         Route::put('country-templates/{template}', [PlatformSignupController::class, 'updateTemplate'])->name('country-templates.update');
         Route::post('legal/{kind}', [PlatformSignupController::class, 'publishLegal'])->whereIn('kind', ['terms', 'privacy', 'dpa'])->name('legal.publish');

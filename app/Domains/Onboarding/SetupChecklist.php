@@ -51,6 +51,7 @@ final class SetupChecklist
             'whatsapp' => WhatsAppAccount::query()->where('status', AccountStatus::Connected->value)->exists(),
             'knowledge' => KnowledgeVersion::query()->whereNotNull('published_at')->exists(),
             'practice' => AiRun::query()->where('task', AiTask::Assistant->value)->whereNull('conversation_id')->exists(),
+            'golive' => $progress->golive_decision === 'approved' || \App\Domains\Ai\Models\HotelAssistantSettings::current()->mode !== \App\Domains\Ai\AssistantMode::Off,
         ];
 
         $meta = [
@@ -63,6 +64,7 @@ final class SetupChecklist
             'whatsapp' => [__('Connect WhatsApp'), __('Connect the hotel\'s WhatsApp Business number.'), route('hotel.whatsapp')],
             'knowledge' => [__('Information pack'), __('What the assistant may tell guests: policies, breakfast, parking, directions…'), route('hotel.assistant.knowledge')],
             'practice' => [__('Try the assistant'), __('Ask it a few questions as if you were a guest.'), route('hotel.assistant.practice')],
+            'golive' => [__('Ask to go live'), __('When everything is ready, the assistant starts in supervised mode: you approve each reply.'), route('hotel.setup')],
         ];
 
         $steps = [];
@@ -94,7 +96,7 @@ final class SetupChecklist
 
     public static function hasStep(string $key): bool
     {
-        return in_array($key, ['details', 'rooms', 'prices', 'taxes', 'hours', 'team', 'whatsapp', 'knowledge', 'practice'], true);
+        return in_array($key, ['details', 'rooms', 'prices', 'taxes', 'hours', 'team', 'whatsapp', 'knowledge', 'practice'], true); // go-live cannot be skipped
     }
 
     public static function taxesExist(): bool
