@@ -4,6 +4,7 @@ import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { PlatformBanners } from '@/components/platform-banners';
+import { StatusBanner } from '@/components/status-banner';
 import { t } from '@/lib/i18n';
 import type { AppLayoutProps } from '@/types';
 
@@ -20,6 +21,7 @@ export default function AppSidebarLayout({
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 <PlatformBanners />
+                <StatusBanner />
                 {billingReduced && (
                     <p
                         role="alert"

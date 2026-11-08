@@ -60,6 +60,12 @@ class HandleInertiaRequests extends Middleware
 
                 return $s === null ? null : ['id' => $s->id, 'mode' => $s->mode, 'expires_at' => $s->expires_at?->toIso8601String(), 'extended' => $s->extended, 'hotel' => $s->hotel?->name];
             },
+            // I: an incident banner in the app, linking to the status page.
+            'statusNotices' => fn (): array => $request->user() instanceof User
+                ? \App\Domains\Status\Models\StatusNotice::query()->active()->orderByDesc('starts_at')->get()
+                    ->filter(fn (\App\Domains\Status\Models\StatusNotice $n): bool => ! app(TenantContext::class)->has() || $n->concerns(app(TenantContext::class)->hotel()->country_code))
+                    ->map(fn (\App\Domains\Status\Models\StatusNotice $n): array => ['id' => $n->id, 'level' => $n->level, 'title' => $n->text(app()->getLocale())])->values()->all()
+                : [],
             'announcements' => fn (): array => $request->user() instanceof User ? app(\App\Domains\Platform\Announcements\Announcements::class)->forCurrent($request->user(), app()->getLocale()) : [],
             'billingReduced' => fn (): bool => \App\Domains\Billing\Invoices\Dunning::isReduced(),
             'modules' => fn (): array => app(TenantContext::class)->has() ? app(\App\Domains\Billing\Entitlements::class)->modules() : [],

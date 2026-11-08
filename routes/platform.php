@@ -24,6 +24,7 @@ use App\Domains\Platform\Http\Controllers\SupportSessionController;
 use App\Domains\Platform\Http\Controllers\UserController;
 use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
 use App\Domains\Site\Http\Controllers\PlatformSiteController;
+use App\Domains\Status\Http\Controllers\PlatformStatusController;
 use App\Domains\Support\Http\Controllers\PlatformSupportController;
 use Illuminate\Support\Facades\Route;
 
@@ -134,6 +135,12 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::get('leads', [PlatformSiteController::class, 'leads'])->name('leads');
             Route::put('leads/{lead}', [PlatformSiteController::class, 'updateLead'])->name('leads.update');
             Route::post('leads/{lead}/convert', [PlatformSiteController::class, 'convertLead'])->name('leads.convert');
+        });
+
+        Route::middleware('platform.can:readiness')->group(function (): void {
+            Route::get('status', [PlatformStatusController::class, 'index'])->name('status');
+            Route::post('status/notices', [PlatformStatusController::class, 'store'])->name('status.store');
+            Route::post('status/notices/{notice}/updates', [PlatformStatusController::class, 'update'])->name('status.update');
         });
 
         Route::middleware('platform.can:support')->group(function (): void {
