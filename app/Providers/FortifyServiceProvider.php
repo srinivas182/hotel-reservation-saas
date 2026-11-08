@@ -101,6 +101,9 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
 
+        // Every Fortify route (password reset, two-factor management…), per IP.
+        RateLimiter::for('fortify', fn (Request $request) => Limit::perMinute(30)->by((string) $request->ip()));
+
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 

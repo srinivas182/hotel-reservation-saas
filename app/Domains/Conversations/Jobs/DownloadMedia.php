@@ -56,6 +56,15 @@ final class DownloadMedia implements RequiresHotelContext, ShouldQueue
             throw $exception;
         }
 
+        $mime = $file['mime_type'] !== '' ? $file['mime_type'] : (string) ($media['mime_type'] ?? '');
+
+        if (! \App\Domains\Conversations\Media\MediaPolicy::allowed($mime)) {
+            // Never stored: staff see that a file was refused.
+            $message->forceFill(['media' => [...$media, 'mime_type' => $mime, 'error' => 'refused_type']])->save();
+
+            return;
+        }
+
         $extension = self::extension($file['mime_type']);
         $path = sprintf('whatsapp/%s/%s.%s', $message->hotel_id, $message->id, $extension);
         Storage::disk('local')->put($path, $file['contents']);

@@ -44,19 +44,39 @@ final class HotelExport
                 continue;
             }
 
+            $rows = array_map(fn (array $row): array => array_map(fn ($v) => self::readable($v), $row), $rows);
             $zip->addFromString("data/{$table}.json", (string) json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $zip->addFromString("data/{$table}.csv", $this->csv($rows));
         }
 
         $disk = Storage::disk('local');
-        foreach ($disk->allFiles('hotels/'.$hotel->id) as $file) {
-            $zip->addFromString('files/'.substr($file, strlen('hotels/'.$hotel->id) + 1), (string) $disk->get($file));
+        foreach (HotelTables::folders($hotel->id) as $folder) {
+            foreach ($disk->allFiles($folder) as $file) {
+                $zip->addFromString('files/'.$file, (string) $disk->get($file));
+            }
         }
 
         $zip->addFromString('README.txt', "Export of {$hotel->name}, ".now()->toIso8601String().".\nOne JSON and one CSV file per table in data/, uploaded files in files/.\n");
         $zip->close();
 
         return $path;
+    }
+
+    /**
+     * Encrypted columns (guest notes, messages…) are exported readable: the
+     * export is for the hotel itself. Secrets tables are never exported.
+     */
+    private static function readable(mixed $value): mixed
+    {
+        if (is_string($value) && str_starts_with($value, 'eyJpdiI')) {
+            try {
+                return \Illuminate\Support\Facades\Crypt::decryptString($value);
+            } catch (\Throwable) {
+                return $value;
+            }
+        }
+
+        return $value;
     }
 
     /**

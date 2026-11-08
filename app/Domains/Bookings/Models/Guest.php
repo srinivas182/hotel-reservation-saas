@@ -39,6 +39,7 @@ class Guest extends Model
     protected function casts(): array
     {
         return [
+            'notes' => 'encrypted',
             'whatsapp_opt_in' => 'boolean',
             'whatsapp_opt_in_at' => 'datetime',
             'marketing_opt_in' => 'boolean',
