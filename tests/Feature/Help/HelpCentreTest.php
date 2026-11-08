@@ -58,7 +58,7 @@ it('lets operations and sales write articles and see what is missing', function 
     $ops = User::factory()->platformAdmin(PlatformRole::Operations)->withTwoFactor()->create();
     DB::table('help_searches')->insert(['query' => 'groupe électrogène', 'locale' => 'fr', 'results' => 0, 'source' => 'app', 'created_at' => now()]);
 
-    $this->actingAs($ops)->get(route('platform.help'))->assertOk()->assertInertia(fn ($page) => $page->where('gaps.0.q', 'groupe électrogène')->has('articles', 11));
+    $this->actingAs($ops)->get(route('platform.help'))->assertOk()->assertInertia(fn ($page) => $page->where('gaps.0.q', 'groupe électrogène')->has('articles', 12));
     $this->actingAs($ops)->post(route('platform.help.store'), [
         'slug' => 'groupe-electrogene', 'category' => 'setup', 'title' => ['fr' => 'Coupures de courant', 'en' => 'Power cuts'],
         'body' => ['fr' => 'Le service fonctionne sur nos serveurs.', 'en' => 'The service runs on our servers.'], 'screens' => '', 'published' => true,

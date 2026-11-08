@@ -74,3 +74,25 @@ test('the help panel shows the article for the screen', async ({ page }) => {
     ).toBeVisible();
     await expectAccessible(page);
 });
+
+test('reception asks support for help, with suggested articles first', async ({
+    page,
+}, info) => {
+    await page.goto('/hotel/requests');
+    await page.getByLabel('Sujet').fill('Modèles WhatsApp en attente');
+    await expect(
+        page.getByText('Ces articles peuvent répondre à votre question :'),
+    ).toBeVisible();
+    await expectAccessible(page);
+    await page
+        .getByLabel('Que s’est-il passé ?')
+        .fill(`Nos modèles restent en attente (${info.project.name}).`);
+    await page.getByRole('button', { name: 'Envoyer la demande' }).click();
+    await expect(page).toHaveURL(/\/hotel\/requests\/\d+$/);
+    await expect(
+        page.getByText(
+            `Nos modèles restent en attente (${info.project.name}).`,
+        ),
+    ).toBeVisible();
+    await expectAccessible(page);
+});

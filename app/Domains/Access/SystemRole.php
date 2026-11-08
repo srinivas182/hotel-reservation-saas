@@ -41,6 +41,7 @@ enum SystemRole: string
                 fn (Permission $permission): bool => ! in_array($permission, [Permission::RolesManage, Permission::WhatsAppConnect, Permission::BillingManage], true),
             )),
             self::Reception => [
+                Permission::SupportContact,
                 Permission::StaffView,
                 Permission::RoomsView,
                 Permission::RatesView,
@@ -61,9 +62,10 @@ enum SystemRole: string
                 Permission::FolioPayments,
                 Permission::EventsView,
             ],
-            self::RestaurantBar => [Permission::BookingsView, Permission::RestaurantView, Permission::RestaurantBookings, Permission::RestaurantMenu, Permission::RestaurantOrders],
-            self::EventsCoordinator => [Permission::EventsView, Permission::EventsManage, Permission::BookingsView],
+            self::RestaurantBar => [Permission::SupportContact, Permission::BookingsView, Permission::RestaurantView, Permission::RestaurantBookings, Permission::RestaurantMenu, Permission::RestaurantOrders],
+            self::EventsCoordinator => [Permission::SupportContact, Permission::EventsView, Permission::EventsManage, Permission::BookingsView],
             self::ReadOnly => [
+                Permission::SupportContact,
                 Permission::HotelSettingsView,
                 Permission::TaxesView,
                 Permission::StaffView,

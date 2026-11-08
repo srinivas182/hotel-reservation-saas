@@ -188,6 +188,12 @@ export function HelpPanel() {
                             </p>
                         )
                     )}
+                    <a
+                        href={`/hotel/requests?from=${encodeURIComponent(typeof window === 'undefined' ? '' : window.location.pathname)}&screen=${encodeURIComponent(component)}`}
+                        className="underline"
+                    >
+                        {t('Still stuck? Contact support')}
+                    </a>
                     {data && data.others.length > 0 && (
                         <section>
                             <h3 className="mb-1 font-semibold">
