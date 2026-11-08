@@ -26,7 +26,7 @@ beforeEach(function (): void {
 });
 
 it('follows the sign-up mode: closed, invitation code, open', function (): void {
-    $this->withoutMiddleware(Illuminate\Routing\Middleware\ThrottleRequests::class);
+    $this->withoutMiddleware(App\Http\Middleware\ThrottlePerRoute::class);
     signupMode('closed');
     $this->get(route('signup'))->assertOk()->assertInertia(fn ($page) => $page->where('mode', 'closed'));
     $this->post(route('signup.store'), signupPayload())->assertForbidden();

@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.1 — Brand, public website, pricing, leads (0.17.1)
+
+#### Added
+
+- Brand settings (Platform → Website, super admin): product name (working name "Assistant Hôtel"), tagline, main colour, logo (SVG checked for scripts and links, PNG, WebP), support email and WhatsApp, privacy-friendly analytics (Plausible or Matomo). The name is used in screens, page titles, emails, PDFs and error pages; the starter kit's logo and name are gone (a test checks no visible "Laravel" text remains).
+- Public website, French at `/` and English at `/en`: home (with an example WhatsApp conversation), features, pricing, countries, FAQ, demo request, legal links. Fast Blade pages, light and dark, accessible; canonical and alternate-language links, Open Graph tags, `sitemap.xml`. Page texts are edited in Platform → Website (Sales and super admin).
+- Pricing page built from Billing's plans and packs, in the visitor's currency (from their country when known, or chosen), with the VAT note from the issuing company and Meta fees explained.
+- Demo requests → Platform → Leads (Sales, super admin): statuses (not contacted yet, contacted, demo done, trial, won, lost with reason), sales contact, follow-up date, encrypted notes and messages; "Create an invitation code" makes a one-use 30-day code linked to the lead, which moves to Trial when used. Daily email (`leads:digest`, 07:30) to sales and super admins with new leads and follow-ups due.
+- Browser tests for the website (French and English, prices, demo request).
+
+#### Changed
+
+- `/` shows the website to visitors; signed-in users still go to their dashboard.
+
+#### Fixed
+
+- **Rate limits were shared between routes**: the framework counts per user or IP across every route with a numeric limit, so browsing the website used up the demo form's allowance, and guests on one hotel Wi-Fi shared limits across unrelated pages. Each route now has its own counter (`ThrottlePerRoute`); a test covers it.
+
 ### S16.3b — Browser tests and accessibility (0.16.4)
 
 #### Added

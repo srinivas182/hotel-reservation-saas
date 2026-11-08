@@ -26,6 +26,8 @@ enum PlatformAbility: string
     case AuditExport = 'audit.export';
     case Notes = 'notes';
     case Configuration = 'configuration';
+    case Leads = 'leads';
+    case Website = 'website';
     case Support = 'support';
     case Announcements = 'announcements';
 
@@ -45,6 +47,7 @@ enum PlatformAbility: string
             self::BillingManage => [$finance],
             self::SignupsView => [$ops, $sales],
             self::SignupCodes => [$ops, $sales],
+            self::Leads, self::Website => [$sales],
             self::Catalog, self::SignupsConfigure, self::AuditExport, self::Configuration => [],
         }];
     }

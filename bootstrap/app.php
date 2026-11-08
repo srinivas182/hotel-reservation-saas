@@ -51,6 +51,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'hotel' => EnsureHotelSelected::class,
             'platform' => EnsurePlatformStaff::class,
             'platform.can' => App\Domains\Platform\Http\Middleware\PlatformCan::class,
+            // One rate-limit counter per route, not one shared by every throttled route (S17).
+            'throttle' => App\Http\Middleware\ThrottlePerRoute::class,
         ]);
 
         // The current hotel must be known before route-model binding runs,
