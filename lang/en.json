@@ -1922,6 +1922,7 @@
     "The owner has been asked to approve the session.": "The owner has been asked to approve the session.",
     "The party is larger than the outlet.": "The party is larger than the outlet.",
     "The payment did not go through.": "The payment did not go through.",
+    "The payment service is not answering. Please try again in a few minutes.": "The payment service is not answering. Please try again in a few minutes.",
     "The plan has no :interval price in :currency.": "The plan has no :interval price in :currency.",
     "The platform team allowed going live on :at: :reason": "The platform team allowed going live on :at: :reason",
     "The price is now :now instead of :then quoted to the guest. Confirm the new price to approve.": "The price is now :now instead of :then quoted to the guest. Confirm the new price to approve.",

@@ -28,6 +28,15 @@ final class TellGuestAboutTable implements RequiresHotelContext, ShouldQueue
 {
     use Queueable;
 
+    /** Retry policy (S16): attempts before the job is marked failed. */
+    public int $tries = 3;
+
+    /** @var list<int> seconds between attempts */
+    public array $backoff = [10, 60];
+
+    /** Seconds before a stuck attempt is stopped. */
+    public int $timeout = 60;
+
     public function __construct(public readonly string $bookingId) {}
 
     public function handle(MessageSender $sender, TenantContext $context): void

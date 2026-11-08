@@ -89,6 +89,47 @@ final class FrontDesk
     }
 
     /**
+     * Suggestions for many arrivals at once: one availability check per
+     * category and dates, and never the same room twice.
+     *
+     * @param  Collection<int, Booking>  $bookings
+     * @return array<string, array<int, string>> booking id => position => room id
+     */
+    public function suggestionsFor(Collection $bookings): array
+    {
+        $result = [];
+
+        foreach ($bookings->groupBy(fn (Booking $b): string => $b->room_category_id.'|'.$b->check_in->toDateString().'|'.$b->check_out->toDateString()) as $group) {
+            $first = $group->first();
+            if (! $first instanceof Booking) {
+                continue;
+            }
+            $eligible = $this->assignments->eligibleRooms($first);
+            $used = $group->flatMap(fn (Booking $b) => $b->bookingRooms->pluck('room_id'))->filter()->values()->all();
+
+            foreach ($group as $booking) {
+                $suggested = [];
+                foreach ($booking->bookingRooms as $line) {
+                    if ($line->room_id !== null) {
+                        $suggested[$line->position] = $line->room_id;
+
+                        continue;
+                    }
+
+                    $room = $eligible->first(fn (Room $room): bool => ! in_array($room->id, $used, true));
+                    if ($room !== null) {
+                        $suggested[$line->position] = $room->id;
+                        $used[] = $room->id;
+                    }
+                }
+                $result[$booking->id] = $suggested;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Room numbers to suggest for each unassigned line of a booking.
      *
      * @return array<int, string> position => room id

@@ -17,6 +17,12 @@ final class SimulateReceipts implements ShouldQueue
 {
     use Queueable;
 
+    /** Retry policy (S16): attempts before the job is marked failed. */
+    public int $tries = 1;
+
+    /** Seconds before a stuck attempt is stopped. */
+    public int $timeout = 60;
+
     public function __construct(
         public readonly string $phoneNumberId,
         public readonly string $wamid,

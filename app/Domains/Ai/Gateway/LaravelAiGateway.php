@@ -82,6 +82,11 @@ final class LaravelAiGateway implements AiGateway
         }
 
         $failed = [];
+        $breaker = app(CircuitBreaker::class);
+
+        // Models that keep failing are skipped for a minute, unless every model is skipped.
+        $healthy = array_values(array_filter($models, fn (AiModel $m): bool => ! $breaker->isOpen((int) $m->id)));
+        $models = $healthy === [] ? $models : $healthy;
 
         foreach ($models as $model) {
             $started = hrtime(true);
@@ -96,11 +101,13 @@ final class LaravelAiGateway implements AiGateway
                 $this->record($task, $model, $conversationId, $request, null, 0, 0, 0, $started, 'error', $exception->getMessage());
                 Log::warning('AI model failed', ['task' => $task->value, 'model' => $model->model, 'error' => Str::limit($exception->getMessage(), 300)]);
                 $failed[] = $model->model;
+                $breaker->failure((int) $model->id);
 
                 continue;
             }
 
             $run = $this->record($task, $model, $conversationId, $request, $text, $input, $output, $audio, $started, 'ok', null);
+            $breaker->success((int) $model->id);
 
             $this->ledger->record("ai.{$task->value}", 1, 'ai_run', (string) $run->id);
             $this->ledger->record('ai.cost_micro_usd', $run->cost_micro_usd, 'ai_run', (string) $run->id);

@@ -13,6 +13,15 @@ use Illuminate\Mail\Mailables\Headers;
  */
 trait HasEmailCategory
 {
+    /** Queued emails are retried when the email provider is down (S16). */
+    public int $tries = 4;
+
+    /** @var list<int> seconds between attempts */
+    public array $backoff = [60, 300, 900];
+
+    /** Seconds before a stuck attempt is stopped. */
+    public int $timeout = 60;
+
     abstract protected function emailCategory(): EmailCategory;
 
     public function headers(): Headers

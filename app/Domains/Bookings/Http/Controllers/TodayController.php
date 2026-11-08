@@ -41,6 +41,9 @@ final class TodayController extends Controller
         $ids = array_values(array_map('strval', $categories->pluck('id')->all()));
         $tonight = $ids === [] ? [] : $availability->forRange($ids, $today, $today);
 
+        $arrivals = $this->desk->arrivals();
+        $suggestions = $this->desk->suggestionsFor($arrivals);
+
         $present = fn (Booking $booking, bool $suggest = false): array => [
             'id' => $booking->id,
             'reference' => $booking->reference,
@@ -55,7 +58,7 @@ final class TodayController extends Controller
             'room_numbers' => $booking->bookingRooms->map(fn (BookingRoom $line): ?string => $line->room?->number)->filter()->values()->all(),
             'tentative_until' => $booking->tentative_until?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             'overdue' => $booking->check_out->lt($today),
-            'suggested_rooms' => $suggest ? (object) $this->desk->suggestedRooms($booking) : null,
+            'suggested_rooms' => $suggest ? (object) ($suggestions[$booking->id] ?? []) : null,
         ];
 
         $check = RegisterCheck::query()->with('checker')->where('night', $today->toDateString())->latest('id')->first();
@@ -71,7 +74,7 @@ final class TodayController extends Controller
             })() : null,
             'date' => $today->toDateString(),
             'dateLabel' => $localized->isoFormat('dddd D MMMM YYYY'),
-            'arrivals' => $this->desk->arrivals()->map(fn (Booking $b): array => $present($b, true))->values(),
+            'arrivals' => $arrivals->map(fn (Booking $b): array => $present($b, true))->values(),
             'inHouse' => $this->desk->inHouse()->map(fn (Booking $b): array => $present($b))->values(),
             'departures' => $this->desk->departures()->map(fn (Booking $b): array => $present($b))->values(),
             'noShows' => $this->desk->possibleNoShows()->map(fn (Booking $b): array => $present($b))->values(),

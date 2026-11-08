@@ -89,6 +89,13 @@ final class PrepareSimulation extends Command
             return true;
         });
 
+        if (! $this->option('report')) {
+            // The simulated staff have read the current legal texts (S14).
+            foreach ($hotel->members()->get() as $member) {
+                app(\App\Domains\Onboarding\Legal::class)->accept($member, app(\App\Domains\Onboarding\Legal::class)->missing($member), '127.0.0.1', $hotel->id);
+            }
+        }
+
         if (! $ok) {
             $this->components->error('Not every conversation was answered, or messages failed or were duplicated.');
 

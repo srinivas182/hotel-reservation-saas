@@ -63,7 +63,7 @@ final class InboxController extends Controller
         $digits = preg_replace('/\D/', '', $search) ?? '';
 
         $conversations = Conversation::query()
-            ->with('contact.guest')
+            ->with(['contact.guest', 'assignee'])
             ->when($search !== '', fn ($query) => $query->whereHas('contact', fn ($contact) => $contact
                 ->where('profile_name', 'like', "%{$search}%")
                 ->when(strlen($digits) >= 3, fn ($q) => $q->orWhere('wa_id', 'like', "%{$digits}%"))

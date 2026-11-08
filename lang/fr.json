@@ -1922,6 +1922,7 @@
     "The owner has been asked to approve the session.": "Le propriétaire doit approuver la session.",
     "The party is larger than the outlet.": "Le groupe est plus grand que la capacité du point de vente.",
     "The payment did not go through.": "Le paiement n'a pas abouti.",
+    "The payment service is not answering. Please try again in a few minutes.": "Le service de paiement ne répond pas. Veuillez réessayer dans quelques minutes.",
     "The plan has no :interval price in :currency.": "La formule n'a pas de prix :interval en :currency.",
     "The platform team allowed going live on :at: :reason": "L'équipe de la plateforme a autorisé la mise en service le :at : :reason",
     "The price is now :now instead of :then quoted to the guest. Confirm the new price to approve.": "Le prix est maintenant de :now au lieu de :then annoncé au client. Confirmez le nouveau prix pour approuver.",
