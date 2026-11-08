@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.2a — Help centre (0.17.2)
+
+#### Added
+
+- Help centre: articles in French and English (Markdown, pictures and GIF animations), public at `/help` and `/en/help`, searchable (titles first, then text), with related articles and a "Did this answer your question?" vote. Eleven first articles written from the launch guides; a test checks every hotel screen has one.
+- "?" help panel in every screen's header: the article for that screen in a side panel, a search, and the list of all articles, without leaving the screen.
+- Platform → Help centre (Operations, Sales, super admin): write and edit articles, choose the screens each helps with, upload pictures and animations; **searches with no answer** (60 days) and "not helpful" comments, so the team knows what to write next.
+- "Help" in the website menu.
+- Browser tests: the help panel on the inbox; help centre search and article.
+
 ### S17.1 — Brand, public website, pricing, leads (0.17.1)
 
 #### Added

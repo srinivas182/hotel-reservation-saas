@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Billing\Http\Controllers\PaymentReturnController;
 use App\Domains\Events\Http\Controllers\PublicQuoteController;
+use App\Domains\Help\Http\Controllers\HelpController;
 use App\Domains\Identity\Http\Controllers\LocaleController;
 use App\Domains\Onboarding\Http\Controllers\LegalController;
 use App\Domains\Onboarding\Http\Controllers\SignupController;
@@ -43,6 +44,18 @@ Route::middleware('throttle:120,1')->group(function (): void {
     Route::get('sitemap.xml', [SiteController::class, 'sitemap'])->name('site.sitemap');
     Route::get('brand/logo', [SiteController::class, 'logo'])->name('brand.logo');
 });
+// Help centre (S17): public, French at /help and English at /en/help.
+Route::middleware('throttle:120,1')->group(function (): void {
+    Route::get('help', [HelpController::class, 'index'])->name('help.index');
+    Route::get('en/help', [HelpController::class, 'index'])->name('help.index.en');
+    Route::get('help/media/{file}', [HelpController::class, 'media'])->name('help.media');
+    Route::get('help/{slug}', [HelpController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('help.show');
+    Route::get('en/help/{slug}', [HelpController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('help.show.en');
+});
+Route::post('help/{slug}/feedback', [HelpController::class, 'feedback'])->middleware('throttle:20,60')->name('help.feedback');
+Route::post('en/help/{slug}/feedback', [HelpController::class, 'feedback'])->middleware('throttle:20,60')->name('help.feedback.en');
+Route::middleware(['auth', 'throttle:60,1'])->get('help-panel', [HelpController::class, 'panel'])->name('help.panel');
+
 Route::post('demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo');
 Route::post('en/demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo.en');
 
