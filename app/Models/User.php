@@ -132,6 +132,11 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return $this->platform_role !== null;
     }
 
+    public function platformCan(\App\Domains\Platform\PlatformAbility $ability): bool
+    {
+        return $this->platform_role !== null && in_array($this->platform_role, $ability->roles(), true);
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->platform_role === PlatformRole::SuperAdmin;

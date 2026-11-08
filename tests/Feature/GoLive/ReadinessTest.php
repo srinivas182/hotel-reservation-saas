@@ -61,7 +61,7 @@ it('blocks switching the assistant on until the required checks pass', function 
 
 it('lets a super admin allow go-live with a reason, audited', function (): void {
     $admin = User::factory()->platformAdmin()->withTwoFactor()->create();
-    $support = User::factory()->withTwoFactor()->create(['platform_role' => 'support']);
+    $support = User::factory()->withTwoFactor()->create(['platform_role' => 'operations']);
 
     $this->actingAs($support)->post(route('platform.readiness.override', $this->hotel), ['reason' => 'x'])->assertForbidden();
     $this->actingAs($admin)->post(route('platform.readiness.override', $this->hotel), ['reason' => ''])->assertSessionHasErrors('reason');

@@ -91,7 +91,7 @@ it('tests a model with a one-word prompt', function (): void {
 });
 
 it('keeps the AI pages for super admins', function (): void {
-    $support = User::factory()->withTwoFactor()->create(['platform_role' => 'support']);
+    $support = User::factory()->withTwoFactor()->create(['platform_role' => 'operations']);
     $models = setUpAiModels();
 
     $this->actingAs($support)->get(route('platform.ai'))->assertForbidden();

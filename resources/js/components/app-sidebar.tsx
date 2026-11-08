@@ -33,6 +33,8 @@ import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Cont
 import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
 import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
 import BillingController from '@/actions/App/Domains/Billing/Http/Controllers/BillingController';
+import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
+import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
 import PilotDashboardController from '@/actions/App/Domains/Platform/Http/Controllers/PilotDashboardController';
@@ -78,41 +80,72 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const platformNavItems: NavItem[] = [
+const platformNavItems: (NavItem & { ability: string })[] = [
+    {
+        title: 'Platform home',
+        href: PlatformHomeController(),
+        icon: LayoutGrid,
+        ability: 'hotels.view',
+    },
     {
         title: 'Hotels',
         href: HotelController.index(),
         icon: Building2,
+        ability: 'hotels.view',
     },
     {
         title: 'Users',
         href: UserController.index(),
         icon: UserCog,
+        ability: 'configuration',
     },
     {
         title: 'WhatsApp',
         href: WhatsAppPlatformController(),
         icon: MessageCircle,
+        ability: 'readiness',
     },
     {
         title: 'Go-live readiness',
         href: ReadinessController.index(),
         icon: Rocket,
+        ability: 'readiness',
     },
     {
         title: 'Pilot dashboard',
         href: PilotDashboardController(),
         icon: Activity,
+        ability: 'readiness',
     },
     {
         title: 'Billing',
         href: PlatformBillingController.index(),
         icon: CreditCard,
+        ability: 'billing.view',
     },
     {
         title: 'Sign-ups',
         href: PlatformSignupController.index(),
         icon: UserPlus,
+        ability: 'signups.view',
+    },
+    {
+        title: 'Audit log',
+        href: AuditLogController.index(),
+        icon: ScrollText,
+        ability: 'audit.view',
+    },
+    {
+        title: 'Email providers',
+        href: MailProviderController.index(),
+        icon: Mail,
+        ability: 'configuration',
+    },
+    {
+        title: 'AI',
+        href: AiController.index(),
+        icon: Sparkles,
+        ability: 'configuration',
     },
 ];
 
@@ -252,19 +285,10 @@ export function AppSidebar() {
               ]
             : []),
     ];
-    const platformItems: NavItem[] = [
-        ...platformNavItems,
-        ...(auth.user.platform_role === 'super_admin'
-            ? [
-                  {
-                      title: 'Email providers',
-                      href: MailProviderController.index(),
-                      icon: Mail,
-                  },
-                  { title: 'AI', href: AiController.index(), icon: Sparkles },
-              ]
-            : []),
-    ];
+    const abilities = auth.platform ?? [];
+    const platformItems: NavItem[] = platformNavItems.filter((item) =>
+        abilities.includes(item.ability),
+    );
 
     return (
         <Sidebar collapsible="icon" variant="inset">

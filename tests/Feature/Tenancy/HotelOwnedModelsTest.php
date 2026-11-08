@@ -33,6 +33,8 @@ const HOTEL_SCOPING_ALLOWLIST = [
     // check) and are read only by the platform.
     App\Domains\Onboarding\Models\PendingSignup::class,
     App\Domains\Onboarding\Models\LegalAcceptance::class,
+    // Platform-only notes about a hotel; never read in a hotel's context.
+    App\Domains\Platform\Models\HotelNote::class,
 ];
 
 it('scopes every model that has a hotel_id column', function (): void {

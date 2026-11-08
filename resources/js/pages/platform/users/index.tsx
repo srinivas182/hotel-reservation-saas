@@ -35,7 +35,9 @@ type Props = {
 
 const roleLabels: Record<string, string> = {
     super_admin: 'Super admin',
-    support: 'Support',
+    operations: 'Operations',
+    finance: 'Finance',
+    sales: 'Sales',
 };
 
 const selectClass =
@@ -125,7 +127,7 @@ export default function PlatformUsers({
                                             id="staff-role"
                                             name="platform_role"
                                             className={selectClass}
-                                            defaultValue="support"
+                                            defaultValue="operations"
                                         >
                                             {roles.map((role) => (
                                                 <option key={role} value={role}>

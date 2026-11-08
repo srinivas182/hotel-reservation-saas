@@ -50,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'reduced' => App\Domains\Billing\Http\Middleware\ReducedMode::class,
             'hotel' => EnsureHotelSelected::class,
             'platform' => EnsurePlatformStaff::class,
+            'platform.can' => App\Domains\Platform\Http\Middleware\PlatformCan::class,
         ]);
 
         // The current hotel must be known before route-model binding runs,
