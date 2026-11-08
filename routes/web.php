@@ -12,6 +12,7 @@ use App\Domains\Platform\Http\Controllers\AccountHotelsController;
 use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
 use App\Domains\Site\Http\Controllers\SiteController;
+use App\Domains\Support\Http\Controllers\SupportAttachmentController;
 use App\Domains\Tenancy\Http\Controllers\SwitchHotelController;
 use App\Domains\WhatsApp\Http\Controllers\WebhookController as WhatsAppWebhookController;
 use App\Http\Controllers\CspReportController;
@@ -55,6 +56,7 @@ Route::middleware('throttle:120,1')->group(function (): void {
 Route::post('help/{slug}/feedback', [HelpController::class, 'feedback'])->middleware('throttle:20,60')->name('help.feedback');
 Route::post('en/help/{slug}/feedback', [HelpController::class, 'feedback'])->middleware('throttle:20,60')->name('help.feedback.en');
 Route::middleware(['auth', 'throttle:60,1'])->get('help-panel', [HelpController::class, 'panel'])->name('help.panel');
+Route::middleware(['auth', 'throttle:120,1'])->get('support/attachments/{ticket}/{file}', SupportAttachmentController::class)->whereNumber('ticket')->name('support.attachment');
 
 Route::post('demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo');
 Route::post('en/demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo.en');

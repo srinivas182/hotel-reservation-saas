@@ -49,6 +49,7 @@ use App\Domains\Rooms\Http\Controllers\RoomClosureController;
 use App\Domains\Rooms\Http\Controllers\RoomController;
 use App\Domains\Rooms\Http\Controllers\RoomsController;
 use App\Domains\StaffAlerts\Http\Controllers\AlertSettingsController;
+use App\Domains\Support\Http\Controllers\HotelSupportController;
 use App\Domains\WhatsApp\Http\Controllers\TemplateController;
 use App\Domains\WhatsApp\Http\Controllers\WhatsAppConnectionController;
 use Illuminate\Support\Facades\Route;
@@ -253,6 +254,13 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     });
 
     Route::middleware('can:billing.view')->get('hotel/billing', BillingController::class)->name('hotel.billing');
+    Route::middleware('can:support.contact')->group(function (): void {
+        Route::get('hotel/requests', [HotelSupportController::class, 'index'])->name('hotel.requests');
+        Route::post('hotel/requests', [HotelSupportController::class, 'store'])->middleware('throttle:10,60')->name('hotel.requests.store');
+        Route::get('hotel/requests/{ticket}', [HotelSupportController::class, 'show'])->whereNumber('ticket')->name('hotel.requests.show');
+        Route::post('hotel/requests/{ticket}/reply', [HotelSupportController::class, 'reply'])->whereNumber('ticket')->middleware('throttle:30,10')->name('hotel.requests.reply');
+        Route::post('hotel/requests/{ticket}/rate', [HotelSupportController::class, 'rate'])->whereNumber('ticket')->name('hotel.requests.rate');
+    });
     Route::middleware('can:hotel.settings.manage')->group(function (): void {
         Route::get('hotel/privacy', [GuestDataController::class, 'index'])->name('hotel.privacy');
         Route::get('hotel/privacy/guests/{guest}/export', [GuestDataController::class, 'export'])->name('hotel.privacy.export');

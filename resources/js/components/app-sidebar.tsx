@@ -5,6 +5,7 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    Headset,
     Globe,
     Target,
     ShieldCheck,
@@ -47,6 +48,8 @@ import GuestDataController from '@/actions/App/Domains/Privacy/Http/Controllers/
 import OperationsController from '@/actions/App/Domains/Platform/Http/Controllers/OperationsController';
 import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
 import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
+import HotelSupportController from '@/actions/App/Domains/Support/Http/Controllers/HotelSupportController';
+import PlatformSupportController from '@/actions/App/Domains/Support/Http/Controllers/PlatformSupportController';
 import PlatformHelpController from '@/actions/App/Domains/Help/Http/Controllers/PlatformHelpController';
 import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
@@ -162,6 +165,12 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         ability: 'help',
     },
     {
+        title: 'Support requests',
+        href: PlatformSupportController.index(),
+        icon: Headset,
+        ability: 'support',
+    },
+    {
         title: 'Audit log',
         href: AuditLogController.index(),
         icon: ScrollText,
@@ -216,6 +225,15 @@ export function AppSidebar() {
                       title: 'Guest data requests',
                       href: GuestDataController.index(),
                       icon: ShieldCheck,
+                  },
+              ]
+            : []),
+        ...(auth.permissions.includes('support.contact')
+            ? [
+                  {
+                      title: 'Contact support',
+                      href: HotelSupportController.index(),
+                      icon: Headset,
                   },
               ]
             : []),

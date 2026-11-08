@@ -24,6 +24,7 @@ use App\Domains\Platform\Http\Controllers\SupportSessionController;
 use App\Domains\Platform\Http\Controllers\UserController;
 use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
 use App\Domains\Site\Http\Controllers\PlatformSiteController;
+use App\Domains\Support\Http\Controllers\PlatformSupportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -133,6 +134,18 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::get('leads', [PlatformSiteController::class, 'leads'])->name('leads');
             Route::put('leads/{lead}', [PlatformSiteController::class, 'updateLead'])->name('leads.update');
             Route::post('leads/{lead}/convert', [PlatformSiteController::class, 'convertLead'])->name('leads.convert');
+        });
+
+        Route::middleware('platform.can:support')->group(function (): void {
+            Route::get('support', [PlatformSupportController::class, 'index'])->name('support');
+            Route::get('support/{ticket}', [PlatformSupportController::class, 'show'])->whereNumber('ticket')->name('support.show');
+            Route::post('support/{ticket}/reply', [PlatformSupportController::class, 'reply'])->whereNumber('ticket')->name('support.reply');
+            Route::put('support/{ticket}', [PlatformSupportController::class, 'update'])->whereNumber('ticket')->name('support.update');
+            Route::post('support/{ticket}/draft', [PlatformSupportController::class, 'draft'])->whereNumber('ticket')->middleware('throttle:20,1')->name('support.draft');
+            Route::put('support-settings', [PlatformSupportController::class, 'settings'])->name('support.settings');
+            Route::post('saved-replies', [PlatformSupportController::class, 'storeReply'])->name('saved-replies.store');
+            Route::put('saved-replies/{reply}', [PlatformSupportController::class, 'updateReply'])->name('saved-replies.update');
+            Route::delete('saved-replies/{reply}', [PlatformSupportController::class, 'destroyReply'])->name('saved-replies.destroy');
         });
 
         Route::middleware('platform.can:help')->group(function (): void {

@@ -64,6 +64,9 @@ final class HotelHealth
             if ($progress?->golive_requested_at !== null && $progress->golive_decision === null) {
                 $issues[] = 'golive_request';
             }
+            if (\App\Domains\Support\Models\SupportTicket::query()->where('hotel_id', $hotel->id)->whereNull('first_responded_at')->where('status', '!=', 'solved')->where('first_response_due_at', '<', now())->exists()) {
+                $issues[] = 'support_late';
+            }
 
             return [
                 'status' => $hotel->status->value,
@@ -99,6 +102,7 @@ final class HotelHealth
             'ai_credits' => __('AI credits used up'),
             'overdue_invoice' => __('Overdue invoice'),
             'golive_request' => __('Asks to go live'),
+            'support_late' => __('Support request waiting past its target'),
             default => $issue,
         };
     }

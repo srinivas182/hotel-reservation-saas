@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.2b — Support requests (0.17.3)
+
+#### Added
+
+- Contact support (every staff role; new permission `support.contact`, run `permissions:sync` when deploying): subject, topic, message, up to three screenshots **annotated in the browser** (box, arrow, pen). The page, screen, app version, role, language, browser and screen size are attached automatically. While the subject is typed, **matching help articles are suggested**, with "That solved it" (searches recorded for the help gaps report). Requests are followed at Hotel → Contact support (`/hotel/requests`): thread, reply (reopens a solved request), **one-tap rating** when solved. "Still stuck? Contact support" in the help panel carries the current screen.
+- Platform → Support requests (Operations, super admin): filters (in progress, late, mine, solved), priority, assignee, status, **internal notes**, the hotel's context, **saved replies** in French and English filled with the person, hotel and agent names, **AI-drafted replies** from the help articles and the hotel's state (paid by the platform, not the hotel's credits; marked in the thread; always reviewed and sent by a person; can be switched off), satisfaction over 90 days.
+- First-answer targets by plan (default 24 h, Pro and Complet 8 h; editable); late requests are flagged in the list and on the platform home.
+- Emails: new request and hotel replies to the team (assignee, or Operations and super admins); answers and "solved — how did we do?" to the requester.
+- **WhatsApp notices** of support answers, from the support team's own WhatsApp number (an account connected like a hotel's, with an approved `support_reply` template): off until both are set, then the requester can choose them; email always goes out.
+- Browser test: a support request with suggested articles.
+
 ### S17.2a — Help centre (0.17.2)
 
 #### Added
