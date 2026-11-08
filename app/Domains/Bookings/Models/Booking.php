@@ -58,6 +58,7 @@ class Booking extends Model
     protected function casts(): array
     {
         return [
+            'notes' => 'encrypted',
             'channel' => BookingChannel::class,
             'status' => BookingStatus::class,
             'check_in' => DateOnly::class,

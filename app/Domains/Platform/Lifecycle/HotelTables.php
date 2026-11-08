@@ -67,6 +67,16 @@ final class HotelTables
     }
 
     /**
+     * Storage folders holding a hotel's files (menu photos, WhatsApp media…).
+     *
+     * @return list<string>
+     */
+    public static function folders(string $hotelId): array
+    {
+        return ['hotels/'.$hotelId, 'whatsapp/'.$hotelId];
+    }
+
+    /**
      * @return list<string>
      */
     public static function all(): array

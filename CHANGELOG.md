@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S16.1 — Security hardening
+
+#### Added
+
+- Test: every hotel route checks a permission (5 reviewed exceptions, with reasons), and each of the six hotel roles opens exactly the screens its permissions allow.
+- Test: secrets and personal notes are stored encrypted (14 models); a database check confirms ciphertext.
+- Log redaction on every log channel: phone numbers, email addresses, tokens and keys removed before writing.
+- Test: every public route that does work or shows data is rate limited.
+- Guest files: only safe types are stored (refused types never downloaded, shown to staff as refused); documents are served as downloads, all files in a sandbox.
+- Weekly OWASP ZAP baseline scan (`.github/workflows/security-scan.yml`), reporting only.
+- `docs/security.md`.
+
+#### Changed
+
+- Guest notes and booking notes are now encrypted (existing values encrypted by the migration).
+- The private file store is no longer served over HTTP (it was not used; all files go through access-checked pages).
+- Secure session cookies by default outside local and testing.
+- Password reset and two-factor management routes rate limited (30 a minute per IP); WhatsApp webhook verification rate limited.
+- Horizon requires a signed-in user (plus its super-admin gate) and is rate limited.
+
+#### Fixed
+
+- A closed hotel's export and deletion now include its WhatsApp media (stored outside the hotel's main folder); a test covers both.
+- Hotel exports show encrypted notes and messages readable, for the hotel itself.
+
 ### S15.3 — Several hotels, closing a hotel, guest data, operations page
 
 #### Added

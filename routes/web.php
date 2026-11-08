@@ -51,7 +51,7 @@ Route::middleware('throttle:120,1')->group(function (): void {
     Route::get('m/{hotel}/{outlet}/photos/{item}', [PublicMenuController::class, 'photo'])->whereNumber('item')->name('menu.public.photo');
 });
 
-Route::get('webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
+Route::get('webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->middleware('throttle:60,1')->name('webhooks.whatsapp.verify');
 Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])
     ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:600,1')

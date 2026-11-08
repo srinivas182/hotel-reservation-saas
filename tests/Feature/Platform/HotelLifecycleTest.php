@@ -27,6 +27,7 @@ require_once __DIR__.'/../Bookings/helpers.php';
 
 beforeEach(function (): void {
     Mail::fake();
+    Illuminate\Support\Facades\Storage::fake('local');
     $this->travelTo('2026-11-01 10:00:00');
     $this->hotel = Hotel::factory()->create(['name' => 'Hôtel Le Baobab', 'currency' => 'XOF', 'timezone' => 'Africa/Abidjan']);
     $this->other = Hotel::factory()->create(['name' => 'Autre hôtel']);
@@ -42,6 +43,9 @@ beforeEach(function (): void {
     rateFor($this->other, $otherCategory);
     book($this->other, $otherCategory, '2026-11-10', '2026-11-12');
     subscribe($this->hotel, billingPlan('pro'));
+    Illuminate\Support\Facades\Storage::disk('local')->put('whatsapp/'.$this->hotel->id.'/voice.ogg', 'OGGS');
+    Illuminate\Support\Facades\Storage::disk('local')->put('hotels/'.$this->hotel->id.'/menu/dish.jpg', 'JPG');
+    Illuminate\Support\Facades\Storage::disk('local')->put('whatsapp/'.$this->other->id.'/keep.ogg', 'OGGS');
     ($this->in)(fn () => WhatsAppAccount::query()->create(['waba_id' => '1', 'phone_number_id' => 'P1', 'status' => AccountStatus::Connected, 'token' => 'secret-token']));
     ($this->in)(fn () => HotelAssistantSettings::current()->forceFill(['mode' => AssistantMode::Supervised])->save());
     $entity = BillingEntity::query()->create(['name' => 'CNH', 'legal_name' => 'CNH', 'country_code' => 'CI', 'address' => 'Abidjan', 'email' => 'f@cnh.example', 'invoice_prefix' => 'CNH', 'is_default' => true]);
@@ -86,6 +90,7 @@ it('closes a hotel: no access, no assistant, no WhatsApp, no invoices, with a fu
     $zip->open($download->getFile()->getPathname());
     $names = collect(range(0, $zip->numFiles - 1))->map(fn ($i) => $zip->getNameIndex($i));
     expect($names)->toContain('data/bookings.json')->toContain('data/guests.csv')->toContain('hotel.json')
+        ->toContain('files/whatsapp/'.$this->hotel->id.'/voice.ogg')->toContain('files/hotels/'.$this->hotel->id.'/menu/dish.jpg')
         ->not->toContain('data/whatsapp_accounts.json')
         ->and((string) $zip->getFromName('data/bookings.json'))->not->toContain(Hotel::query()->where('name', 'Autre hôtel')->value('id'));
 
@@ -112,6 +117,7 @@ it('reminds the owner, then deletes the data 90 days later, keeping invoices and
         ->and(Illuminate\Support\Facades\DB::table('booking_rooms')->whereNotIn('booking_id', Booking::query()->withoutGlobalScopes()->select('id'))->count())->toBe(0)
         ->and(Invoice::query()->where('hotel_id', $this->hotel->id)->count())->toBe(1)
         ->and($this->hotel->fresh()->name)->toStartWith('Deleted hotel')
+        ->and(Illuminate\Support\Facades\Storage::disk('local')->allFiles())->toBe(['whatsapp/'.$this->other->id.'/keep.ogg'])
         ->and(HotelClosure::query()->sole()->purged_at)->not->toBeNull();
 });
 

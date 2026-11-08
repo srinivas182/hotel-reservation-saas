@@ -129,7 +129,9 @@ final class Closures
                 : DB::table($table)->whereIn($via['column'], DB::table($via['parent'])->where('hotel_id', $hotel->id)->select($via['parent_column']))->delete();
         }
 
-        Storage::disk('local')->deleteDirectory('hotels/'.$hotel->id);
+        foreach (HotelTables::folders($hotel->id) as $folder) {
+            Storage::disk('local')->deleteDirectory($folder);
+        }
         Storage::disk('local')->deleteDirectory('private/exports/'.$hotel->id);
         if (is_dir(storage_path('app/private/exports/'.$hotel->id))) {
             array_map('unlink', glob(storage_path('app/private/exports/'.$hotel->id.'/*')) ?: []);

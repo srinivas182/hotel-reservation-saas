@@ -284,11 +284,16 @@ final class InboxController extends Controller
 
         abort_unless(is_string($path) && Storage::disk('local')->exists($path), 404);
 
-        return Storage::disk('local')->response($path, null, [
-            'Content-Type' => (string) ($message->media['mime_type'] ?? 'application/octet-stream'),
+        $mime = (string) ($message->media['mime_type'] ?? 'application/octet-stream');
+        $inline = \App\Domains\Conversations\Media\MediaPolicy::inline($mime);
+
+        return Storage::disk('local')->response($path, $inline ? null : 'file-'.$message->id.'.'.pathinfo($path, PATHINFO_EXTENSION), [
+            'Content-Type' => $inline ? $mime : 'application/octet-stream',
+            'Content-Disposition' => ($inline ? 'inline' : 'attachment').'; filename="file-'.$message->id.'.'.pathinfo($path, PATHINFO_EXTENSION).'"',
+            'Content-Security-Policy' => "sandbox; default-src 'none'; img-src 'self'; media-src 'self'",
             'Cache-Control' => 'private, max-age=300',
             'X-Content-Type-Options' => 'nosniff',
-        ]);
+        ], $inline ? 'inline' : 'attachment');
     }
 
     /**
@@ -349,7 +354,9 @@ final class InboxController extends Controller
                 'body' => $message->body,
                 'template_name' => $message->template_name,
                 'media_url' => isset($message->media['path']) ? route('hotel.inbox.media', $message) : null,
-                'media_error' => isset($message->media['media_id']) && ! isset($message->media['path']) ? ($message->media['error'] ?? __('Downloading…')) : null,
+                'media_error' => isset($message->media['media_id']) && ! isset($message->media['path'])
+                    ? (($message->media['error'] ?? null) === 'refused_type' ? __('File not opened: this type of file is refused for safety.') : ($message->media['error'] ?? __('Downloading…')))
+                    : null,
                 'mime_type' => $message->media['mime_type'] ?? null,
                 'filename' => $message->media['filename'] ?? null,
                 'location' => isset($message->media['latitude']) ? ['lat' => $message->media['latitude'], 'lng' => $message->media['longitude'] ?? 0] : null,

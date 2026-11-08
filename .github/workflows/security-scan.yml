@@ -1,0 +1,80 @@
+# ---------------------------------------------------------------------
+# Weekly OWASP ZAP baseline scan (S16): starts the app with demo data and
+# scans it like an outside visitor would. Reports, never blocks: findings
+# are uploaded as an artifact and summarised in the run.
+# About 8 minutes a week. Can also be started by hand.
+# ---------------------------------------------------------------------
+name: Security scan
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  zap:
+    name: OWASP ZAP baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install and start the app (production settings, SQLite, demo data)
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --no-dev
+          npm ci --no-audit --no-fund && npm run build
+          cp .env.example .env
+          sed -i 's/^APP_ENV=.*/APP_ENV=production/; s/^APP_DEBUG=.*/APP_DEBUG=false/' .env
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "SESSION_SECURE_COOKIE=false" >> .env
+          touch database/database.sqlite
+          php artisan key:generate --force --no-interaction
+          php artisan migrate --force --seed --no-interaction
+          php artisan serve --host=127.0.0.1 --port=8000 > serve.log 2>&1 &
+          sleep 5 && curl -fsS http://127.0.0.1:8000/up
+
+      - name: ZAP baseline scan
+        run: |
+          mkdir -p zap && chmod 777 zap
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://127.0.0.1:8000 -r report.html -J report.json -I || true
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          try:
+              data = json.load(open('zap/report.json'))
+          except Exception as e:
+              print(f'ZAP report missing: {e}'); raise SystemExit
+          alerts = [a for s in data.get('site', []) for a in s.get('alerts', [])]
+          print('## OWASP ZAP baseline\n')
+          print(f'{len(alerts)} alert type(s).\n')
+          for a in sorted(alerts, key=lambda a: -int(a.get('riskcode', 0))):
+              print(f"- **{a.get('riskdesc')}** {a.get('name')} ({len(a.get('instances', []))})")
+          PY
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zap-report
+          path: zap/
+          retention-days: 30
