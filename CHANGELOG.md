@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.3e — Launch documents (0.17.9)
+
+#### Added
+- Branded launch documents in `docs/launch/` with PDFs in `docs/launch/pdf/` (rebuild with `python3 scripts/build_launch_pdfs.py`): **sales brochure** (French and English), **price sheet** (launch defaults: plans, packs, other currencies, what credits mean, Meta fees), **20-minute demo script** for CNH sales (with the demo hotel, the return-on-investment calculator, proposals and common objections), **support playbook** for CNH (hours, first-answer targets, priorities, method, frequent questions, escalation to MCS), **owner quick-start** (one-hour setup).
+- Owner and reception guides updated with help, support, support sessions, What's new, ideas and the status page.
+
+#### Changed
+- PDF footer now names the product and both partners instead of the pilot.
+
+
 ### S17.3d — Launch defaults, launch checklist and launch-week watch (0.17.8)
 
 #### Added

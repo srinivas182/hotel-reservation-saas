@@ -130,7 +130,7 @@ def build(md_path: Path) -> Path:
         canvas.saveState()
         canvas.setFont(FONT, 7.5)
         canvas.setFillColor(colors.grey)
-        canvas.drawString(18 * mm, 9 * mm, "Mayura Consultancy Services · First Class Lodge pilot")
+        canvas.drawString(18 * mm, 9 * mm, "Assistant Hôtel · CNH Global Tech & Mayura Consultancy Services")
         canvas.drawRightString(A4[0] - 18 * mm, 9 * mm, str(document.page))
         canvas.restoreState()
 
