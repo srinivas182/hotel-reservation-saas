@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.3b — Return on investment and proposals (0.17.6)
+
+#### Added
+
+- **G — Return-on-investment calculator** (Platform → Leads, per lead): WhatsApp enquiries a day, share missed today, share that would book, average nights and price → bookings and revenue recovered a month, the plan's monthly cost, how many times it pays for itself and in how many days. Computed as you type; the same transparent formula appears in the proposal.
+- **H — One-click proposals**: plan, currency, monthly or yearly, discount (up to 20% for sales, 50% for super admins), language, a personal word. A private page `/proposal/{token}` (and a branded PDF) shows the return on investment, the recommended plan and price (VAT note from the issuing company), what is included and the trial. **"Start my trial"** creates a one-use 30-day invitation code linked to the lead and opens the sign-up with it; the lead moves to Trial when it is used. Optional email to the prospect; the link is shown to copy into WhatsApp. Valid 30 days; viewed and accepted dates shown on the lead.
+
+#### Fixed
+
+- The private demo link from S17.3a was not shown on the Leads page after sending it (it now is, with the proposal link).
+
 ### S17.3a — Demo hotel and live demos (0.17.5)
 
 #### Added

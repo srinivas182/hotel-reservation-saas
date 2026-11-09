@@ -12,6 +12,7 @@ use App\Domains\Onboarding\Http\Controllers\SignupController;
 use App\Domains\Platform\Http\Controllers\AccountHotelsController;
 use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
+use App\Domains\Sales\Http\Controllers\ProposalController;
 use App\Domains\Site\Http\Controllers\SiteController;
 use App\Domains\Status\Http\Controllers\StatusController;
 use App\Domains\Support\Http\Controllers\SupportAttachmentController;
@@ -74,6 +75,13 @@ Route::post('en/status/subscribe', [StatusController::class, 'subscribe'])->midd
 
 // Private and sales demo links (S17): signed, time-limited.
 Route::get('demo/enter/{hotel}', [PlatformDemoController::class, 'enter'])->middleware(['signed', 'throttle:20,1'])->name('demo.enter');
+
+// H: proposals, opened from a private link.
+Route::middleware('throttle:60,1')->group(function (): void {
+    Route::get('proposal/{token}', [ProposalController::class, 'show'])->name('proposal.show');
+    Route::get('proposal/{token}/pdf', [ProposalController::class, 'pdf'])->name('proposal.pdf');
+});
+Route::post('proposal/{token}/accept', [ProposalController::class, 'accept'])->middleware('throttle:10,10')->name('proposal.accept');
 
 Route::post('demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo');
 Route::post('en/demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo.en');
