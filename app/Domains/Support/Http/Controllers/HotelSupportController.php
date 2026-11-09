@@ -34,6 +34,7 @@ final class HotelSupportController extends Controller
             'categories' => collect(SupportTicket::CATEGORIES)->map(fn (string $c): array => ['value' => $c, 'label' => SupportTicket::categoryLabel($c)])->values(),
             'whatsapp' => app(SupportWhatsApp::class)->available() && $user->phone_e164 !== null,
             'version' => config('app.version'),
+            'hours' => \App\Domains\Site\Models\BrandSettings::current()->support_hours[app()->getLocale()] ?? null,
         ]);
     }
 

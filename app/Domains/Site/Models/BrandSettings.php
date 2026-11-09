@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Schema;
  * @property string|null $support_whatsapp
  * @property string|null $analytics_domain
  * @property string|null $analytics_script
+ * @property array<string, string>|null $support_hours
  */
 class BrandSettings extends Model
 {
@@ -35,7 +36,7 @@ class BrandSettings extends Model
      */
     protected function casts(): array
     {
-        return ['tagline' => 'array'];
+        return ['tagline' => 'array', 'support_hours' => 'array'];
     }
 
     protected static function booted(): void
@@ -81,7 +82,7 @@ class BrandSettings extends Model
                     'name' => $b->name, 'tagline' => $b->tagline ?? [], 'color' => $b->primary_color,
                     'logo' => $b->logo_path === null ? null : route('brand.logo', ['v' => substr(md5((string) $b->updated_at), 0, 8)]),
                     'support_email' => $b->support_email, 'support_whatsapp' => $b->support_whatsapp,
-                    'analytics_domain' => $b->analytics_domain, 'analytics_script' => $b->analytics_script,
+                    'analytics_domain' => $b->analytics_domain, 'analytics_script' => $b->analytics_script, 'support_hours' => $b->support_hours ?? [],
                 ];
             });
         } catch (\Throwable) {

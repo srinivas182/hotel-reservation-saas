@@ -57,6 +57,7 @@ import PlatformSupportController from '@/actions/App/Domains/Support/Http/Contro
 import PlatformStatusController from '@/actions/App/Domains/Status/Http/Controllers/PlatformStatusController';
 import PlatformProductController from '@/actions/App/Domains/Product/Http/Controllers/PlatformProductController';
 import ProductController from '@/actions/App/Domains/Product/Http/Controllers/ProductController';
+import LaunchController from '@/actions/App/Domains/Launch/Http/Controllers/LaunchController';
 import PlatformHelpController from '@/actions/App/Domains/Help/Http/Controllers/PlatformHelpController';
 import PlatformDemoController from '@/actions/App/Domains/Demo/Http/Controllers/PlatformDemoController';
 import HotelDemoController from '@/actions/App/Domains/Demo/Http/Controllers/HotelDemoController';
@@ -196,6 +197,12 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         href: PlatformStatusController.index(),
         icon: Signal,
         ability: 'readiness',
+    },
+    {
+        title: 'Launch',
+        href: LaunchController.index(),
+        icon: Rocket,
+        ability: 'notes',
     },
     {
         title: 'Audit log',
