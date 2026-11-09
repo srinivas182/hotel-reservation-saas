@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.3c — What's new and ideas board (0.17.7)
+
+#### Added
+
+- **E — What's new**: release notes written for hotels (French and English, Markdown, a picture or short GIF, a **"Try it"** button that opens the feature), newest first, with a dot in the menu until read. **Monthly email digest** (`whats-new:digest`, the 1st at 09:00) of last month's notes to owners and managers of live and trial hotels; anyone can turn it off (in What's new, or from the email's signed link).
+- **F — Ideas board** (everyone signed in): suggest an idea (similar ideas are shown first so votes gather), vote and unvote (one vote per person), see the status (under review, planned, being built, available, not planned) and the platform's answer.
+- Platform → What's new and ideas (Operations, Sales, super admin): write and publish release notes; ideas ranked by votes and by number of hotels; set the status, answer publicly, merge duplicates (votes move, nobody counted twice). Voters are emailed when an idea is planned or available (unless they turned product emails off).
+- Browser test: What's new and suggesting an idea.
+
 ### S17.3b — Return on investment and proposals (0.17.6)
 
 #### Added

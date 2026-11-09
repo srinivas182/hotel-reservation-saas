@@ -152,3 +152,9 @@ Schedule::command('demo:maintain --reset')
     ->name('demo:maintain --reset')
     ->dailyAt('03:15')
     ->withoutOverlapping();
+
+// E: last month's "What's new", to owners and managers who want it.
+Schedule::command('whats-new:digest')
+    ->name('whats-new:digest')
+    ->monthlyOn(1, '09:00')
+    ->withoutOverlapping();

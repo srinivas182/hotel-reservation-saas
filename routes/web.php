@@ -11,6 +11,7 @@ use App\Domains\Onboarding\Http\Controllers\LegalController;
 use App\Domains\Onboarding\Http\Controllers\SignupController;
 use App\Domains\Platform\Http\Controllers\AccountHotelsController;
 use App\Domains\Platform\Http\Controllers\HealthController;
+use App\Domains\Product\Http\Controllers\ProductController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
 use App\Domains\Sales\Http\Controllers\ProposalController;
 use App\Domains\Site\Http\Controllers\SiteController;
@@ -59,6 +60,17 @@ Route::middleware('throttle:120,1')->group(function (): void {
 Route::post('help/{slug}/feedback', [HelpController::class, 'feedback'])->middleware('throttle:20,60')->name('help.feedback');
 Route::post('en/help/{slug}/feedback', [HelpController::class, 'feedback'])->middleware('throttle:20,60')->name('help.feedback.en');
 Route::middleware(['auth', 'throttle:60,1'])->get('help-panel', [HelpController::class, 'panel'])->name('help.panel');
+// E: "What's new"; F: ideas board (everyone signed in).
+Route::middleware(['auth', 'verified', 'throttle:120,1'])->group(function (): void {
+    Route::get('whats-new', [ProductController::class, 'whatsNew'])->name('whats-new');
+    Route::put('whats-new/emails', [ProductController::class, 'emails'])->name('whats-new.emails');
+    Route::get('ideas', [ProductController::class, 'ideas'])->name('ideas');
+    Route::get('ideas/similar', [ProductController::class, 'similar'])->name('ideas.similar');
+    Route::post('ideas', [ProductController::class, 'suggest'])->middleware('throttle:10,60')->name('ideas.store');
+    Route::post('ideas/{idea}/vote', [ProductController::class, 'vote'])->middleware('throttle:60,1')->name('ideas.vote');
+});
+Route::middleware('throttle:120,1')->get('whats-new/media/{file}', [ProductController::class, 'media'])->name('whats-new.media');
+Route::middleware(['signed', 'throttle:20,1'])->get('product-emails/off/{user}', [ProductController::class, 'emailsOff'])->name('product-emails.off');
 Route::middleware(['auth', 'throttle:120,1'])->get('support/attachments/{ticket}/{file}', SupportAttachmentController::class)->whereNumber('ticket')->name('support.attachment');
 
 // Status page (S17): French at /status, English at /en/status.

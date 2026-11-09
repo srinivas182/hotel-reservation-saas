@@ -6,6 +6,8 @@ import { t } from '@/lib/i18n';
  * in the translation files.
  */
 export const authTitles = (): string[] => [
+    t('Product emails stopped'),
+    t('You will no longer receive “What’s new” and ideas emails.'),
     t('14 days free, no card needed. You will confirm your email next.'),
     t('Authentication code'),
     t('Confirm password'),

@@ -24,6 +24,7 @@ use App\Domains\Platform\Http\Controllers\ReadinessController;
 use App\Domains\Platform\Http\Controllers\SupportSessionController;
 use App\Domains\Platform\Http\Controllers\UserController;
 use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
+use App\Domains\Product\Http\Controllers\PlatformProductController;
 use App\Domains\Sales\Http\Controllers\ProposalController;
 use App\Domains\Site\Http\Controllers\PlatformSiteController;
 use App\Domains\Status\Http\Controllers\PlatformStatusController;
@@ -164,6 +165,10 @@ Route::middleware(['auth', 'verified', 'platform'])
         });
 
         Route::middleware('platform.can:help')->group(function (): void {
+            Route::get('product', [PlatformProductController::class, 'index'])->name('product');
+            Route::post('product/notes', [PlatformProductController::class, 'storeNote'])->name('product.notes.store');
+            Route::post('product/notes/{note}', [PlatformProductController::class, 'updateNote'])->name('product.notes.update');
+            Route::put('product/ideas/{idea}', [PlatformProductController::class, 'decide'])->name('product.ideas.decide');
             Route::get('help', [PlatformHelpController::class, 'index'])->name('help');
             Route::post('help/articles', [PlatformHelpController::class, 'store'])->name('help.store');
             Route::put('help/articles/{article}', [PlatformHelpController::class, 'update'])->name('help.update');
