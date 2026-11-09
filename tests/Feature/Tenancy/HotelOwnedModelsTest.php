@@ -39,6 +39,9 @@ const HOTEL_SCOPING_ALLOWLIST = [
     App\Domains\Platform\Lifecycle\HotelClosure::class,
     // Support requests are read by the platform team; hotel pages filter by the current hotel.
     App\Domains\Support\Models\SupportTicket::class,
+    // Ideas and votes are shared across hotels on purpose (F); hotel_id only says where a vote came from.
+    App\Domains\Product\Models\Idea::class,
+    App\Domains\Product\Models\IdeaVote::class,
     // Support sessions decide which hotel a platform user enters, so they
     // are read before any hotel is selected; hotel pages filter explicitly.
     App\Domains\Platform\Support\SupportSession::class,

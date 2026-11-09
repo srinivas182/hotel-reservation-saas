@@ -5,6 +5,7 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    Lightbulb,
     PlayCircle,
     Presentation,
     Signal,
@@ -54,6 +55,8 @@ import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controll
 import HotelSupportController from '@/actions/App/Domains/Support/Http/Controllers/HotelSupportController';
 import PlatformSupportController from '@/actions/App/Domains/Support/Http/Controllers/PlatformSupportController';
 import PlatformStatusController from '@/actions/App/Domains/Status/Http/Controllers/PlatformStatusController';
+import PlatformProductController from '@/actions/App/Domains/Product/Http/Controllers/PlatformProductController';
+import ProductController from '@/actions/App/Domains/Product/Http/Controllers/ProductController';
 import PlatformHelpController from '@/actions/App/Domains/Help/Http/Controllers/PlatformHelpController';
 import PlatformDemoController from '@/actions/App/Domains/Demo/Http/Controllers/PlatformDemoController';
 import HotelDemoController from '@/actions/App/Domains/Demo/Http/Controllers/HotelDemoController';
@@ -177,6 +180,12 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         ability: 'help',
     },
     {
+        title: 'What’s new and ideas',
+        href: PlatformProductController.index(),
+        icon: Megaphone,
+        ability: 'help',
+    },
+    {
         title: 'Support requests',
         href: PlatformSupportController.index(),
         icon: Headset,
@@ -230,6 +239,9 @@ export function AppSidebar() {
     const { auth, inboxUnread, modules = [] } = usePage().props;
     const demoHotel =
         (usePage().props as { demoHotel?: boolean }).demoHotel === true;
+    const whatsNewUnread =
+        (usePage().props as { whatsNewUnread?: boolean }).whatsNewUnread ===
+        true;
     const isPlatformStaff = auth.user.platform_role !== null;
     const hotelNavItems: NavItem[] = [
         ...mainNavItems,
@@ -257,6 +269,12 @@ export function AppSidebar() {
                   },
               ]
             : []),
+        {
+            title: whatsNewUnread ? 'What’s new •' : 'What’s new',
+            href: ProductController.whatsNew(),
+            icon: Sparkles,
+        },
+        { title: 'Ideas', href: ProductController.ideas(), icon: Lightbulb },
         ...(auth.permissions.includes('support.contact')
             ? [
                   {

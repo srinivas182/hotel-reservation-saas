@@ -102,3 +102,23 @@ test('reception asks support for help, with suggested articles first', async ({
     ).toBeVisible();
     await expectAccessible(page);
 });
+
+test('what is new and the ideas board', async ({ page }, info) => {
+    await page.goto('/whats-new');
+    await expect(
+        page.getByRole('heading', { name: 'Nouveautés' }),
+    ).toBeVisible();
+    await expectAccessible(page);
+
+    await page.goto('/ideas');
+    await page
+        .getByLabel('Votre idée')
+        .fill(`Export Excel des réservations (${info.project.name})`);
+    await page.getByRole('button', { name: 'Proposer' }).click();
+    await expect(
+        page
+            .getByText(`Export Excel des réservations (${info.project.name})`)
+            .first(),
+    ).toBeVisible();
+    await expectAccessible(page);
+});

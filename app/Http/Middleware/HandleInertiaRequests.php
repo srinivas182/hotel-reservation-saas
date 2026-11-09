@@ -55,6 +55,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'tenancy' => fn (): array => $this->tenancy($request),
             'inboxUnread' => fn (): int => $this->inboxUnread($request),
+            'whatsNewUnread' => fn (): bool => $request->user() instanceof User && \App\Domains\Product\Models\ReleaseNote::query()->published()->when($request->user()->whats_new_seen_at !== null, fn ($q) => $q->where('published_at', '>', $request->user()->whats_new_seen_at))->exists(),
             'demoHotel' => fn (): bool => app(TenantContext::class)->has() && app(TenantContext::class)->hotel()->is_demo,
             'supportSession' => function (): ?array {
                 $s = app(\App\Domains\Platform\Support\SupportAccess::class)->current();

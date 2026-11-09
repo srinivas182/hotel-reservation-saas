@@ -32,6 +32,8 @@ use Spatie\Permission\Traits\HasRoles;
  * A person who signs in: hotel staff, hotel owners and MCS platform staff.
  * Users are not hotel-owned; their access to hotels is through memberships.
  *
+ * @property \Carbon\CarbonImmutable|null $whats_new_seen_at
+ * @property bool $product_emails
  * @property string $id
  * @property string $first_name
  * @property string $last_name
@@ -66,6 +68,8 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     protected function casts(): array
     {
         return [
+            'whats_new_seen_at' => 'immutable_datetime',
+            'product_emails' => 'boolean',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
