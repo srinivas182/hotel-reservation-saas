@@ -46,3 +46,12 @@ Après une semaine en supervisé, regardez **Mise en service → Résultats du m
 ## 7. Arrêt d'urgence
 
 Assistant IA → Mode **Désactivé** (ou bouton d'arrêt) : effet immédiat. L'équipe répond dans la boîte de réception ou depuis l'application WhatsApp Business, qui continue de fonctionner.
+
+## 8. Aide, support et nouveautés
+
+- **« ? »** en haut de chaque écran : l'article d'aide de cet écran, et une recherche.
+- **Contacter le support** (menu) : décrivez le problème, ajoutez une capture annotée ; réponse dans l'application et par e-mail (24 h Essentiel, 8 h Pro, 4 h Complet ; lundi–samedi, 8 h–18 h GMT).
+- **Sessions d'assistance** : le support vous demande d'abord l'autorisation (réglable dans Réglages).
+- **Nouveautés** : les nouvelles fonctions, avec un bouton « Essayer » ; e-mail mensuel désactivable.
+- **Idées** : proposez une amélioration et votez pour celles des autres.
+- **État des services** : page publique `/status`, alertes par e-mail possibles.

@@ -65,4 +65,4 @@ Vos choix servent à décider quand passer en mode automatique.
 | Message « WhatsApp n'est pas connecté » | Le propriétaire doit reconnecter WhatsApp (Paramètres → WhatsApp).                                                     |
 | Une demande a expiré                    | Appelez ou écrivez au client (modèle si plus de 24 h).                                                                 |
 
-Support MCS : _(numéro et adresse à compléter avant la mise en service)_
+Support : menu **Contacter le support** (lundi–samedi, 8 h–18 h GMT). Le bouton **« ? »** en haut de chaque écran ouvre l'aide de cet écran. En cas de doute sur une panne : page **État des services** (`/status`).
