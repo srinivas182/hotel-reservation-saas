@@ -69,6 +69,7 @@ final class LaunchChecklist
             'backups' => fn (): bool => BackupRun::query()->where('kind', 'backup')->where('status', 'ok')->where('created_at', '>=', now()->subHours(26))->exists(),
             'restore_drill' => fn (): bool => BackupRun::query()->where('kind', 'restore_drill')->where('status', 'ok')->where('created_at', '>=', now()->subDays(90))->exists(),
             'error_tracking' => fn (): bool => filled(config('sentry.dsn')),
+            'staging_drills' => fn (): bool => \App\Domains\Operations\Drills::allPassed(),
             'csp_enforced' => fn (): bool => (bool) config('security.csp.enforce'),
             'help_centre' => fn (): bool => HelpArticle::query()->where('published', true)->count() >= 10,
             'website' => fn (): bool => SitePage::query()->where('published', true)->whereIn('key', ['home', 'features', 'faq'])->count() === 3,

@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S16.4 kit — staging ready in two commands (0.17.10)
+
+Staging servers do not exist yet; this makes S16.4 a matter of running two scripts once they do.
+
+#### Added
+
+- `scripts/server/provision.sh`: one-time setup of an Ubuntu 24.04 server for staging or production — firewall (SSH, HTTP, HTTPS), SSH keys only, fail2ban, automatic security updates, swap, Docker and Compose, `deploy` user, the application with a generated `.env` (random secrets; simulation mode on staging only). Safe to run again.
+- `scripts/drills/staging-drills.sh`: the launch drills on staging in one command — full-size load test (k6 `SCALE=full`), workers stopped, Redis and MySQL restarts, AI providers down, Meta errors on send, **e-mail server unreachable** (the worker-stopping case found in S17.3a), duplicate notifications, backup restore, deploy and rollback. Each makes something fail, lets simulated guests write, then checks every guest was answered (or handed to staff) once. Refuses to run outside staging.
+- `php artisan simulation:check`, `simulation:guests --duplicate`, `drills:record`, `drills:status`.
+- Drill results stored (`drill_runs`); the launch checklist's "Load test and outage drills on staging" is now **checked automatically** (every drill passed in the last 30 days).
+- Content Security Policy reports counted by directive and blocked source (`csp_reports`), listed by `drills:status`, to decide when to set `CSP_ENFORCE=true`.
+
+#### Changed
+
+- `docs/deployment.md` and `docs/failure-drills.md` point to the scripts; the drill table names the production queue service (`horizon`).
+
 ### S17.3e — Launch documents (0.17.9)
 
 #### Added
