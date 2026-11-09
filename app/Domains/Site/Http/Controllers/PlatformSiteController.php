@@ -102,7 +102,8 @@ final class PlatformSiteController extends Controller
         return Inertia::render('platform/website', [
             'pages' => SitePage::query()->orderBy('id')->get()->map(fn (SitePage $p): array => ['id' => $p->id, 'key' => $p->key, 'title' => $p->title, 'description' => $p->description, 'body' => $p->body, 'published' => $p->published])->values(),
             'brand' => [
-                'name' => $brand->name, 'tagline_fr' => $brand->tagline['fr'] ?? '', 'tagline_en' => $brand->tagline['en'] ?? '', 'primary_color' => $brand->primary_color,
+                'name' => $brand->name, 'tagline_fr' => $brand->tagline['fr'] ?? '', 'tagline_en' => $brand->tagline['en'] ?? '',
+                'support_hours_fr' => $brand->support_hours['fr'] ?? '', 'support_hours_en' => $brand->support_hours['en'] ?? '', 'primary_color' => $brand->primary_color,
                 'support_email' => $brand->support_email, 'support_whatsapp' => $brand->support_whatsapp,
                 'analytics_domain' => $brand->analytics_domain, 'analytics_script' => $brand->analytics_script, 'logo' => BrandSettings::cached()['logo'] ?? null,
             ],
@@ -129,6 +130,7 @@ final class PlatformSiteController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:60'],
             'tagline_fr' => ['nullable', 'string', 'max:150'], 'tagline_en' => ['nullable', 'string', 'max:150'],
+            'support_hours_fr' => ['nullable', 'string', 'max:200'], 'support_hours_en' => ['nullable', 'string', 'max:200'],
             'primary_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'support_email' => ['nullable', 'email', 'max:191'],
             'support_whatsapp' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9 ().-]{8,25}$/'],
@@ -140,6 +142,7 @@ final class PlatformSiteController extends Controller
         $brand = BrandSettings::current();
         $values = [
             'name' => $data['name'], 'tagline' => ['fr' => (string) ($data['tagline_fr'] ?? ''), 'en' => (string) ($data['tagline_en'] ?? '')],
+            'support_hours' => ['fr' => (string) ($data['support_hours_fr'] ?? ''), 'en' => (string) ($data['support_hours_en'] ?? '')],
             'primary_color' => strtolower((string) $data['primary_color']), 'support_email' => $data['support_email'] ?? null, 'support_whatsapp' => $data['support_whatsapp'] ?? null,
             'analytics_domain' => $data['analytics_domain'] ?? null, 'analytics_script' => $data['analytics_script'] ?? null,
         ];

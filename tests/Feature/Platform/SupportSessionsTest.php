@@ -24,6 +24,8 @@ beforeEach(function (): void {
     $this->hotel = Hotel::factory()->create(['owner_user_id' => $this->owner->id]);
     staffMember($this->hotel, SystemRole::Owner, ['email' => 'staff-owner@lodge.example']);
     $this->ops = User::factory()->platformAdmin(PlatformRole::Operations)->withTwoFactor()->create();
+    // New hotels ask first since S17.3d; these tests cover "allowed with notification" unless they say otherwise.
+    app(TenantContext::class)->run($this->hotel, fn () => HotelSettings::current()->update(['support_access' => 'notify']));
 });
 
 it('opens a read-only session the owner is told about, where nothing can be changed', function (): void {

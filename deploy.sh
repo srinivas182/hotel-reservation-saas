@@ -86,6 +86,17 @@ RELEASE="$release" "${COMPOSE[@]}" run --rm --no-deps app php artisan migrate --
 log "Syncing permissions and system roles"
 RELEASE="$release" "${COMPOSE[@]}" run --rm --no-deps app php artisan permissions:sync
 
+# Version 1.0 and later are only released once the launch checklist is
+# complete (S17.3d). Production only; staging can run any version.
+version="$(cat VERSION 2>/dev/null || echo 0)"
+if [ "${APP_ENV:-production}" = "production" ] && [ "${version%%.*}" -ge 1 ] 2>/dev/null; then
+    log "Version ${version}: checking the launch checklist"
+    RELEASE="$release" "${COMPOSE[@]}" run --rm --no-deps app php artisan launch:check || fail "Launch checklist incomplete: ${version} not released (nothing was switched; migrations already ran and stay compatible)."
+fi
+
+log "Applying launch defaults (never overwrites existing choices)"
+RELEASE="$release" "${COMPOSE[@]}" run --rm --no-deps app php artisan launch:defaults
+
 swap_to "$release"
 
 if health_check; then

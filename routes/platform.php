@@ -7,6 +7,7 @@ use App\Domains\Billing\Http\Controllers\PlatformBillingController;
 use App\Domains\Billing\Http\Controllers\PlatformInvoiceController;
 use App\Domains\Demo\Http\Controllers\PlatformDemoController;
 use App\Domains\Help\Http\Controllers\PlatformHelpController;
+use App\Domains\Launch\Http\Controllers\LaunchController;
 use App\Domains\Onboarding\Http\Controllers\PlatformSignupController;
 use App\Domains\Platform\Http\Controllers\AiController;
 use App\Domains\Platform\Http\Controllers\AnnouncementController;
@@ -144,6 +145,11 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::get('leads', [PlatformSiteController::class, 'leads'])->name('leads');
             Route::put('leads/{lead}', [PlatformSiteController::class, 'updateLead'])->name('leads.update');
             Route::post('leads/{lead}/convert', [PlatformSiteController::class, 'convertLead'])->name('leads.convert');
+        });
+
+        Route::middleware('platform.can:notes')->group(function (): void {
+            Route::get('launch', [LaunchController::class, 'index'])->name('launch');
+            Route::put('launch/items/{item}', [LaunchController::class, 'update'])->name('launch.items.update');
         });
 
         Route::middleware('platform.can:readiness')->group(function (): void {

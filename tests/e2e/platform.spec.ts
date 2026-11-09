@@ -20,6 +20,14 @@ test.describe('platform', () => {
         await expectAccessible(page);
     });
 
+    test('the launch checklist and launch-week watch', async ({ page }) => {
+        await page.goto('/platform/launch');
+        await expect(
+            page.getByRole('heading', { name: 'Lancement', exact: true }),
+        ).toBeVisible();
+        await expectAccessible(page);
+    });
+
     test('sales opens the demo hotel and plays a scenario', async ({
         page,
         browser,

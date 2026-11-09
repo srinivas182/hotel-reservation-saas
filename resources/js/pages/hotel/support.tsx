@@ -21,6 +21,7 @@ type Ticket = {
     created: string | null;
 };
 type Props = {
+    hours?: string | null;
     tickets: Ticket[];
     categories: { value: string; label: string }[];
     whatsapp: boolean;
@@ -37,7 +38,12 @@ export const statusLabel = (s: string) =>
         solved: t('Solved'),
     })[s] ?? s;
 
-export default function Support({ tickets, categories, whatsapp }: Props) {
+export default function Support({
+    hours,
+    tickets,
+    categories,
+    whatsapp,
+}: Props) {
     const { url } = usePage();
     const params = new URLSearchParams(url.split('?')[1] ?? '');
     const form = useForm<{
@@ -98,6 +104,11 @@ export default function Support({ tickets, categories, whatsapp }: Props) {
                         'Ask our team for help. We answer here and by email.',
                     )}
                 />
+                {hours && (
+                    <p className="text-muted-foreground">
+                        {t('Support hours: :hours', { hours })}
+                    </p>
+                )}
 
                 {solved ? (
                     <p role="status" className="rounded-lg border px-3 py-2">

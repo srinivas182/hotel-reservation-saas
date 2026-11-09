@@ -17,6 +17,8 @@ type Page = {
 };
 type Brand = {
     name: string;
+    support_hours_fr: string;
+    support_hours_en: string;
     tagline_fr: string;
     tagline_en: string;
     primary_color: string;
@@ -31,6 +33,8 @@ type Props = { pages: Page[]; brand: Brand; canBrand: boolean };
 function BrandForm({ brand }: { brand: Brand }) {
     const form = useForm<{
         name: string;
+        support_hours_fr: string;
+        support_hours_en: string;
         tagline_fr: string;
         tagline_en: string;
         primary_color: string;
@@ -43,6 +47,8 @@ function BrandForm({ brand }: { brand: Brand }) {
         name: brand.name,
         tagline_fr: brand.tagline_fr,
         tagline_en: brand.tagline_en,
+        support_hours_fr: brand.support_hours_fr,
+        support_hours_en: brand.support_hours_en,
         primary_color: brand.primary_color,
         support_email: brand.support_email ?? '',
         support_whatsapp: brand.support_whatsapp ?? '',
@@ -54,6 +60,8 @@ function BrandForm({ brand }: { brand: Brand }) {
     const field = (
         key:
             | 'name'
+            | 'support_hours_fr'
+            | 'support_hours_en'
             | 'tagline_fr'
             | 'tagline_en'
             | 'support_email'
@@ -96,6 +104,8 @@ function BrandForm({ brand }: { brand: Brand }) {
                     }
                 />
             </label>
+            {field('support_hours_fr', t('Support hours (FR)'))}
+            {field('support_hours_en', t('Support hours (EN)'))}
             {field('support_email', t('Support email'))}
             {field('support_whatsapp', t('Support WhatsApp number'))}
             {field(

@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.3d — Launch defaults, launch checklist and launch-week watch (0.17.8)
+
+#### Added
+
+- **Launch defaults** (`php artisan launch:defaults`, run by `deploy.sh`; never overwrites a choice already made; `config/launch.php`, `docs/launch-defaults.md`): plans and packs if none exist; prices in XAF, GHS and NGN next to XOF, EUR and USD; first-answer targets Essentiel 24 h · Pro 8 h · Complet 4 h; support hours Monday–Saturday 8:00–18:00 GMT (editable in Platform → Website → Brand and shown on the support page); invoice retention 10 years (`INVOICE_RETENTION_YEARS`; invoices are never deleted). Working name, no analytics, Sentry for error tracking, legal v1 and country tax templates stay as they are until changed.
+- **Support sessions ask the owner first** for new hotels (owners can switch to "allowed with notification").
+- **I — Launch checklist** (Platform → Launch, every platform role can see it): 22 items in eight areas, each with an owner role, due date and proof. 14 are **checked automatically** (legal texts published, live payment provider, approved WhatsApp templates, approved AI model, email provider, production on HTTPS, backup in the last 26 h, restore drill in 90 days, error tracking, Content Security Policy enforced, help centre, website, demo hotel, pilot live) and cannot be ticked by hand; the others need a link or note as proof, set by their owner (only a super admin can mark a required item not needed). Readiness score and "ready for 1.0.0".
+- `php artisan launch:check` fails while a required item is open; **`deploy.sh` refuses to release version 1.x to production** until it passes.
+- **J — Launch-week watch** on the same page: sign-ups, new hotels, guest messages, failed sends, failed jobs, support requests and payments, by hour over 7 days (counts only).
+
 ### S17.3c — What's new and ideas board (0.17.7)
 
 #### Added
