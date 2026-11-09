@@ -17,6 +17,8 @@ Internet ──► Caddy (HTTPS, Let's Encrypt) ──► web (Nginx + release a
 
 ## 2. First-time setup
 
+**Quickest:** on a fresh Ubuntu 24.04 server, as root, `bash scripts/server/provision.sh staging staging.example.com ops@example.com` (or `production …`). It secures the server (firewall, SSH keys only, automatic updates, fail2ban), installs Docker, creates the `deploy` user, clones the application and generates `.env` with random secrets. Then follow the steps it prints. The manual steps below do the same by hand.
+
 ```bash
 # As a non-root deploy user in the docker group
 git clone https://github.com/srinivas182/hotel-reservation-saas.git /srv/hotel-saas

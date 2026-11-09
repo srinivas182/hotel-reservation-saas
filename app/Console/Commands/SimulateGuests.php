@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  * Sends signed guest messages to this application's WhatsApp webhook, as
  * Meta would. Staging only (needs SIMULATION_MODE).
  */
-#[Signature('simulation:guests {phone_number_id : The hotel number\'s phone number ID} {--conversations=10} {--messages=3} {--url= : Defaults to APP_URL}')]
+#[Signature('simulation:guests {phone_number_id : The hotel number\'s phone number ID} {--conversations=10} {--messages=3} {--url= : Defaults to APP_URL} {--duplicate : Send every notification twice, as Meta sometimes does}')]
 #[Description('Simulate guests writing to a hotel on WhatsApp (staging only)')]
 final class SimulateGuests extends Command
 {
@@ -48,10 +48,12 @@ final class SimulateGuests extends Command
                     ],
                 ]]]]], JSON_THROW_ON_ERROR);
 
-                Http::withBody($body, 'application/json')
-                    ->withHeaders(['X-Hub-Signature-256' => 'sha256='.hash_hmac('sha256', $body, (string) config('whatsapp.app_secret'))])
-                    ->post($url)
-                    ->throw();
+                foreach (range(1, $this->option('duplicate') ? 2 : 1) as $copy) {
+                    Http::withBody($body, 'application/json')
+                        ->withHeaders(['X-Hub-Signature-256' => 'sha256='.hash_hmac('sha256', $body, (string) config('whatsapp.app_secret'))])
+                        ->post($url)
+                        ->throw();
+                }
                 $sent++;
             }
         }
