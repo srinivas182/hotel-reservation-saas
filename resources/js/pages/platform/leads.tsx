@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
+import PlatformDemoController from '@/actions/App/Domains/Demo/Http/Controllers/PlatformDemoController';
 import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -31,6 +32,8 @@ type Lead = {
     code: string | null;
     hotel_id: string | null;
     created: string | null;
+    demo_sent: string | null;
+    demo_opened: string | null;
 };
 type Props = {
     filter: string | null;
@@ -155,6 +158,22 @@ function LeadEditor({
                         {t('Create an invitation code')}
                     </Button>
                 )}
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                        router.post(
+                            PlatformDemoController.forLead.url(lead.id),
+                            {},
+                            { preserveScroll: true },
+                        )
+                    }
+                >
+                    {lead.demo_sent
+                        ? t('Send a new demo link')
+                        : t('Send a demo link')}
+                </Button>
             </div>
         </form>
     );
@@ -255,6 +274,15 @@ export default function Leads({
                                         {t('Follow-up due :date', {
                                             date: l.follow_up_on ?? '',
                                         })}
+                                    </Badge>
+                                )}
+                                {l.demo_sent && (
+                                    <Badge variant="outline">
+                                        {l.demo_opened
+                                            ? t('Demo opened :date', {
+                                                  date: l.demo_opened,
+                                              })
+                                            : t('Demo sent, not opened')}
                                     </Badge>
                                 )}
                                 {l.code && (

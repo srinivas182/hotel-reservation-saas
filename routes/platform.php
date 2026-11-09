@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\Billing\Http\Controllers\PaymentGatewayController;
 use App\Domains\Billing\Http\Controllers\PlatformBillingController;
 use App\Domains\Billing\Http\Controllers\PlatformInvoiceController;
+use App\Domains\Demo\Http\Controllers\PlatformDemoController;
 use App\Domains\Help\Http\Controllers\PlatformHelpController;
 use App\Domains\Onboarding\Http\Controllers\PlatformSignupController;
 use App\Domains\Platform\Http\Controllers\AiController;
@@ -132,6 +133,11 @@ Route::middleware(['auth', 'verified', 'platform'])
         });
 
         Route::middleware('platform.can:leads')->group(function (): void {
+            Route::get('demo', [PlatformDemoController::class, 'index'])->name('demo');
+            Route::post('demo', [PlatformDemoController::class, 'create'])->name('demo.create');
+            Route::post('demo/password', [PlatformDemoController::class, 'password'])->name('demo.password');
+            Route::post('demo/reset', [PlatformDemoController::class, 'reset'])->middleware('throttle:10,10')->name('demo.reset');
+            Route::post('leads/{lead}/demo', [PlatformDemoController::class, 'forLead'])->middleware('throttle:20,60')->name('leads.demo');
             Route::get('leads', [PlatformSiteController::class, 'leads'])->name('leads');
             Route::put('leads/{lead}', [PlatformSiteController::class, 'updateLead'])->name('leads.update');
             Route::post('leads/{lead}/convert', [PlatformSiteController::class, 'convertLead'])->name('leads.convert');

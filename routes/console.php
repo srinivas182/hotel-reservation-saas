@@ -142,3 +142,13 @@ Schedule::command('leads:digest')
     ->name('leads:digest')
     ->dailyAt('07:30')
     ->withoutOverlapping();
+
+// Demo hotels (S17): expired private demos deleted; the sales demo reset each night.
+Schedule::command('demo:maintain')
+    ->name('demo:maintain')
+    ->hourly()
+    ->withoutOverlapping();
+Schedule::command('demo:maintain --reset')
+    ->name('demo:maintain --reset')
+    ->dailyAt('03:15')
+    ->withoutOverlapping();

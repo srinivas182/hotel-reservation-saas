@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### S17.3a — Demo hotel and live demos (0.17.5)
+
+#### Added
+- Demo hotels: a realistic hotel (four room types and 26 rooms with prices, information pack in French and English, restaurant with an orderable menu, seminar room, a guest in the house). **The real assistant answers; WhatsApp is simulated** (numbers starting `DEMO-` never reach Meta). Demo logins are managers (no two-step login); demo hotels have no subscription or credit limits.
+- **A — Live scenarios** (Hotel → Demo): "A guest asks for a room tonight", "A guest writes in English", "A guest orders from their room", "A company asks about a seminar", or write as a guest. Messages go through the same path as real WhatsApp messages; the conversation is shown live, and the booking request, order or quote appears in the usual screens.
+- **B — "Your hotel"**: the prospect's hotel name, room types, prices and room counts in a minute.
+- **C — Private demo for a lead** (Platform → Leads, "Send a demo link"): a 48-hour private demo hotel named after the prospect, emailed as a signed link (also shown to copy into WhatsApp); the lead shows when it was opened; expired demos are deleted (data and logins).
+- **D — "Try it on your own phone"**: when the demo hotel has a real WhatsApp number connected, a link and a QR code (drawn on the server) let the prospect write from their phone. Off until such a number exists.
+- Platform → Demo hotel (Sales, super admin): create the sales demo hotel, open it, new password (shown once), reset. `demo:maintain` hourly (expired private demos) and nightly at 03:15 with `--reset`.
+- Browser test: sales opens the demo hotel and plays a scenario.
+
+#### Fixed
+- The sign-in pages' titles and descriptions ("Log in to your account"…) were always in English; they are now translated.
+
+
 ### S17.2c — Status page and alerts (0.17.4)
 
 #### Added

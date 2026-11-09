@@ -20,6 +20,7 @@ use App\Domains\Bookings\Http\Controllers\BookingController;
 use App\Domains\Bookings\Http\Controllers\BookingExportController;
 use App\Domains\Bookings\Http\Controllers\TodayController;
 use App\Domains\Conversations\Http\Controllers\InboxController;
+use App\Domains\Demo\Http\Controllers\HotelDemoController;
 use App\Domains\Events\Http\Controllers\EventAccountController;
 use App\Domains\Events\Http\Controllers\EventController;
 use App\Domains\Events\Http\Controllers\EventQuoteController;
@@ -254,6 +255,15 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     });
 
     Route::middleware('can:billing.view')->get('hotel/billing', BillingController::class)->name('hotel.billing');
+    // Demo hotels (S17): scenarios, "your hotel", reset.
+    Route::middleware('can:bookings.view')->group(function (): void {
+        Route::get('hotel/demo', [HotelDemoController::class, 'show'])->name('hotel.demo');
+        Route::post('hotel/demo/play', [HotelDemoController::class, 'play'])->middleware('throttle:30,1')->name('hotel.demo.play');
+        Route::get('hotel/demo/feed', [HotelDemoController::class, 'feed'])->middleware('throttle:120,1')->name('hotel.demo.feed');
+        Route::post('hotel/demo/personalise', [HotelDemoController::class, 'personalise'])->middleware('throttle:10,10')->name('hotel.demo.personalise');
+        Route::post('hotel/demo/reset', [HotelDemoController::class, 'reset'])->middleware('throttle:10,10')->name('hotel.demo.reset');
+    });
+
     Route::middleware('can:support.contact')->group(function (): void {
         Route::get('hotel/requests', [HotelSupportController::class, 'index'])->name('hotel.requests');
         Route::post('hotel/requests', [HotelSupportController::class, 'store'])->middleware('throttle:10,60')->name('hotel.requests.store');

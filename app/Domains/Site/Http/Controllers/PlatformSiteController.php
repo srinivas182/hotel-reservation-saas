@@ -36,6 +36,7 @@ final class PlatformSiteController extends Controller
         return Inertia::render('platform/leads', [
             'filter' => is_string($status) && in_array($status, Lead::STATUSES, true) ? $status : null,
             'statuses' => Lead::STATUSES,
+            'demoLink' => session('demo_link'),
             'counts' => Lead::query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'),
             'owners' => User::query()->whereNotNull('platform_role')->whereNull('deactivated_at')->orderBy('first_name')->get()->map(fn (User $u): array => ['id' => $u->id, 'name' => $u->name])->values(),
             'leads' => Lead::query()->with(['owner', 'code'])
@@ -50,6 +51,7 @@ final class PlatformSiteController extends Controller
                         'status' => $l->status, 'lost_reason' => $l->lost_reason, 'owner_id' => $l->owner_id, 'owner' => $l->owner?->name, 'notes' => $l->notes,
                         'follow_up_on' => $l->follow_up_on?->toDateString(), 'overdue' => $l->follow_up_on !== null && $l->follow_up_on->isPast() && ! in_array($l->status, ['won', 'lost'], true),
                         'code' => $l->code?->code, 'hotel_id' => $hotel, 'created' => $l->created_at?->toDateString(),
+                        'demo_sent' => $l->demo_sent_at?->toDateTimeString(), 'demo_opened' => $l->demo_opened_at?->toDateTimeString(),
                     ];
                 })->values(),
         ]);

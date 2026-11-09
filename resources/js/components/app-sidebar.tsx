@@ -5,6 +5,8 @@ import {
     MessageCircle,
     PartyPopper,
     Rocket,
+    PlayCircle,
+    Presentation,
     Signal,
     Headset,
     Globe,
@@ -53,6 +55,8 @@ import HotelSupportController from '@/actions/App/Domains/Support/Http/Controlle
 import PlatformSupportController from '@/actions/App/Domains/Support/Http/Controllers/PlatformSupportController';
 import PlatformStatusController from '@/actions/App/Domains/Status/Http/Controllers/PlatformStatusController';
 import PlatformHelpController from '@/actions/App/Domains/Help/Http/Controllers/PlatformHelpController';
+import PlatformDemoController from '@/actions/App/Domains/Demo/Http/Controllers/PlatformDemoController';
+import HotelDemoController from '@/actions/App/Domains/Demo/Http/Controllers/HotelDemoController';
 import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
@@ -155,6 +159,12 @@ const platformNavItems: (NavItem & { ability: string })[] = [
         ability: 'leads',
     },
     {
+        title: 'Demo hotel',
+        href: PlatformDemoController.index(),
+        icon: Presentation,
+        ability: 'leads',
+    },
+    {
         title: 'Website',
         href: PlatformSiteController.website(),
         icon: Globe,
@@ -218,6 +228,8 @@ const platformNavItems: (NavItem & { ability: string })[] = [
 
 export function AppSidebar() {
     const { auth, inboxUnread, modules = [] } = usePage().props;
+    const demoHotel =
+        (usePage().props as { demoHotel?: boolean }).demoHotel === true;
     const isPlatformStaff = auth.user.platform_role !== null;
     const hotelNavItems: NavItem[] = [
         ...mainNavItems,
@@ -233,6 +245,15 @@ export function AppSidebar() {
                       title: 'Guest data requests',
                       href: GuestDataController.index(),
                       icon: ShieldCheck,
+                  },
+              ]
+            : []),
+        ...(demoHotel
+            ? [
+                  {
+                      title: 'Demo',
+                      href: HotelDemoController.show(),
+                      icon: PlayCircle,
                   },
               ]
             : []),

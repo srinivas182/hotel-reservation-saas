@@ -19,6 +19,45 @@ test.describe('platform', () => {
         await page.goto('/platform/signups');
         await expectAccessible(page);
     });
+
+    test('sales opens the demo hotel and plays a scenario', async ({
+        page,
+        browser,
+    }) => {
+        await page.goto('/platform/demo');
+        const create = page.getByRole('button', {
+            name: 'Créer l’hôtel de démonstration',
+        });
+        if (await create.isVisible()) {
+            await create.click();
+        }
+        const link = await page
+            .getByRole('link', { name: /Ouvrir la démo/ })
+            .getAttribute('href');
+
+        // The demo opens in a separate, empty browser, as on the prospect's computer
+        // (new contexts inherit the test's saved login unless told otherwise).
+        const prospect = await browser.newContext({
+            locale: 'fr-FR',
+            storageState: { cookies: [], origins: [] },
+        });
+        const demo = await prospect.newPage();
+        await demo.goto(link ?? '/');
+        await expect(demo).toHaveURL(/\/hotel\/demo/);
+        await expectAccessible(demo);
+        await demo
+            .getByRole('button', {
+                name: 'Un client demande une chambre pour ce soir',
+            })
+            .click();
+        await expect(demo.getByText(/chambre pour 2 personnes/)).toBeVisible({
+            timeout: 30_000,
+        });
+        await prospect.close();
+        // The sales person is still signed in on their own browser.
+        await page.goto('/platform');
+        await expect(page).toHaveURL(/\/platform$/);
+    });
 });
 
 test('unknown addresses show the branded page in French', async ({ page }) => {
