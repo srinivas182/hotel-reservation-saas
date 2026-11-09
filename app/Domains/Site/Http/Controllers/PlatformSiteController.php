@@ -37,6 +37,9 @@ final class PlatformSiteController extends Controller
             'filter' => is_string($status) && in_array($status, Lead::STATUSES, true) ? $status : null,
             'statuses' => Lead::STATUSES,
             'demoLink' => session('demo_link'),
+            'proposalLink' => session('proposal_link'),
+            'plans' => \App\Domains\Billing\Models\Plan::query()->where('active', true)->orderBy('sort_order')->get()->map(fn (\App\Domains\Billing\Models\Plan $p): array => ['id' => $p->id, 'name' => $p->localizedName('fr'), 'prices' => $p->prices])->values(),
+            'roiDefaults' => \App\Domains\Sales\Roi::DEFAULTS,
             'counts' => Lead::query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'),
             'owners' => User::query()->whereNotNull('platform_role')->whereNull('deactivated_at')->orderBy('first_name')->get()->map(fn (User $u): array => ['id' => $u->id, 'name' => $u->name])->values(),
             'leads' => Lead::query()->with(['owner', 'code'])
@@ -52,6 +55,9 @@ final class PlatformSiteController extends Controller
                         'follow_up_on' => $l->follow_up_on?->toDateString(), 'overdue' => $l->follow_up_on !== null && $l->follow_up_on->isPast() && ! in_array($l->status, ['won', 'lost'], true),
                         'code' => $l->code?->code, 'hotel_id' => $hotel, 'created' => $l->created_at?->toDateString(),
                         'demo_sent' => $l->demo_sent_at?->toDateTimeString(), 'demo_opened' => $l->demo_opened_at?->toDateTimeString(),
+                        'proposals' => \App\Domains\Sales\Models\Proposal::query()->where('lead_id', $l->id)->latest('id')->limit(5)->get()->map(fn (\App\Domains\Sales\Models\Proposal $p): array => [
+                            'id' => $p->id, 'url' => url('/proposal/'.$p->token), 'created' => $p->created_at?->toDateString(), 'viewed' => $p->viewed_at?->toDateTimeString(), 'accepted' => $p->accepted_at?->toDateTimeString(),
+                        ])->values(),
                     ];
                 })->values(),
         ]);

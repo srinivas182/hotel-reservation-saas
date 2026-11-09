@@ -2,6 +2,8 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
 import PlatformDemoController from '@/actions/App/Domains/Demo/Http/Controllers/PlatformDemoController';
+import { ProposalForm } from '@/components/sales/proposal-form';
+import type { Plan, RoiInputs } from '@/components/sales/proposal-form';
 import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -34,6 +36,13 @@ type Lead = {
     created: string | null;
     demo_sent: string | null;
     demo_opened: string | null;
+    proposals: {
+        id: number;
+        url: string;
+        created: string | null;
+        viewed: string | null;
+        accepted: string | null;
+    }[];
 };
 type Props = {
     filter: string | null;
@@ -41,6 +50,10 @@ type Props = {
     counts: Record<string, number>;
     owners: { id: string; name: string }[];
     leads: Lead[];
+    demoLink: string | null;
+    proposalLink: string | null;
+    plans: Plan[];
+    roiDefaults: RoiInputs;
 };
 
 const selectClass =
@@ -185,6 +198,10 @@ export default function Leads({
     counts,
     owners,
     leads,
+    demoLink,
+    proposalLink,
+    plans,
+    roiDefaults,
 }: Props) {
     const [open, setOpen] = useState<number | null>(null);
 
@@ -225,6 +242,25 @@ export default function Leads({
                         </Button>
                     ))}
                 </div>
+                {proposalLink && (
+                    <p
+                        role="status"
+                        className="rounded-lg border px-3 py-2 break-all"
+                    >
+                        {t('Proposal link (valid 30 days):')} {proposalLink}
+                    </p>
+                )}
+                {demoLink && (
+                    <p
+                        role="status"
+                        className="rounded-lg border px-3 py-2 break-all"
+                    >
+                        {t(
+                            'Private demo link (48 h), also sent by email when we have one:',
+                        )}{' '}
+                        {demoLink}
+                    </p>
+                )}
                 {leads.length === 0 && (
                     <p className="text-muted-foreground">
                         {t('No leads yet.')}
@@ -328,6 +364,56 @@ export default function Leads({
                                         statuses={statuses}
                                         owners={owners}
                                     />
+                                    {l.proposals.length > 0 && (
+                                        <ul className="text-xs">
+                                            {l.proposals.map((p) => (
+                                                <li key={p.id}>
+                                                    <a
+                                                        href={p.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="underline"
+                                                    >
+                                                        {t(
+                                                            'Proposal of :date',
+                                                            {
+                                                                date:
+                                                                    p.created ??
+                                                                    '',
+                                                            },
+                                                        )}
+                                                    </a>{' '}
+                                                    ·{' '}
+                                                    {p.accepted
+                                                        ? t(
+                                                              'trial started :date',
+                                                              {
+                                                                  date: p.accepted,
+                                                              },
+                                                          )
+                                                        : p.viewed
+                                                          ? t('viewed :date', {
+                                                                date: p.viewed,
+                                                            })
+                                                          : t('not viewed yet')}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                    <details>
+                                        <summary className="cursor-pointer font-medium">
+                                            {t(
+                                                'Return on investment and proposal',
+                                            )}
+                                        </summary>
+                                        <ProposalForm
+                                            leadId={l.id}
+                                            plans={plans}
+                                            defaults={roiDefaults}
+                                            hasEmail={l.email !== null}
+                                            rooms={l.rooms}
+                                        />
+                                    </details>
                                 </>
                             )}
                         </li>

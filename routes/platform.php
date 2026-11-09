@@ -24,6 +24,7 @@ use App\Domains\Platform\Http\Controllers\ReadinessController;
 use App\Domains\Platform\Http\Controllers\SupportSessionController;
 use App\Domains\Platform\Http\Controllers\UserController;
 use App\Domains\Platform\Http\Controllers\WhatsAppPlatformController;
+use App\Domains\Sales\Http\Controllers\ProposalController;
 use App\Domains\Site\Http\Controllers\PlatformSiteController;
 use App\Domains\Status\Http\Controllers\PlatformStatusController;
 use App\Domains\Support\Http\Controllers\PlatformSupportController;
@@ -137,6 +138,7 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::post('demo', [PlatformDemoController::class, 'create'])->name('demo.create');
             Route::post('demo/password', [PlatformDemoController::class, 'password'])->name('demo.password');
             Route::post('demo/reset', [PlatformDemoController::class, 'reset'])->middleware('throttle:10,10')->name('demo.reset');
+            Route::post('leads/{lead}/proposals', [ProposalController::class, 'store'])->middleware('throttle:30,60')->name('leads.proposals.store');
             Route::post('leads/{lead}/demo', [PlatformDemoController::class, 'forLead'])->middleware('throttle:20,60')->name('leads.demo');
             Route::get('leads', [PlatformSiteController::class, 'leads'])->name('leads');
             Route::put('leads/{lead}', [PlatformSiteController::class, 'updateLead'])->name('leads.update');
