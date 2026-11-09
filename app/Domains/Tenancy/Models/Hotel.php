@@ -39,6 +39,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property bool $is_demo demo hotel for sales (S17)
+ * @property \Carbon\CarbonImmutable|null $demo_expires_at private demos expire
  */
 #[Fillable(['name', 'slug', 'legal_name', 'country_code', 'timezone', 'currency', 'default_locale', 'status', 'owner_user_id'])]
 #[UseFactory(HotelFactory::class)]
@@ -56,6 +58,8 @@ class Hotel extends Model
     {
         return [
             'status' => HotelStatus::class,
+            'is_demo' => 'boolean',
+            'demo_expires_at' => 'immutable_datetime',
         ];
     }
 

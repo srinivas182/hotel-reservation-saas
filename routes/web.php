@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Billing\Http\Controllers\PaymentReturnController;
+use App\Domains\Demo\Http\Controllers\PlatformDemoController;
 use App\Domains\Events\Http\Controllers\PublicQuoteController;
 use App\Domains\Help\Http\Controllers\HelpController;
 use App\Domains\Identity\Http\Controllers\LocaleController;
@@ -70,6 +71,9 @@ Route::middleware('throttle:120,1')->group(function (): void {
 });
 Route::post('status/subscribe', [StatusController::class, 'subscribe'])->middleware('throttle:5,60')->name('status.subscribe');
 Route::post('en/status/subscribe', [StatusController::class, 'subscribe'])->middleware('throttle:5,60')->name('status.subscribe.en');
+
+// Private and sales demo links (S17): signed, time-limited.
+Route::get('demo/enter/{hotel}', [PlatformDemoController::class, 'enter'])->middleware(['signed', 'throttle:20,1'])->name('demo.enter');
 
 Route::post('demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo');
 Route::post('en/demo', [SiteController::class, 'demo'])->middleware('throttle:5,60')->name('site.demo.en');

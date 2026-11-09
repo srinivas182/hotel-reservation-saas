@@ -49,6 +49,9 @@ env:
   SIMULATION_AI_LATENCY_MIN: '5'
   SIMULATION_AI_LATENCY_MAX: '20'
   PHP_CLI_SERVER_WORKERS: '4'
+  # No mail server on the runner: a failed SMTP connection stops queue workers
+  # (the framework reads it as a lost connection), so emails go to the log.
+  MAIL_MAILER: log
 
 jobs:
   e2e:
@@ -108,4 +111,11 @@ jobs:
 
       - name: Logs on failure
         if: failure()
-        run: tail -n 60 /tmp/serve.log; tail -n 40 /tmp/worker1.log; tail -n 80 storage/logs/*.log || true
+        run: |
+          # Also as annotations, readable from the pull request and the API.
+          for f in /tmp/worker1.log /tmp/worker2.log storage/logs/laravel.log; do
+            [ -f "$f" ] || continue
+            body=$(tail -n 40 "$f" | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
+            echo "::warning title=$(basename "$f")::${body}"
+          done
+          tail -n 60 /tmp/serve.log; tail -n 40 /tmp/worker1.log; tail -n 80 storage/logs/*.log || true

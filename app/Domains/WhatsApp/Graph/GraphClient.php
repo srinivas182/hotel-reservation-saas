@@ -59,6 +59,10 @@ class GraphClient
      */
     public function phoneNumber(string $phoneNumberId, string $token): array
     {
+        if (self::isDemo($phoneNumberId)) {
+            return ['display_phone_number' => '+225 00 00 00 00', 'verified_name' => 'Demo', 'quality_rating' => 'GREEN', 'messaging_limit_tier' => 'TIER_1K', 'status' => 'CONNECTED'];
+        }
+
         return $this->json($this->http($token)->get($this->url($phoneNumberId), [
             'fields' => 'display_phone_number,verified_name,quality_rating,throughput,messaging_limit_tier,status',
         ]));
@@ -71,6 +75,11 @@ class GraphClient
      */
     public function sendMessage(string $phoneNumberId, string $token, string $to, array $content): string
     {
+        // Demo hotels (S17): nothing leaves the platform; the message shows as sent.
+        if (self::isDemo($phoneNumberId)) {
+            return 'wamid.DEMO'.bin2hex(random_bytes(10));
+        }
+
         $data = $this->json($this->http($token, retry: false)->post($this->url("{$phoneNumberId}/messages"), [
             'messaging_product' => 'whatsapp',
             'recipient_type' => 'individual',
@@ -148,6 +157,14 @@ class GraphClient
     public function deleteTemplate(string $wabaId, string $token, string $name, string $templateId): void
     {
         $this->json($this->http($token)->delete($this->url("{$wabaId}/message_templates").'?'.http_build_query(['name' => $name, 'hsm_id' => $templateId])));
+    }
+
+    /**
+     * Demo hotels' simulated WhatsApp numbers (S17): never sent to Meta.
+     */
+    public static function isDemo(string $phoneNumberIdOrWaba): bool
+    {
+        return str_starts_with($phoneNumberIdOrWaba, 'DEMO-');
     }
 
     public function url(string $path): string

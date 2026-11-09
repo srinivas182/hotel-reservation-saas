@@ -31,6 +31,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $notes
  * @property CarbonImmutable|null $follow_up_on
  * @property int|null $signup_code_id
+ * @property string|null $demo_hotel_id
+ * @property CarbonImmutable|null $demo_sent_at
+ * @property CarbonImmutable|null $demo_opened_at
  * @property CarbonImmutable|null $created_at
  * @property-read User|null $owner
  * @property-read SignupCode|null $code
@@ -46,7 +49,7 @@ class Lead extends Model
      */
     protected function casts(): array
     {
-        return ['message' => 'encrypted', 'notes' => 'encrypted', 'follow_up_on' => DateOnly::class, 'rooms' => 'integer', 'created_at' => 'immutable_datetime'];
+        return ['message' => 'encrypted', 'notes' => 'encrypted', 'follow_up_on' => DateOnly::class, 'demo_sent_at' => 'immutable_datetime', 'demo_opened_at' => 'immutable_datetime', 'rooms' => 'integer', 'created_at' => 'immutable_datetime'];
     }
 
     /**
