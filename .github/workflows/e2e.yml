@@ -49,6 +49,9 @@ env:
   SIMULATION_AI_LATENCY_MIN: '5'
   SIMULATION_AI_LATENCY_MAX: '20'
   PHP_CLI_SERVER_WORKERS: '4'
+  # No mail server on the runner: a failed SMTP connection stops queue workers
+  # (the framework reads it as a lost connection), so emails go to the log.
+  MAIL_MAILER: log
 
 jobs:
   e2e:
