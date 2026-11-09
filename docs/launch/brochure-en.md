@@ -10,10 +10,10 @@
 
 ## The solution
 
-| For your guests | For your team | For you, the owner |
-| --- | --- | --- |
+| For your guests                                          | For your team                                                       | For you, the owner                                             |
+| -------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------- |
 | An answer in seconds, in French or English, even at 2 am | Common questions already handled; booking requests ready to approve | More bookings without hiring; everything followed in one place |
-| Voice notes understood | Arrivals, departures, room bill, restaurant, events on one screen | Every reply checked: supervised mode to start |
+| Voice notes understood                                   | Arrivals, departures, room bill, restaurant, events on one screen   | Every reply checked: supervised mode to start                  |
 
 ## What the platform does
 
@@ -32,7 +32,7 @@
 
 ## Getting started
 
-1. **Demo**: we show you the assistant on a demo hotel, or on *your* hotel in 2 minutes.
+1. **Demo**: we show you the assistant on a demo hotel, or on _your_ hotel in 2 minutes.
 2. **14-day free trial**: guided setup in about an hour.
 3. **Go live**: supervised mode first, then automatic once you trust it.
 

@@ -10,10 +10,10 @@
 
 ## La solution
 
-| Pour vos clients | Pour votre équipe | Pour vous, le propriétaire |
-| --- | --- | --- |
+| Pour vos clients                                                                 | Pour votre équipe                                                                    | Pour vous, le propriétaire                                       |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
 | Une réponse en quelques secondes, en français ou en anglais, même à 2 h du matin | Les questions courantes déjà traitées ; les demandes de réservation prêtes à valider | Plus de réservations, sans recruter ; tout suivi au même endroit |
-| Les messages vocaux compris | Arrivées, départs, note de chambre, restaurant, événements sur un seul écran | Chaque réponse contrôlée : mode supervisé au départ |
+| Les messages vocaux compris                                                      | Arrivées, départs, note de chambre, restaurant, événements sur un seul écran         | Chaque réponse contrôlée : mode supervisé au départ              |
 
 ## Ce que fait la plateforme
 
@@ -32,7 +32,7 @@
 
 ## Démarrer
 
-1. **Démo** : nous vous montrons l'assistant sur un hôtel de démonstration, ou sur *votre* hôtel en 2 minutes.
+1. **Démo** : nous vous montrons l'assistant sur un hôtel de démonstration, ou sur _votre_ hôtel en 2 minutes.
 2. **Essai gratuit de 14 jours** : mise en place guidée en une heure environ.
 3. **Mise en service** : en mode supervisé, puis automatique quand vous êtes en confiance.
 

@@ -2,18 +2,18 @@
 
 Suivez la page **Mise en place** : chaque étape se coche toute seule.
 
-| Étape | Où | Temps |
-| --- | --- | --- |
-| 1. Informations de l'hôtel | Réglages | 5 min |
-| 2. Chambres (catégories × nombre) | Mise en place → Chambres rapides, ou import CSV | 10 min |
-| 3. Prix par catégorie, petit-déjeuner | Tarifs | 5 min |
-| 4. Taxes (vérifier TVA et taxe de séjour) | Taxes | 3 min |
-| 5. Horaires de réception | Réglages | 2 min |
-| 6. Inviter l'équipe (rôle par personne) | Personnel | 5 min |
-| 7. Connecter WhatsApp | WhatsApp → Connecter | 10 min |
-| 8. Dossier d'informations (questionnaire → brouillon → publier) | Assistant → Dossier | 15 min |
-| 9. Essayer l'assistant comme un client | Assistant → Essai | 5 min |
-| 10. Demander la mise en service | Mise en place | 1 min |
+| Étape                                                           | Où                                              | Temps  |
+| --------------------------------------------------------------- | ----------------------------------------------- | ------ |
+| 1. Informations de l'hôtel                                      | Réglages                                        | 5 min  |
+| 2. Chambres (catégories × nombre)                               | Mise en place → Chambres rapides, ou import CSV | 10 min |
+| 3. Prix par catégorie, petit-déjeuner                           | Tarifs                                          | 5 min  |
+| 4. Taxes (vérifier TVA et taxe de séjour)                       | Taxes                                           | 3 min  |
+| 5. Horaires de réception                                        | Réglages                                        | 2 min  |
+| 6. Inviter l'équipe (rôle par personne)                         | Personnel                                       | 5 min  |
+| 7. Connecter WhatsApp                                           | WhatsApp → Connecter                            | 10 min |
+| 8. Dossier d'informations (questionnaire → brouillon → publier) | Assistant → Dossier                             | 15 min |
+| 9. Essayer l'assistant comme un client                          | Assistant → Essai                               | 5 min  |
+| 10. Demander la mise en service                                 | Mise en place                                   | 1 min  |
 
 ## Les bons réflexes
 

@@ -4,32 +4,32 @@ Horaires : **lundi au samedi, 8 h – 18 h (GMT)**, en français et en anglais. 
 
 ## 1. Où tout se trouve
 
-| Outil | Rôle |
-| --- | --- |
-| Plateforme → Demandes de support | Toutes les demandes ; filtres « En retard », « Les miennes » |
-| Plateforme → Hôtel (fiche) | Santé WhatsApp, crédits, factures, historique, notes internes |
-| Sessions d'assistance | Entrer dans le compte de l'hôtel (lecture ou modification), 30 min, l'hôtel est prévenu |
-| Plateforme → État des services | Publier un incident ou une maintenance (les abonnés sont prévenus) |
-| Plateforme → Centre d'aide | Écrire les articles manquants (« Recherches sans réponse ») |
+| Outil                            | Rôle                                                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------- |
+| Plateforme → Demandes de support | Toutes les demandes ; filtres « En retard », « Les miennes »                            |
+| Plateforme → Hôtel (fiche)       | Santé WhatsApp, crédits, factures, historique, notes internes                           |
+| Sessions d'assistance            | Entrer dans le compte de l'hôtel (lecture ou modification), 30 min, l'hôtel est prévenu |
+| Plateforme → État des services   | Publier un incident ou une maintenance (les abonnés sont prévenus)                      |
+| Plateforme → Centre d'aide       | Écrire les articles manquants (« Recherches sans réponse »)                             |
 
 ## 2. Délais de première réponse
 
-| Formule | Délai | Priorité par défaut |
-| --- | --- | --- |
-| Essentiel | 24 h | Normale |
-| Pro | 8 h | Normale |
-| Complet | 4 h | Normale |
-| « Quelque chose ne fonctionne pas » | — | **Haute** |
+| Formule                             | Délai | Priorité par défaut |
+| ----------------------------------- | ----- | ------------------- |
+| Essentiel                           | 24 h  | Normale             |
+| Pro                                 | 8 h   | Normale             |
+| Complet                             | 4 h   | Normale             |
+| « Quelque chose ne fonctionne pas » | —     | **Haute**           |
 
 Une demande en retard apparaît en rouge et sur l'accueil de la plateforme.
 
 ## 3. Priorités
 
-| Priorité | Exemples | Action |
-| --- | --- | --- |
+| Priorité    | Exemples                                                                                  | Action                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | **Urgente** | Aucun message WhatsApp ne passe ; hôtel en mode réduit à tort ; paiement débité deux fois | Répondre sous 1 h, vérifier la page de statut, escalader à MCS si technique |
-| **Haute** | Une fonction ne marche pas pour un hôtel | Même jour |
-| **Normale** | Question d'utilisation, réglage | Dans le délai de la formule |
+| **Haute**   | Une fonction ne marche pas pour un hôtel                                                  | Même jour                                                                   |
+| **Normale** | Question d'utilisation, réglage                                                           | Dans le délai de la formule                                                 |
 
 ## 4. Méthode
 
@@ -41,14 +41,14 @@ Une demande en retard apparaît en rouge et sur l'accueil de la plateforme.
 
 ## 5. Questions fréquentes
 
-| Question | Réponse courte |
-| --- | --- |
-| Modèles WhatsApp « en attente » | Approbation Meta : quelques minutes à 24 h. Si refusé : lire la raison, corriger le texte, renvoyer. |
-| « L'assistant ne répond plus » | Vérifier : crédits IA, mode réduit (facture impayée), mode désactivé, WhatsApp connecté. |
-| Crédits épuisés | Pack de crédits dans Abonnement : reprise immédiate. |
-| Numéro déjà utilisé dans l'application WhatsApp | Le retirer de l'application ou utiliser la coexistence WhatsApp Business. |
-| Facture / paiement | Abonnement → payer en ligne ou par virement ; Finance enregistre les virements. |
-| Données d'un client (suppression) | Hôtel → Demandes sur les données clients → anonymiser. |
+| Question                                        | Réponse courte                                                                                       |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Modèles WhatsApp « en attente »                 | Approbation Meta : quelques minutes à 24 h. Si refusé : lire la raison, corriger le texte, renvoyer. |
+| « L'assistant ne répond plus »                  | Vérifier : crédits IA, mode réduit (facture impayée), mode désactivé, WhatsApp connecté.             |
+| Crédits épuisés                                 | Pack de crédits dans Abonnement : reprise immédiate.                                                 |
+| Numéro déjà utilisé dans l'application WhatsApp | Le retirer de l'application ou utiliser la coexistence WhatsApp Business.                            |
+| Facture / paiement                              | Abonnement → payer en ligne ou par virement ; Finance enregistre les virements.                      |
+| Données d'un client (suppression)               | Hôtel → Demandes sur les données clients → anonymiser.                                               |
 
 ## 6. Escalade vers MCS (technique)
 
