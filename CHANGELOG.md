@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ### S17.3a — Demo hotel and live demos (0.17.5)
 
 #### Added
+
 - Demo hotels: a realistic hotel (four room types and 26 rooms with prices, information pack in French and English, restaurant with an orderable menu, seminar room, a guest in the house). **The real assistant answers; WhatsApp is simulated** (numbers starting `DEMO-` never reach Meta). Demo logins are managers (no two-step login); demo hotels have no subscription or credit limits.
 - **A — Live scenarios** (Hotel → Demo): "A guest asks for a room tonight", "A guest writes in English", "A guest orders from their room", "A company asks about a seminar", or write as a guest. Messages go through the same path as real WhatsApp messages; the conversation is shown live, and the booking request, order or quote appears in the usual screens.
 - **B — "Your hotel"**: the prospect's hotel name, room types, prices and room counts in a minute.
@@ -16,8 +17,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Browser test: sales opens the demo hotel and plays a scenario.
 
 #### Fixed
-- The sign-in pages' titles and descriptions ("Log in to your account"…) were always in English; they are now translated.
 
+- The sign-in pages' titles and descriptions ("Log in to your account"…) were always in English; they are now translated.
 
 ### S17.2c — Status page and alerts (0.17.4)
 
