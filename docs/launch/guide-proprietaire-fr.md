@@ -34,6 +34,8 @@ Tout ce que l'assistant peut dire en plus des chambres et des prix : conditions 
 
 Menu **Mes alertes** : votre numéro WhatsApp et les alertes souhaitées.
 
+**Résumé du matin.** Dans **Mes alertes**, choisissez l'heure (7 h 30 par défaut) : arrivées, départs, clients présents, chambres occupées ce soir (comparé à la semaine dernière), encaissé hier par moyen de paiement, les 7 prochaines nuits, ce qui reste à payer aujourd'hui, et les demandes en attente avec leurs boutons. Trois boutons donnent les listes : **Arrivées**, **Présents**, **À encaisser**. Les jours calmes, une seule ligne (ou rien, si vous préférez). Vos gérants et la réception peuvent aussi le recevoir, sans les montants pour la réception.
+
 **Répondre depuis WhatsApp.** L'alerte « Nouvelle demande de réservation » arrive avec deux boutons, **Accepter** et **Refuser** : client (et s'il est déjà venu), séjour, prix, acompte, chambres restantes. Après un appui, vous avez **une minute pour annuler** ; ensuite, la décision est appliquée comme dans le tableau de bord et le client est informé. Si quelqu'un a déjà répondu, vous le voyez (« Déjà acceptée par Awa à 10 h 42 »). Si le prix a changé, la demande reste à traiter dans le tableau de bord. Activé par défaut pour les propriétaires et gérants ; la réception peut l'activer dans **Mes alertes**. En tant que propriétaire, vous pouvez recevoir chaque soir un **résumé** (arrivées, départs, chambres occupées, nouvelles réservations, demandes WhatsApp, conversations à traiter, coût de l'IA), par WhatsApp et/ou e-mail, à l'heure choisie.
 
 ## 5. Coûts

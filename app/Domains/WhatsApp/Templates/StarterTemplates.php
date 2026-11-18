@@ -77,6 +77,17 @@ final class StarterTemplates
                 'examples' => ['First Class Lodge', 'Awa Koné, Executive, 12/12 → 14/12 (2 nights), 2 adults, 50 000 FCFA'],
                 'buttons' => ['en' => ['Accept', 'Decline'], 'fr' => ['Accepter', 'Refuser']],
             ],
+            'owner_morning_summary' => [
+                'name' => 'owner_morning_summary',
+                'category' => 'UTILITY',
+                'label' => __('Morning summary (staff)'),
+                'bodies' => [
+                    'en' => 'Good morning, summary for {{1}} on {{2}}: {{3}}. Tap a button for the details.',
+                    'fr' => 'Bonjour, résumé pour {{1}} du {{2}} : {{3}}. Touchez un bouton pour les détails.',
+                ],
+                'examples' => ['First Class Lodge', '19 November', '6 arrivals, 4 departures, tonight 22/26 rooms (85%), collected yesterday 145 000 FCFA'],
+                'buttons' => ['en' => ['Arrivals', 'In-house', 'To collect'], 'fr' => ['Arrivées', 'Présents', 'À encaisser']],
+            ],
             'owner_daily_summary' => [
                 'name' => 'owner_daily_summary',
                 'category' => 'UTILITY',

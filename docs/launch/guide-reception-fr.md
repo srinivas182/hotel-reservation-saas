@@ -67,3 +67,7 @@ Vos choix servent à décider quand passer en mode automatique.
 | Une demande a expiré                    | Appelez ou écrivez au client (modèle si plus de 24 h).                                                                 |
 
 Support : menu **Contacter le support** (lundi–samedi, 8 h–18 h GMT). Le bouton **« ? »** en haut de chaque écran ouvre l'aide de cet écran. En cas de doute sur une panne : page **État des services** (`/status`).
+
+## Résumé du matin
+
+Dans **Mes alertes**, cochez « Me l'envoyer chaque matin » : la journée à venir (arrivées, départs, présents, chambres ce soir, 7 prochaines nuits) arrive sur WhatsApp, avec les boutons **Arrivées** et **Présents** pour les listes.
