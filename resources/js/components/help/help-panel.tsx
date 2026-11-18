@@ -40,6 +40,14 @@ export function HelpPanel() {
             .catch(() => setData({ article: null, others: [] }));
     };
 
+    // Sprint E: the "?" tips of simple screens open this panel.
+    useEffect(() => {
+        const show = () => setOpen(true);
+        window.addEventListener('open-help', show);
+
+        return () => window.removeEventListener('open-help', show);
+    }, []);
+
     useEffect(() => {
         if (open) {
             load(`screen=${encodeURIComponent(component)}`);
@@ -72,6 +80,7 @@ export function HelpPanel() {
                 <Button
                     variant="ghost"
                     size="icon"
+                    data-tour="help"
                     className="ml-auto"
                     aria-label={t('Help')}
                 >

@@ -68,4 +68,30 @@ class Subscription extends Model
     {
         return $this->belongsTo(Plan::class, 'pending_plan_id');
     }
+
+    /**
+     * The current hotel's subscription with its plan, read once per web
+     * request (entitlements, features and announcements all need it).
+     * Read-only: change a subscription through a fresh query.
+     */
+    public static function current(): ?self
+    {
+        $hotel = app(\App\Domains\Tenancy\TenantContext::class)->id();
+
+        return \App\Support\RequestMemo::remember('subscription|'.$hotel, fn (): ?self => self::query()->with('plan')->first());
+    }
+
+    public static function currentPlanCode(): ?string
+    {
+        return self::current()?->plan?->code;
+    }
+
+    protected static function booted(): void
+    {
+        $forget = function (): void {
+            \App\Support\RequestMemo::forget('subscription|');
+        };
+        static::saved($forget);
+        static::deleted($forget);
+    }
 }

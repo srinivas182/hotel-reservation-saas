@@ -28,7 +28,7 @@ final class Announcements
         }
 
         $hotel = $this->context->hotel();
-        $plan = Subscription::query()->with('plan')->first()?->plan?->code;
+        $plan = Subscription::currentPlanCode();
         $dismissed = DB::table('announcement_dismissals')->where('user_id', $user->id)->pluck('announcement_id')->all();
 
         return Announcement::query()->where('starts_at', '<=', now())->where('ends_at', '>', now())->orderBy('starts_at')->get()

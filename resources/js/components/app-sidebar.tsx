@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Building2,
     LayoutGrid,
+    ListChecks,
     MessageCircle,
     PartyPopper,
     Rocket,
@@ -98,6 +99,18 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import { t } from '@/lib/i18n';
+import { useWorkspace } from '@/lib/workspace';
+
+/** What simple mode shows in the sidebar (Sprint E). */
+const SIMPLE_ITEMS = new Set([
+    'Today',
+    'Inbox',
+    'Bookings',
+    'My alerts',
+    'Contact support',
+    'What’s new',
+    'What’s new •',
+]);
 
 const mainNavItems: NavItem[] = [
     {
@@ -250,13 +263,23 @@ export function AppSidebar() {
         (usePage().props as { whatsNewUnread?: boolean }).whatsNewUnread ===
         true;
     const isPlatformStaff = auth.user.platform_role !== null;
-    const hotelNavItems: NavItem[] = [
+    const workspace = useWorkspace();
+    const allHotelNavItems: NavItem[] = [
         ...mainNavItems,
         ...(auth.permissions.includes('rooms.view')
             ? [{ title: 'Rooms', href: RoomsController(), icon: BedDouble }]
             : []),
         ...(auth.permissions.includes('bookings.view')
             ? [{ title: 'Today', href: TodayController.index(), icon: Sun }]
+            : []),
+        ...(auth.permissions.includes('hotel.settings.manage')
+            ? [
+                  {
+                      title: 'Simple mode and checklists',
+                      href: '/hotel/workspace-settings',
+                      icon: ListChecks,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('hotel.settings.manage')
             ? [
@@ -298,6 +321,7 @@ export function AppSidebar() {
                       href: InboxController.index(),
                       icon: Inbox,
                       badge: inboxUnread ?? 0,
+                      tour: 'nav-inbox',
                   },
               ]
             : []),
@@ -400,6 +424,7 @@ export function AppSidebar() {
                       title: 'My alerts',
                       href: AlertSettingsController.show(),
                       icon: BellRing,
+                      tour: 'nav-alerts',
                   },
               ]
             : []),
@@ -425,6 +450,10 @@ export function AppSidebar() {
               ]
             : []),
     ];
+    // Sprint E: simple mode keeps only the day-to-day screens.
+    const hotelNavItems = workspace?.simple
+        ? allHotelNavItems.filter((item) => SIMPLE_ITEMS.has(item.title))
+        : allHotelNavItems;
     const abilities = auth.platform ?? [];
     const platformItems: NavItem[] = platformNavItems.filter((item) =>
         abilities.includes(item.ability),

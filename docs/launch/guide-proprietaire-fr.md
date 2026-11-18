@@ -61,3 +61,10 @@ Assistant IA → Mode **Désactivé** (ou bouton d'arrêt) : effet immédiat. L'
 - **Nouveautés** : les nouvelles fonctions, avec un bouton « Essayer » ; e-mail mensuel désactivable.
 - **Idées** : proposez une amélioration et votez pour celles des autres.
 - **État des services** : page publique `/status`, alertes par e-mail possibles.
+
+## 9. Mode simple, listes de la journée et « Voir comme »
+
+- **Mode simple** (Réglages → **Mode simple et listes**) : choisissez les rôles qui ouvrent le tableau de bord simple (la réception par défaut). Chaque personne peut repasser à la vue complète depuis son menu.
+- **« Voir comme »** : à côté de chaque rôle, voyez exactement ce que voit ce rôle (menus et droits), sans changer de compte. Un bandeau en haut permet de revenir à votre vue ; l'aperçu est enregistré dans le journal d'activité.
+- **Listes de la journée** : écrivez les tâches d'ouverture ou de fermeture, une par ligne (20 au plus par liste). Elles apparaissent sur « Aujourd'hui » ; qui coche et à quelle heure est enregistré. Le **résumé du matin** indique le bilan de la veille (« Hier, Fermeture : 4/5 — pas fait : fermer le coffre »). Masquez une liste sans la supprimer en décochant « L’afficher sur Aujourd’hui ».
+- **Visite guidée** : chaque nouvelle personne a une visite d'une minute à sa première connexion ; menu → **Revoir la visite guidée** pour la refaire.

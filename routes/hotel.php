@@ -55,6 +55,8 @@ use App\Domains\StaffAlerts\Http\Controllers\AlertSettingsController;
 use App\Domains\Support\Http\Controllers\HotelSupportController;
 use App\Domains\WhatsApp\Http\Controllers\TemplateController;
 use App\Domains\WhatsApp\Http\Controllers\WhatsAppConnectionController;
+use App\Domains\Workspace\Http\Controllers\ShiftChecklistController;
+use App\Domains\Workspace\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -181,6 +183,20 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     Route::get('hotel/my-alerts', [AlertSettingsController::class, 'show'])->name('hotel.my-alerts');
     Route::put('hotel/my-alerts', [AlertSettingsController::class, 'update'])->name('hotel.my-alerts.update');
     Route::post('hotel/my-alerts/test', [AlertSettingsController::class, 'test'])->middleware('throttle:5,1')->name('hotel.my-alerts.test');
+
+    // Sprint E: each person's dashboard; the owner's preview of a role; shift checklists.
+    Route::post('hotel/workspace/mode', [WorkspaceController::class, 'mode'])->middleware('throttle:20,1')->name('hotel.workspace.mode');
+    Route::post('hotel/workspace/large-text', [WorkspaceController::class, 'largeText'])->middleware('throttle:20,1')->name('hotel.workspace.large-text');
+    Route::post('hotel/workspace/tours', [WorkspaceController::class, 'tourDone'])->middleware('throttle:30,1')->name('hotel.workspace.tour-done');
+    Route::post('hotel/workspace/tours/replay', [WorkspaceController::class, 'tourReplay'])->middleware('throttle:10,1')->name('hotel.workspace.tour-replay');
+    Route::post('hotel/workspace/view-as', [WorkspaceController::class, 'viewAs'])->middleware(['can:staff.manage', 'throttle:20,1'])->name('hotel.workspace.view-as');
+    Route::delete('hotel/workspace/view-as', [WorkspaceController::class, 'stopViewAs'])->name('hotel.workspace.view-as.stop');
+    Route::get('hotel/workspace-settings', [ShiftChecklistController::class, 'index'])->middleware('can:hotel.settings.manage')->name('hotel.workspace-settings');
+    Route::put('hotel/workspace-settings/simple-roles', [ShiftChecklistController::class, 'simpleRoles'])->middleware('can:hotel.settings.manage')->name('hotel.workspace-settings.simple-roles');
+    Route::post('hotel/checklists', [ShiftChecklistController::class, 'store'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.store');
+    Route::put('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.update');
+    Route::delete('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'destroy'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.destroy');
+    Route::post('hotel/checklists/{checklist}/tick', [ShiftChecklistController::class, 'tick'])->middleware(['can:bookings.view', 'throttle:60,1'])->name('hotel.checklists.tick');
     // Sprint D: app notifications on this phone.
     Route::post('hotel/push/subscriptions', [PushSubscriptionController::class, 'store'])->middleware('throttle:10,1')->name('hotel.push.subscribe');
     Route::delete('hotel/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:10,1')->name('hotel.push.unsubscribe');

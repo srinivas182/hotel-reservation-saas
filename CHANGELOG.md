@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint E — Simple mode by role and a one-minute guided tour (0.22.0)
+
+#### Added
+
+- **Simple mode by role:** reception (or the roles the owner chooses in _Simple mode and checklists_) opens a shorter dashboard. Today shows big Requests, Arrivals and Departures tiles; the menu keeps the everyday items; on a phone there are three bottom tabs (Today, Messages, Bookings). Each person can switch between simple and full views from their menu, per hotel.
+- **"Next up" card** (addition 1): the single most urgent thing, in order: a waiting WhatsApp request, a guest waiting for staff (oldest first), a late departure, an arrival without a room, arrivals still expected, checklist tasks left. Then "All clear".
+- **One-minute welcome tour** (addition 2) on the first login, highlighting the real screen parts and skipping parts that are not shown. Next, Back, Skip and Escape work, and the tour can be replayed from the menu.
+- **Tours of new features** (addition 3), shown once to staff who joined before the feature: WhatsApp buttons, the phone app, simple mode.
+- **"View as" a role** (addition 4) for owners and those who manage staff: see the menus and rights of a role without switching accounts. A banner leads back; each preview is in the activity log.
+- **Larger text** (addition 5) per person: bigger type and touch targets.
+- **Shift checklists** (addition 6): opening and closing tasks written by the owner (up to 20 per list), ticked on Today with the person's name and time. Yesterday's result is in the morning summary, quiet days included.
+- **Screen tips** in simple mode: one line under each Today section.
+
+#### Changed
+
+- Hotel settings, the hotel's subscription and the Workspace data are read once per web request (`App\Support\RequestMemo`); jobs and commands always read fresh values. Today stays within its query budget with the new cards.
+- `e2e:prepare` marks the tours as seen for the seeded staff and adds two newcomer receptionists for the tour test.
+
 ### Sprint D — Staff app on the phone, with notifications (0.21.0)
 
 #### Added

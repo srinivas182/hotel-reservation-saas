@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Domains\Access\HotelRoles;
+use App\Domains\Access\StaffService;
+use App\Domains\Access\SystemRole;
 use App\Domains\Identity\Enums\PlatformRole;
+use App\Domains\Onboarding\Legal;
 use App\Domains\Onboarding\Models\OnboardingProgress;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Domains\Tenancy\TenantContext;
+use App\Domains\Workspace\Models\StaffPreference;
+use App\Domains\Workspace\Tours;
 use App\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -33,7 +39,10 @@ final class PrepareEndToEnd extends Command
 
     public const OWNER_TOTP_SECRET = 'KRSXG5CTMVRXEZLU'; // gitleaks:allow test-only secret, simulated staging
 
-    public function handle(TenantContext $context): int
+    /** New receptionists, one per browser project, who have not seen the welcome tour yet. */
+    public const NEWCOMER_EMAILS = ['new.phone.lodge@example.com', 'new.desktop.lodge@example.com'];
+
+    public function handle(TenantContext $context, StaffService $staff, HotelRoles $roles, Legal $legal): int
     {
         if (app()->isProduction()) {
             $this->components->error('Not in production.');
@@ -61,6 +70,28 @@ final class PrepareEndToEnd extends Command
 
         $hotel = Hotel::query()->where('slug', 'first-class-lodge')->firstOrFail();
         $context->run($hotel, fn () => OnboardingProgress::current()->forceFill(['golive_requested_at' => now(), 'golive_decision' => null, 'golive_decided_at' => null])->save());
+
+        // Sprint E: the seeded staff have seen the tours, so they never cover
+        // the screens under test; the newcomers see the welcome tour once.
+        $context->run($hotel, function () use ($hotel, $staff, $roles, $legal): void {
+            foreach (self::NEWCOMER_EMAILS as $email) {
+                $newcomer = User::query()->updateOrCreate(['email' => $email], [
+                    'first_name' => 'Nouvelle', 'last_name' => 'Recrue', 'password' => Hash::make('password'),
+                ]);
+                $newcomer->forceFill(['email_verified_at' => now()])->save();
+                if (! $hotel->members()->whereKey($newcomer->getKey())->exists()) {
+                    $staff->assign($hotel, $newcomer, $roles->system($hotel, SystemRole::Reception));
+                }
+                $legal->accept($newcomer, $legal->missing($newcomer), null, $hotel->id);
+            }
+
+            foreach ($hotel->members()->get() as $member) {
+                StaffPreference::for($member)->forceFill([
+                    'ui_mode' => null,
+                    'tours_done' => in_array($member->email, self::NEWCOMER_EMAILS, true) ? [] : Tours::KEYS,
+                ])->save();
+            }
+        });
 
         $this->components->info('Ready for browser tests: '.self::ADMIN_EMAIL.' / password (two-step secret '.self::TOTP_SECRET.'), '.self::OWNER_EMAIL.' / password (secret '.self::OWNER_TOTP_SECRET.').');
 

@@ -39,6 +39,6 @@ final class Entitlements
             return null;
         }
 
-        return Subscription::query()->with('plan')->first()?->plan;
+        return Subscription::current()?->plan;
     }
 }

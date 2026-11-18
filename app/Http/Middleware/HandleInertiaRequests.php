@@ -72,6 +72,10 @@ class HandleInertiaRequests extends Middleware
             'billingReduced' => fn (): bool => \App\Domains\Billing\Invoices\Dunning::isReduced(),
             'modules' => fn (): array => app(TenantContext::class)->has() ? app(\App\Domains\Billing\Entitlements::class)->modules() : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Sprint E: simple mode, larger text, tours, "view as".
+            'workspace' => fn (): ?array => $request->user() instanceof User && app(TenantContext::class)->has()
+                ? app(\App\Domains\Workspace\Workspace::class)->share($request->user())
+                : null,
             // Sprint D: the staff app (notifications, icon badge).
             'push' => fn (): ?array => $request->user() instanceof User && app(TenantContext::class)->has() && filled(config('webpush.public_key'))
                 ? ['key' => (string) config('webpush.public_key')]
@@ -137,6 +141,13 @@ class HandleInertiaRequests extends Middleware
         $support = app(\App\Domains\Platform\Support\SupportAccess::class);
         if ($support->current() !== null) {
             return $support->permissions();
+        }
+
+        // Sprint E: the owner previewing another role sees that role's dashboard (the server
+        // still checks the owner's own permissions on every action).
+        $preview = app(\App\Domains\Workspace\Workspace::class)->previewPermissions($user);
+        if ($preview !== null) {
+            return $preview;
         }
 
         $user->unsetRelation('roles')->unsetRelation('permissions');

@@ -143,3 +143,27 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Sprint E: larger text and tap targets, chosen per person. Sizes are in rem, so the whole dashboard grows. */
+html[data-large='true'] {
+    font-size: 118.75%;
+}
+
+html[data-large='true']
+    :is(
+        button,
+        [role='button'],
+        a[data-slot='button'],
+        input,
+        select,
+        textarea
+    ) {
+    min-height: 2.75rem;
+}
+
+/* Simple mode on a phone: room for the bottom tabs. */
+@media (max-width: 767px) {
+    html[data-simple='true'] main {
+        padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+}

@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $city
  * @property string|null $map_url
  * @property float|null $latitude map pin, read from the Google Maps link
+ * @property list<int>|null $simple_mode_roles roles that open the simple dashboard (Sprint E); null: reception
  * @property float|null $longitude
  * @property string $check_in_time
  * @property string $check_out_time
@@ -46,7 +47,7 @@ class HotelSettings extends Model
     protected $fillable = [
         'support_access',
         'phone_e164', 'whatsapp_display_e164', 'email',
-        'address_line1', 'address_line2', 'city', 'map_url', 'latitude', 'longitude',
+        'address_line1', 'address_line2', 'city', 'map_url', 'latitude', 'longitude', 'simple_mode_roles',
         'check_in_time', 'check_out_time', 'late_checkout_until',
         'staffed_hours', 'enabled_locales',
         'child_age_bands', 'hold_minutes', 'booking_prefix', 'tentative_hours',
@@ -65,6 +66,7 @@ class HotelSettings extends Model
             'hold_minutes' => 'integer',
             'tentative_hours' => 'integer',
             'latitude' => 'float',
+            'simple_mode_roles' => 'array',
             'longitude' => 'float',
             'email_reply_to_token_expires_at' => 'datetime',
         ];
@@ -75,8 +77,21 @@ class HotelSettings extends Model
      */
     public static function current(): self
     {
-        return self::query()->firstOrCreate([], [
-            'enabled_locales' => [app(\App\Domains\Tenancy\TenantContext::class)->hotel()->default_locale],
-        ]);
+        $context = app(\App\Domains\Tenancy\TenantContext::class);
+
+        // Many parts of one page read the settings: read once per web request.
+        return \App\Support\RequestMemo::remember('hotel-settings|'.$context->id(), fn (): self => self::query()->firstOrCreate([], [
+            'enabled_locales' => [$context->hotel()->default_locale],
+        ]));
+    }
+
+    protected static function booted(): void
+    {
+        // Any change written elsewhere is read again by the next caller.
+        $forget = function (): void {
+            \App\Support\RequestMemo::forget('hotel-settings|');
+        };
+        static::saved($forget);
+        static::deleted($forget);
     }
 }
