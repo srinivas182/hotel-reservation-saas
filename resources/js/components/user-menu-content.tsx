@@ -1,7 +1,15 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Building2 } from 'lucide-react';
 import AccountHotelsController from '@/actions/App/Domains/Platform/Http/Controllers/AccountHotelsController';
-import { Check, Languages, LogOut, Settings } from 'lucide-react';
+import {
+    ALargeSmall,
+    Check,
+    Languages,
+    LayoutDashboard,
+    LogOut,
+    Route,
+    Settings,
+} from 'lucide-react';
 import LocaleController from '@/actions/App/Domains/Identity/Http/Controllers/LocaleController';
 import {
     DropdownMenuGroup,
@@ -11,6 +19,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import {
+    replayTour,
+    setLargeText,
+    setMode,
+    useWorkspace,
+} from '@/lib/workspace';
 import { forgetOnLogout } from '@/lib/pwa';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
@@ -24,6 +38,8 @@ type Props = {
 export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
     const { locale, locales } = usePage().props;
+
+    const workspace = useWorkspace();
 
     const handleLogout = () => {
         void forgetOnLogout();
@@ -82,6 +98,32 @@ export function UserMenuContent({ user }: Props) {
                     {code === locale && <Check className="size-4" />}
                 </DropdownMenuItem>
             ))}
+            {workspace && (
+                <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        onSelect={() =>
+                            setMode(workspace.simple ? 'full' : 'simple')
+                        }
+                    >
+                        <LayoutDashboard className="mr-2" />
+                        {workspace.simple
+                            ? t('Switch to the full view')
+                            : t('Switch to the simple view')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onSelect={() => setLargeText(!workspace.largeText)}
+                    >
+                        <ALargeSmall className="mr-2" />
+                        <span className="flex-1">{t('Larger text')}</span>
+                        {workspace.largeText && <Check className="size-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => replayTour()}>
+                        <Route className="mr-2" />
+                        {t('Replay the tour')}
+                    </DropdownMenuItem>
+                </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link

@@ -12,4 +12,6 @@ export type NavItem = {
     icon?: LucideIcon | null;
     isActive?: boolean;
     badge?: number;
+    /** Marker for the guided tours (Sprint E). */
+    tour?: string;
 };

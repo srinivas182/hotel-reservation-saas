@@ -32,6 +32,7 @@ final class MorningSummary
         private readonly TenantContext $context,
         private readonly AvailabilityService $availability,
         private readonly Folio $folio,
+        private readonly \App\Domains\Workspace\ShiftChecklists $checklists,
     ) {}
 
     /**
@@ -41,7 +42,8 @@ final class MorningSummary
      *   collected: int, collected_by_method: array<string, int>, collected_last_week: int,
      *   week: array<string, int>, weak: list<string>,
      *   to_collect: int, to_collect_guests: int,
-     *   pending_requests: int, attention: int, quiet: bool
+     *   pending_requests: int, attention: int, quiet: bool,
+     *   checklists: list<array{name: string, done: int, total: int, left: list<string>}>
      * }
      */
     public function build(): array
@@ -90,6 +92,11 @@ final class MorningSummary
             'pending_requests' => $pending,
             'attention' => $attention,
             'quiet' => $arrivals === 0 && $departures === 0 && $pending === 0 && $attention === 0,
+            // Sprint E: yesterday's shift checklists.
+            'checklists' => array_map(fn (array $l): array => [
+                'name' => $l['name'], 'done' => $l['done'], 'total' => $l['total'],
+                'left' => array_values(array_map(fn (array $i): string => $i['text'], array_filter($l['items'], fn (array $i): bool => ! $i['done']))),
+            ], array_values(array_filter($this->checklists->forDay($today->subDay()), fn (array $l): bool => $l['total'] > 0))),
         ];
     }
 

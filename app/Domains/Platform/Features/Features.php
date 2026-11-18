@@ -31,7 +31,7 @@ final class Features
         }
 
         $hotel = $this->context->hotel();
-        $plan = Subscription::query()->with('plan')->first()?->plan?->code;
+        $plan = Subscription::currentPlanCode();
 
         return in_array($hotel->id, $flag->hotels ?? [], true)
             || in_array($hotel->country_code, $flag->countries ?? [], true)

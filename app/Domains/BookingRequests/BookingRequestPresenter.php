@@ -25,14 +25,34 @@ final class BookingRequestPresenter
      */
     public function pending(?string $conversationId = null): array
     {
-        return array_values(BookingRequest::query()
+        return $this->presentAll($this->pendingModels($conversationId));
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, BookingRequest>
+     */
+    public function pendingModels(?string $conversationId = null): \Illuminate\Database\Eloquent\Collection
+    {
+        return BookingRequest::query()
             ->with(['guest', 'category'])
             ->where('status', BookingRequestStatus::Pending->value)
             ->when($conversationId !== null, fn ($q) => $q->where('conversation_id', $conversationId))
             ->orderBy('created_at')
-            ->get()
-            ->map(fn (BookingRequest $request): array => $this->present($request))
-            ->all());
+            ->get();
+    }
+
+    /**
+     * @param  iterable<BookingRequest>  $requests
+     * @return list<array<string, mixed>>
+     */
+    public function presentAll(iterable $requests): array
+    {
+        $out = [];
+        foreach ($requests as $request) {
+            $out[] = $this->present($request);
+        }
+
+        return $out;
     }
 
     /**

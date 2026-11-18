@@ -26,7 +26,7 @@ final class MorningSummaryText
         $date = $s['today']->settings(['locale' => $locale])->isoFormat('dddd D MMMM');
 
         if ($s['quiet']) {
-            return (string) __('☀️ Good morning :name — :hotel, :date. Calm day: no arrivals, departures or requests. Tonight: :occupied/:rooms rooms (:percent%).', ['name' => $name, 'hotel' => $hotel->name, 'date' => $date, 'occupied' => $s['occupied'], 'rooms' => $s['rooms'], 'percent' => $s['percent']], $locale);
+            return implode("\n", [(string) __('☀️ Good morning :name — :hotel, :date. Calm day: no arrivals, departures or requests. Tonight: :occupied/:rooms rooms (:percent%).', ['name' => $name, 'hotel' => $hotel->name, 'date' => $date, 'occupied' => $s['occupied'], 'rooms' => $s['rooms'], 'percent' => $s['percent']], $locale), ...self::checklistLines($s, $locale)]);
         }
 
         $lines = [
@@ -64,6 +64,8 @@ final class MorningSummaryText
             $lines[] = __('Under :percent%: :nights', ['percent' => MorningSummary::WEAK_PERCENT, 'nights' => implode(', ', array_map(fn (string $d): string => \Carbon\CarbonImmutable::parse($d)->settings(['locale' => $locale])->isoFormat('dddd D'), $s['weak']))], $locale);
         }
 
+        $lines = [...$lines, ...self::checklistLines($s, $locale)];
+
         if ($s['pending_requests'] > 0 || $s['attention'] > 0) {
             $lines[] = '⚠️ '.implode(' · ', array_filter([
                 $s['pending_requests'] > 0 ? trans_choice(':count WhatsApp request waiting|:count WhatsApp requests waiting', $s['pending_requests'], [], $locale) : null,
@@ -90,6 +92,23 @@ final class MorningSummaryText
             $money ? __('collected yesterday :total', ['total' => MoneyFormatter::format(Money::ofMinor($s['collected'], $hotel->currency), $locale)], $locale) : null,
             $s['pending_requests'] > 0 ? trans_choice(':count WhatsApp request waiting|:count WhatsApp requests waiting', $s['pending_requests'], [], $locale) : null,
         ]));
+    }
+
+    /**
+     * Yesterday's shift checklists (Sprint E), quiet day or not.
+     *
+     * @param  array<string, mixed>  $s
+     * @return list<string>
+     */
+    private static function checklistLines(array $s, string $locale): array
+    {
+        $lines = [];
+        foreach ($s['checklists'] ?? [] as $list) {
+            $lines[] = ($list['done'] === $list['total'] ? '✅ ' : '☑️ ').__('Yesterday, :name: :done/:total', ['name' => $list['name'], 'done' => $list['done'], 'total' => $list['total']], $locale)
+                .($list['left'] === [] ? '' : ' ('.__('not done: :tasks', ['tasks' => implode(', ', array_slice($list['left'], 0, 3))], $locale).')');
+        }
+
+        return $lines;
     }
 
     /** ▓▓▓▓░ for 80 %. */

@@ -3,6 +3,8 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { PhoneApp } from '@/components/app/phone-app';
+import { WorkspaceLayer } from '@/components/workspace/workspace-layer';
+import { ViewAsBanner } from '@/components/workspace/view-as-banner';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { PlatformBanners } from '@/components/platform-banners';
 import { StatusBanner } from '@/components/status-banner';
@@ -21,6 +23,7 @@ export default function AppSidebarLayout({
             <AppSidebar />
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                <ViewAsBanner />
                 <PhoneApp />
                 <PlatformBanners />
                 <StatusBanner />
@@ -35,6 +38,7 @@ export default function AppSidebarLayout({
                     </p>
                 )}
                 {children}
+                <WorkspaceLayer />
             </AppContent>
         </AppShell>
     );

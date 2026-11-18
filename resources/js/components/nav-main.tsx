@@ -31,7 +31,11 @@ export function NavMain({
                             isActive={isCurrentUrl(item.href)}
                             tooltip={{ children: t(item.title) }}
                         >
-                            <Link href={item.href} prefetch>
+                            <Link
+                                href={item.href}
+                                prefetch
+                                data-tour={item.tour}
+                            >
                                 {item.icon && <item.icon />}
                                 <span>{t(item.title)}</span>
                             </Link>

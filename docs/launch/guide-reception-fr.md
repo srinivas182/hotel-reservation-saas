@@ -78,3 +78,10 @@ Dans **Mes alertes**, cochez « Me l'envoyer chaque matin » : la journée à ve
 - **Notifications** : dans **Mes alertes**, touchez « Activer les notifications sur ce téléphone », puis « Envoyer une notification de test ». Gratuites, elles arrivent avant WhatsApp ; si vous ne l'ouvrez pas dans les 5 minutes, l'alerte WhatsApp suit.
 - **Heures calmes** : choisissez vos heures sans alerte (par exemple 22 h – 6 h). Une demande qui expire dans 30 minutes passe quand même.
 - **Sans connexion** : les pages déjà ouvertes restent consultables (avec l'heure d'enregistrement) et les réponses aux clients sont envoyées au retour du réseau.
+
+## Le mode simple et la visite guidée
+
+- **Mode simple** : la réception ouvre le tableau de bord en version simple. En haut, **« À faire maintenant »** indique la chose la plus urgente (une demande WhatsApp, un client qui attend, un départ en retard, une arrivée sans chambre). Ensuite viennent trois gros boutons : Demandes, Arrivées, Départs. Sur téléphone, trois onglets en bas : **Aujourd'hui**, **Messages**, **Réservations**. Vous pouvez passer à la vue complète depuis votre menu (en bas à gauche).
+- **Visite guidée** : à la première connexion, une visite d'une minute montre les endroits importants. Pour la revoir : menu → **Revoir la visite guidée**. Quand une nouvelle fonction arrive, une courte visite la présente une seule fois.
+- **Texte plus grand** : menu → **Texte plus grand**, pour lire et toucher plus facilement.
+- **Listes de la journée** : sur « Aujourd'hui », cochez les tâches d'ouverture ou de fermeture (compter la caisse, vérifier les arrivées de demain…). Votre nom et l'heure s'affichent ; le propriétaire voit le bilan dans son résumé du matin.

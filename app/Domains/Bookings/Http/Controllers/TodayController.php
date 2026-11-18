@@ -42,6 +42,8 @@ final class TodayController extends Controller
         $tonight = $ids === [] ? [] : $availability->forRange($ids, $today, $today);
 
         $arrivals = $this->desk->arrivals();
+        $departures = $this->desk->departures();
+        $pendingRequests = $request->user()?->can('booking_requests.decide') === true ? $requests->pendingModels() : null;
         $suggestions = $this->desk->suggestionsFor($arrivals);
 
         $present = fn (Booking $booking, bool $suggest = false): array => [
@@ -76,7 +78,7 @@ final class TodayController extends Controller
             'dateLabel' => $localized->isoFormat('dddd D MMMM YYYY'),
             'arrivals' => $arrivals->map(fn (Booking $b): array => $present($b, true))->values(),
             'inHouse' => $this->desk->inHouse()->map(fn (Booking $b): array => $present($b))->values(),
-            'departures' => $this->desk->departures()->map(fn (Booking $b): array => $present($b))->values(),
+            'departures' => $departures->map(fn (Booking $b): array => $present($b))->values(),
             'noShows' => $this->desk->possibleNoShows()->map(fn (Booking $b): array => $present($b))->values(),
             'tentative' => $this->desk->tentativeDueSoon()->map(fn (Booking $b): array => $present($b))->values(),
             'freeTonight' => $categories->map(fn (RoomCategory $category): array => [
@@ -85,7 +87,10 @@ final class TodayController extends Controller
                 'sellable' => $tonight[$category->id][$today->toDateString()]['sellable'] ?? 0,
             ])->values(),
             'board' => $this->desk->roomsBoard(),
-            'requests' => $request->user()?->can('booking_requests.decide') === true ? $requests->pending() : [],
+            // Sprint E: the single most urgent thing, and the shift checklists.
+            'nextUp' => $request->user() instanceof User ? app(\App\Domains\Workspace\NextUp::class)->for($request->user(), $arrivals, $departures, $pendingRequests) : null,
+            'checklists' => app(\App\Domains\Workspace\ShiftChecklists::class)->forDay(),
+            'requests' => $pendingRequests === null ? [] : $requests->presentAll($pendingRequests),
             'categories' => $categories->map(fn (RoomCategory $c): array => ['id' => $c->id, 'name' => $c->localizedName($locale, $locale)])->values(),
             'registerCheck' => $check === null ? null : [
                 'matches' => $check->matches,

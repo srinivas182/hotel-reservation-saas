@@ -17,6 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { useWorkspace } from '@/lib/workspace';
+import { NextUpCard } from '@/components/workspace/next-up';
+import type { NextUpItem } from '@/components/workspace/next-up';
+import { ShiftChecklistsCard } from '@/components/workspace/checklists';
+import type { DayChecklist } from '@/components/workspace/checklists';
+import { ScreenTip } from '@/components/workspace/screen-tip';
 import { cn } from '@/lib/utils';
 
 type Item = {
@@ -73,6 +79,8 @@ type Props = {
         override_price: boolean;
     };
     requests: PendingRequest[];
+    nextUp: NextUpItem | null;
+    checklists: DayChecklist[];
     categories: { id: string; name: string }[];
 };
 
@@ -88,15 +96,25 @@ function Section({
     title,
     count,
     children,
+    id,
+    tip,
 }: {
     title: string;
     count: number;
     children: React.ReactNode;
+    id?: string;
+    tip?: string;
 }) {
     return (
-        <section className="flex flex-col gap-2 rounded-xl border p-4">
+        <section
+            id={id}
+            className="flex scroll-mt-4 flex-col gap-2 rounded-xl border p-4"
+        >
             <div className="flex items-center justify-between">
-                <h2 className="font-medium">{title}</h2>
+                <h2 className="flex items-center gap-2 font-medium">
+                    {title}
+                    {tip && <ScreenTip title={title} text={tip} />}
+                </h2>
                 <Badge variant="secondary">{count}</Badge>
             </div>
             {count === 0 ? (
@@ -248,8 +266,11 @@ export default function Today(props: Props) {
             'tentative',
             'board',
             'freeTonight',
+            'nextUp',
+            'checklists',
         ],
     });
+    const simple = useWorkspace()?.simple === true;
     useRequestAlerts(props.requests.length);
 
     return (
@@ -286,6 +307,46 @@ export default function Today(props: Props) {
                     )}
                 </div>
 
+                {props.nextUp && (
+                    <NextUpCard item={props.nextUp} big={simple} />
+                )}
+
+                {simple && (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {props.can.decide && (
+                            <a
+                                href="#requests"
+                                className="flex min-h-20 flex-col justify-center rounded-xl border bg-card px-4 text-lg font-medium hover:bg-muted/50"
+                            >
+                                {t('Requests')}
+                                <span className="text-3xl font-semibold">
+                                    {props.requests.length}
+                                </span>
+                            </a>
+                        )}
+                        <a
+                            href="#arrivals"
+                            className="flex min-h-20 flex-col justify-center rounded-xl border bg-card px-4 text-lg font-medium hover:bg-muted/50"
+                        >
+                            {t('Arrivals')}
+                            <span className="text-3xl font-semibold">
+                                {props.arrivals.length}
+                            </span>
+                        </a>
+                        <a
+                            href="#departures"
+                            className="flex min-h-20 flex-col justify-center rounded-xl border bg-card px-4 text-lg font-medium hover:bg-muted/50"
+                        >
+                            {t('Departures')}
+                            <span className="text-3xl font-semibold">
+                                {props.departures.length}
+                            </span>
+                        </a>
+                    </div>
+                )}
+
+                <ShiftChecklistsCard lists={props.checklists} big={simple} />
+
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {props.freeTonight.map((category) => (
                         <div
@@ -310,11 +371,21 @@ export default function Today(props: Props) {
                 </div>
 
                 {props.can.decide && (
-                    <section className="flex flex-col gap-2 rounded-xl border border-primary/40 p-4">
+                    <section
+                        id="requests"
+                        data-tour="requests"
+                        className="flex flex-col gap-2 rounded-xl border border-primary/40 p-4"
+                    >
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h2 className="font-medium">
+                            <h2 className="flex items-center gap-2 font-medium">
                                 {t('WhatsApp booking requests')}{' '}
                                 <Badge>{props.requests.length}</Badge>
+                                <ScreenTip
+                                    title={t('WhatsApp booking requests')}
+                                    text={t(
+                                        'A guest asked on WhatsApp and the rooms are held for them. Accept to book, or decline with a reason: the guest is told at once.',
+                                    )}
+                                />
                             </h2>
                             {typeof Notification !== 'undefined' &&
                                 Notification.permission === 'default' && (
@@ -347,8 +418,12 @@ export default function Today(props: Props) {
 
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Section
+                        id="arrivals"
                         title={t('Arrivals')}
                         count={props.arrivals.length}
+                        tip={t(
+                            'Guests expected today. Choose their room, then tap Check in when they arrive.',
+                        )}
                     >
                         {props.arrivals.map((item) => (
                             <Line
@@ -387,8 +462,12 @@ export default function Today(props: Props) {
                     </Section>
 
                     <Section
+                        id="departures"
                         title={t('Departures')}
                         count={props.departures.length}
+                        tip={t(
+                            'Guests leaving today. Check the bill is paid, then tap Check out.',
+                        )}
                     >
                         {props.departures.map((item) => (
                             <Line
