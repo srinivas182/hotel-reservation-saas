@@ -24,6 +24,9 @@ First of the usability sprints A–H (simple for owners and staff).
 #### Changed
 
 - The AI gateway can send attachments (images, documents) with a prompt.
+- `simulation:prepare` gives a staging without AI keys a simulated AI model (status "testing", so the launch checklist still waits for a real, approved one); every agent is faked in simulation.
+- Laravel 13.43 (fixes GHSA-63hm-g96r-2m2q, low severity).
+- Build tools (Vite and its plugins, Tailwind, TypeScript, type packages) moved to development dependencies: they never run in production. The production audit no longer reports `picomatch` (GHSA-fc5q-39xc-vjpf, no fixed version yet), which only runs at build time on our own file patterns.
 
 ### S16.4 kit — staging ready in two commands (0.17.10)
 
