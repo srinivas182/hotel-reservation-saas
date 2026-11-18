@@ -77,10 +77,10 @@ it('reads the website, the Maps pin and pasted text, and applies only what the o
 
     $listing = ($this->listing)();
     expect($listing['status'])->toBe('ready')
-        ->and($listing['profile']->name)->toBe(['value' => 'Hôtel Le Baobab', 'sure' => true]) // the website's own data wins
+        ->and($listing['profile']->name)->toEqual(['value' => 'Hôtel Le Baobab', 'sure' => true]) // the website's own data wins
         ->and($listing['profile']->address_line1['value'])->toBe('Avenue de la Paix')
         ->and($listing['profile']->check_in_time['value'])->toBe('14:00')
-        ->and($listing['profile']->location['value'])->toBe(['latitude' => 9.4581234, 'longitude' => -5.6295678])
+        ->and($listing['profile']->location['value'])->toEqual(['latitude' => 9.4581234, 'longitude' => -5.6295678])
         ->and($listing['rooms'][0]['exists'])->toBeTrue() // "Standard" is already set up: unticked by default
         ->and($listing['rooms'][1]['sure'])->toBeFalse()
         ->and($listing['entries'])->toHaveCount(2)
@@ -124,7 +124,7 @@ it('expands short Maps links, and notes each source that could not be read', fun
     Http::assertNotSent(fn (Request $r): bool => $r->url() === 'https://blocked.ci/chambres');
     $listing = ($this->listing)();
     expect($listing['status'])->toBe('ready')
-        ->and($listing['profile']->location['value'])->toBe(['latitude' => 9.4, 'longitude' => -5.6])
+        ->and($listing['profile']->location['value'])->toEqual(['latitude' => 9.4, 'longitude' => -5.6])
         ->and($listing['notes'][0])->toContain('demande aux robots de ne pas lire');
 });
 
