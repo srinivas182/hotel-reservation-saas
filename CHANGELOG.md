@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint C — Morning WhatsApp summary (0.20.0)
+
+#### Added
+
+- **Morning summary on WhatsApp** for anyone who asks for it in My alerts, at their own time (default 07:30): today's arrivals, departures and guests in-house, tonight's occupancy, yesterday's money, the next 7 nights, and what needs attention. The evening summary for owners is unchanged.
+- **Comparisons with last week:** tonight's occupancy in points, and yesterday's takings in percent, against the same weekday a week earlier.
+- **The next 7 nights** as small bars (`ven. 20 ▓▓░░░ 33 %`), with the nights under 50 % named.
+- **Money to collect today:** arrivals (including tentative bookings whose deposit has not come) and departures with a balance, as a count and total. Yesterday's takings are split by payment method (cash, Orange Money, MTN MoMo, Wave…).
+- **Detail buttons** "Arrivals", "In-house", "To collect" reply with the lists at once (up to 25 lines, then a dashboard link). They use the Sprint B signed codes and expire after 24 hours.
+- **Staff version:** money lines (takings, comparisons, balances) only for those with the billing permission (owners, managers); reception and others get the day plan, and "To collect" tells them amounts are not shown for their role.
+- **Quiet days:** one short line when there are no arrivals, departures, requests or conversations to handle; each person can choose to get nothing instead.
+- WhatsApp requests still waiting follow the summary as cards with Accept and Decline (at most three), for those who answer from WhatsApp.
+- `owner_morning_summary` template (UTILITY) with three quick-reply buttons; `staff:morning-summary` every five minutes. Each summary counts toward the hotel's daily message limit.
+
+#### Fixed
+
+- The "rooms left" line of the Sprint B request card counted the departure day as a night.
+
 ### Sprint B — Approve from WhatsApp (0.19.0)
 
 #### Added

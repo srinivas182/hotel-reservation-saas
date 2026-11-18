@@ -84,6 +84,12 @@ Schedule::command('owners:daily-summary')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Sprint C: the morning summary, at each person's time.
+Schedule::command('staff:morning-summary')
+    ->name('staff:morning-summary')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Arrival reminders, check-out reminders and thank-you messages.
 Schedule::command('stay-messages:send')
     ->name('stay-messages:send')

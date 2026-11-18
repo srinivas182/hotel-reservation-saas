@@ -44,7 +44,11 @@ final class AlertSettingsController extends Controller
                 'summary_time' => $settings->summary_time ?? '21:00',
                 'summary_channels' => $settings->summary_channels ?? [],
                 'approve_by_whatsapp' => $settings->approvesOnWhatsApp($user),
+                'morning_on' => $settings->morning_time !== null,
+                'morning_time' => $settings->morning_time ?? '07:30',
+                'morning_quiet_days' => $settings->morning_quiet_days,
             ],
+            'morningMoney' => \App\Domains\StaffAlerts\Morning\MorningSummaryActions::canSeeMoney($user),
             'canDecide' => $user->can('booking_requests.decide'),
             'kinds' => collect(AlertKind::choosable())
                 ->filter(fn (AlertKind $kind): bool => $user->can($kind->permission()->value))
@@ -76,6 +80,9 @@ final class AlertSettingsController extends Controller
             'summary_channels' => ['array'],
             'summary_channels.*' => [Rule::in(['whatsapp', 'email'])],
             'approve_by_whatsapp' => ['nullable', 'boolean'],
+            'morning_on' => ['nullable', 'boolean'],
+            'morning_time' => ['nullable', 'date_format:H:i'],
+            'morning_quiet_days' => ['nullable', 'boolean'],
         ], ['alert_phone.regex' => __('Use the international format, for example +2250700000000.')]);
 
         $alerts = array_values(array_filter(
@@ -91,6 +98,9 @@ final class AlertSettingsController extends Controller
             'summary_channels' => $isOwner ? array_values(array_unique((array) ($data['summary_channels'] ?? []))) : [],
             // Sprint B: only someone who decides requests can choose to answer them from WhatsApp.
             'approve_by_whatsapp' => $user->can('booking_requests.decide') && array_key_exists('approve_by_whatsapp', $data) && $data['approve_by_whatsapp'] !== null ? (bool) $data['approve_by_whatsapp'] : $settings->approve_by_whatsapp,
+            // Sprint C: anyone with a phone can ask for the morning summary; money lines follow their permissions.
+            'morning_time' => (bool) ($data['morning_on'] ?? false) ? ($data['morning_time'] ?? '07:30') : null,
+            'morning_quiet_days' => (bool) ($data['morning_quiet_days'] ?? $settings->morning_quiet_days),
         ])->save();
 
         Audit::record('staff_alerts.settings_updated', 'Alert settings updated', subject: $this->context->hotel(), causer: $user, properties: [
@@ -98,6 +108,7 @@ final class AlertSettingsController extends Controller
             'phone_set' => $settings->alert_phone !== null,
             'summary_channels' => $settings->summary_channels,
             'approve_by_whatsapp' => $settings->approve_by_whatsapp,
+            'morning_time' => $settings->morning_time,
         ]);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Alert settings saved.')]);
 

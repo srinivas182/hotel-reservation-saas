@@ -15,8 +15,12 @@ type Props = {
         summary_time: string;
         summary_channels: string[];
         approve_by_whatsapp: boolean;
+        morning_on: boolean;
+        morning_time: string;
+        morning_quiet_days: boolean;
     };
     canDecide: boolean;
+    morningMoney: boolean;
     kinds: { value: string; label: string }[];
     isOwner: boolean;
     team: { name: string | null; phone: string | null; alerts: string[] }[];
@@ -31,6 +35,7 @@ type Props = {
 export default function MyAlerts({
     settings,
     canDecide,
+    morningMoney,
     kinds,
     isOwner,
     team,
@@ -105,6 +110,60 @@ export default function MyAlerts({
                                 {kind.label}
                             </label>
                         ))}
+                    </fieldset>
+
+                    <fieldset className="flex flex-col gap-2 border-t pt-4 text-sm">
+                        <legend className="mb-1 font-medium">
+                            {t('Morning summary on WhatsApp')}
+                        </legend>
+                        <p className="text-xs text-muted-foreground">
+                            {morningMoney
+                                ? t(
+                                      'The day ahead: arrivals, departures, tonight and the next 7 nights, what was collected yesterday and what is still to be paid, with buttons for the lists.',
+                                  )
+                                : t(
+                                      'The day ahead: arrivals, departures, tonight and the next 7 nights, with buttons for the lists. Amounts are not included for your role.',
+                                  )}
+                        </p>
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                className="size-4"
+                                checked={form.data.morning_on}
+                                onChange={(e) =>
+                                    form.setData('morning_on', e.target.checked)
+                                }
+                            />
+                            {t('Send it to me every morning at')}
+                            <Input
+                                type="time"
+                                aria-label={t('Morning summary time')}
+                                className="w-28"
+                                value={form.data.morning_time}
+                                disabled={!form.data.morning_on}
+                                onChange={(e) =>
+                                    form.setData('morning_time', e.target.value)
+                                }
+                            />
+                        </label>
+                        <InputError message={errors.morning_time} />
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                className="size-4"
+                                checked={form.data.morning_quiet_days}
+                                disabled={!form.data.morning_on}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'morning_quiet_days',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            {t(
+                                'On a quiet day, send one short line (untick: send nothing)',
+                            )}
+                        </label>
                     </fieldset>
 
                     {canDecide && (

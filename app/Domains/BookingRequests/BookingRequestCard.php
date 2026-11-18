@@ -106,7 +106,8 @@ final class BookingRequestCard implements StaffCard
      */
     private static function roomsLeft(BookingRequest $request): ?int
     {
-        $nights = app(AvailabilityService::class)->availableFor($request->room_category_id, $request->check_in, $request->check_out);
+        // The last argument is the last night, not the departure day.
+        $nights = app(AvailabilityService::class)->availableFor($request->room_category_id, $request->check_in, $request->check_out->subDay());
 
         return $nights === [] ? null : max(0, min($nights));
     }

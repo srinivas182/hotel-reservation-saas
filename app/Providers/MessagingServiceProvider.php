@@ -30,6 +30,7 @@ final class MessagingServiceProvider extends ServiceProvider
         // What staff can answer with WhatsApp buttons (Sprint B).
         $this->app->tag([
             \App\Domains\BookingRequests\BookingRequestActions::class,
+            \App\Domains\StaffAlerts\Morning\MorningSummaryActions::class,
         ], 'staff-actions.handlers');
     }
 

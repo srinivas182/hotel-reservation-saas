@@ -24,15 +24,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $summary_sent_on
  * @property bool|null $approve_by_whatsapp null: on for those who manage the hotel (owners, managers)
  * @property CarbonImmutable|null $whatsapp_inbound_at last button tap
+ * @property string|null $morning_time HH:MM hotel time, Sprint C morning summary; null: off
+ * @property CarbonImmutable|null $morning_sent_on
+ * @property bool $morning_quiet_days send one short line on a quiet day (false: nothing)
  * @property-read User|null $user
  */
 class StaffAlertSettings extends Model
 {
     use BelongsToHotel;
 
+    /** @var array<string, mixed> */
+    protected $attributes = ['morning_quiet_days' => true];
+
     protected $table = 'staff_alert_settings';
 
-    protected $fillable = ['user_id', 'alert_phone', 'alerts', 'summary_time', 'summary_channels', 'summary_sent_on', 'approve_by_whatsapp'];
+    protected $fillable = ['user_id', 'alert_phone', 'alerts', 'summary_time', 'summary_channels', 'summary_sent_on', 'approve_by_whatsapp', 'morning_time', 'morning_sent_on', 'morning_quiet_days'];
 
     /**
      * @return array<string, string>
@@ -44,6 +50,8 @@ class StaffAlertSettings extends Model
             'summary_channels' => 'array',
             'summary_sent_on' => DateOnly::class,
             'approve_by_whatsapp' => 'boolean',
+            'morning_sent_on' => DateOnly::class,
+            'morning_quiet_days' => 'boolean',
             'whatsapp_inbound_at' => 'immutable_datetime',
         ];
     }

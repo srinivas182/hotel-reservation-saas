@@ -59,9 +59,7 @@ final class StaffAlerts
             return false;
         }
 
-        $cap = HotelAssistantSettings::current()->daily_alert_cap;
-
-        if (StaffAlert::query()->whereIn('how', ['text', 'template'])->where('created_at', '>=', now()->subDay())->count() >= $cap) {
+        if (! $this->underDailyCap()) {
             StaffAlert::query()->create(['user_id' => $user->getKey(), 'kind' => $kind->value, 'subject_id' => $subjectId, 'how' => 'skipped', 'reason' => 'daily_cap']);
 
             return false;
@@ -98,6 +96,15 @@ final class StaffAlerts
         ]);
 
         return in_array($result['how'], ['text', 'template'], true);
+    }
+
+    /**
+     * Whether the hotel may still send staff messages today (Meta charges
+     * the hotel for every template).
+     */
+    public function underDailyCap(): bool
+    {
+        return StaffAlert::query()->whereIn('how', ['text', 'template'])->where('created_at', '>=', now()->subDay())->count() < HotelAssistantSettings::current()->daily_alert_cap;
     }
 
     private function isActiveMember(User $user): bool
