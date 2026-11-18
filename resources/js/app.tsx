@@ -5,6 +5,7 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { startPwa } from '@/lib/pwa';
 
 // The brand name is set in Platform → Website (S17); the page carries it.
 const appName =
@@ -41,3 +42,6 @@ void createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Sprint D: the staff app (offline pages, notifications, install).
+startPwa();

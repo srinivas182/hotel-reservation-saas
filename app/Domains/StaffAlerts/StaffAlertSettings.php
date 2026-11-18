@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $morning_time HH:MM hotel time, Sprint C morning summary; null: off
  * @property CarbonImmutable|null $morning_sent_on
  * @property bool $morning_quiet_days send one short line on a quiet day (false: nothing)
+ * @property bool $push_enabled alerts as app notifications on this person's phones (Sprint D)
+ * @property string|null $quiet_from HH:MM hotel time: no alerts from then (Sprint D)
+ * @property string|null $quiet_to HH:MM: until then
  * @property-read User|null $user
  */
 class StaffAlertSettings extends Model
@@ -34,11 +37,11 @@ class StaffAlertSettings extends Model
     use BelongsToHotel;
 
     /** @var array<string, mixed> */
-    protected $attributes = ['morning_quiet_days' => true];
+    protected $attributes = ['morning_quiet_days' => true, 'push_enabled' => true];
 
     protected $table = 'staff_alert_settings';
 
-    protected $fillable = ['user_id', 'alert_phone', 'alerts', 'summary_time', 'summary_channels', 'summary_sent_on', 'approve_by_whatsapp', 'morning_time', 'morning_sent_on', 'morning_quiet_days'];
+    protected $fillable = ['user_id', 'alert_phone', 'alerts', 'summary_time', 'summary_channels', 'summary_sent_on', 'approve_by_whatsapp', 'morning_time', 'morning_sent_on', 'morning_quiet_days', 'push_enabled', 'quiet_from', 'quiet_to'];
 
     /**
      * @return array<string, string>
@@ -52,6 +55,7 @@ class StaffAlertSettings extends Model
             'approve_by_whatsapp' => 'boolean',
             'morning_sent_on' => DateOnly::class,
             'morning_quiet_days' => 'boolean',
+            'push_enabled' => 'boolean',
             'whatsapp_inbound_at' => 'immutable_datetime',
         ];
     }
@@ -63,7 +67,25 @@ class StaffAlertSettings extends Model
 
     public function wants(AlertKind $kind): bool
     {
-        return $this->alert_phone !== null && ($kind === AlertKind::Test || in_array($kind->value, $this->alerts ?? [], true));
+        // Reachable by WhatsApp or by the app (Sprint D): StaffAlerts checks which.
+        return $kind === AlertKind::Test || in_array($kind->value, $this->alerts ?? [], true);
+    }
+
+    /**
+     * Whether it is this person's quiet time now (hotel time); the hours
+     * may run over midnight (22:00 → 06:00).
+     */
+    public function inQuietHours(CarbonImmutable $now): bool
+    {
+        if ($this->quiet_from === null || $this->quiet_to === null || $this->quiet_from === $this->quiet_to) {
+            return false;
+        }
+
+        $time = $now->format('H:i');
+
+        return $this->quiet_from < $this->quiet_to
+            ? $time >= $this->quiet_from && $time < $this->quiet_to
+            : $time >= $this->quiet_from || $time < $this->quiet_to;
     }
 
     /**

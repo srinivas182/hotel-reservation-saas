@@ -78,6 +78,10 @@ One-time setup, after `scripts/server/provision.sh staging <domain> <email>`:
 
 `drills`: `none`, `quick` (workers stopped, AI down, Meta errors, duplicate notifications: about 15 minutes) or `all` (about 45 minutes). The results (`php artisan drills:status`) appear in the run summary. The workflow refuses a server whose `.env` is not `APP_ENV=staging`, and runs one deploy at a time.
 
+### Staff app notifications (VAPID keys)
+
+New servers get a VAPID key pair from `scripts/server/provision.sh`. For an existing server: `docker compose -f compose.prod.yaml exec app php artisan push:keys`, then `php artisan config:cache`. **Keep the keys**: new keys make every phone turn notifications on again. Without keys, the app works and alerts go by WhatsApp only. `VAPID_SUBJECT` (optional) is a `mailto:` contact for the push services; it defaults to `MAIL_FROM_ADDRESS`.
+
 ## 4. Health and monitoring
 
 - `https://<domain>/up` — liveness, no dependencies.

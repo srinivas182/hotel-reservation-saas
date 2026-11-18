@@ -93,6 +93,12 @@ if [ ! -f "$APP_DIR/.env" ]; then
     set_env HEALTH_CHECK_TOKEN "$(random 40)"
     set_env BACKUP_ENCRYPTION_KEY "$(random 48)"
     set_env CSP_ENFORCE false
+    # Staff app notifications (Sprint D): one VAPID key pair per server, kept for good.
+    vapid=$(mktemp)
+    openssl ecparam -name prime256v1 -genkey -noout -out "$vapid"
+    set_env VAPID_PRIVATE_KEY "$(openssl ec -in "$vapid" -outform DER 2>/dev/null | tail -c +8 | head -c 32 | base64 | tr '+/' '-_' | tr -d '=\n')"
+    set_env VAPID_PUBLIC_KEY "$(openssl ec -in "$vapid" -pubout -outform DER 2>/dev/null | tail -c 65 | base64 | tr '+/' '-_' | tr -d '=\n')"
+    rm -f "$vapid"
     if [ "$ENVIRONMENT" = "staging" ]; then
         set_env SIMULATION_MODE true
         set_env WHATSAPP_APP_SECRET "$(random 32)"

@@ -38,6 +38,7 @@ use App\Domains\Onboarding\Http\Controllers\SetupController;
 use App\Domains\Orders\Http\Controllers\OrderBoardController;
 use App\Domains\Orders\Http\Controllers\StayPhoneController;
 use App\Domains\Privacy\Http\Controllers\GuestDataController;
+use App\Domains\Push\Http\Controllers\PushSubscriptionController;
 use App\Domains\Rates\Http\Controllers\CategoryRateController;
 use App\Domains\Rates\Http\Controllers\RateOverrideController;
 use App\Domains\Rates\Http\Controllers\RatesController;
@@ -180,6 +181,10 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     Route::get('hotel/my-alerts', [AlertSettingsController::class, 'show'])->name('hotel.my-alerts');
     Route::put('hotel/my-alerts', [AlertSettingsController::class, 'update'])->name('hotel.my-alerts.update');
     Route::post('hotel/my-alerts/test', [AlertSettingsController::class, 'test'])->middleware('throttle:5,1')->name('hotel.my-alerts.test');
+    // Sprint D: app notifications on this phone.
+    Route::post('hotel/push/subscriptions', [PushSubscriptionController::class, 'store'])->middleware('throttle:10,1')->name('hotel.push.subscribe');
+    Route::delete('hotel/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:10,1')->name('hotel.push.unsubscribe');
+    Route::post('hotel/push/test', [PushSubscriptionController::class, 'test'])->middleware('throttle:5,1')->name('hotel.push.test');
 
     Route::middleware(['module:restaurant', 'can:restaurant.view'])->get('hotel/restaurant', RestaurantController::class)->name('hotel.restaurant');
     Route::middleware(['module:restaurant', 'can:restaurant.bookings', 'throttle:120,1'])->group(function (): void {

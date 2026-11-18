@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
+import { PhoneApp } from '@/components/app/phone-app';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { PlatformBanners } from '@/components/platform-banners';
 import { StatusBanner } from '@/components/status-banner';
@@ -20,6 +21,7 @@ export default function AppSidebarLayout({
             <AppSidebar />
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                <PhoneApp />
                 <PlatformBanners />
                 <StatusBanner />
                 {billingReduced && (

@@ -16,7 +16,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $user_id
  * @property string $kind
  * @property string|null $subject_id
- * @property string $how text, template, skipped, failed
+ * @property string $how text, template, push, skipped, failed
+ * @property CarbonImmutable|null $opened_at the app notification was opened (Sprint D)
  * @property string|null $reason
  * @property string|null $wamid
  * @property CarbonImmutable|null $created_at
@@ -27,13 +28,13 @@ class StaffAlert extends Model
 
     public const UPDATED_AT = null;
 
-    protected $fillable = ['user_id', 'kind', 'subject_id', 'how', 'reason', 'wamid'];
+    protected $fillable = ['user_id', 'kind', 'subject_id', 'how', 'reason', 'wamid', 'opened_at'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['created_at' => 'immutable_datetime'];
+        return ['created_at' => 'immutable_datetime', 'opened_at' => 'immutable_datetime'];
     }
 }

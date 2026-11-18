@@ -39,6 +39,9 @@ export default defineConfig({
             testMatch: /auth\.setup\.ts/,
             use: {
                 locale: 'fr-FR',
+                // The full Chromium (new headless), not the headless shell: closer to a real
+                // phone, and the shell crashes with service workers (Sprint D).
+                ...(executablePath ? {} : { channel: 'chromium' }),
                 launchOptions: executablePath
                     ? { executablePath, args: ['--no-sandbox'] }
                     : {},
@@ -50,6 +53,9 @@ export default defineConfig({
             use: {
                 ...devices['Pixel 7'],
                 locale: 'fr-FR',
+                // The full Chromium (new headless), not the headless shell: closer to a real
+                // phone, and the shell crashes with service workers (Sprint D).
+                ...(executablePath ? {} : { channel: 'chromium' }),
                 launchOptions: executablePath
                     ? { executablePath, args: ['--no-sandbox'] }
                     : {},
@@ -61,6 +67,9 @@ export default defineConfig({
             use: {
                 ...devices['Desktop Chrome'],
                 locale: 'fr-FR',
+                // The full Chromium (new headless), not the headless shell: closer to a real
+                // phone, and the shell crashes with service workers (Sprint D).
+                ...(executablePath ? {} : { channel: 'chromium' }),
                 launchOptions: executablePath
                     ? { executablePath, args: ['--no-sandbox'] }
                     : {},

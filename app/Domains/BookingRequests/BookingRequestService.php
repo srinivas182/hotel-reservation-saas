@@ -40,6 +40,9 @@ use Illuminate\Support\Str;
  */
 final class BookingRequestService
 {
+    /** Minutes before expiry when the last call is sent (Sprint D). */
+    public const LAST_CALL_MINUTES = 30;
+
     public function __construct(
         private readonly TenantContext $context,
         private readonly QuoteService $quotes,
@@ -271,16 +274,16 @@ final class BookingRequestService
      */
     public function escalateDue(): int
     {
+        $count = $this->lastCall();
         $minutes = HotelAssistantSettings::current()->request_escalate_minutes;
 
         if ($minutes <= 0) {
-            return 0;
+            return $count;
         }
 
         $hotel = $this->context->hotel();
         $staff = app(\App\Domains\Access\StaffService::class);
         $alerts = app(StaffAlerts::class);
-        $count = 0;
 
         $due = BookingRequest::query()->with(['guest', 'category'])
             ->where('status', BookingRequestStatus::Pending->value)
@@ -307,6 +310,34 @@ final class BookingRequestService
             }
 
             Audit::record('booking_requests.escalated', 'WhatsApp booking request sent to the owners: nobody answered', subject: $request, properties: ['reference' => $request->reference, 'minutes' => $minutes, 'owners_alerted' => $sent]);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Sprint D: a request with 30 minutes left goes once more to those who
+     * decide requests, through quiet hours, so it is not lost overnight.
+     */
+    private function lastCall(): int
+    {
+        $count = 0;
+        $due = BookingRequest::query()->with(['guest', 'category'])
+            ->where('status', BookingRequestStatus::Pending->value)
+            ->whereNull('last_call_at')
+            ->where('expires_at', '>', now())
+            ->where('expires_at', '<=', now()->addMinutes(self::LAST_CALL_MINUTES))
+            ->get();
+
+        foreach ($due as $request) {
+            $request->forceFill(['last_call_at' => now()])->save();
+
+            if (\App\Domains\StaffActions\Models\StaffAction::inProgress('booking_request', $request->id) !== null) {
+                continue;
+            }
+
+            app(StaffAlerts::class)->notify(AlertKind::NewRequest, (string) __(':minutes minutes left to answer', ['minutes' => (int) ceil(now()->diffInMinutes($request->expires_at))]), $request->id, new BookingRequestCard($request), urgent: true);
             $count++;
         }
 

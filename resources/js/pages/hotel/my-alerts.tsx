@@ -1,6 +1,8 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Controllers/AlertSettingsController';
+import { PushSettings } from '@/components/app/push-settings';
+import type { Device } from '@/components/app/push-settings';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -18,7 +20,12 @@ type Props = {
         morning_on: boolean;
         morning_time: string;
         morning_quiet_days: boolean;
+        push_enabled: boolean;
+        quiet_on: boolean;
+        quiet_from: string;
+        quiet_to: string;
     };
+    devices: Device[];
     canDecide: boolean;
     morningMoney: boolean;
     kinds: { value: string; label: string }[];
@@ -36,6 +43,7 @@ export default function MyAlerts({
     settings,
     canDecide,
     morningMoney,
+    devices,
     kinds,
     isOwner,
     team,
@@ -110,6 +118,72 @@ export default function MyAlerts({
                                 {kind.label}
                             </label>
                         ))}
+                    </fieldset>
+
+                    <div className="flex flex-col gap-3 border-t pt-4">
+                        <PushSettings devices={devices} />
+                        <label className="flex items-center gap-2 text-sm">
+                            <input
+                                type="checkbox"
+                                className="size-4"
+                                checked={form.data.push_enabled}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'push_enabled',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            {t(
+                                'Send my alerts to my phones with notifications',
+                            )}
+                        </label>
+                    </div>
+
+                    <fieldset className="flex flex-col gap-2 border-t pt-4 text-sm">
+                        <legend className="mb-1 font-medium">
+                            {t('Quiet hours')}
+                        </legend>
+                        <p className="text-xs text-muted-foreground">
+                            {t(
+                                'No alerts during these hours, by notification or WhatsApp. A booking request with 30 minutes left still comes through.',
+                            )}
+                        </p>
+                        <label className="flex flex-wrap items-center gap-2">
+                            <input
+                                type="checkbox"
+                                className="size-4"
+                                checked={form.data.quiet_on}
+                                onChange={(e) =>
+                                    form.setData('quiet_on', e.target.checked)
+                                }
+                            />
+                            {t('From')}
+                            <Input
+                                type="time"
+                                aria-label={t('Quiet hours start')}
+                                className="w-28"
+                                value={form.data.quiet_from}
+                                disabled={!form.data.quiet_on}
+                                onChange={(e) =>
+                                    form.setData('quiet_from', e.target.value)
+                                }
+                            />
+                            {t('to')}
+                            <Input
+                                type="time"
+                                aria-label={t('Quiet hours end')}
+                                className="w-28"
+                                value={form.data.quiet_to}
+                                disabled={!form.data.quiet_on}
+                                onChange={(e) =>
+                                    form.setData('quiet_to', e.target.value)
+                                }
+                            />
+                        </label>
+                        <InputError
+                            message={errors.quiet_from ?? errors.quiet_to}
+                        />
                     </fieldset>
 
                     <fieldset className="flex flex-col gap-2 border-t pt-4 text-sm">
