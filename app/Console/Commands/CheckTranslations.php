@@ -12,7 +12,7 @@ use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * Fails when translations are incomplete:
- * - a string used in code (__('...') in PHP and Blade, t('...') in React)
+ * - a string used in code (__('...') and trans_choice('...') in PHP and Blade, t('...') in React)
  *   is missing from lang/en.json, or
  * - any other language file is missing a key from en.json or has a key
  *   that en.json no longer contains.
@@ -23,7 +23,7 @@ use Symfony\Component\Finder\SplFileInfo;
 #[Description('Check that every language file covers every string used in the code')]
 final class CheckTranslations extends Command
 {
-    private const PHP_PATTERN = '/__\(\s*\'((?:[^\'\\\\]|\\\\.)+)\'/';
+    private const PHP_PATTERN = '/(?:__|trans_choice)\(\s*\'((?:[^\'\\\\]|\\\\.)+)\'/';
 
     private const JS_PATTERN = '/\bt\(\s*(?:\'((?:[^\'\\\\]|\\\\.)+)\'|"((?:[^"\\\\]|\\\\.)+)")/';
 

@@ -13,6 +13,7 @@ use App\Domains\Conversations\MessageSource;
 use App\Domains\Conversations\MessageStatus;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
+use App\Domains\StaffActions\StaffActionRouter;
 use App\Domains\WhatsApp\Models\WebhookEvent;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
 use App\Domains\WhatsApp\Webhooks\WebhookHandler;
@@ -79,6 +80,14 @@ final class MessagesHandler implements WebhookHandler
         $from = (string) ($data['from'] ?? '');
 
         if ($wamid === '' || $from === '' || Message::query()->where('wamid', $wamid)->exists()) {
+            return;
+        }
+
+        // Sprint B: a staff member's button tap is a decision, never a guest message.
+        $payload = StaffActionRouter::payloadOf($data);
+        if ($payload !== null) {
+            app(StaffActionRouter::class)->route($from, $payload, $wamid);
+
             return;
         }
 

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $kill_switch
  * @property CarbonImmutable|null $budget_alerted_on
  * @property int $request_hold_minutes
+ * @property int $request_escalate_minutes Sprint B: owners get unanswered requests after this many minutes (0: off)
  * @property bool $deposit_required
  * @property int $deposit_percent
  * @property int $deposit_hours
@@ -52,6 +53,7 @@ class HotelAssistantSettings extends Model
         'daily_budget_micro_usd' => 5_000_000,
         'kill_switch' => false,
         'request_hold_minutes' => 120,
+        'request_escalate_minutes' => 15,
         'deposit_required' => false,
         'deposit_percent' => 30,
         'deposit_hours' => 24,
@@ -62,7 +64,7 @@ class HotelAssistantSettings extends Model
 
     protected $fillable = [
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
-        'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes',
+        'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes', 'request_escalate_minutes',
         'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'decision_messages', 'silence_minutes', 'daily_alert_cap', 'stay_messages', 'review_url',
         'mode', 'privacy_url', 'human_keywords', 'readiness_override_at', 'readiness_override_reason', 'readiness_override_by',
     ];

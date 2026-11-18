@@ -21,7 +21,7 @@ Menu **Mise en service** : chaque point est vert ou rouge, avec un lien « Corri
 - **Nom, ton, langues** de l'assistant.
 - **Message quand l'équipe prend le relais**, par langue.
 - **Limite de dépense IA par jour** (en US$) et **bouton d'arrêt** immédiat.
-- **Demandes de réservation** : durée de blocage des chambres ; **acompte** (pourcentage, délai, comment payer).
+- **Demandes de réservation** : durée de blocage des chambres ; **envoi aux propriétaires** des demandes sans réponse après X minutes (15 par défaut, 0 pour désactiver) ; **acompte** (pourcentage, délai, comment payer).
 - **Messages de décision** (confirmée, acompte, refusée, expirée) : laissez vide pour le texte par défaut.
 - **Messages de séjour** : rappel la veille de l'arrivée, rappel le matin du départ, remerciement avec votre **lien d'avis**.
 - **Lien vers la politique de confidentialité** et **mots qui mènent toujours à une personne** (« réception », « personne »…).
@@ -32,7 +32,9 @@ Tout ce que l'assistant peut dire en plus des chambres et des prix : conditions 
 
 ## 4. Mes alertes et le résumé quotidien
 
-Menu **Mes alertes** : votre numéro WhatsApp et les alertes souhaitées. En tant que propriétaire, vous pouvez recevoir chaque soir un **résumé** (arrivées, départs, chambres occupées, nouvelles réservations, demandes WhatsApp, conversations à traiter, coût de l'IA), par WhatsApp et/ou e-mail, à l'heure choisie.
+Menu **Mes alertes** : votre numéro WhatsApp et les alertes souhaitées.
+
+**Répondre depuis WhatsApp.** L'alerte « Nouvelle demande de réservation » arrive avec deux boutons, **Accepter** et **Refuser** : client (et s'il est déjà venu), séjour, prix, acompte, chambres restantes. Après un appui, vous avez **une minute pour annuler** ; ensuite, la décision est appliquée comme dans le tableau de bord et le client est informé. Si quelqu'un a déjà répondu, vous le voyez (« Déjà acceptée par Awa à 10 h 42 »). Si le prix a changé, la demande reste à traiter dans le tableau de bord. Activé par défaut pour les propriétaires et gérants ; la réception peut l'activer dans **Mes alertes**. En tant que propriétaire, vous pouvez recevoir chaque soir un **résumé** (arrivées, départs, chambres occupées, nouvelles réservations, demandes WhatsApp, conversations à traiter, coût de l'IA), par WhatsApp et/ou e-mail, à l'heure choisie.
 
 ## 5. Coûts
 

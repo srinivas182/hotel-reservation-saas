@@ -26,6 +26,11 @@ final class MessagingServiceProvider extends ServiceProvider
             \App\Domains\Conversations\Webhooks\MessagesHandler::class,
             \App\Domains\WhatsApp\Templates\TemplateStatusHandler::class,
         ], 'whatsapp.webhook-handlers');
+
+        // What staff can answer with WhatsApp buttons (Sprint B).
+        $this->app->tag([
+            \App\Domains\BookingRequests\BookingRequestActions::class,
+        ], 'staff-actions.handlers');
     }
 
     public function boot(): void

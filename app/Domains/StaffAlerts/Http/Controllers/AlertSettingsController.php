@@ -43,7 +43,9 @@ final class AlertSettingsController extends Controller
                 'alerts' => $settings->alerts ?? [],
                 'summary_time' => $settings->summary_time ?? '21:00',
                 'summary_channels' => $settings->summary_channels ?? [],
+                'approve_by_whatsapp' => $settings->approvesOnWhatsApp($user),
             ],
+            'canDecide' => $user->can('booking_requests.decide'),
             'kinds' => collect(AlertKind::choosable())
                 ->filter(fn (AlertKind $kind): bool => $user->can($kind->permission()->value))
                 ->map(fn (AlertKind $kind): array => ['value' => $kind->value, 'label' => $kind->label()])->values(),
@@ -73,6 +75,7 @@ final class AlertSettingsController extends Controller
             'summary_time' => ['nullable', 'date_format:H:i'],
             'summary_channels' => ['array'],
             'summary_channels.*' => [Rule::in(['whatsapp', 'email'])],
+            'approve_by_whatsapp' => ['nullable', 'boolean'],
         ], ['alert_phone.regex' => __('Use the international format, for example +2250700000000.')]);
 
         $alerts = array_values(array_filter(
@@ -86,12 +89,15 @@ final class AlertSettingsController extends Controller
             'alerts' => $alerts,
             'summary_time' => $isOwner ? ($data['summary_time'] ?? null) : null,
             'summary_channels' => $isOwner ? array_values(array_unique((array) ($data['summary_channels'] ?? []))) : [],
+            // Sprint B: only someone who decides requests can choose to answer them from WhatsApp.
+            'approve_by_whatsapp' => $user->can('booking_requests.decide') && array_key_exists('approve_by_whatsapp', $data) && $data['approve_by_whatsapp'] !== null ? (bool) $data['approve_by_whatsapp'] : $settings->approve_by_whatsapp,
         ])->save();
 
         Audit::record('staff_alerts.settings_updated', 'Alert settings updated', subject: $this->context->hotel(), causer: $user, properties: [
             'alerts' => $alerts,
             'phone_set' => $settings->alert_phone !== null,
             'summary_channels' => $settings->summary_channels,
+            'approve_by_whatsapp' => $settings->approve_by_whatsapp,
         ]);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Alert settings saved.')]);
 

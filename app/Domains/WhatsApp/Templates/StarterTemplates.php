@@ -11,7 +11,7 @@ namespace App\Domains\WhatsApp\Templates;
 final class StarterTemplates
 {
     /**
-     * @return array<string, array{name: string, category: string, label: string, bodies: array<string, string>, examples: list<string>}>
+     * @return array<string, array{name: string, category: string, label: string, bodies: array<string, string>, examples: list<string>, buttons?: array<string, list<string>>}> buttons: quick-reply button texts per language
      */
     public static function all(): array
     {
@@ -65,6 +65,17 @@ final class StarterTemplates
                     'fr' => 'Alerte pour {{1}} : {{2}}. Détails : {{3}}. Ouvrez le tableau de bord pour répondre.',
                 ],
                 'examples' => ['First Class Lodge', 'New WhatsApp booking request', 'Awa Koné, Executive, 2026-11-12 → 2026-11-14'],
+            ],
+            'booking_request_decision' => [
+                'name' => 'booking_request_decision',
+                'category' => 'UTILITY',
+                'label' => __('Booking request to accept or decline (staff)'),
+                'bodies' => [
+                    'en' => 'New booking request for {{1}}: {{2}}. Tap a button to answer.',
+                    'fr' => 'Nouvelle demande de réservation pour {{1}} : {{2}}. Touchez un bouton pour répondre.',
+                ],
+                'examples' => ['First Class Lodge', 'Awa Koné, Executive, 12/12 → 14/12 (2 nights), 2 adults, 50 000 FCFA'],
+                'buttons' => ['en' => ['Accept', 'Decline'], 'fr' => ['Accepter', 'Refuser']],
             ],
             'owner_daily_summary' => [
                 'name' => 'owner_daily_summary',
