@@ -54,6 +54,12 @@ final class TemplateService
             ...($template->placeholders() > 0 ? ['example' => ['body_text' => [$template->examples]]] : []),
         ]];
 
+        // Quick-reply buttons (Sprint B: staff answer booking requests from WhatsApp).
+        $buttons = $template->starter_key === null ? [] : (StarterTemplates::all()[$template->starter_key]['buttons'][$template->language] ?? []);
+        if ($buttons !== []) {
+            $components[] = ['type' => 'BUTTONS', 'buttons' => array_map(fn (string $text): array => ['type' => 'QUICK_REPLY', 'text' => $text], $buttons)];
+        }
+
         try {
             if ($template->meta_template_id !== null) {
                 $result = $this->graph->editTemplate($template->meta_template_id, (string) $account->token, $components);

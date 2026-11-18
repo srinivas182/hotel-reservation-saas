@@ -23,7 +23,7 @@ final class StaffAlerts
         private readonly WhatsAppDirect $whatsapp,
     ) {}
 
-    public function notify(AlertKind $kind, string $details, ?string $subjectId = null): int
+    public function notify(AlertKind $kind, string $details, ?string $subjectId = null, ?StaffCard $card = null): int
     {
         $sent = 0;
 
@@ -36,7 +36,7 @@ final class StaffAlerts
                 continue;
             }
 
-            if ($this->sendTo($setting, $user, $kind, $details, $subjectId)) {
+            if ($this->sendTo($setting, $user, $kind, $details, $subjectId, $card)) {
                 $sent++;
             }
         }
@@ -44,11 +44,14 @@ final class StaffAlerts
         return $sent;
     }
 
-    public function sendTo(StaffAlertSettings $setting, User $user, AlertKind $kind, string $details, ?string $subjectId = null): bool
+    /**
+     * @param  bool  $repeat  send even if this person was alerted about the subject in the last 10 minutes (escalation)
+     */
+    public function sendTo(StaffAlertSettings $setting, User $user, AlertKind $kind, string $details, ?string $subjectId = null, ?StaffCard $card = null, bool $repeat = false): bool
     {
         $hotel = $this->context->hotel();
 
-        if ($subjectId !== null && StaffAlert::query()
+        if (! $repeat && $subjectId !== null && StaffAlert::query()
             ->where('user_id', $user->getKey())
             ->where('subject_id', $subjectId)
             ->where('created_at', '>', now()->subMinutes(self::REPEAT_MINUTES))
@@ -68,15 +71,22 @@ final class StaffAlerts
         $title = __($kind->label(), locale: $locale);
         $text = __('Alert for :hotel: :title. :details. Open the dashboard to respond.', ['hotel' => $hotel->name, 'title' => $title, 'details' => Str::limit($details, 300)], $locale);
 
-        $result = $this->whatsapp->send(
-            (string) $setting->alert_phone,
-            $text,
-            'staff_alert',
-            [$hotel->name, $title, Str::limit($details, 300)],
-            $locale,
-            $hotel->default_locale,
-            (string) Str::ulid(),
-        );
+        $usageId = (string) Str::ulid();
+        $buttons = $card?->for($user, $setting, $locale);
+        $result = $buttons === null ? null : $this->whatsapp->sendButtons((string) $setting->alert_phone, $buttons['text'], $buttons['buttons'], $buttons['template'], $buttons['values'], $locale, $hotel->default_locale, $usageId);
+
+        // No approved button template outside the window: the plain alert still goes.
+        if ($result === null || ($result['how'] === 'skipped' && $result['reason'] === 'template_not_approved')) {
+            $result = $this->whatsapp->send(
+                (string) $setting->alert_phone,
+                $text,
+                'staff_alert',
+                [$hotel->name, $title, Str::limit($details, 300)],
+                $locale,
+                $hotel->default_locale,
+                $usageId,
+            );
+        }
 
         StaffAlert::query()->create([
             'user_id' => $user->getKey(),

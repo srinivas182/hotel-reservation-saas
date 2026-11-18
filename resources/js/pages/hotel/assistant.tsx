@@ -22,6 +22,7 @@ type Props = {
         daily_budget: number;
         kill_switch: boolean;
         request_hold_minutes: number;
+        request_escalate_minutes: number;
         deposit_required: boolean;
         deposit_percent: number;
         deposit_hours: number;
@@ -340,6 +341,31 @@ export default function AssistantSettings({
                                 <p className="text-xs text-muted-foreground">
                                     {t(
                                         'Always at least until one hour after reception opens.',
+                                    )}
+                                </p>
+                            </div>
+                            <div className="grid gap-1">
+                                <Label htmlFor="request_escalate_minutes">
+                                    {t(
+                                        'Send unanswered requests to the owners after (minutes)',
+                                    )}
+                                </Label>
+                                <Input
+                                    id="request_escalate_minutes"
+                                    type="number"
+                                    min={0}
+                                    max={240}
+                                    value={form.data.request_escalate_minutes}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'request_escalate_minutes',
+                                            Number(e.target.value),
+                                        )
+                                    }
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {t(
+                                        'Owners get the request on WhatsApp with Accept and Decline buttons. 0 turns this off.',
                                     )}
                                 </p>
                             </div>

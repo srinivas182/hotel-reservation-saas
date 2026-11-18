@@ -264,6 +264,55 @@ final class BookingRequestService
         return $count;
     }
 
+    /**
+     * Sprint B: requests nobody answered within the hotel's escalation time
+     * (default 15 minutes) go to the owners too, as a card with buttons,
+     * once. Not while someone's WhatsApp decision is in its undo minute.
+     */
+    public function escalateDue(): int
+    {
+        $minutes = HotelAssistantSettings::current()->request_escalate_minutes;
+
+        if ($minutes <= 0) {
+            return 0;
+        }
+
+        $hotel = $this->context->hotel();
+        $staff = app(\App\Domains\Access\StaffService::class);
+        $alerts = app(StaffAlerts::class);
+        $count = 0;
+
+        $due = BookingRequest::query()->with(['guest', 'category'])
+            ->where('status', BookingRequestStatus::Pending->value)
+            ->whereNull('escalated_at')
+            ->where('created_at', '<=', now()->subMinutes($minutes))
+            ->where('expires_at', '>', now())
+            ->get();
+
+        foreach ($due as $request) {
+            $request->forceFill(['escalated_at' => now()])->save();
+
+            if (\App\Domains\StaffActions\Models\StaffAction::inProgress('booking_request', $request->id) !== null) {
+                continue;
+            }
+
+            $sent = 0;
+            $owners = $hotel->members()->wherePivot('status', 'active')->get()->filter(fn (User $user): bool => $staff->isOwner($hotel, $user));
+
+            foreach ($owners as $owner) {
+                $settings = \App\Domains\StaffAlerts\StaffAlertSettings::query()->where('user_id', $owner->getKey())->whereNotNull('alert_phone')->first();
+                if ($settings !== null && $alerts->sendTo($settings, $owner, AlertKind::NewRequest, (string) __('No answer for :minutes minutes', ['minutes' => $minutes]), $request->id, new BookingRequestCard($request, escalated: true), repeat: true)) {
+                    $sent++;
+                }
+            }
+
+            Audit::record('booking_requests.escalated', 'WhatsApp booking request sent to the owners: nobody answered', subject: $request, properties: ['reference' => $request->reference, 'minutes' => $minutes, 'owners_alerted' => $sent]);
+            $count++;
+        }
+
+        return $count;
+    }
+
     private function assertPending(BookingRequest $request): void
     {
         $request->refresh();
@@ -297,6 +346,7 @@ final class BookingRequestService
             $kind === 'new' ? AlertKind::NewRequest : AlertKind::RequestExpired,
             sprintf('%s, %s, %s → %s', (string) $request->guest?->name(), (string) $request->category?->localizedName($hotel->default_locale, $hotel->default_locale), $request->check_in->toDateString(), $request->check_out->toDateString()),
             $request->id,
+            $kind === 'new' ? new BookingRequestCard($request) : null,
         );
 
         $recipients = $hotel->members()->get()->filter(fn (User $user): bool => $user->can('booking_requests.decide'));

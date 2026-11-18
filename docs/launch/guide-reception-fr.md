@@ -21,6 +21,7 @@ Il **ne confirme jamais** une réservation : c'est toujours vous qui décidez. Q
 
 1. Vérifiez la demande (dates, nombre de personnes, catégorie).
 2. **Approuver** : la réservation est créée et le client reçoit automatiquement la confirmation (ou les instructions d'acompte si l'hôtel demande un acompte).
+   Vous pouvez aussi répondre depuis WhatsApp avec les boutons **Accepter** / **Refuser** de l'alerte (à activer dans **Mes alertes**) ; une minute pour annuler.
 3. **Modifier puis approuver** : changez la catégorie, les dates, le nombre de chambres. Un changement de prix demande l'autorisation et une raison.
 4. **Refuser** : choisissez la raison (complet, dates impossibles, autre). Le client est prévenu.
 

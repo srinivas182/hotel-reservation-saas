@@ -14,7 +14,9 @@ type Props = {
         alerts: string[];
         summary_time: string;
         summary_channels: string[];
+        approve_by_whatsapp: boolean;
     };
+    canDecide: boolean;
     kinds: { value: string; label: string }[];
     isOwner: boolean;
     team: { name: string | null; phone: string | null; alerts: string[] }[];
@@ -28,6 +30,7 @@ type Props = {
 
 export default function MyAlerts({
     settings,
+    canDecide,
     kinds,
     isOwner,
     team,
@@ -103,6 +106,32 @@ export default function MyAlerts({
                             </label>
                         ))}
                     </fieldset>
+
+                    {canDecide && (
+                        <label className="flex items-start gap-2 border-t pt-4 text-sm">
+                            <input
+                                type="checkbox"
+                                className="mt-0.5 size-4"
+                                checked={form.data.approve_by_whatsapp}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'approve_by_whatsapp',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            <span className="flex flex-col">
+                                <span className="font-medium">
+                                    {t('Answer booking requests from WhatsApp')}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    {t(
+                                        'Request alerts come with Accept and Decline buttons. Each decision waits one minute so you can undo it.',
+                                    )}
+                                </span>
+                            </span>
+                        </label>
+                    )}
 
                     {isOwner && (
                         <fieldset className="flex flex-col gap-2 border-t pt-4 text-sm">

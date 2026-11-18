@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $summary_time HH:MM, hotel time
  * @property list<string>|null $summary_channels whatsapp, email
  * @property CarbonImmutable|null $summary_sent_on
+ * @property bool|null $approve_by_whatsapp null: on for those who manage the hotel (owners, managers)
+ * @property CarbonImmutable|null $whatsapp_inbound_at last button tap
  * @property-read User|null $user
  */
 class StaffAlertSettings extends Model
@@ -30,7 +32,7 @@ class StaffAlertSettings extends Model
 
     protected $table = 'staff_alert_settings';
 
-    protected $fillable = ['user_id', 'alert_phone', 'alerts', 'summary_time', 'summary_channels', 'summary_sent_on'];
+    protected $fillable = ['user_id', 'alert_phone', 'alerts', 'summary_time', 'summary_channels', 'summary_sent_on', 'approve_by_whatsapp'];
 
     /**
      * @return array<string, string>
@@ -41,6 +43,8 @@ class StaffAlertSettings extends Model
             'alerts' => 'array',
             'summary_channels' => 'array',
             'summary_sent_on' => DateOnly::class,
+            'approve_by_whatsapp' => 'boolean',
+            'whatsapp_inbound_at' => 'immutable_datetime',
         ];
     }
 
@@ -52,6 +56,15 @@ class StaffAlertSettings extends Model
     public function wants(AlertKind $kind): bool
     {
         return $this->alert_phone !== null && ($kind === AlertKind::Test || in_array($kind->value, $this->alerts ?? [], true));
+    }
+
+    /**
+     * Whether this person answers booking requests with WhatsApp buttons.
+     * By default on for those who manage the hotel, off for reception.
+     */
+    public function approvesOnWhatsApp(User $user): bool
+    {
+        return $user->can('booking_requests.decide') && ($this->approve_by_whatsapp ?? $user->can('hotel.settings.manage'));
     }
 
     /**

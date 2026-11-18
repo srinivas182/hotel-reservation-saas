@@ -61,6 +61,17 @@ Schedule::command('booking-requests:expire')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Sprint B: unanswered requests go to the owners as a card; WhatsApp decisions whose job was lost are carried out.
+Schedule::command('booking-requests:escalate')
+    ->name('booking-requests:escalate')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::command('staff-actions:run-due')
+    ->name('staff-actions:run-due')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 // Guests waiting too long for staff get one holding message; staff are alerted again.
 Schedule::command('conversations:check-waiting')
     ->name('conversations:check-waiting')

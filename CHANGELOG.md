@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint B — Approve from WhatsApp (0.19.0)
+
+#### Added
+
+- **Booking requests answered from WhatsApp.** The new-request alert becomes a card with **Accept** and **Decline** buttons. It shows the guest, the stay (room type, dates, nights, rooms, guests), the total and deposit, **how many rooms of that type stay free** after this request, and whether the guest is **returning** ("stay 3"). Inside the 24-hour window it is a free interactive message; outside it, the new `booking_request_decision` template with quick-reply buttons (submitted to Meta with its buttons); without that template approved, the plain alert as before.
+- **Decline asks why** (full / dates not possible / other), so the guest gets the matching message.
+- **One minute to undo.** A tap schedules the decision; an **Undo** button cancels it within the minute. Nothing is booked or released until the minute has passed, then the decision goes through `BookingRequestService` exactly as from the dashboard and the guest is told. Requests expiring in less than 90 seconds are decided at once.
+- **"Already handled".** Whoever taps second is told who is deciding or who decided, and when ("Already accepted by Awa at 10:42"); a decision made in the dashboard during the minute wins, and the WhatsApp one reports it.
+- **Escalation to the owners.** Requests nobody answered after the hotel's time (default 15 minutes, set in Assistant settings, 0 to turn off) go once to the owners as a card with buttons, even if they did not ask for request alerts.
+- A changed price is not accepted from WhatsApp: the reply links to the dashboard, where it is confirmed on purpose.
+- **Personal setting** "Answer booking requests from WhatsApp" in My alerts: on by default for owners and managers, off for reception.
+- **Staff actions framework** (`app/Domains/StaffActions`): signed button codes, a router for taps, scheduled decisions with undo, a sweep (`staff-actions:run-due`, every minute) for jobs that did not run. Table requests and room-service orders can use it next.
+- `booking-requests:escalate` every minute.
+
+#### Security
+
+- Every button carries a code signed for the hotel, the person, the subject and the action (HMAC with the application key, 22-character signature, at most 128 characters in all); it expires with the request. A tap counts only from the phone the card was sent to, from an active member who may decide requests and has the setting on. Refused taps are audited without the full phone number. The same tap delivered twice by Meta has one effect. Staff taps never create guest conversations.
+- Every WhatsApp decision is audited (`booking_requests.decided_on_whatsapp`, `staff_actions.undone`, `booking_requests.escalated`).
+
+#### Changed
+
+- `translations:check` also reads `trans_choice()` strings.
+
 ### Sprint A — Start from what you already have (0.18.0)
 
 First of the usability sprints A–H (simple for owners and staff).
