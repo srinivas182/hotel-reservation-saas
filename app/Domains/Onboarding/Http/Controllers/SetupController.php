@@ -54,6 +54,7 @@ final class SetupController extends Controller
                 'questions' => \App\Domains\Onboarding\Questionnaire::questions(),
                 'answers' => (object) (OnboardingProgress::current()->questionnaire ?? []),
             ],
+            'listing' => $request->user() instanceof User ? ListingImportController::present($request->user()) : null,
             'golive' => (function () use ($request): array {
                 $progress = OnboardingProgress::current();
                 $user = $request->user();

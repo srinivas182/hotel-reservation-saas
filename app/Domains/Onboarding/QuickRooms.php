@@ -21,7 +21,7 @@ final class QuickRooms
 {
     /**
      * @param  list<array{name: string, count: int, adults: int}>  $categories
-     * @return array{categories: int, rooms: int}
+     * @return array{categories: int, rooms: int, ids: list<string>} ids: the category of each row, in order
      */
     public function create(array $categories, int $firstNumber, User $by): array
     {
@@ -31,6 +31,7 @@ final class QuickRooms
             $number = $firstNumber;
             $rooms = 0;
             $created = 0;
+            $ids = [];
             $sort = (int) RoomCategory::query()->max('sort_order');
 
             foreach ($categories as $row) {
@@ -51,6 +52,7 @@ final class QuickRooms
                     ],
                 );
                 $created++;
+                $ids[] = (string) $category->id;
 
                 for ($i = 0; $i < $row['count']; $i++) {
                     while (in_array((string) $number, $used, true)) {
@@ -63,10 +65,10 @@ final class QuickRooms
                 }
             }
 
-            return ['categories' => $created, 'rooms' => $rooms];
+            return ['categories' => $created, 'rooms' => $rooms, 'ids' => $ids];
         });
 
-        Audit::record('rooms.quick_created', 'Rooms created from the setup assistant', causer: $by, properties: $result);
+        Audit::record('rooms.quick_created', 'Rooms created from the setup assistant', causer: $by, properties: ['categories' => $result['categories'], 'rooms' => $result['rooms']]);
 
         return $result;
     }

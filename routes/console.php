@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Ai\Models\AiRun;
 use App\Domains\Messaging\Email\Models\EmailMessage;
+use App\Domains\Onboarding\Models\ListingImport;
 use App\Domains\Platform\Health\HeartbeatCheck;
 use App\Domains\Platform\Health\QueueHeartbeatJob;
 use App\Domains\WhatsApp\Models\WebhookEvent;
@@ -30,9 +31,10 @@ Schedule::job(new QueueHeartbeatJob)
 
 /*
 | Email log retention: entries older than 90 days are removed. Usage
-| records are kept (they are the basis for credits and billing).
+| records are kept (they are the basis for credits and billing). Set-up
+| imports and their uploaded photos are removed after 7 days.
 */
-Schedule::command('model:prune', ['--model' => [EmailMessage::class, WebhookEvent::class, AiRun::class]])
+Schedule::command('model:prune', ['--model' => [EmailMessage::class, WebhookEvent::class, AiRun::class, ListingImport::class]])
     ->name('prune:email-messages')
     ->daily();
 

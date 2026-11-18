@@ -1,5 +1,5 @@
 import { test as setup } from '@playwright/test';
-import { logIn, logInAsAdmin, RECEPTION } from './helpers';
+import { logIn, logInAsAdmin, OWNER, RECEPTION } from './helpers';
 
 // Log in once per role (login is rate limited) and reuse the session.
 setup('reception session', async ({ page }) => {
@@ -14,4 +14,10 @@ setup('platform admin session (two-step login)', async ({ page }) => {
     await logInAsAdmin(page);
     await page.waitForURL(/\/platform$/);
     await page.context().storageState({ path: 'tests/e2e/.auth/admin.json' });
+});
+
+setup('hotel owner session (two-step login)', async ({ page }) => {
+    await logInAsAdmin(page, OWNER);
+    await page.waitForURL(/\/hotel\//);
+    await page.context().storageState({ path: 'tests/e2e/.auth/owner.json' });
 });

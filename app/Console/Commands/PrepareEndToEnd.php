@@ -28,6 +28,11 @@ final class PrepareEndToEnd extends Command
     /** Base32 secret; the browser tests compute the codes from it. */
     public const TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
 
+    /** The pilot hotel's owner (two-step login with its own secret: a code is accepted once). */
+    public const OWNER_EMAIL = 'owner.lodge@example.com';
+
+    public const OWNER_TOTP_SECRET = 'KRSXG5CTMVRXEZLU'; // gitleaks:allow test-only secret, simulated staging
+
     public function handle(TenantContext $context): int
     {
         if (app()->isProduction()) {
@@ -48,10 +53,16 @@ final class PrepareEndToEnd extends Command
             'two_factor_confirmed_at' => now(),
         ])->save();
 
+        User::query()->where('email', self::OWNER_EMAIL)->firstOrFail()->forceFill([
+            'password' => Hash::make('password'), 'email_verified_at' => now(),
+            'two_factor_secret' => encrypt(self::OWNER_TOTP_SECRET), 'two_factor_recovery_codes' => encrypt((string) json_encode(['recovery-owner-e2e'])),
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
         $hotel = Hotel::query()->where('slug', 'first-class-lodge')->firstOrFail();
         $context->run($hotel, fn () => OnboardingProgress::current()->forceFill(['golive_requested_at' => now(), 'golive_decision' => null, 'golive_decided_at' => null])->save());
 
-        $this->components->info('Ready for browser tests: '.self::ADMIN_EMAIL.' / password (two-step secret '.self::TOTP_SECRET.').');
+        $this->components->info('Ready for browser tests: '.self::ADMIN_EMAIL.' / password (two-step secret '.self::TOTP_SECRET.'), '.self::OWNER_EMAIL.' / password (secret '.self::OWNER_TOTP_SECRET.').');
 
         return self::SUCCESS;
     }

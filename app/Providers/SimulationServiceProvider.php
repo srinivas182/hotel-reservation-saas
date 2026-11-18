@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Domains\Assistant\Engine\HotelAssistantAgent;
 use App\Domains\Conversations\Translation\TranslationAgent;
+use App\Domains\Onboarding\Listing\ListingAgent;
+use App\Domains\Onboarding\PackDraftAgent;
 use App\Domains\Simulation\SimulatedAi;
 use App\Domains\Simulation\SimulatedMetaController;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +52,8 @@ final class SimulationServiceProvider extends ServiceProvider
     {
         HotelAssistantAgent::fake(fn (string $prompt): array => SimulatedAi::assistantReply($prompt));
         TranslationAgent::fake(fn (string $prompt): string => SimulatedAi::translation($prompt));
+        ListingAgent::fake(fn (string $prompt): string => SimulatedAi::listing($prompt));
+        PackDraftAgent::fake(fn (string $prompt): string => SimulatedAi::packDraft($prompt));
         Transcription::fake(function (): string {
             SimulatedAi::wait('ai');
 

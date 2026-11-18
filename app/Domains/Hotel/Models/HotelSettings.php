@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $address_line2
  * @property string|null $city
  * @property string|null $map_url
+ * @property float|null $latitude map pin, read from the Google Maps link
+ * @property float|null $longitude
  * @property string $check_in_time
  * @property string $check_out_time
  * @property string|null $late_checkout_until
@@ -44,7 +46,7 @@ class HotelSettings extends Model
     protected $fillable = [
         'support_access',
         'phone_e164', 'whatsapp_display_e164', 'email',
-        'address_line1', 'address_line2', 'city', 'map_url',
+        'address_line1', 'address_line2', 'city', 'map_url', 'latitude', 'longitude',
         'check_in_time', 'check_out_time', 'late_checkout_until',
         'staffed_hours', 'enabled_locales',
         'child_age_bands', 'hold_minutes', 'booking_prefix', 'tentative_hours',
@@ -62,6 +64,8 @@ class HotelSettings extends Model
             'child_age_bands' => 'array',
             'hold_minutes' => 'integer',
             'tentative_hours' => 'integer',
+            'latitude' => 'float',
+            'longitude' => 'float',
             'email_reply_to_token_expires_at' => 'datetime',
         ];
     }

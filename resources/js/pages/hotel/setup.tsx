@@ -2,6 +2,8 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import SetupController from '@/actions/App/Domains/Onboarding/Http/Controllers/SetupController';
 import { GoLivePanel } from '@/components/setup/golive-panel';
+import { ListingImport } from '@/components/setup/listing-import';
+import type { ListingState } from '@/components/setup/listing-import';
 import type { GoLiveState } from '@/components/setup/golive-panel';
 import { Questionnaire } from '@/components/setup/questionnaire';
 import type { QuestionnaireProps } from '@/components/setup/questionnaire';
@@ -40,6 +42,7 @@ type Props = {
     can: { rooms: boolean; bookings: boolean };
     questionnaire: QuestionnaireProps;
     golive: GoLiveState;
+    listing: ListingState | null;
 };
 
 function QuickRooms({
@@ -337,6 +340,7 @@ export default function Setup({
     can,
     questionnaire,
     golive,
+    listing,
 }: Props) {
     const [open, setOpen] = useState<string | null>(
         steps.find((s) => !s.done && !s.skipped)?.key ?? null,
@@ -361,6 +365,8 @@ export default function Setup({
                         }}
                     />
                 </div>
+
+                <ListingImport listing={listing} />
 
                 <ol className="flex flex-col gap-2">
                     {steps.map((step, i) => (

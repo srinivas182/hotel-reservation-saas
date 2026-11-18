@@ -16,11 +16,14 @@ interface AiGateway
     /**
      * Prompt an agent for the current hotel: checks the off switches and the
      * spending limit, tries the task's main model then its backup, and
-     * records every attempt.
+     * records every attempt. Attachments are images or documents (laravel/ai
+     * files) sent with the prompt, e.g. a photographed rate card.
+     *
+     * @param  list<\Laravel\Ai\Files\File>  $attachments
      *
      * @throws \App\Domains\Ai\Exceptions\AiUnavailable
      */
-    public function prompt(AiTask $task, Agent $agent, string $prompt, ?string $conversationId = null): AiResult;
+    public function prompt(AiTask $task, Agent $agent, string $prompt, ?string $conversationId = null, array $attachments = []): AiResult;
 
     /**
      * Transcribe an audio file on the local disk for the current hotel, with

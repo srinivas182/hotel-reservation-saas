@@ -7,5 +7,6 @@
 | [003](003-standalone-repository.md)            | Standalone repository, not the GMLM core         | Accepted |
 | [004](004-fail-closed-tenancy.md)              | Hotel data separation fails closed               | Accepted |
 | [005](005-react-typescript-frontend.md)        | React + TypeScript as the standard frontend      | Accepted |
+| [006](006-setup-import-from-owner-material.md) | Set-up import reads the owner's own material     | Accepted |
 
 Each record states the context, the decision, the alternatives considered and the consequences. Records are never edited after acceptance; a change of direction is a new ADR that supersedes the old one.
