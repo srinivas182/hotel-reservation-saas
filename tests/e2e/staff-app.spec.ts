@@ -6,7 +6,11 @@ test.use({ storageState: 'tests/e2e/.auth/reception.json' });
 test('the staff app installs, and opens saved pages without a connection', async ({
     page,
     context,
-}) => {
+}, info) => {
+    test.skip(
+        info.project.name === 'phone',
+        'service workers are blocked in phone emulation',
+    );
     await page.goto('/hotel/today');
 
     // The manifest and the service worker are there.

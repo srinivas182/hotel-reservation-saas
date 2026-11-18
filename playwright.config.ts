@@ -50,6 +50,8 @@ export default defineConfig({
             use: {
                 ...devices['Pixel 7'],
                 locale: 'fr-FR',
+                // Experiment: service workers off in phone emulation.
+                serviceWorkers: 'block',
                 launchOptions: executablePath
                     ? { executablePath, args: ['--no-sandbox'] }
                     : {},
