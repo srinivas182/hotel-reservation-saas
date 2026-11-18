@@ -47,6 +47,54 @@ final class SimulatedAi
     }
 
     /**
+     * A set-up import read from a typical West African hotel's material:
+     * three room types with FCFA prices, times, and pack entries in both
+     * languages. One price is marked "check this", as real readings are.
+     */
+    public static function listing(string $prompt): string
+    {
+        self::wait('ai');
+
+        $name = preg_match('/Place name: (.+)/', $prompt, $m) === 1 ? trim($m[1]) : null;
+
+        return (string) json_encode([
+            'profile' => array_filter([
+                'name' => $name === null ? null : ['value' => $name, 'sure' => true],
+                'address_line1' => ['value' => 'Quartier Résidentiel, près de la Grande Mosquée', 'sure' => true],
+                'city' => ['value' => 'Korhogo', 'sure' => true],
+                'check_in_time' => ['value' => '13:00', 'sure' => true],
+                'check_out_time' => ['value' => '11:00', 'sure' => false],
+            ]),
+            'rooms' => [
+                ['name' => 'Standard', 'count' => 12, 'adults' => 2, 'price' => 20000, 'sure' => true],
+                ['name' => 'Supérieure', 'count' => 6, 'adults' => 2, 'price' => 30000, 'sure' => true],
+                ['name' => 'Suite', 'count' => 2, 'adults' => 3, 'price' => 50000, 'sure' => false],
+            ],
+            'entries' => [
+                ['locale' => 'fr', 'section' => 'restaurant', 'question' => 'Le petit-déjeuner est-il inclus ?', 'content' => 'Le petit-déjeuner est servi de 6 h 30 à 10 h, au prix de 3 000 FCFA par personne.', 'sure' => true],
+                ['locale' => 'en', 'section' => 'restaurant', 'question' => 'Is breakfast included?', 'content' => 'Breakfast is served from 6:30 to 10:00 and costs 3,000 FCFA per person.', 'sure' => true],
+                ['locale' => 'fr', 'section' => 'payments', 'question' => 'Comment puis-je payer ?', 'content' => 'Espèces, Orange Money, MTN MoMo et Wave.', 'sure' => true],
+                ['locale' => 'en', 'section' => 'payments', 'question' => 'How can I pay?', 'content' => 'Cash, Orange Money, MTN MoMo and Wave.', 'sure' => true],
+                ['locale' => 'fr', 'section' => 'parking', 'question' => 'Y a-t-il un parking ?', 'content' => 'Parking gratuit et gardé dans la cour.', 'sure' => true],
+                ['locale' => 'en', 'section' => 'parking', 'question' => 'Is there parking?', 'content' => 'Free, guarded parking in the courtyard.', 'sure' => true],
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * An information pack drafted from the questionnaire, on staging.
+     */
+    public static function packDraft(string $prompt): string
+    {
+        self::wait('ai');
+
+        return (string) json_encode(['entries' => [
+            ['locale' => 'fr', 'section' => 'about', 'question' => null, 'content' => 'Hôtel calme et accueillant, à deux pas du centre-ville.'],
+            ['locale' => 'en', 'section' => 'about', 'question' => null, 'content' => 'A quiet, welcoming hotel a short walk from the town centre.'],
+        ]], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * Sleep for a random time in the configured range, and fail at the
      * configured rate.
      */

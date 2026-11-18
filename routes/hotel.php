@@ -33,6 +33,7 @@ use App\Domains\GoLive\Http\Controllers\GoLiveController;
 use App\Domains\Hotel\Http\Controllers\HotelSettingsController;
 use App\Domains\Messaging\Http\Controllers\EmailIdentityController;
 use App\Domains\Messaging\Http\Controllers\UsageController;
+use App\Domains\Onboarding\Http\Controllers\ListingImportController;
 use App\Domains\Onboarding\Http\Controllers\SetupController;
 use App\Domains\Orders\Http\Controllers\OrderBoardController;
 use App\Domains\Orders\Http\Controllers\StayPhoneController;
@@ -293,6 +294,9 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
         Route::post('hotel/setup/import-confirm', [SetupController::class, 'confirm'])->middleware('throttle:20,1')->name('hotel.setup.import.confirm');
         Route::post('hotel/setup/pack-draft', [SetupController::class, 'draftPack'])->middleware(['can:assistant.manage', 'throttle:5,10'])->name('hotel.setup.pack-draft');
         Route::post('hotel/setup/golive', [SetupController::class, 'requestGoLive'])->middleware('throttle:10,1')->name('hotel.setup.golive');
+        Route::post('hotel/setup/listing', [ListingImportController::class, 'store'])->middleware('throttle:5,1')->name('hotel.setup.listing');
+        Route::post('hotel/setup/listing/{import}/apply', [ListingImportController::class, 'apply'])->middleware('throttle:10,1')->name('hotel.setup.listing.apply');
+        Route::post('hotel/setup/listing/{import}/discard', [ListingImportController::class, 'discard'])->name('hotel.setup.listing.discard');
     });
 
     Route::post('hotel/announcements/{announcement}/dismiss', [App\Domains\Platform\Http\Controllers\AnnouncementController::class, 'dismiss'])->name('hotel.announcements.dismiss');

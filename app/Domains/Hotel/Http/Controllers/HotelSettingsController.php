@@ -10,6 +10,7 @@ use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Hotel\Http\Requests\HotelSettingsRequest;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Hotel\Support\Locales;
+use App\Domains\Onboarding\Listing\MapsLink;
 use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use Brick\Money\Money;
@@ -86,6 +87,12 @@ final class HotelSettingsController extends Controller
                 'booking_prefix', 'tentative_hours',
                 'staffed_hours', 'enabled_locales',
             ]));
+
+            // The map pin follows the Google Maps link (Sprint A); a link without coordinates clears it.
+            if ($settings->isDirty('map_url')) {
+                $pin = MapsLink::parse((string) $settings->map_url);
+                $settings->fill(['latitude' => $pin['latitude'] ?? null, 'longitude' => $pin['longitude'] ?? null]);
+            }
 
             $changes = $settings->getDirty();
             $settings->save();

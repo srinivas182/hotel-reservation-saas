@@ -32,13 +32,16 @@ final class LaravelAiGateway implements AiGateway
         private readonly UsageLedger $ledger,
     ) {}
 
-    public function prompt(AiTask $task, Agent $agent, string $prompt, ?string $conversationId = null): AiResult
+    /**
+     * @param  list<\Laravel\Ai\Files\File>  $attachments
+     */
+    public function prompt(AiTask $task, Agent $agent, string $prompt, ?string $conversationId = null, array $attachments = []): AiResult
     {
-        $request = json_encode(['agent' => $agent::class, 'instructions' => (string) $agent->instructions(), 'prompt' => $prompt], JSON_UNESCAPED_UNICODE) ?: '';
+        $request = json_encode(['agent' => $agent::class, 'instructions' => (string) $agent->instructions(), 'prompt' => $prompt, 'attachments' => count($attachments)], JSON_UNESCAPED_UNICODE) ?: '';
 
         /** @var array{0: AgentResponse, 1: AiModel, 2: AiRun, 3: list<string>} $result */
-        $result = $this->attempt($task, $conversationId, $request, function (AiModel $model, string $provider, int $timeout) use ($agent, $prompt): array {
-            $response = $agent->prompt($prompt, provider: $provider, model: $model->model, timeout: $timeout);
+        $result = $this->attempt($task, $conversationId, $request, function (AiModel $model, string $provider, int $timeout) use ($agent, $prompt, $attachments): array {
+            $response = $agent->prompt($prompt, $attachments, provider: $provider, model: $model->model, timeout: $timeout);
 
             return [$response, $response->text, $response->usage->inputTokens, $response->usage->outputTokens, 0];
         });

@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint A — Start from what you already have (0.18.0)
+
+First of the usability sprints A–H (simple for owners and staff).
+
+#### Added
+
+- **"Start from what you already have"** at the top of Setup: the owner gives their **own website**, a **Google Maps link**, **text** copied from their Booking.com, Google or Facebook page, and/or up to five **photos or PDFs of a brochure or rate card**. It is read in the background (a minute at most), then a review screen ("Here's what we found") lists every item with a tick box: hotel name, address, city, check-in and check-out times, map pin, room types with number of rooms, capacity and price per night, and answers for guests in French and English. Unclear items are marked **"check this"**; room types the hotel already has are unticked. Nothing is saved until the owner presses **"Use these"**: rooms go through the quick-rooms builder, prices become each category's base price, answers become **drafts** of the information pack (published by the owner as usual).
+- Each source can fail on its own with a plain note (a site that asks robots not to read it, a Maps link without a pin, photos the AI cannot read right now — then the text is read alone); the website's own structured data (schema.org) is used even when the AI is unavailable.
+- The **map pin** of the hotel (`hotel_settings.latitude`, `longitude`), set from the import or whenever a Google Maps link is saved in the settings; used for directions in Sprint G.
+- **"Deploy to staging"** GitHub Actions workflow (`.github/workflows/deploy-staging.yml`): run from the Actions tab or the API; deploys a branch, tag or commit to the staging server over SSH, checks the site answers, runs the drills (quick set or all) and posts `drills:status` in the run summary. Refuses a server whose `.env` is not `APP_ENV=staging`.
+- Staging (simulation mode) gives a realistic reading and information-pack draft without AI keys.
+
+#### Security
+
+- Links are read by a safe reader: http(s) on standard ports only, public addresses only (private, loopback, link-local/cloud metadata, carrier NAT and IPv4-mapped addresses refused), the connection pinned to the checked address (no DNS rebinding), every redirect checked (three at most), 2 MB and 8 seconds at most, HTML or text only, robots.txt respected. Booking.com and Google content is never fetched by us (their terms); owners paste their own text instead.
+- Owners and managers only (hotel settings permission; rooms, prices and answers also need their own permissions); 10 imports per hotel per day; uploads checked (JPEG, PNG, WebP, PDF, 10 MB, five files) and **deleted after 7 days** or as soon as the import is used or discarded; card numbers removed before anything is sent to the AI; every import started, read, used or discarded is in the audit log.
+
+#### Changed
+
+- The AI gateway can send attachments (images, documents) with a prompt.
+- `simulation:prepare` gives a staging without AI keys a simulated AI model (status "testing", so the launch checklist still waits for a real, approved one); every agent is faked in simulation.
+- Laravel 13.43 (fixes GHSA-63hm-g96r-2m2q, low severity).
+- Build tools (Vite and its plugins, Tailwind, TypeScript, type packages) moved to development dependencies: they never run in production. The production audit no longer reports `picomatch` (GHSA-fc5q-39xc-vjpf, no fixed version yet), which only runs at build time on our own file patterns.
+
 ### S16.4 kit — staging ready in two commands (0.17.10)
 
 Staging servers do not exist yet; this makes S16.4 a matter of running two scripts once they do.

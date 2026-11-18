@@ -11,6 +11,11 @@ export const ADMIN = {
     password: 'password',
     secret: 'JBSWY3DPEHPK3PXP',
 };
+export const OWNER = {
+    email: 'owner.lodge@example.com',
+    password: 'password',
+    secret: 'KRSXG5CTMVRXEZLU', // gitleaks:allow test-only secret
+};
 export const PHONE_NUMBER_ID = 'SIM-5550001';
 const APP_SECRET = process.env.WHATSAPP_APP_SECRET || 'simulation-secret';
 
@@ -41,13 +46,16 @@ export function totp(secret: string, at = Date.now()): string {
     return String(code).padStart(6, '0');
 }
 
-export async function logInAsAdmin(page: Page): Promise<void> {
-    await logIn(page, ADMIN);
+export async function logInAsAdmin(
+    page: Page,
+    user: { email: string; password: string; secret: string } = ADMIN,
+): Promise<void> {
+    await logIn(page, user);
     await page.waitForURL(/two-factor-challenge/);
     await page
         .locator('input[name="code"], input[autocomplete="one-time-code"]')
         .first()
-        .fill(totp(ADMIN.secret));
+        .fill(totp(user.secret));
     await page
         .getByRole('button', {
             name: /continuer|connexion|valider|se connecter/i,

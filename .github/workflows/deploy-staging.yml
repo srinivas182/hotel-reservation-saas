@@ -1,0 +1,138 @@
+# Deploy to staging (DigitalOcean or any server prepared with
+# scripts/server/provision.sh staging <domain> <email>), then run the
+# staging drills and post their results.
+#
+# Start it from the Actions tab ("Run workflow"), or through the API:
+#   POST /repos/{owner}/{repo}/actions/workflows/deploy-staging.yml/dispatches
+#   {"ref": "main", "inputs": {"git_ref": "main", "drills": "quick"}}
+#
+# Repository secrets (Settings > Secrets and variables > Actions), in the
+# "staging" environment:
+#   STAGING_HOST         server address (IP or name)
+#   STAGING_SSH_KEY      private key whose public half is in ~deploy/.ssh/authorized_keys
+#   STAGING_DOMAIN       staging domain, e.g. staging.assistant-hotel.com
+#   STAGING_KNOWN_HOSTS  optional: the server's line from `ssh-keyscan <host>`; without it
+#                        the key is read on first contact (a warning says so)
+name: Deploy to staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Branch, tag or commit to deploy
+        default: main
+        required: true
+      drills:
+        description: Drills after the deploy
+        type: choice
+        default: quick
+        options: [none, quick, all]
+
+permissions:
+  contents: read
+
+# One staging deploy at a time; a second one waits instead of cutting in.
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy and drill
+    runs-on: ubuntu-24.04
+    environment: staging
+    timeout-minutes: 90
+    env:
+      HOST: ${{ secrets.STAGING_HOST }}
+      DOMAIN: ${{ secrets.STAGING_DOMAIN }}
+      GIT_REF: ${{ inputs.git_ref }}
+      DRILLS: ${{ inputs.drills }}
+      HAS_KEY: ${{ secrets.STAGING_SSH_KEY != '' }}
+    steps:
+      - name: Check the staging secrets
+        run: |
+          missing=()
+          [ -n "$HOST" ] || missing+=(STAGING_HOST)
+          [ -n "$DOMAIN" ] || missing+=(STAGING_DOMAIN)
+          [ "$HAS_KEY" = "true" ] || missing+=(STAGING_SSH_KEY)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error title=Staging is not set up::Add these secrets to the staging environment: ${missing[*]}. See the top of .github/workflows/deploy-staging.yml."
+            exit 1
+          fi
+          # Only safe characters reach the remote command.
+          if ! [[ "$GIT_REF" =~ ^[A-Za-z0-9._/-]{1,100}$ ]]; then
+            echo "::error::git_ref may only contain letters, digits, . _ / and -"
+            exit 1
+          fi
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/staging
+          chmod 600 ~/.ssh/staging
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::STAGING_KNOWN_HOSTS is not set: trusting the server key read now. Add it to protect against a spoofed server."
+            ssh-keyscan -T 15 "$HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          cat > ~/.ssh/config <<EOF
+          Host staging
+            HostName $HOST
+            User deploy
+            IdentityFile ~/.ssh/staging
+            IdentitiesOnly yes
+            ServerAliveInterval 30
+            ConnectTimeout 20
+          EOF
+
+      - name: Deploy
+        run: |
+          # A branch name is deployed from origin, not from the server's own (possibly old) copy.
+          ssh staging "set -e; cd /srv/hotel-saas
+            grep -q '^APP_ENV=staging' .env || { echo 'This server is not staging (APP_ENV). Refusing.' >&2; exit 1; }
+            git fetch --quiet --tags origin
+            ref='$GIT_REF'
+            if git rev-parse -q --verify \"origin/\$ref\" >/dev/null; then ref=\"origin/\$ref\"; fi
+            ./deploy.sh \"\$ref\""
+
+      - name: Check the site answers
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS --max-time 10 "https://$DOMAIN/up" >/dev/null; then
+              echo "https://$DOMAIN is up."
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::https://$DOMAIN/up did not answer after the deploy."
+          exit 1
+
+      - name: Run the drills
+        if: inputs.drills != 'none'
+        timeout-minutes: 75
+        run: |
+          if [ "$DRILLS" = "quick" ]; then
+            list="workers_stop ai_down meta_errors duplicate_webhooks"
+          else
+            list=""
+          fi
+          ssh staging "cd /srv/hotel-saas && ./scripts/drills/staging-drills.sh $list"
+
+      - name: Post the drill results
+        if: always() && inputs.drills != 'none'
+        run: |
+          {
+            echo "## Staging: $GIT_REF on https://$DOMAIN"
+            echo
+            echo '```'
+            ssh staging "cd /srv/hotel-saas && docker compose -f compose.prod.yaml exec -T app php artisan drills:status" || echo "Drill results could not be read."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/staging

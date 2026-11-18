@@ -2,6 +2,8 @@
 
 Suivez la page **Mise en place** : chaque étape se coche toute seule.
 
+**Gagnez du temps :** en haut de la page, **« Partir de ce que vous avez déjà »** lit votre site web, votre lien Google Maps, un texte copié de votre page Booking.com, Google ou Facebook, ou une photo de vos tarifs. Vous cochez ce qui est juste et appuyez sur **« Utiliser »** : chambres, prix, horaires, position sur la carte et réponses pour les clients sont remplis d'un coup.
+
 | Étape                                                           | Où                                              | Temps  |
 | --------------------------------------------------------------- | ----------------------------------------------- | ------ |
 | 1. Informations de l'hôtel                                      | Réglages                                        | 5 min  |

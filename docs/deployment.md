@@ -60,6 +60,24 @@ Each release builds two images tagged with the commit (`hotel-saas-php:<sha>`, `
 
 Expect a few seconds of interruption while containers are swapped; blue-green deployment is planned for the DevOps sprint. Because a rollback restores code but not the database, **migrations must remain backward compatible with the previous release** (add columns and tables first; remove them in a later release).
 
+### Staging from GitHub (no SSH session needed)
+
+The **Deploy to staging** workflow (`.github/workflows/deploy-staging.yml`) deploys and drills staging from the Actions tab ("Run workflow") or through the API:
+
+```bash
+curl -X POST -H "Authorization: Bearer <token>" \
+  https://api.github.com/repos/<owner>/<repo>/actions/workflows/deploy-staging.yml/dispatches \
+  -d '{"ref":"main","inputs":{"git_ref":"main","drills":"quick"}}'
+```
+
+One-time setup, after `scripts/server/provision.sh staging <domain> <email>`:
+
+1. Make a key pair for GitHub only: `ssh-keygen -t ed25519 -f staging-deploy -N ""`. Add `staging-deploy.pub` to `/home/deploy/.ssh/authorized_keys` on the server.
+2. In GitHub, **Settings → Environments → New environment** `staging`, then add the secrets `STAGING_HOST` (server address), `STAGING_SSH_KEY` (contents of `staging-deploy`), `STAGING_DOMAIN` (e.g. `staging.assistant-hotel.com`) and, recommended, `STAGING_KNOWN_HOSTS` (output of `ssh-keyscan <server address>`).
+3. The server must be able to `git fetch` the repository (a read-only deploy key on the repository if it is private).
+
+`drills`: `none`, `quick` (workers stopped, AI down, Meta errors, duplicate notifications: about 15 minutes) or `all` (about 45 minutes). The results (`php artisan drills:status`) appear in the run summary. The workflow refuses a server whose `.env` is not `APP_ENV=staging`, and runs one deploy at a time.
+
 ## 4. Health and monitoring
 
 - `https://<domain>/up` — liveness, no dependencies.

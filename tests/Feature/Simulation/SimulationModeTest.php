@@ -67,3 +67,18 @@ it('only prepares data or sends simulated guests in simulation mode', function (
     $this->artisan('simulation:prepare')->assertFailed();
     $this->artisan('simulation:guests', ['phone_number_id' => 'SIM-1'])->assertFailed();
 });
+
+it('gives staging a simulated AI model when none is set up, without taking over real ones', function (): void {
+    $this->artisan('simulation:prepare')->assertSuccessful();
+
+    $settings = App\Domains\Ai\Models\AiPlatformSettings::current();
+    $model = App\Domains\Ai\Models\AiModel::query()->findOrFail($settings->assistant_model_id);
+    expect($model->model)->toBe('simulated-model')
+        ->and($model->status)->toBe(App\Domains\Ai\ModelStatus::Testing) // the launch checklist still waits for a real, approved model
+        ->and($settings->modelsFor(App\Domains\Ai\AiTask::Translation))->toHaveCount(1);
+
+    require_once __DIR__.'/../Ai/helpers.php';
+    $real = setUpAiModels();
+    $this->artisan('simulation:prepare')->assertSuccessful();
+    expect(App\Domains\Ai\Models\AiPlatformSettings::current()->assistant_model_id)->toBe($real['main']->id);
+});

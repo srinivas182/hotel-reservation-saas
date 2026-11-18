@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Domains\Ai\AiDriver;
 use App\Domains\Ai\AssistantMode;
+use App\Domains\Ai\Models\AiModel;
+use App\Domains\Ai\Models\AiPlatformSettings;
+use App\Domains\Ai\Models\AiProvider;
 use App\Domains\Ai\Models\HotelAssistantSettings;
+use App\Domains\Ai\ModelStatus;
 use App\Domains\Assistant\Knowledge\KnowledgeEntry;
 use App\Domains\Assistant\Knowledge\KnowledgePack;
 use App\Domains\Conversations\Models\Conversation;
@@ -47,6 +52,10 @@ final class PrepareSimulation extends Command
         }
 
         $hotel = Hotel::query()->where('slug', 'first-class-lodge')->firstOrFail();
+
+        if (! $this->option('report')) {
+            $this->simulatedAiModel();
+        }
 
         $ok = $context->run($hotel, function (): bool {
             if ($this->option('report')) {
@@ -107,5 +116,31 @@ final class PrepareSimulation extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Staging without AI keys: a simulated provider and model, so the AI
+     * gateway has a model to choose. In simulation every agent is faked
+     * (SimulationServiceProvider), so nothing reaches a real provider. Only
+     * fills an empty slot: real models set up on staging stay in charge.
+     * The model stays in "testing", so the launch checklist is not fooled.
+     */
+    private function simulatedAiModel(): void
+    {
+        $settings = AiPlatformSettings::current();
+
+        if ($settings->assistant_model_id !== null) {
+            return;
+        }
+
+        $provider = AiProvider::query()->firstOrCreate(['name' => 'Simulation (staging)'], [
+            'driver' => AiDriver::Anthropic, 'credentials' => ['key' => 'simulated'], 'active' => true,
+        ]);
+        $model = AiModel::query()->firstOrCreate(['ai_provider_id' => $provider->id, 'model' => 'simulated-model'], [
+            'label' => 'Simulated', 'capabilities' => ['chat', 'tools', 'vision'], 'status' => ModelStatus::Testing,
+            'input_cost_per_mtok' => 0, 'output_cost_per_mtok' => 0,
+        ]);
+
+        $settings->forceFill(['assistant_model_id' => $model->id])->save();
     }
 }
