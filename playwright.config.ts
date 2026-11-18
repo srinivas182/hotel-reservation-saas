@@ -53,8 +53,6 @@ export default defineConfig({
             use: {
                 ...devices['Pixel 7'],
                 locale: 'fr-FR',
-                // Experiment: service workers off in phone emulation.
-                serviceWorkers: 'block',
                 // The full Chromium (new headless), not the headless shell: closer to a real
                 // phone, and the shell crashes with service workers (Sprint D).
                 ...(executablePath ? {} : { channel: 'chromium' }),
