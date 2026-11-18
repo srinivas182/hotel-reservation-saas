@@ -112,10 +112,10 @@ final class SafeFetcher
         [$host, $port, $ip] = $this->check($url);
 
         try {
-            return Http::withUserAgent(self::USER_AGENT)
-                ->withHeaders(['Accept' => 'text/html,application/xhtml+xml,text/plain;q=0.8', 'Accept-Language' => 'fr,en;q=0.8'])
-                ->connectTimeout(4)
+            return Http::connectTimeout(4)
                 ->timeout(8)
+                ->withUserAgent(self::USER_AGENT)
+                ->withHeaders(['Accept' => 'text/html,application/xhtml+xml,text/plain;q=0.8', 'Accept-Language' => 'fr,en;q=0.8'])
                 ->withOptions([
                     'allow_redirects' => false,
                     'curl' => [CURLOPT_RESOLVE => ["{$host}:{$port}:".(str_contains($ip, ':') ? "[{$ip}]" : $ip)]],
