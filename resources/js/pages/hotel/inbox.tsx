@@ -1,4 +1,6 @@
 import { Head, Link, router, useForm, usePoll } from '@inertiajs/react';
+import { toast } from 'sonner';
+import { heldFor, holdReply, isOffline } from '@/lib/outbox';
 import { Check, CheckCheck, Clock, TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -444,6 +446,8 @@ function Reply({
 }) {
     const form = useForm({ body: '' });
     const [translating, setTranslating] = useState(false);
+    const [held, setHeld] = useState(0);
+    useEffect(() => setHeld(heldFor(thread.id).length), [thread.id]);
     const translate = () => {
         setTranslating(true);
         router.post(
@@ -491,11 +495,36 @@ function Reply({
         );
     }
 
+    // Sprint D: without a connection the reply is kept on the phone and sent when it returns.
+    const hold = () => {
+        if (holdReply(thread.id, form.data.body)) {
+            form.reset();
+            setHeld(heldFor(thread.id).length);
+            toast.message(
+                t(
+                    'No connection: the reply is kept and will be sent when the connection returns.',
+                ),
+            );
+        }
+    };
+
     const submit = (event: FormEvent) => {
         event.preventDefault();
+
+        if (isOffline()) {
+            hold();
+
+            return;
+        }
+
         form.post(InboxController.reply.url(thread.id), {
             preserveScroll: true,
             onSuccess: () => form.reset(),
+            onNetworkError: () => {
+                hold();
+
+                return false;
+            },
         });
     };
 
@@ -544,6 +573,16 @@ function Reply({
                     </Button>
                 )}
             <InputError message={form.errors.body} />
+            {held > 0 && (
+                <p
+                    role="status"
+                    className="text-xs text-amber-700 dark:text-amber-300"
+                >
+                    {t(':count reply(ies) waiting for the connection.', {
+                        count: held,
+                    })}
+                </p>
+            )}
             {thread.window_closes_at && (
                 <p className="text-xs text-muted-foreground">
                     {t('Free replies possible until :time.', {

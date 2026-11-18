@@ -12,6 +12,7 @@ use App\Domains\Onboarding\Http\Controllers\SignupController;
 use App\Domains\Platform\Http\Controllers\AccountHotelsController;
 use App\Domains\Platform\Http\Controllers\HealthController;
 use App\Domains\Product\Http\Controllers\ProductController;
+use App\Domains\Push\Http\Controllers\PushActionController;
 use App\Domains\Restaurant\Http\Controllers\PublicMenuController;
 use App\Domains\Sales\Http\Controllers\ProposalController;
 use App\Domains\Site\Http\Controllers\SiteController;
@@ -20,6 +21,7 @@ use App\Domains\Support\Http\Controllers\SupportAttachmentController;
 use App\Domains\Tenancy\Http\Controllers\SwitchHotelController;
 use App\Domains\WhatsApp\Http\Controllers\WebhookController as WhatsAppWebhookController;
 use App\Http\Controllers\CspReportController;
+use App\Http\Controllers\ManifestController;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
@@ -131,6 +133,18 @@ Route::post('csp-report', CspReportController::class)
     ->middleware('throttle:60,1')
     ->withoutMiddleware(PreventRequestForgery::class)
     ->name('csp.report');
+
+Route::get('manifest.webmanifest', ManifestController::class)->middleware('throttle:60,1')->name('manifest');
+
+// Sprint D: the service worker reports taps on notifications. No session there: the signed codes are the proof.
+Route::post('push/act', [PushActionController::class, 'act'])
+    ->middleware('throttle:30,1')
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->name('push.act');
+Route::post('push/opened', [PushActionController::class, 'opened'])
+    ->middleware('throttle:120,1')
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->name('push.opened');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // The owner's hotels: add, close, export, reopen (works for closed hotels too).

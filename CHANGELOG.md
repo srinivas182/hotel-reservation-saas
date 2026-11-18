@@ -4,6 +4,33 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint D — Staff app on the phone, with notifications (0.21.0)
+
+#### Added
+
+- **Installable staff app** (web app manifest named after the brand, original icon, home-screen shortcuts Today and Inbox) and a **service worker** (`public/sw.js`).
+- **App notifications** (Web Push with VAPID, `minishlink/web-push` 11, OpenSSL only), free for the hotel: the alerts each person ticked come to their phones first. They cover new booking requests, conversations passed to staff, guests waiting, room-service orders, table requests, events and credits. A notification opens the right page.
+- **Accept on the notification** of a new request (addition 1): the same signed codes, checks and one-minute undo as Sprint B; the confirmation, Undo and result come back as notifications. Decline opens the request (it needs a reason).
+- **Install offer at the right time** (addition 2): from the second visit on a phone, never inside the installed app, not again for 30 days once dismissed; on iPhone, how to add it to the home screen.
+- **Test notification and help** in My alerts (addition 3): blocked notifications, Android battery saver, Do not disturb, iPhone home screen (iOS 16.4+); the person's phones with notifications are listed.
+- **WhatsApp backup** (addition 4): a notification not opened within 5 minutes is followed by the WhatsApp alert (skipped if the request was answered meanwhile); with no phone receiving it, WhatsApp goes at once.
+- **Quiet hours per person** (addition 5), by notification and WhatsApp. A new **last call** goes through them: a request with 30 minutes left is sent once more to those who decide requests.
+- **Number on the app icon** (addition 6): waiting requests plus conversations that need staff, updated by notifications and by every page.
+- **Weak connections:** staff pages are kept on the phone and shown when there is no connection, with the time they were saved. Guest replies written offline are kept and sent in order when the connection returns. Other forms keep what was typed and ask to try again, because replaying booking changes later could do the wrong thing. Saved pages are deleted at logout.
+- Staff without a WhatsApp number can now get alerts through the app alone.
+- `push:keys` makes the VAPID key pair; `scripts/server/provision.sh` makes one for new servers.
+
+#### Security
+
+- Phones can subscribe only with the push services of Chrome, Firefox, Edge and Safari (otherwise the server could be made to call any address). Subscription addresses and keys are stored encrypted. A phone signed in by someone else becomes theirs, and phones that unsubscribe or keep failing are removed.
+- Notification taps carry the signed codes. They also need the person to still be an active member with the app on a phone in that hotel, so logging out on that phone ends them. "Opened" reports are signed per alert. Both endpoints are rate-limited and take no session.
+- The service worker is never cached by the web server (`no-cache`).
+
+#### Changed
+
+- The favicon and home-screen icon are the product's own (reception bell), not the starter kit's.
+- `StaffActionRouter` is one instance per request or job.
+
 ### Sprint C — Morning WhatsApp summary (0.20.0)
 
 #### Added

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domains\StaffActions;
 
 use App\Domains\Audit\Audit;
+use App\Domains\Push\Models\PushSubscription;
+use App\Domains\Push\PushSender;
 use App\Domains\StaffActions\Models\StaffAction;
 use App\Domains\StaffAlerts\StaffAlertSettings;
 use App\Domains\StaffAlerts\WhatsAppDirect;
@@ -30,10 +32,48 @@ final class StaffActionRouter
     /** Below this time left on the subject, decisions are carried out at once. */
     public const MIN_SECONDS_LEFT_FOR_UNDO = 90;
 
+    /** @var list<array{text: string, buttons: list<array{id: string, title: string}>}>|null replies of a tap from an app notification */
+    private ?array $collected = null;
+
     public function __construct(
         private readonly TenantContext $context,
         private readonly WhatsAppDirect $whatsapp,
+        private readonly PushSender $push,
     ) {}
+
+    /**
+     * A tap on an app notification button (Sprint D). The signed code is the
+     * proof: it names the person, who must still be an active member with
+     * the app on a phone in this hotel. The replies come back to the phone
+     * in the answer, not by WhatsApp.
+     *
+     * @return list<array{text: string, buttons: list<array{id: string, title: string}>}>
+     */
+    public function handlePush(string $payload): array
+    {
+        $previous = app()->getLocale();
+        $this->collected = [];
+
+        try {
+            $token = ActionToken::parse($this->context->id(), $payload);
+            $settings = $token === null ? null : StaffAlertSettings::query()->with('user')->where('user_id', $token->userId)->first();
+            $user = $settings?->user;
+
+            if ($token === null || $settings === null || ! $user instanceof User || ! $this->isActiveMember($user) || ! PushSubscription::query()->where('user_id', $user->getKey())->exists()) {
+                Audit::record('staff_actions.refused', 'A notification button tap was refused', subject: $this->context->hotel(), properties: ['reason' => $token === null ? 'bad_signature' : 'not_a_member_with_the_app', 'channel' => 'push']);
+
+                return [];
+            }
+
+            app()->setLocale($user->preferred_locale ?: $this->context->hotel()->default_locale);
+            $this->act($token, $user, $settings);
+
+            return $this->collected ?? [];
+        } finally {
+            $this->collected = null;
+            app()->setLocale($previous);
+        }
+    }
 
     /**
      * The button code in an incoming message, if it is a staff button.
@@ -85,10 +125,13 @@ final class StaffActionRouter
         }
 
         $settings->forceFill(['whatsapp_inbound_at' => now()])->save();
-        $locale = $user->preferred_locale ?: $this->context->hotel()->default_locale;
+        app()->setLocale($user->preferred_locale ?: $this->context->hotel()->default_locale);
 
-        app()->setLocale($locale);
+        $this->act($token, $user, $settings);
+    }
 
+    private function act(ActionToken $token, User $user, StaffAlertSettings $settings): void
+    {
         if ($token->expired()) {
             $this->reply($settings, (string) __('This button has expired. Open the dashboard to see what is waiting: :url', ['url' => route('hotel.today')]));
 
@@ -125,7 +168,7 @@ final class StaffActionRouter
             'action' => $action,
             'reason' => $reason,
             'status' => 'scheduled',
-            'phone' => $settings->alert_phone,
+            'phone' => $this->collected === null ? $settings->alert_phone : null, // null: the result goes to the app
             'execute_at' => now()->addSeconds($withUndo ? self::UNDO_SECONDS : 0),
         ]);
 
@@ -182,7 +225,9 @@ final class StaffActionRouter
         $action->forceFill(['status' => $status, 'executed_at' => now(), 'result' => mb_substr($message, 0, 500)])->save();
 
         $settings = StaffAlertSettings::query()->with('user')->where('user_id', $user->getKey())->first();
-        if ($settings !== null) {
+        if ($action->phone === null) {
+            $this->push->toUser($user, ['title' => $this->context->hotel()->name, 'body' => $message, 'tag' => 'staff-action:'.$action->id]);
+        } elseif ($settings !== null) {
             $this->reply($settings, $message);
         }
         app()->setLocale($previous);
@@ -195,6 +240,12 @@ final class StaffActionRouter
      */
     public function reply(StaffAlertSettings $settings, string $text, array $buttons = []): void
     {
+        if ($this->collected !== null) {
+            $this->collected[] = ['text' => $text, 'buttons' => $buttons];
+
+            return;
+        }
+
         if ($settings->alert_phone === null) {
             return;
         }

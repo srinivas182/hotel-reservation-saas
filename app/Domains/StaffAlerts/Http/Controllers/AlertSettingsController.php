@@ -47,7 +47,14 @@ final class AlertSettingsController extends Controller
                 'morning_on' => $settings->morning_time !== null,
                 'morning_time' => $settings->morning_time ?? '07:30',
                 'morning_quiet_days' => $settings->morning_quiet_days,
+                'push_enabled' => $settings->push_enabled,
+                'quiet_on' => $settings->quiet_from !== null,
+                'quiet_from' => $settings->quiet_from ?? '22:00',
+                'quiet_to' => $settings->quiet_to ?? '06:00',
             ],
+            // Sprint D: this person's phones with app notifications.
+            'devices' => \App\Domains\Push\Models\PushSubscription::query()->where('user_id', $user->getKey())->latest('id')->get()
+                ->map(fn (\App\Domains\Push\Models\PushSubscription $d): array => ['id' => $d->id, 'device' => $d->device, 'since' => $d->created_at?->toIso8601String(), 'last' => $d->last_success_at?->toIso8601String()])->all(),
             'morningMoney' => \App\Domains\StaffAlerts\Morning\MorningSummaryActions::canSeeMoney($user),
             'canDecide' => $user->can('booking_requests.decide'),
             'kinds' => collect(AlertKind::choosable())
@@ -83,6 +90,10 @@ final class AlertSettingsController extends Controller
             'morning_on' => ['nullable', 'boolean'],
             'morning_time' => ['nullable', 'date_format:H:i'],
             'morning_quiet_days' => ['nullable', 'boolean'],
+            'push_enabled' => ['nullable', 'boolean'],
+            'quiet_on' => ['nullable', 'boolean'],
+            'quiet_from' => ['nullable', 'date_format:H:i'],
+            'quiet_to' => ['nullable', 'date_format:H:i'],
         ], ['alert_phone.regex' => __('Use the international format, for example +2250700000000.')]);
 
         $alerts = array_values(array_filter(
@@ -101,6 +112,9 @@ final class AlertSettingsController extends Controller
             // Sprint C: anyone with a phone can ask for the morning summary; money lines follow their permissions.
             'morning_time' => (bool) ($data['morning_on'] ?? false) ? ($data['morning_time'] ?? '07:30') : null,
             'morning_quiet_days' => (bool) ($data['morning_quiet_days'] ?? $settings->morning_quiet_days),
+            'push_enabled' => (bool) ($data['push_enabled'] ?? $settings->push_enabled),
+            'quiet_from' => (bool) ($data['quiet_on'] ?? false) ? ($data['quiet_from'] ?? '22:00') : null,
+            'quiet_to' => (bool) ($data['quiet_on'] ?? false) ? ($data['quiet_to'] ?? '06:00') : null,
         ])->save();
 
         Audit::record('staff_alerts.settings_updated', 'Alert settings updated', subject: $this->context->hotel(), causer: $user, properties: [

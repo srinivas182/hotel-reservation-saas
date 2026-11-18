@@ -19,7 +19,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->scoped(\App\Domains\Platform\Support\SupportAccess::class);
         $this->app->scoped(\App\Domains\Platform\Features\Features::class);
-        //
+        // One button router per request or job: a notification tap collects its replies on it (Sprint D).
+        $this->app->scoped(\App\Domains\StaffActions\StaffActionRouter::class);
+        // Sprint D: app notifications (tests bind FakePushTransport).
+        $this->app->bind(\App\Domains\Push\PushTransport::class, \App\Domains\Push\WebPushTransport::class);
     }
 
     /**

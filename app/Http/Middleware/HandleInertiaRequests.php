@@ -72,6 +72,13 @@ class HandleInertiaRequests extends Middleware
             'billingReduced' => fn (): bool => \App\Domains\Billing\Invoices\Dunning::isReduced(),
             'modules' => fn (): array => app(TenantContext::class)->has() ? app(\App\Domains\Billing\Entitlements::class)->modules() : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Sprint D: the staff app (notifications, icon badge).
+            'push' => fn (): ?array => $request->user() instanceof User && app(TenantContext::class)->has() && filled(config('webpush.public_key'))
+                ? ['key' => (string) config('webpush.public_key')]
+                : null,
+            'appBadge' => fn (): int => $request->user() instanceof User && app(TenantContext::class)->has() && $request->user()->can('conversations.view')
+                ? \App\Domains\Push\Badge::count()
+                : 0,
         ];
     }
 

@@ -17,6 +17,9 @@ const HOTEL_ROUTES_WITHOUT_PERMISSION = [
     'hotel.announcements.dismiss' => 'Each staff member hides a banner for themselves only.',
     'hotel.my-alerts' => 'Personal alert settings of the signed-in staff member.',
     'hotel.my-alerts.update' => 'Personal alert settings of the signed-in staff member.',
+    'hotel.push.subscribe' => 'Sprint D: app notifications on the signed-in staff member\'s own phone (push service hosts allowlisted).',
+    'hotel.push.unsubscribe' => 'Sprint D: removes the signed-in staff member\'s own phone only.',
+    'hotel.push.test' => 'Sprint D: a test notification to the signed-in staff member\'s own phones.',
     'hotel.my-alerts.test' => 'Sends a test alert to the signed-in staff member only.',
     'hotel.folio-lines.correct' => 'Checked in the controller: payment lines need folio.payments, others folio.charge.',
 ];

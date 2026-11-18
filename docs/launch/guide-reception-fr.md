@@ -71,3 +71,10 @@ Support : menu **Contacter le support** (lundi–samedi, 8 h–18 h GMT). Le bou
 ## Résumé du matin
 
 Dans **Mes alertes**, cochez « Me l'envoyer chaque matin » : la journée à venir (arrivées, départs, présents, chambres ce soir, 7 prochaines nuits) arrive sur WhatsApp, avec les boutons **Arrivées** et **Présents** pour les listes.
+
+## L'application sur votre téléphone
+
+- **Installer** : à la deuxième visite sur votre téléphone, le tableau de bord propose « Installer ». Sur iPhone : Safari → Partager → « Sur l'écran d'accueil ».
+- **Notifications** : dans **Mes alertes**, touchez « Activer les notifications sur ce téléphone », puis « Envoyer une notification de test ». Gratuites, elles arrivent avant WhatsApp ; si vous ne l'ouvrez pas dans les 5 minutes, l'alerte WhatsApp suit.
+- **Heures calmes** : choisissez vos heures sans alerte (par exemple 22 h – 6 h). Une demande qui expire dans 30 minutes passe quand même.
+- **Sans connexion** : les pages déjà ouvertes restent consultables (avec l'heure d'enregistrement) et les réponses aux clients sont envoyées au retour du réseau.
