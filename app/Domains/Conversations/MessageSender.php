@@ -67,8 +67,9 @@ final class MessageSender
      * 24-hour window.
      *
      * @param  list<string>  $values  one value per placeholder
+     * @param  list<string>  $buttonPayloads  Sprint G: the code each quick-reply button sends back, in order
      */
-    public function sendTemplate(Conversation $conversation, MessageTemplate $template, array $values, ?User $by = null, MessageSource $source = MessageSource::Staff): Message
+    public function sendTemplate(Conversation $conversation, MessageTemplate $template, array $values, ?User $by = null, MessageSource $source = MessageSource::Staff, array $buttonPayloads = []): Message
     {
         if ($template->status !== TemplateStatus::Approved) {
             throw new CannotSend(__('This template is not approved by Meta yet.'));
@@ -96,10 +97,16 @@ final class MessageSender
             'template_language' => $template->language,
             'media' => [
                 'category' => strtolower($template->category),
-                'components' => $values === [] ? [] : [[
-                    'type' => 'body',
-                    'parameters' => array_map(fn (string $value): array => ['type' => 'text', 'text' => $value], $values),
-                ]],
+                'components' => [
+                    ...($values === [] ? [] : [[
+                        'type' => 'body',
+                        'parameters' => array_map(fn (string $value): array => ['type' => 'text', 'text' => $value], $values),
+                    ]]),
+                    ...array_map(fn (int $i, string $payload): array => [
+                        'type' => 'button', 'sub_type' => 'quick_reply', 'index' => (string) $i,
+                        'parameters' => [['type' => 'payload', 'payload' => $payload]],
+                    ], array_keys($buttonPayloads), $buttonPayloads),
+                ],
             ],
             'status' => MessageStatus::Queued,
             'sent_by' => $by?->getKey(),
@@ -112,6 +119,67 @@ final class MessageSender
             ...($source === MessageSource::Staff ? ['staff_replied_at' => now(), 'needs_attention' => false, 'waiting_since' => null] : []),
         ])->save();
 
+        SendMessage::dispatch($message->id);
+
+        return $message;
+    }
+
+    /**
+     * Sprint G: a message with reply buttons (up to 3) or a list (up to 10
+     * rows), within the 24-hour window. The text shown in the inbox is the
+     * body.
+     *
+     * @param  array<string, mixed>  $interactive  WhatsApp's interactive object (type button or list)
+     */
+    public function sendInteractive(Conversation $conversation, array $interactive, MessageSource $source = MessageSource::System): Message
+    {
+        $body = trim((string) ($interactive['body']['text'] ?? ''));
+
+        if ($body === '' || mb_strlen($body) > 1024) {
+            throw new CannotSend(__('Write a message of up to :max characters.', ['max' => 1024]));
+        }
+
+        return $this->queueOutbound($conversation, 'interactive', $body, ['interactive' => $interactive], $source);
+    }
+
+    /**
+     * Sprint G: a map pin the guest can open in their maps app or share.
+     */
+    public function sendLocation(Conversation $conversation, float $latitude, float $longitude, string $name, string $address, MessageSource $source = MessageSource::System): Message
+    {
+        return $this->queueOutbound($conversation, 'location', trim($name.' '.$address), [
+            'latitude' => $latitude, 'longitude' => $longitude, 'name' => mb_substr($name, 0, 100), 'address' => mb_substr($address, 0, 200),
+        ], $source);
+    }
+
+    /**
+     * @param  array<string, mixed>  $media
+     */
+    private function queueOutbound(Conversation $conversation, string $type, string $body, array $media, MessageSource $source): Message
+    {
+        $account = WhatsAppAccount::query()->first();
+
+        if ($account === null || ! $account->status->canSend()) {
+            throw new CannotSend(__('WhatsApp is not connected. Ask the owner to reconnect it.'));
+        }
+
+        if (! $conversation->windowOpen()) {
+            throw new CannotSend(__('More than 24 hours have passed since the guest’s last message. Send an approved template instead.'));
+        }
+
+        $message = Message::query()->create([
+            'conversation_id' => $conversation->id,
+            'direction' => 'out',
+            'client_id' => (string) Str::uuid(),
+            'type' => $type,
+            'body' => $body,
+            'media' => $media,
+            'status' => MessageStatus::Queued,
+            'source' => $source,
+            'sent_at' => now(),
+        ]);
+
+        $conversation->forceFill(['last_message_at' => now()])->save();
         SendMessage::dispatch($message->id);
 
         return $message;

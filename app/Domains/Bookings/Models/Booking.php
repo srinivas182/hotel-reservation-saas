@@ -45,6 +45,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $inventory_hold_id
  * @property string|null $created_by
  * @property CarbonImmutable|null $whatsapp_consent_at
+ * @property-read \App\Domains\Arrivals\Models\ArrivalCheck|null $arrivalCheck
  */
 class Booking extends Model
 {
@@ -101,6 +102,16 @@ class Booking extends Model
     public function bookingRooms(): HasMany
     {
         return $this->hasMany(BookingRoom::class)->orderBy('position');
+    }
+
+    /**
+     * Sprint G: what the guest answered to the arrival card.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne<\App\Domains\Arrivals\Models\ArrivalCheck, $this>
+     */
+    public function arrivalCheck(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Domains\Arrivals\Models\ArrivalCheck::class);
     }
 
     /**

@@ -55,6 +55,8 @@ final class MorningSummaryText
             }
         }
 
+        $lines = [...$lines, ...self::answerLines($s, $locale)];
+
         $lines[] = __('Next 7 nights:', locale: $locale);
         foreach ($s['week'] as $date => $percent) {
             $lines[] = \Carbon\CarbonImmutable::parse($date)->settings(['locale' => $locale])->isoFormat('ddd D').' '.self::bar($percent).' '.$percent.' %';
@@ -92,6 +94,36 @@ final class MorningSummaryText
             $money ? __('collected yesterday :total', ['total' => MoneyFormatter::format(Money::ofMinor($s['collected'], $hotel->currency), $locale)], $locale) : null,
             $s['pending_requests'] > 0 ? trans_choice(':count WhatsApp request waiting|:count WhatsApp requests waiting', $s['pending_requests'], [], $locale) : null,
         ]));
+    }
+
+    /**
+     * What today's guests answered to the arrival card (Sprint G).
+     *
+     * @param  array<string, mixed>  $s
+     * @return list<string>
+     */
+    private static function answerLines(array $s, string $locale): array
+    {
+        $a = $s['answers'] ?? null;
+        if (! is_array($a) || $a['confirmed'] + count($a['waiting']) + $a['declined'] === 0) {
+            return [];
+        }
+
+        $parts = [trans_choice(':count arrival confirmed|:count arrivals confirmed', $a['confirmed'], [], $locale)];
+        if ($a['waiting'] !== []) {
+            $parts[] = __('no answer: :names', ['names' => implode(', ', $a['waiting'])], $locale);
+        }
+        if ($a['declined'] > 0) {
+            $parts[] = trans_choice(':count not coming|:count not coming', $a['declined'], [], $locale);
+        }
+
+        $lines = [($a['waiting'] === [] ? '✅ ' : '📞 ').implode(' · ', $parts)];
+        if ($a['etas'] !== []) {
+            $etas = array_map(fn (array $e): string => $e['name'].' '.\App\Domains\Arrivals\ArrivalSlots::label($e['slot'], $locale), $a['etas']);
+            $lines[] = '🕑 '.__('Arrival times: :etas', ['etas' => implode(', ', $etas)], $locale);
+        }
+
+        return $lines;
     }
 
     /**

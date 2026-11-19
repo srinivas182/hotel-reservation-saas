@@ -36,6 +36,29 @@ class LegalDocument extends Model
         return self::query()->where('kind', $kind)->whereNotNull('published_at')->orderByDesc('version')->first();
     }
 
+    /**
+     * The current version of every kind, in one query (read once per web
+     * request: every dashboard page checks them).
+     *
+     * @return array<string, self>
+     */
+    public static function currentAll(): array
+    {
+        return \App\Support\RequestMemo::remember('legal-current', function (): array {
+            $current = [];
+            foreach (self::query()->whereNotNull('published_at')->orderByDesc('version')->get() as $document) {
+                $current[$document->kind] ??= $document;
+            }
+
+            return $current;
+        });
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => \App\Support\RequestMemo::forget('legal-current'));
+    }
+
     public function text(string $locale): string
     {
         return $this->body[$locale] ?? $this->body['en'] ?? (string) (array_values($this->body)[0] ?? '');

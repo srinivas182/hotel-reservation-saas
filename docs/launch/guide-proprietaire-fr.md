@@ -77,3 +77,12 @@ Assistant IA → Mode **Désactivé** (ou bouton d'arrêt) : effet immédiat. L'
 - **Sans compte CinetPay** : vos instructions (par exemple un numéro Wave) restent envoyées ; le client envoie sa capture et l'équipe confirme d'un bouton.
 - **Résumé du matin** : « Acomptes reçus hier : Wave 3, Orange Money 2 » (montants pour ceux qui voient l'argent), et les remboursements à faire.
 - **Comptable** : **Export pour le comptable** donne le fichier du mois (date, reçu, réservation, client, moyen, montant, référence opérateur).
+
+## 11. La carte d'arrivée, la veille
+
+- **Réglages → Carte d'arrivée** : vos **indications** (« en face de la Grande Mosquée, portail bleu »), un **conseil transport** (« depuis la gare, une moto-taxi coûte environ 500 F CFA »), l'**heure de fermeture de la réception** avec ce que font les clients qui arrivent plus tard, les **demandes proposées** (navette, arrivée anticipée, lit en plus, avec un prix si vous voulez) et une **photo de l'entrée**.
+- Le **plan** vient de votre lien Google Maps (réglages de l'hôtel). L'envoi se règle dans le rappel d'arrivée des réglages de l'assistant IA (10 h par défaut).
+- S'il reste un solde, la carte contient le **lien de paiement** : le client paie avant d'arriver, sans attente à l'accueil.
+- **Le soir à 18 h**, les clients de demain qui n'ont pas répondu sont signalés à l'équipe (une seule alerte), avec un bouton pour les appeler.
+- **Résumé du matin** : « 2 arrivées confirmées · sans réponse : … » et les heures d'arrivée prévues.
+- Hors de la fenêtre de 24 heures de WhatsApp, la carte part avec le modèle `arrival_card` (à faire approuver par Meta, avec ses trois boutons).

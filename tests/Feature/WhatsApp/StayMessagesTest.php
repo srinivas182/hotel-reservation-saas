@@ -83,15 +83,15 @@ it('sends the arrival reminder the day before, at the chosen time, once', functi
         ->and(($this->in)(fn () => StayMessage::query()->where('booking_id', $booking->id)->sole()->how))->toBe('template');
 });
 
-it('uses free text when the guest wrote in the last 24 hours', function (): void {
+it('sends the arrival card (Sprint G) when the guest wrote in the last 24 hours', function (): void {
     webhookPost($this, [inbound('wamid.G1', from: '2250700000001', name: 'Awa')]);
     consentingBooking($this, '2026-11-11', '2026-11-13');
 
     $this->travelTo('2026-11-10 10:05:00');
     $this->artisan('stay-messages:send');
 
-    expect($this->sent[0]['type'])->toBe('text')
-        ->and($this->sent[0]['text']['body'])->toContain('demain');
+    expect($this->sent[0]['type'])->toBe('interactive')
+        ->and($this->sent[0]['interactive']['body']['text'])->toContain('demain');
 });
 
 it('sends the check-out reminder and the thank-you on the departure day', function (): void {

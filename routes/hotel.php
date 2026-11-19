@@ -6,6 +6,7 @@ use App\Domains\Access\Http\Controllers\AcceptInvitationController;
 use App\Domains\Access\Http\Controllers\InvitationController;
 use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Access\Http\Controllers\StaffController;
+use App\Domains\Arrivals\Http\Controllers\ArrivalSettingsController;
 use App\Domains\Assistant\Http\Controllers\AssistantSettingsController;
 use App\Domains\Assistant\Http\Controllers\KnowledgeController;
 use App\Domains\Assistant\Http\Controllers\PracticeController;
@@ -198,6 +199,14 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     Route::put('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.update');
     Route::delete('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'destroy'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.destroy');
     Route::post('hotel/checklists/{checklist}/tick', [ShiftChecklistController::class, 'tick'])->middleware(['can:bookings.view', 'throttle:60,1'])->name('hotel.checklists.tick');
+
+    // Sprint G: the arrival card the day before.
+    Route::middleware('can:hotel.settings.manage')->group(function (): void {
+        Route::get('hotel/arrival-settings', [ArrivalSettingsController::class, 'index'])->name('hotel.arrival-settings');
+        Route::put('hotel/arrival-settings', [ArrivalSettingsController::class, 'update'])->name('hotel.arrival-settings.update');
+        Route::post('hotel/arrival-settings/photo', [ArrivalSettingsController::class, 'photo'])->middleware('throttle:20,1')->name('hotel.arrival-settings.photo');
+        Route::delete('hotel/arrival-settings/photo', [ArrivalSettingsController::class, 'removePhoto'])->name('hotel.arrival-settings.photo.remove');
+    });
 
     // Sprint F: deposits by mobile money.
     Route::get('hotel/deposits', [DepositController::class, 'index'])->middleware('can:folio.view')->name('hotel.deposits');

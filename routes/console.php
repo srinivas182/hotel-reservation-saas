@@ -50,6 +50,12 @@ Schedule::command('bookings:expire-tentative')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Sprint G: tomorrow's guests who did not answer the arrival card, flagged from 18:00.
+Schedule::command('arrivals:flag-unconfirmed')
+    ->name('arrivals:flag-unconfirmed')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
 // Sprint F: guests whose rooms are released within two hours get a deposit reminder.
 Schedule::command('deposits:remind')
     ->name('deposits:remind')

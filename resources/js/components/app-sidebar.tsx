@@ -3,6 +3,7 @@ import {
     Building2,
     LayoutGrid,
     ListChecks,
+    MapPin,
     MessageCircle,
     PartyPopper,
     Rocket,
@@ -279,6 +280,11 @@ export function AppSidebar() {
                       title: 'Simple mode and checklists',
                       href: '/hotel/workspace-settings',
                       icon: ListChecks,
+                  },
+                  {
+                      title: 'Arrival card',
+                      href: '/hotel/arrival-settings',
+                      icon: MapPin,
                   },
               ]
             : []),

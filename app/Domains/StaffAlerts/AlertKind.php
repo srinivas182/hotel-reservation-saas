@@ -20,6 +20,9 @@ enum AlertKind: string
     case DepositPaid = 'deposit_paid';
     case DepositProof = 'deposit_proof';
     case DepositRefund = 'deposit_refund';
+    case ArrivalCancelling = 'arrival_cancelling';
+    case ArrivalRequest = 'arrival_request';
+    case ArrivalUnconfirmed = 'arrival_unconfirmed';
     case Test = 'test';
 
     public function label(): string
@@ -37,6 +40,9 @@ enum AlertKind: string
             self::DepositPaid => __('Deposit paid by a guest'),
             self::DepositProof => __('Guest sent a payment screenshot to check'),
             self::DepositRefund => __('Deposit to refund after a cancellation'),
+            self::ArrivalCancelling => __('A guest arriving tomorrow says they are not coming'),
+            self::ArrivalRequest => __('A guest arriving tomorrow asks for something (pickup, early check-in, question)'),
+            self::ArrivalUnconfirmed => __('Arrivals of tomorrow who did not confirm (evening)'),
             self::Test => __('Test alert'),
         };
     }
@@ -54,6 +60,7 @@ enum AlertKind: string
             self::CreditsLow => Permission::BillingView,
             self::DepositPaid => Permission::BookingsView,
             self::DepositProof, self::DepositRefund => Permission::FolioPayments,
+            self::ArrivalCancelling, self::ArrivalRequest, self::ArrivalUnconfirmed => Permission::BookingsView,
             default => Permission::ConversationsReply,
         };
     }
@@ -63,6 +70,6 @@ enum AlertKind: string
      */
     public static function choosable(): array
     {
-        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired, self::TableRequest, self::NewOrder, self::EventOptionExpired, self::EventEnquiry, self::DepositPaid, self::DepositProof, self::DepositRefund, self::CreditsLow];
+        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired, self::TableRequest, self::NewOrder, self::EventOptionExpired, self::EventEnquiry, self::DepositPaid, self::DepositProof, self::DepositRefund, self::ArrivalCancelling, self::ArrivalRequest, self::ArrivalUnconfirmed, self::CreditsLow];
     }
 }

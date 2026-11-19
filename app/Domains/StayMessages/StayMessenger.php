@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\StayMessages;
 
 use App\Domains\Ai\Models\HotelAssistantSettings;
+use App\Domains\Arrivals\ArrivalCard;
 use App\Domains\Audit\Audit;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Conversations\ConversationDirectory;
@@ -101,7 +102,13 @@ final class StayMessenger
             $conversation = $this->directory->forWaId(ltrim((string) $guest->phone_e164, '+'));
 
             try {
-                if ($conversation->windowOpen()) {
+                // Sprint G: the day before, the arrival card (buttons, map pin), and
+                // the plain reminder template only when the card's template is not approved.
+                $card = $kind === StayMessageKind::Reminder ? app(ArrivalCard::class)->send($booking, $conversation, $locale) : null;
+
+                if ($card !== null) {
+                    [$how, $reason] = [$card, null];
+                } elseif ($conversation->windowOpen()) {
                     $text = strtr($kind->defaultText($locale), $values);
                     $this->sender->sendText($conversation, $text, null, MessageSource::System);
                     [$how, $reason] = ['text', null];

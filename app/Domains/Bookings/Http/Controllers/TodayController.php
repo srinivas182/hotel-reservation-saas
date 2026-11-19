@@ -43,6 +43,8 @@ final class TodayController extends Controller
 
         $arrivals = $this->desk->arrivals();
         $departures = $this->desk->departures();
+        $board = app(\App\Domains\Arrivals\ArrivalBoard::class);
+        $answers = $board->answers($arrivals);
         $pendingRequests = $request->user()?->can('booking_requests.decide') === true ? $requests->pendingModels() : null;
         $suggestions = $this->desk->suggestionsFor($arrivals);
 
@@ -76,7 +78,9 @@ final class TodayController extends Controller
             })() : null,
             'date' => $today->toDateString(),
             'dateLabel' => $localized->isoFormat('dddd D MMMM YYYY'),
-            'arrivals' => $arrivals->map(fn (Booking $b): array => $present($b, true))->values(),
+            'arrivals' => $arrivals->map(fn (Booking $b): array => [...$present($b, true), 'arrival' => $answers[$b->id] ?? null])->values(),
+            // Sprint G: tomorrow's guests and their answer to the arrival card.
+            'tomorrow' => $board->tomorrow(),
             'inHouse' => $this->desk->inHouse()->map(fn (Booking $b): array => $present($b))->values(),
             'departures' => $departures->map(fn (Booking $b): array => $present($b))->values(),
             'noShows' => $this->desk->possibleNoShows()->map(fn (Booking $b): array => $present($b))->values(),
