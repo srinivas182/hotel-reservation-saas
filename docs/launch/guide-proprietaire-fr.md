@@ -68,3 +68,12 @@ Assistant IA → Mode **Désactivé** (ou bouton d'arrêt) : effet immédiat. L'
 - **« Voir comme »** : à côté de chaque rôle, voyez exactement ce que voit ce rôle (menus et droits), sans changer de compte. Un bandeau en haut permet de revenir à votre vue ; l'aperçu est enregistré dans le journal d'activité.
 - **Listes de la journée** : écrivez les tâches d'ouverture ou de fermeture, une par ligne (20 au plus par liste). Elles apparaissent sur « Aujourd'hui » ; qui coche et à quelle heure est enregistré. Le **résumé du matin** indique le bilan de la veille (« Hier, Fermeture : 4/5 — pas fait : fermer le coffre »). Masquez une liste sans la supprimer en décochant « L’afficher sur Aujourd’hui ».
 - **Visite guidée** : chaque nouvelle personne a une visite d'une minute à sa première connexion ; menu → **Revoir la visite guidée** pour la refaire.
+
+## 10. Acomptes par mobile money
+
+- **Votre compte** (menu **Acomptes**, en bas) : entrez les clés de votre compte **CinetPay** (API key, Site ID, Secret key), puis **Tester les clés**. Donnez à CinetPay l'adresse de notification affichée. Le client paie votre hôtel directement : **l'argent ne passe jamais par nous**. Les clés sont chiffrées et ne sont plus affichées.
+- **Règles** : envoyer le lien avec la demande d'acompte, permettre de payer tout le séjour, et le remboursement en cas d'annulation (par défaut : remboursé jusqu'à 2 jours avant l'arrivée ; ou jamais). Le pourcentage et la durée de blocage restent dans les réglages de l'assistant IA.
+- **Ce qui se passe** : lien envoyé sur WhatsApp, rappel 2 heures avant la fin du blocage, confirmation automatique après vérification auprès de CinetPay, reçu au client, alerte à l'équipe. Un paiement arrivé après la libération des chambres est enregistré et apparaît dans **Remboursements à faire**.
+- **Sans compte CinetPay** : vos instructions (par exemple un numéro Wave) restent envoyées ; le client envoie sa capture et l'équipe confirme d'un bouton.
+- **Résumé du matin** : « Acomptes reçus hier : Wave 3, Orange Money 2 » (montants pour ceux qui voient l'argent), et les remboursements à faire.
+- **Comptable** : **Export pour le comptable** donne le fichier du mois (date, reçu, réservation, client, moyen, montant, référence opérateur).

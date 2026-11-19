@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint F — Mobile-money deposit link that confirms itself (0.23.0)
+
+#### Added
+
+- **Deposit link by mobile money:** with an active payment account, the deposit request on WhatsApp carries a private link (40-character token, only its hash is stored). The light French-first page shows the stay, the time the rooms are held until and the cancellation rule, and takes Wave, Orange Money, MTN MoMo and Moov Money through the hotel's own CinetPay account. The platform never holds guest money.
+- **Automatic confirmation:** every payment is checked with the provider, server to server, before anything changes, and the amount and currency must match. Then, once only: a line on the room bill with the method and receipt number, the booking confirmed, the receipt to the guest on WhatsApp, and an alert to staff (addition 2).
+- **Reminder two hours before release** with the link again (addition 1). Links close when the booking is cancelled or expires.
+- **Pay the deposit or the whole stay** (addition 3).
+- **Screenshot fallback** (addition 4): a photo or document from a guest who owes a deposit sends staff a Received / Not received card. Received records the deposit after the one-minute undo window. Staff can also confirm a deposit, or send the link again, from the booking page.
+- **Cancellation rule** on the payment page (addition 5): refunded when cancelled at least N days before arrival (2 by default), or never. A refund due shows on the Deposits page with Refunded (the payment is cancelled on the room bill). A payment that arrives after the rooms were released is recorded and marked to refund or rebook.
+- **Deposits page and reconciliation** (addition 6): waiting and paid deposits, totals by method for the month, refunds to make, the accountant's CSV export. The morning summary gets "Deposits received yesterday" and refunds to make.
+- Payment account settings with encrypted keys (shown masked), a key test and the notification address; a simulated provider in simulation mode.
+- New WhatsApp templates: `deposit_reminder`, `deposit_received`, `deposit_proof_check` (staff, with buttons).
+
+#### Changed
+
+- Payment drivers now read their keys through `PaymentCredentials` and take a small `Payable`. They serve both the platform's billing and the hotels' own accounts.
+- `BookingCancelled` event when a booking is cancelled or expires.
+- Manual deposit instructions are optional when online deposits are on.
+
 ### Sprint E — Simple mode by role and a one-minute guided tour (0.22.0)
 
 #### Added

@@ -13,6 +13,7 @@ use App\Domains\Conversations\MessageSource;
 use App\Domains\Conversations\MessageStatus;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
+use App\Domains\Deposits\Jobs\NoticeDepositProof;
 use App\Domains\StaffActions\StaffActionRouter;
 use App\Domains\WhatsApp\Models\WebhookEvent;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
@@ -129,6 +130,11 @@ final class MessagesHandler implements WebhookHandler
         $conversation->refresh();
         if ($conversation->mode !== ConversationMode::Assistant && $conversation->waiting_since === null) {
             $conversation->forceFill(['waiting_since' => $sentAt])->save();
+        }
+
+        // Sprint F: a screenshot from a guest who owes a deposit goes to staff to check.
+        if (in_array($type, ['image', 'document'], true) && $conversation->contact?->guest_id !== null) {
+            NoticeDepositProof::dispatch($message->id);
         }
 
         if ($media !== null && isset($media['media_id'])) {

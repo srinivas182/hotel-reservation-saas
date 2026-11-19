@@ -30,6 +30,7 @@ import {
     Bot,
     CalendarDays,
     ClipboardList,
+    WalletCards,
     Inbox,
     Sun,
     Tags,
@@ -331,6 +332,15 @@ export function AppSidebar() {
                       title: 'Bookings',
                       href: BookingController.index(),
                       icon: ClipboardList,
+                  },
+              ]
+            : []),
+        ...(auth.permissions.includes('folio.view')
+            ? [
+                  {
+                      title: 'Deposits',
+                      href: '/hotel/deposits',
+                      icon: WalletCards,
                   },
               ]
             : []),

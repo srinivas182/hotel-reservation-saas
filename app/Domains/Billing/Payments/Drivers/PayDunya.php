@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\Billing\Payments\Drivers;
 
-use App\Domains\Billing\Payments\PaymentCheckout;
+use App\Domains\Billing\Payments\Payable;
+use App\Domains\Billing\Payments\PaymentCredentials;
 use App\Domains\Billing\Payments\PaymentDriver;
 use App\Domains\Billing\Payments\PaymentFailed;
-use App\Domains\Billing\Payments\PaymentGateway;
 use App\Domains\Billing\Payments\VerifiedPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\Http;
  */
 final class PayDunya implements PaymentDriver
 {
-    public function __construct(private readonly PaymentGateway $gateway) {}
+    public function __construct(private readonly PaymentCredentials $gateway) {}
 
-    public function start(PaymentCheckout $checkout, array $customer): array
+    public function start(Payable $checkout, array $customer): array
     {
         $response = $this->client()->post($this->base().'/checkout-invoice/create', [
             'invoice' => ['total_amount' => (int) Amounts::major($checkout->amount_minor, $checkout->currency), 'description' => $customer['description']],
@@ -37,7 +37,7 @@ final class PayDunya implements PaymentDriver
         return ['url' => (string) $response->json('response_text'), 'token' => (string) $response->json('token')];
     }
 
-    public function verify(PaymentCheckout $checkout): VerifiedPayment
+    public function verify(Payable $checkout): VerifiedPayment
     {
         if ($checkout->provider_token === null) {
             return new VerifiedPayment('pending');
@@ -74,7 +74,7 @@ final class PayDunya implements PaymentDriver
 
     private function base(): string
     {
-        return $this->gateway->mode === 'live' ? 'https://app.paydunya.com/api/v1' : 'https://app.paydunya.com/sandbox-api/v1';
+        return $this->gateway->paymentMode() === 'live' ? 'https://app.paydunya.com/api/v1' : 'https://app.paydunya.com/sandbox-api/v1';
     }
 
     private function client(): \Illuminate\Http\Client\PendingRequest

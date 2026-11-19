@@ -7,14 +7,24 @@ namespace App\Console\Commands;
 use App\Domains\Access\HotelRoles;
 use App\Domains\Access\StaffService;
 use App\Domains\Access\SystemRole;
+use App\Domains\Ai\Models\HotelAssistantSettings;
+use App\Domains\Bookings\BookingChannel;
+use App\Domains\Bookings\BookingService;
+use App\Domains\Bookings\BookingStatus;
+use App\Domains\Bookings\NewBooking;
+use App\Domains\Deposits\Deposits;
+use App\Domains\Deposits\Models\MerchantAccount;
 use App\Domains\Identity\Enums\PlatformRole;
 use App\Domains\Onboarding\Legal;
 use App\Domains\Onboarding\Models\OnboardingProgress;
+use App\Domains\Rates\Quote\StayRequest;
+use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Domains\Tenancy\TenantContext;
 use App\Domains\Workspace\Models\StaffPreference;
 use App\Domains\Workspace\Tours;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -92,6 +102,31 @@ final class PrepareEndToEnd extends Command
                 ])->save();
             }
         });
+
+        // Sprint F: a simulated mobile-money account and, per browser project,
+        // a tentative booking whose deposit link the guest test pays.
+        $links = $context->run($hotel, function (): array {
+            MerchantAccount::query()->updateOrCreate([], ['driver' => 'simulation', 'mode' => 'test', 'credentials' => [], 'active' => true]);
+            HotelAssistantSettings::current()->update(['deposit_online' => true, 'deposit_allow_full' => true, 'deposit_refund_days' => 2]);
+            $category = RoomCategory::query()->where('active', true)->orderBy('sort_order')->firstOrFail();
+            $links = [];
+
+            foreach (['phone' => 40, 'desktop' => 44] as $project => $offset) {
+                $booking = app(BookingService::class)->create(new NewBooking(
+                    stay: new StayRequest((string) $category->id, CarbonImmutable::today()->addDays($offset), CarbonImmutable::today()->addDays($offset + 2), adults: 2),
+                    guest: ['first_name' => 'Mariam', 'last_name' => 'Acompte '.ucfirst($project), 'phone' => null, 'email' => null, 'preferred_locale' => 'fr'],
+                    channel: BookingChannel::WhatsApp,
+                    status: BookingStatus::Tentative,
+                    tentativeHours: 24,
+                ));
+                $link = app(Deposits::class)->linkFor($booking);
+                $links[$project] = ['token' => $link->token, 'booking' => $booking->id, 'reference' => $booking->reference];
+            }
+
+            return $links;
+        });
+        @mkdir(base_path('tests/e2e/.auth'), 0755, true);
+        file_put_contents(base_path('tests/e2e/.auth/deposits.json'), json_encode($links, JSON_PRETTY_PRINT));
 
         $this->components->info('Ready for browser tests: '.self::ADMIN_EMAIL.' / password (two-step secret '.self::TOTP_SECRET.'), '.self::OWNER_EMAIL.' / password (secret '.self::OWNER_TOTP_SECRET.').');
 

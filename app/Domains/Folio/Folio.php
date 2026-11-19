@@ -161,17 +161,21 @@ final class Folio
         return $line;
     }
 
-    public function pay(Booking|Event $owner, Money $amount, string $method, ?string $reference, User $by): FolioLine
+    /**
+     * @param  User|null  $by  null for a payment confirmed by the provider (Sprint F)
+     * @param  string  $source  manual, or deposit for a deposit link (with its id, so it is recorded once)
+     */
+    public function pay(Booking|Event $owner, Money $amount, string $method, ?string $reference, ?User $by, string $source = 'manual', ?string $sourceId = null): FolioLine
     {
         if ($amount->isNegativeOrZero()) {
             throw new InvalidArgumentException('A payment must be positive.');
         }
 
         $line = FolioLine::query()->create([
-            $this->column($owner) => $owner->id, 'type' => 'payment', 'source' => 'manual',
+            $this->column($owner) => $owner->id, 'type' => 'payment', 'source' => $source, 'source_id' => $sourceId,
             'description' => (string) __('Payment: :method', ['method' => RestaurantSettings::methodLabel($method)]),
             'amount_minor' => $amount->getMinorAmount()->toInt(), 'method' => $method, 'reference' => $reference,
-            'created_by' => $by->getKey(),
+            'created_by' => $by?->getKey(),
         ]);
 
         Audit::record('folio.payment', 'Payment recorded on the room bill', subject: $owner, causer: $by, properties: ['line' => $line->id, 'method' => $method, 'amount_minor' => $line->amount_minor, 'reference' => $reference]);

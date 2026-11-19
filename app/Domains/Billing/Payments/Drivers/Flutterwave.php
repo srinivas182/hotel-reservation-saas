@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\Billing\Payments\Drivers;
 
-use App\Domains\Billing\Payments\PaymentCheckout;
+use App\Domains\Billing\Payments\Payable;
+use App\Domains\Billing\Payments\PaymentCredentials;
 use App\Domains\Billing\Payments\PaymentDriver;
 use App\Domains\Billing\Payments\PaymentFailed;
-use App\Domains\Billing\Payments\PaymentGateway;
 use App\Domains\Billing\Payments\VerifiedPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -20,9 +20,9 @@ final class Flutterwave implements PaymentDriver
 {
     private const BASE = 'https://api.flutterwave.com/v3';
 
-    public function __construct(private readonly PaymentGateway $gateway) {}
+    public function __construct(private readonly PaymentCredentials $gateway) {}
 
-    public function start(PaymentCheckout $checkout, array $customer): array
+    public function start(Payable $checkout, array $customer): array
     {
         $response = Http::withToken($this->gateway->credential('secret_key'))->acceptJson()->timeout(20)
             ->post(self::BASE.'/payments', [
@@ -41,7 +41,7 @@ final class Flutterwave implements PaymentDriver
         return ['url' => (string) $response->json('data.link'), 'token' => null];
     }
 
-    public function verify(PaymentCheckout $checkout): VerifiedPayment
+    public function verify(Payable $checkout): VerifiedPayment
     {
         $response = Http::withToken($this->gateway->credential('secret_key'))->acceptJson()->timeout(20)
             ->get(self::BASE.'/transactions/verify_by_reference', ['tx_ref' => $checkout->reference]);

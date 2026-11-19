@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\Billing\Payments\Drivers;
 
-use App\Domains\Billing\Payments\PaymentCheckout;
+use App\Domains\Billing\Payments\Payable;
+use App\Domains\Billing\Payments\PaymentCredentials;
 use App\Domains\Billing\Payments\PaymentDriver;
 use App\Domains\Billing\Payments\PaymentFailed;
-use App\Domains\Billing\Payments\PaymentGateway;
 use App\Domains\Billing\Payments\VerifiedPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -20,9 +20,9 @@ final class Paystack implements PaymentDriver
 {
     private const BASE = 'https://api.paystack.co';
 
-    public function __construct(private readonly PaymentGateway $gateway) {}
+    public function __construct(private readonly PaymentCredentials $gateway) {}
 
-    public function start(PaymentCheckout $checkout, array $customer): array
+    public function start(Payable $checkout, array $customer): array
     {
         $response = Http::withToken($this->gateway->credential('secret_key'))->acceptJson()->timeout(20)
             ->post(self::BASE.'/transaction/initialize', [
@@ -42,7 +42,7 @@ final class Paystack implements PaymentDriver
         return ['url' => (string) $response->json('data.authorization_url'), 'token' => (string) $response->json('data.access_code')];
     }
 
-    public function verify(PaymentCheckout $checkout): VerifiedPayment
+    public function verify(Payable $checkout): VerifiedPayment
     {
         $response = Http::withToken($this->gateway->credential('secret_key'))->acceptJson()->timeout(20)
             ->get(self::BASE.'/transaction/verify/'.rawurlencode($checkout->reference));

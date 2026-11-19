@@ -13,6 +13,8 @@ use App\Domains\Bookings\BookingStatus;
 use App\Domains\Conversations\Exceptions\CannotSend;
 use App\Domains\Conversations\MessageSender;
 use App\Domains\Conversations\MessageSource;
+use App\Domains\Deposits\Deposits;
+use App\Domains\Deposits\Models\DepositLink;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Tenancy\Contracts\RequiresHotelContext;
 use App\Domains\Tenancy\TenantContext;
@@ -73,13 +75,16 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
         $hotel = $context->hotel();
         $settings = HotelAssistantSettings::current();
         $locale = $request->guest->preferred_locale ?? $request->conversation->messages()->where('direction', 'in')->whereNotNull('language')->latest('sent_at')->value('language') ?? $hotel->default_locale;
-        $values = $this->values($request, $kind, $locale, $settings);
+        // Sprint F: the deposit is paid through a link when the hotel takes mobile money online.
+        $deposits = app(Deposits::class);
+        $link = $kind === 'deposit' && $request->booking !== null && $deposits->online() ? $deposits->linkFor($request->booking) : null;
+        $values = $this->values($request, $kind, $locale, $settings, $link);
         $conversation = $request->conversation;
 
         try {
             if ($conversation->windowOpen()) {
                 $sender->sendText($conversation, DecisionMessages::fill(DecisionMessages::text($settings, $kind, $locale), $values), null, MessageSource::System);
-                $this->done($request, $kind, 'text');
+                $this->done($request, $kind, 'text', $link);
 
                 return;
             }
@@ -88,7 +93,7 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
 
             if ($template !== null) {
                 $sender->sendTemplate($conversation, $template, $this->templateValues($kind, $values), null, MessageSource::System);
-                $this->done($request, $kind, 'template');
+                $this->done($request, $kind, 'template', $link);
 
                 return;
             }
@@ -112,7 +117,7 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
     /**
      * @return array<string, string>
      */
-    private function values(BookingRequest $request, string $kind, string $locale, HotelAssistantSettings $settings): array
+    private function values(BookingRequest $request, string $kind, string $locale, HotelAssistantSettings $settings, ?DepositLink $link = null): array
     {
         $hotel = app(TenantContext::class)->hotel();
         $date = fn (CarbonImmutable $d): string => self::localized($d, $locale)->isoFormat('D MMMM YYYY');
@@ -129,7 +134,7 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
             '{total}' => MoneyFormatter::format($total, $locale),
             '{deposit}' => MoneyFormatter::format($deposit, $locale),
             '{deposit_deadline}' => $booking?->tentative_until === null ? '' : self::localized($booking->tentative_until->setTimezone($hotel->timezone), $locale)->isoFormat('D MMMM HH:mm'),
-            '{payment_instructions}' => (string) ($settings->deposit_instructions[$locale] ?? $settings->deposit_instructions[$hotel->default_locale] ?? ''),
+            '{payment_instructions}' => self::howToPay($settings, $locale, $hotel->default_locale, $link),
             '{hotel}' => $hotel->name,
         ];
     }
@@ -161,9 +166,27 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
         return $localized;
     }
 
-    private function done(BookingRequest $request, string $kind, string $how): void
+    /**
+     * The link first (Sprint F), then the hotel's own instructions if any
+     * (a number to send money to, for guests who prefer it).
+     */
+    private static function howToPay(HotelAssistantSettings $settings, string $locale, string $default, ?DepositLink $link): string
+    {
+        $manual = trim((string) ($settings->deposit_instructions[$locale] ?? $settings->deposit_instructions[$default] ?? ''));
+
+        if ($link === null) {
+            return $manual;
+        }
+
+        $online = (string) __('pay by Wave, Orange Money, MTN or Moov here: :url', ['url' => app(Deposits::class)->url($link)], $locale);
+
+        return $manual === '' ? $online : $online.' — '.__('or', locale: $locale).' '.$manual;
+    }
+
+    private function done(BookingRequest $request, string $kind, string $how, ?DepositLink $link = null): void
     {
         $request->forceFill(['guest_notified' => $how])->save();
+        $link?->forceFill(['sent_at' => now()])->save();
         Audit::record('booking_requests.guest_told', 'The guest was told the decision on WhatsApp', subject: $request, properties: ['kind' => $kind, 'how' => $how]);
     }
 }

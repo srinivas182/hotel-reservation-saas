@@ -85,3 +85,11 @@ Dans **Mes alertes**, cochez « Me l'envoyer chaque matin » : la journée à ve
 - **Visite guidée** : à la première connexion, une visite d'une minute montre les endroits importants. Pour la revoir : menu → **Revoir la visite guidée**. Quand une nouvelle fonction arrive, une courte visite la présente une seule fois.
 - **Texte plus grand** : menu → **Texte plus grand**, pour lire et toucher plus facilement.
 - **Listes de la journée** : sur « Aujourd'hui », cochez les tâches d'ouverture ou de fermeture (compter la caisse, vérifier les arrivées de demain…). Votre nom et l'heure s'affichent ; le propriétaire voit le bilan dans son résumé du matin.
+
+## Les acomptes par mobile money
+
+- Quand un acompte est demandé, le client reçoit sur WhatsApp un **lien de paiement** (Wave, Orange Money, MTN, Moov). Il paie l'acompte ou tout le séjour ; dès que le paiement est vérifié, la réservation passe en **confirmée**, le client reçoit son **reçu** et vous êtes prévenu.
+- Deux heures avant la fin du blocage des chambres, le client reçoit un **rappel** automatique.
+- Le client a envoyé une **capture d'écran** d'un transfert ? Vous recevez une carte « Reçu / Pas reçu ». **Vérifiez d'abord votre compte**, puis touchez Reçu : vous avez une minute pour annuler.
+- Sur la fiche de la réservation, bloc **Acompte** : renvoyer le lien, copier le lien, ou **Argent reçu** pour confirmer un paiement vu sur votre compte (ou en espèces).
+- Menu **Acomptes** : ceux en attente, ceux payés ce mois-ci, et les **remboursements à faire** après une annulation.

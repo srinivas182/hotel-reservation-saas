@@ -22,7 +22,7 @@ class RestaurantSettings extends Model
 {
     use BelongsToHotel;
 
-    public const METHODS = ['cash', 'orange_money', 'mtn_momo', 'moov_money', 'wave', 'card', 'bank_transfer'];
+    public const METHODS = ['cash', 'orange_money', 'mtn_momo', 'moov_money', 'wave', 'mobile_money', 'card', 'bank_transfer'];
 
     protected $table = 'restaurant_settings';
 
@@ -65,6 +65,7 @@ class RestaurantSettings extends Model
             'mtn_momo' => 'MTN MoMo',
             'moov_money' => 'Moov Money',
             'wave' => 'Wave',
+            'mobile_money' => __('Mobile money'),
             'card' => __('Card'),
             'bank_transfer' => __('Bank transfer'),
             default => $method,

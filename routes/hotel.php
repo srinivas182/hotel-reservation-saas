@@ -21,6 +21,7 @@ use App\Domains\Bookings\Http\Controllers\BookingExportController;
 use App\Domains\Bookings\Http\Controllers\TodayController;
 use App\Domains\Conversations\Http\Controllers\InboxController;
 use App\Domains\Demo\Http\Controllers\HotelDemoController;
+use App\Domains\Deposits\Http\Controllers\DepositController;
 use App\Domains\Events\Http\Controllers\EventAccountController;
 use App\Domains\Events\Http\Controllers\EventController;
 use App\Domains\Events\Http\Controllers\EventQuoteController;
@@ -197,6 +198,20 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     Route::put('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.update');
     Route::delete('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'destroy'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.destroy');
     Route::post('hotel/checklists/{checklist}/tick', [ShiftChecklistController::class, 'tick'])->middleware(['can:bookings.view', 'throttle:60,1'])->name('hotel.checklists.tick');
+
+    // Sprint F: deposits by mobile money.
+    Route::get('hotel/deposits', [DepositController::class, 'index'])->middleware('can:folio.view')->name('hotel.deposits');
+    Route::get('hotel/deposits/export', [DepositController::class, 'export'])->middleware(['can:folio.view', 'throttle:20,1'])->name('hotel.deposits.export');
+    Route::middleware('can:hotel.settings.manage')->group(function (): void {
+        Route::put('hotel/deposits/account', [DepositController::class, 'saveAccount'])->name('hotel.deposits.account');
+        Route::post('hotel/deposits/account/check', [DepositController::class, 'checkAccount'])->middleware('throttle:10,1')->name('hotel.deposits.account.check');
+        Route::put('hotel/deposits/settings', [DepositController::class, 'saveSettings'])->name('hotel.deposits.settings');
+    });
+    Route::middleware(['can:folio.payments', 'throttle:60,1'])->group(function (): void {
+        Route::post('hotel/deposits/{link}/refunded', [DepositController::class, 'refunded'])->name('hotel.deposits.refunded');
+        Route::post('hotel/bookings/{booking}/deposit/send', [DepositController::class, 'send'])->name('hotel.bookings.deposit.send');
+        Route::post('hotel/bookings/{booking}/deposit/confirm', [DepositController::class, 'confirm'])->name('hotel.bookings.deposit.confirm');
+    });
     // Sprint D: app notifications on this phone.
     Route::post('hotel/push/subscriptions', [PushSubscriptionController::class, 'store'])->middleware('throttle:10,1')->name('hotel.push.subscribe');
     Route::delete('hotel/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:10,1')->name('hotel.push.unsubscribe');

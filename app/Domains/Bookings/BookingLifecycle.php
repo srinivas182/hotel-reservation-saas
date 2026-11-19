@@ -9,6 +9,7 @@ use App\Domains\Availability\Exceptions\NotEnoughRooms;
 use App\Domains\Availability\HoldService;
 use App\Domains\Availability\HoldStatus;
 use App\Domains\Availability\Models\InventoryHold;
+use App\Domains\Bookings\Events\BookingCancelled;
 use App\Domains\Bookings\Exceptions\BookingActionNotAllowed;
 use App\Domains\Bookings\Exceptions\BookingNotPossible;
 use App\Domains\Bookings\Models\Booking;
@@ -83,6 +84,8 @@ final class BookingLifecycle
         });
 
         $this->audit($expired ? 'bookings.expired' : 'bookings.cancelled', $expired ? 'Tentative booking expired' : 'Booking cancelled', $booking, $by, ['reason' => trim($reason)]);
+
+        BookingCancelled::dispatch($booking->id, $expired);
     }
 
     public function noShow(Booking $booking, ?User $by = null): void

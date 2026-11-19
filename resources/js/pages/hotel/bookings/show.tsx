@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
 import { checkOut } from '@/components/bookings/check-out';
+import { DepositPanel } from '@/components/bookings/deposit-panel';
+import type { BookingDeposit } from '@/components/bookings/deposit-panel';
 import { RoomBill } from '@/components/bookings/room-bill';
 import type { Folio } from '@/components/bookings/room-bill';
 import StayPhoneController from '@/actions/App/Domains/Orders/Http/Controllers/StayPhoneController';
@@ -80,6 +82,7 @@ type Props = {
     stayPhones: { id: number; phone: string }[];
     canEditStayPhones: boolean;
     folio: Folio | null;
+    deposit: BookingDeposit | null;
 };
 
 function Row({
@@ -187,6 +190,7 @@ export default function ShowBooking({
     stayPhones,
     canEditStayPhones,
     folio,
+    deposit,
 }: Props) {
     const [panel, setPanel] = useState<'modify' | 'cancel' | null>(null);
     const post = (url: string, message?: string) => {
@@ -399,6 +403,13 @@ export default function ShowBooking({
                             </Row>
                         </dl>
                     </section>
+
+                    {deposit && (
+                        <DepositPanel
+                            bookingId={booking.id}
+                            deposit={deposit}
+                        />
+                    )}
 
                     <section className="flex flex-col gap-2 rounded-xl border p-4 text-sm">
                         {folio && (
