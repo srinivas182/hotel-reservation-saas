@@ -38,6 +38,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $readiness_override_reason
  * @property string|null $readiness_override_by
  * @property array<string, string>|null $deposit_instructions
+ * @property bool $deposit_online Sprint F: send a mobile-money payment link when the hotel's merchant account is active
+ * @property bool $deposit_allow_full Sprint F: the guest may pay the whole stay instead of the deposit
+ * @property int|null $deposit_refund_days Sprint F: deposit refunded when cancelled at least this many days before arrival (null: never)
  * @property array<string, array<string, string>>|null $decision_messages
  */
 class HotelAssistantSettings extends Model
@@ -57,6 +60,9 @@ class HotelAssistantSettings extends Model
         'deposit_required' => false,
         'deposit_percent' => 30,
         'deposit_hours' => 24,
+        'deposit_online' => true,
+        'deposit_allow_full' => true,
+        'deposit_refund_days' => 2,
         'silence_minutes' => 15,
         'daily_alert_cap' => 50,
         'mode' => 'off',
@@ -65,7 +71,7 @@ class HotelAssistantSettings extends Model
     protected $fillable = [
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
         'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes', 'request_escalate_minutes',
-        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'decision_messages', 'silence_minutes', 'daily_alert_cap', 'stay_messages', 'review_url',
+        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'deposit_online', 'deposit_allow_full', 'deposit_refund_days', 'decision_messages', 'silence_minutes', 'daily_alert_cap', 'stay_messages', 'review_url',
         'mode', 'privacy_url', 'human_keywords', 'readiness_override_at', 'readiness_override_reason', 'readiness_override_by',
     ];
 
@@ -83,6 +89,9 @@ class HotelAssistantSettings extends Model
             'deposit_required' => 'boolean',
             'deposit_percent' => 'integer',
             'deposit_hours' => 'integer',
+            'deposit_online' => 'boolean',
+            'deposit_allow_full' => 'boolean',
+            'deposit_refund_days' => 'integer',
             'silence_minutes' => 'integer',
             'daily_alert_cap' => 'integer',
             'stay_messages' => 'array',

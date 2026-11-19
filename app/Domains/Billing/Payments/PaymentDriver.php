@@ -18,9 +18,9 @@ interface PaymentDriver
      * @param  array{email: string, name: string, description: string, return_url: string, notify_url: string}  $customer
      * @return array{url: string, token: string|null}
      */
-    public function start(PaymentCheckout $checkout, array $customer): array;
+    public function start(Payable $checkout, array $customer): array;
 
-    public function verify(PaymentCheckout $checkout): VerifiedPayment;
+    public function verify(Payable $checkout): VerifiedPayment;
 
     /**
      * Our reference (or the provider's token) from a genuine notification;

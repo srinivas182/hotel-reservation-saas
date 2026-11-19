@@ -71,4 +71,9 @@ class PaymentCheckout extends Model
     {
         return $this->belongsTo(CreditPack::class, 'credit_pack_id');
     }
+
+    public function payable(): Payable
+    {
+        return new Payable($this->reference, $this->amount_minor, $this->currency, $this->provider_token);
+    }
 }

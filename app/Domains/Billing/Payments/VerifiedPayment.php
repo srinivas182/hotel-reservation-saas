@@ -12,5 +12,7 @@ final readonly class VerifiedPayment
         public ?string $currency = null,
         public ?string $providerReference = null,
         public ?string $message = null,
+        // Sprint F: how the payer paid, as a folio method (wave, orange_money…), when the provider says.
+        public ?string $method = null,
     ) {}
 }

@@ -249,6 +249,7 @@ final class BookingController extends Controller
                     'currency' => $hotel->currency,
                 ];
             })() : null,
+            'deposit' => \App\Domains\Deposits\DepositPresenter::forBooking($booking, $request->user()),
             'stayPhones' => \App\Domains\Orders\Models\StayPhone::query()->where('booking_id', $booking->id)->get(['id', 'phone']),
             'canEditStayPhones' => $request->user()?->can('bookings.frontdesk') === true && in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::CheckedIn], true),
             'actions' => $this->actions($request, $booking),

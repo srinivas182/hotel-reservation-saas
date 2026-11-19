@@ -106,7 +106,9 @@ final class AssistantSettingsController extends Controller
             'review_url' => ['nullable', 'url:https', 'max:300'],
         ]);
 
-        if ((bool) $data['deposit_required'] && trim((string) ($data['deposit_instructions'][$this->context->hotel()->default_locale] ?? '')) === '') {
+        // Sprint F: with an active mobile-money account, the payment link is enough.
+        $paysOnline = HotelAssistantSettings::current()->deposit_online && (\App\Domains\Deposits\Models\MerchantAccount::current()?->usable() ?? false);
+        if ((bool) $data['deposit_required'] && ! $paysOnline && trim((string) ($data['deposit_instructions'][$this->context->hotel()->default_locale] ?? '')) === '') {
             throw ValidationException::withMessages(['deposit_instructions' => __('Explain how to pay the deposit, at least in the hotel’s main language.')]);
         }
 

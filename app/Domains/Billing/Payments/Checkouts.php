@@ -58,7 +58,7 @@ final class Checkouts
         }
 
         $gateway = PaymentGateway::query()->findOrFail($checkout->payment_gateway_id);
-        $result = $gateway->driver()->verify($checkout);
+        $result = $gateway->driver()->verify($checkout->payable());
 
         if ($result->status === 'failed') {
             $checkout->forceFill(['status' => 'failed', 'failure' => mb_substr((string) $result->message, 0, 300)])->save();
@@ -121,7 +121,7 @@ final class Checkouts
         ]);
 
         try {
-            $started = $gateway->driver()->start($checkout, [
+            $started = $gateway->driver()->start($checkout->payable(), [
                 'email' => (string) $by->email,
                 'name' => (string) $by->name,
                 'description' => $description,

@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $active
  * @property int $sort_order
  */
-class PaymentGateway extends Model
+class PaymentGateway extends Model implements PaymentCredentials
 {
     /** Each driver and the credentials it needs. */
     public const DRIVERS = [
@@ -59,6 +59,11 @@ class PaymentGateway extends Model
     public function credential(string $key): string
     {
         return (string) ($this->credentials[$key] ?? '');
+    }
+
+    public function paymentMode(): string
+    {
+        return $this->mode;
     }
 
     public function supports(string $currency): bool

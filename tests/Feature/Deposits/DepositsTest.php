@@ -1,0 +1,416 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Domains\Access\SystemRole;
+use App\Domains\Ai\Models\HotelAssistantSettings;
+use App\Domains\Audit\Models\AuditLog;
+use App\Domains\BookingRequests\BookingRequest;
+use App\Domains\BookingRequests\BookingRequestService;
+use App\Domains\Bookings\BookingLifecycle;
+use App\Domains\Bookings\BookingStatus;
+use App\Domains\Bookings\Models\Booking;
+use App\Domains\Conversations\Jobs\DownloadMedia;
+use App\Domains\Conversations\Jobs\ReplyToGuest;
+use App\Domains\Conversations\Models\Conversation;
+use App\Domains\Conversations\Models\Message;
+use App\Domains\Deposits\Deposits;
+use App\Domains\Deposits\Models\DepositAttempt;
+use App\Domains\Deposits\Models\DepositLink;
+use App\Domains\Deposits\Models\MerchantAccount;
+use App\Domains\Folio\Folio;
+use App\Domains\Folio\FolioLine;
+use App\Domains\Rates\Quote\StayRequest;
+use App\Domains\StaffActions\Models\StaffAction;
+use App\Domains\StaffAlerts\Morning\MorningSummary;
+use App\Domains\StaffAlerts\Morning\MorningSummaryText;
+use App\Domains\StaffAlerts\StaffAlertSettings;
+use App\Domains\Tenancy\Models\Hotel;
+use App\Domains\Tenancy\TenantContext;
+use App\Domains\WhatsApp\AccountStatus;
+use App\Domains\WhatsApp\Models\WhatsAppAccount;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
+
+require_once __DIR__.'/../WhatsApp/helpers.php';
+require_once __DIR__.'/../Assistant/helpers.php';
+require_once __DIR__.'/../Access/helpers.php';
+require_once __DIR__.'/../Bookings/helpers.php';
+
+const DEPOSIT_STAFF_PHONE = '2250700000020';
+
+beforeEach(function (): void {
+    configureMeta();
+    Mail::fake();
+    Queue::fake([ReplyToGuest::class, DownloadMedia::class]);
+    config(['simulation.enabled' => true]);
+    $this->travelTo('2026-11-01 10:00:00');
+    ['hotel' => $this->hotel, 'exe' => $this->exe] = assistantHotel();
+    $this->in = fn (callable $callback) => app(TenantContext::class)->run($this->hotel, $callback);
+    ($this->in)(function (): void {
+        WhatsAppAccount::query()->create(['waba_id' => '9000', 'phone_number_id' => '5550001', 'status' => AccountStatus::Connected, 'token' => 't']);
+        HotelAssistantSettings::current()->update(['deposit_required' => true, 'deposit_percent' => 30, 'deposit_hours' => 24, 'deposit_instructions' => ['fr' => 'Wave 07 00 00 00 00']]);
+        MerchantAccount::query()->create(['driver' => 'simulation', 'mode' => 'test', 'credentials' => [], 'active' => true]);
+    });
+    $this->sent = [];
+    Http::fake(['graph.facebook.com/*' => function ($request) {
+        $this->sent[] = $request->data();
+
+        return Http::response(['messages' => [['id' => 'wamid.OUT'.bin2hex(random_bytes(6))]]]);
+    }]);
+
+    $this->owner = staffMember($this->hotel, SystemRole::Owner, ['first_name' => 'Awa', 'last_name' => 'Owner']);
+    $this->reception = staffMember($this->hotel, SystemRole::Reception);
+    ($this->in)(fn () => StaffAlertSettings::query()->create(['user_id' => $this->owner->id, 'alert_phone' => '+'.DEPOSIT_STAFF_PHONE, 'alerts' => ['new_request', 'deposit_paid', 'deposit_proof', 'deposit_refund']])->forceFill(['whatsapp_inbound_at' => now()])->save());
+
+    webhookPost($this, [inbound('wamid.G1', from: '2250700000001', name: 'Awa Koné')]);
+    $this->conversation = ($this->in)(fn () => Conversation::query()->with('contact.guest')->sole());
+    $this->sent = [];
+});
+
+/** A WhatsApp request accepted by reception: a tentative booking with its deposit link sent. */
+function depositBooking(object $test): Booking
+{
+    $request = ($test->in)(fn (): BookingRequest => app(BookingRequestService::class)->submit(
+        $test->conversation,
+        new StayRequest($test->exe->id, CarbonImmutable::parse('2026-11-12'), CarbonImmutable::parse('2026-11-14'), adults: 2),
+        'Awa Koné',
+    ));
+    asStaffOf($test->hotel, $test->reception)->post(route('hotel.booking-requests.approve', $request), ['edit' => false, 'acknowledge_price' => false])->assertRedirect();
+
+    return ($test->in)(fn () => Booking::query()->with('guest')->sole());
+}
+
+function depositLink(object $test): DepositLink
+{
+    return ($test->in)(fn () => DepositLink::query()->with('booking')->sole());
+}
+
+/** The token of the link, as the guest received it. */
+function depositToken(object $test): string
+{
+    return depositLink($test)->token;
+}
+
+function depositGuestTexts(object $test): array
+{
+    return array_values(array_map(
+        fn (array $m): string => (string) ($m['text']['body'] ?? json_encode($m['template'] ?? [])),
+        array_filter($test->sent, fn (array $m): bool => ($m['to'] ?? null) === '2250700000001'),
+    ));
+}
+
+function depositStaffTexts(object $test): array
+{
+    return array_values(array_map(
+        fn (array $m): string => (string) ($m['text']['body'] ?? $m['interactive']['body']['text'] ?? json_encode($m['template'] ?? [])),
+        array_filter($test->sent, fn (array $m): bool => ($m['to'] ?? null) === DEPOSIT_STAFF_PHONE),
+    ));
+}
+
+/** The guest pays through the simulated provider. */
+function depositPayByLink(object $test, string $choice = 'deposit', string $method = 'wave', string $outcome = 'paid'): void
+{
+    $token = depositToken($test);
+    $checkout = $test->post(route('deposits.pay', $token), ['choice' => $choice])->assertRedirect()->headers->get('Location');
+    $reference = basename((string) parse_url((string) $checkout, PHP_URL_PATH));
+    $test->post(route('deposits.simulate.pay', $reference), ['outcome' => $outcome, 'method' => $method])->assertRedirect(route('deposits.back', $token));
+    $test->get(route('deposits.back', $token))->assertRedirect(route('deposits.show', $token));
+}
+
+it('sends a payment link with the deposit message, held until the deadline', function (): void {
+    $booking = depositBooking($this);
+    $link = depositLink($this);
+
+    expect($booking->status)->toBe(BookingStatus::Tentative)
+        ->and($link->status)->toBe('open')
+        ->and($link->deposit_minor)->toBe(Deposits::payable((int) ceil($booking->total_minor * 0.3), 'XOF'))
+        ->and($link->expires_at?->toIso8601String())->toBe($booking->tentative_until?->toIso8601String())
+        ->and($link->sent_at)->not->toBeNull()
+        ->and(depositGuestTexts($this)[0])->toContain(route('deposits.show', $link->token))
+        ->and(depositGuestTexts($this)[0])->toContain('Wave 07 00 00 00 00');
+
+    $page = $this->get(route('deposits.show', $link->token))->assertOk();
+    $page->assertSee($booking->reference)->assertSee('Payer par mobile money', false)->assertSee('bloquées', false)->assertSee('2 jours', false);
+
+    // Only the hash is stored; a wrong token is a 404.
+    expect(DepositLink::query()->withoutGlobalScopes()->where('token_hash', $link->token)->exists())->toBeFalse();
+    $this->get(route('deposits.show', str_repeat('x', 40)))->assertNotFound();
+});
+
+it('confirms the booking, records the payment once and sends the receipt when the guest pays', function (): void {
+    $booking = depositBooking($this);
+    $this->sent = [];
+
+    depositPayByLink($this, method: 'orange_money');
+
+    $link = depositLink($this);
+    $booking->refresh();
+    $line = ($this->in)(fn () => FolioLine::query()->where('type', 'payment')->sole());
+
+    expect($booking->status)->toBe(BookingStatus::Confirmed)
+        ->and($link->status)->toBe('paid')
+        ->and($link->method)->toBe('orange_money')
+        ->and($link->paid_via)->toBe('online')
+        ->and($link->receipt_number)->toStartWith('R261101-')
+        ->and($line->amount_minor)->toBe($link->deposit_minor)
+        ->and($line->method)->toBe('orange_money')
+        ->and($line->source)->toBe('deposit')
+        ->and($line->reference)->toBe($link->receipt_number)
+        ->and(implode("\n", depositGuestTexts($this)))->toContain('Merci Awa')->toContain($link->receipt_number)->toContain('Reste à payer')
+        ->and(implode("\n", depositStaffTexts($this)))->toContain('Orange Money');
+
+    // A second notice or return changes nothing.
+    $attempt = ($this->in)(fn () => DepositAttempt::query()->sole());
+    ($this->in)(fn () => app(Deposits::class)->settle($attempt->refresh()));
+    $this->get(route('deposits.back', $link->token));
+    ($this->in)(fn () => app(Deposits::class)->markPaid($link, $link->deposit_minor, 'wave', 'online', null, null));
+
+    expect(($this->in)(fn () => FolioLine::query()->where('type', 'payment')->count()))->toBe(1);
+    $this->get(route('deposits.show', $link->token))->assertOk()->assertSee('Paiement reçu', false)->assertSee($link->receipt_number);
+});
+
+it('lets the guest pay the whole stay instead', function (): void {
+    $booking = depositBooking($this);
+    $full = ($this->in)(fn () => app(Folio::class)->balance($booking));
+
+    depositPayByLink($this, choice: 'full');
+
+    expect(depositLink($this)->paid_minor)->toBe(Deposits::payable($full, 'XOF'))
+        ->and(($this->in)(fn () => app(Folio::class)->balance($booking->refresh())))->toBeLessThanOrEqual(0);
+});
+
+it('does nothing when the provider refuses the payment', function (): void {
+    $booking = depositBooking($this);
+
+    depositPayByLink($this, outcome: 'failed');
+
+    expect(depositLink($this)->status)->toBe('open')
+        ->and($booking->refresh()->status)->toBe(BookingStatus::Tentative)
+        ->and(($this->in)(fn () => DepositAttempt::query()->sole()->status))->toBe('failed');
+});
+
+it('settles CinetPay notifications only after checking with CinetPay, for the right account', function (): void {
+    $booking = depositBooking($this);
+    $account = ($this->in)(function (): MerchantAccount {
+        $account = MerchantAccount::query()->sole();
+        $account->update(['driver' => 'cinetpay', 'credentials' => ['apikey' => 'key-123', 'site_id' => '445566', 'secret_key' => 's']]); // gitleaks:allow
+
+        return $account;
+    });
+    $link = depositLink($this);
+    $checked = [];
+    Http::fake([
+        'api-checkout.cinetpay.com/v2/payment' => Http::response(['code' => '201', 'data' => ['payment_url' => 'https://checkout.cinetpay.com/x', 'payment_token' => 'tok']]),
+        'api-checkout.cinetpay.com/v2/payment/check' => function ($request) use (&$checked, $link) {
+            $checked[] = $request->data()['transaction_id'];
+
+            return Http::response(['code' => '00', 'data' => ['status' => 'ACCEPTED', 'amount' => (string) $link->deposit_minor, 'currency' => 'XOF', 'payment_method' => 'WAVECI']]);
+        },
+        'graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.X']]]),
+    ]);
+
+    $this->post(route('deposits.pay', $link->token), ['choice' => 'deposit'])->assertRedirect('https://checkout.cinetpay.com/x');
+    $reference = ($this->in)(fn () => DepositAttempt::query()->sole()->reference);
+
+    // Wrong site id: refused, nothing checked.
+    $this->post(route('webhooks.deposits', $account->id), ['cpm_trans_id' => $reference, 'cpm_site_id' => '999'])->assertStatus(401);
+    expect($checked)->toBe([]);
+
+    $this->post(route('webhooks.deposits', $account->id), ['cpm_trans_id' => $reference, 'cpm_site_id' => '445566'])->assertOk();
+
+    expect($checked)->toBe([$reference])
+        ->and(depositLink($this)->method)->toBe('wave')
+        ->and($booking->refresh()->status)->toBe(BookingStatus::Confirmed);
+});
+
+it('rejects a payment whose amount differs from what was asked', function (): void {
+    depositBooking($this);
+    ($this->in)(fn () => MerchantAccount::query()->sole()->update(['driver' => 'cinetpay', 'credentials' => ['apikey' => 'k', 'site_id' => '1', 'secret_key' => 's']]));
+    Http::fake([
+        'api-checkout.cinetpay.com/v2/payment' => Http::response(['code' => '201', 'data' => ['payment_url' => 'https://checkout.cinetpay.com/x', 'payment_token' => 'tok']]),
+        'api-checkout.cinetpay.com/v2/payment/check' => Http::response(['code' => '00', 'data' => ['status' => 'ACCEPTED', 'amount' => '100', 'currency' => 'XOF']]),
+        'graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.X']]]),
+    ]);
+
+    $this->post(route('deposits.pay', depositToken($this)), ['choice' => 'deposit']);
+    $this->get(route('deposits.back', depositToken($this)));
+
+    expect(depositLink($this)->status)->toBe('open')
+        ->and(($this->in)(fn () => DepositAttempt::query()->sole()->status))->toBe('failed')
+        ->and(($this->in)(fn () => AuditLog::query()->where('event', 'deposits.mismatch')->exists()))->toBeTrue();
+});
+
+it('reminds the guest once, two hours before the rooms are released, then closes the link', function (): void {
+    $booking = depositBooking($this);
+    $this->sent = [];
+
+    $this->travelTo($booking->tentative_until->subMinutes(150));
+    $this->artisan('deposits:remind')->assertSuccessful();
+    expect(depositGuestTexts($this))->toBe([]);
+
+    $this->travelTo($booking->tentative_until->subMinutes(90));
+    // The guest wrote recently, so the reminder is a free message.
+    webhookPost($this, [inbound('wamid.G2', from: '2250700000001', name: 'Awa Koné')]);
+    $this->artisan('deposits:remind')->assertSuccessful();
+    $this->artisan('deposits:remind')->assertSuccessful();
+
+    $reminders = array_values(array_filter(depositGuestTexts($this), fn (string $t): bool => str_contains($t, 'rappel')));
+    expect($reminders)->toHaveCount(1)
+        ->and($reminders[0])->toContain(route('deposits.show', depositToken($this)));
+
+    $this->travelTo($booking->tentative_until->addMinute());
+    $this->artisan('bookings:expire-tentative')->assertSuccessful();
+
+    expect(depositLink($this)->status)->toBe('expired');
+    $this->get(route('deposits.show', depositToken($this)))->assertOk()->assertSee('plus valable', false);
+    $this->post(route('deposits.pay', depositToken($this)), ['choice' => 'deposit'])->assertRedirect(route('deposits.show', depositToken($this)));
+    expect(($this->in)(fn () => DepositAttempt::query()->count()))->toBe(0);
+});
+
+it('asks staff to check a screenshot and records the deposit when they tap Received', function (): void {
+    $booking = depositBooking($this);
+    $this->sent = [];
+
+    webhookPost($this, [inbound('wamid.PROOF', from: '2250700000001', message: ['type' => 'image', 'image' => ['id' => 'media-1', 'mime_type' => 'image/jpeg']], name: 'Awa Koné')]);
+
+    $card = collect($this->sent)->first(fn (array $m): bool => ($m['to'] ?? null) === DEPOSIT_STAFF_PHONE && ($m['type'] ?? null) === 'interactive');
+    expect($card)->not->toBeNull()
+        ->and($card['interactive']['body']['text'])->toContain('Awa Koné')->toContain($booking->reference);
+    $buttons = array_column(array_column($card['interactive']['action']['buttons'], 'reply'), 'id', 'title');
+
+    // A second screenshot right after does not alert again.
+    webhookPost($this, [inbound('wamid.PROOF2', from: '2250700000001', message: ['type' => 'image', 'image' => ['id' => 'media-2', 'mime_type' => 'image/jpeg']], name: 'Awa Koné')]);
+    expect(collect($this->sent)->filter(fn (array $m): bool => ($m['to'] ?? null) === DEPOSIT_STAFF_PHONE && ($m['type'] ?? null) === 'interactive')->count())->toBe(1);
+
+    webhookPost($this, [inbound('wamid.TAP1', from: DEPOSIT_STAFF_PHONE, message: ['type' => 'interactive', 'interactive' => ['type' => 'button_reply', 'button_reply' => ['id' => $buttons['Reçu'], 'title' => 'Reçu']]], name: 'Staff')]);
+    expect(depositLink($this)->status)->toBe('open');
+
+    $this->travel(91)->seconds();
+    $this->artisan('staff-actions:run-due')->assertSuccessful();
+
+    $link = depositLink($this);
+    expect($link->status)->toBe('paid')
+        ->and($link->paid_via)->toBe('manual')
+        ->and($link->confirmed_by)->toBe($this->owner->id)
+        ->and($booking->refresh()->status)->toBe(BookingStatus::Confirmed)
+        ->and(($this->in)(fn () => StaffAction::query()->sole()->status))->toBe('done');
+});
+
+it('lets staff send the link and confirm a transfer from the booking page', function (): void {
+    $booking = depositBooking($this);
+    $this->sent = [];
+
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.bookings.show', $booking))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('deposit.link.status', 'open')->where('deposit.can_confirm', true)->where('deposit.online', true));
+
+    webhookPost($this, [inbound('wamid.G3', from: '2250700000001', name: 'Awa Koné')]);
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.deposit.send', $booking))->assertRedirect();
+    expect(implode("\n", depositGuestTexts($this)))->toContain(route('deposits.show', depositToken($this)));
+
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.deposit.confirm', $booking), ['method' => 'cash'])->assertRedirect();
+    expect(depositLink($this)->method)->toBe('cash')
+        ->and($booking->refresh()->status)->toBe(BookingStatus::Confirmed);
+
+    // Housekeeping cannot record payments.
+    $housekeeper = staffMember($this->hotel, SystemRole::ReadOnly);
+    asStaffOf($this->hotel, $housekeeper)->post(route('hotel.bookings.deposit.confirm', $booking), ['method' => 'cash'])->assertForbidden();
+});
+
+it('works out refunds under the hotel policy when a paid booking is cancelled', function (): void {
+    $booking = depositBooking($this);
+    depositPayByLink($this);
+
+    // Cancelled 11 days before arrival: refundable (policy: 2 days).
+    ($this->in)(fn () => app(BookingLifecycle::class)->cancel($booking->refresh(), 'Plans changed', $this->owner));
+    $link = depositLink($this);
+    expect($link->refund_status)->toBe('due')->and($link->refund_due_minor)->toBe($link->paid_minor);
+
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertOk()
+        ->assertInertia(fn ($page) => $page->has('refunds', 1)->where('refunds.0.reference', $booking->reference));
+
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.refunded', $link), ['note' => 'Renvoyé par Wave'])->assertRedirect();
+    expect(depositLink($this)->refund_status)->toBe('done')
+        ->and(($this->in)(fn () => FolioLine::query()->where('corrects_line_id', $link->folio_line_id)->exists()))->toBeTrue();
+});
+
+it('keeps the deposit when the cancellation comes too late', function (): void {
+    $booking = depositBooking($this);
+    depositPayByLink($this);
+
+    $this->travelTo('2026-11-11 09:00:00');
+    ($this->in)(fn () => app(BookingLifecycle::class)->cancel($booking->refresh(), 'No longer coming', $this->owner));
+
+    expect(depositLink($this)->refund_status)->toBe('kept');
+});
+
+it('records a payment that arrives after the rooms were released, and asks staff to rebook or refund', function (): void {
+    $booking = depositBooking($this);
+    $token = depositToken($this);
+    $checkout = $this->post(route('deposits.pay', $token), ['choice' => 'deposit'])->headers->get('Location');
+    $reference = basename((string) parse_url((string) $checkout, PHP_URL_PATH));
+
+    $this->travelTo($booking->tentative_until->addMinute());
+    $this->artisan('bookings:expire-tentative')->assertSuccessful();
+    $this->sent = [];
+    ($this->in)(fn () => StaffAlertSettings::query()->update(['whatsapp_inbound_at' => now()]));
+
+    $this->post(route('deposits.simulate.pay', $reference), ['outcome' => 'paid', 'method' => 'wave']);
+    $this->get(route('deposits.back', $token));
+
+    $link = depositLink($this);
+    expect($booking->refresh()->status)->toBe(BookingStatus::Cancelled)
+        ->and($link->status)->toBe('paid')
+        ->and($link->refund_status)->toBe('due')
+        ->and(implode("\n", depositStaffTexts($this)))->toContain('rembourser');
+});
+
+it('reports yesterday\'s deposits in the morning summary and exports the month', function (): void {
+    depositBooking($this);
+    depositPayByLink($this, method: 'wave');
+    $this->travelTo('2026-11-02 08:00:00');
+
+    $text = ($this->in)(fn () => MorningSummaryText::message(app(MorningSummary::class)->build(), 'Awa', 'fr', true));
+    expect($text)->toContain('Acomptes reçus hier : Wave 1');
+
+    $csv = asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits.export', ['month' => '2026-11']))->assertOk()->streamedContent();
+    expect($csv)->toContain(depositLink($this)->receipt_number)->toContain('Wave')->toContain('Awa Koné');
+});
+
+it('keeps the merchant keys secret and checks them with the provider', function (): void {
+    asStaffOf($this->hotel, $this->owner)->put(route('hotel.deposits.account'), [
+        'driver' => 'cinetpay', 'mode' => 'live', 'active' => true,
+        'credentials' => ['apikey' => 'live-key-987654', 'site_id' => '112233', 'secret_key' => 'secret-abcd'], // gitleaks:allow
+    ])->assertRedirect();
+
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('account.masked.apikey', '••••••7654')->where('account.driver', 'cinetpay'))
+        ->assertDontSee('live-key-987654');
+
+    // Saving again with empty keys keeps them.
+    asStaffOf($this->hotel, $this->owner)->put(route('hotel.deposits.account'), ['driver' => 'cinetpay', 'mode' => 'live', 'active' => true, 'credentials' => ['apikey' => '']])->assertRedirect();
+    expect(($this->in)(fn () => MerchantAccount::query()->sole()->credential('apikey')))->toBe('live-key-987654'); // gitleaks:allow
+
+    Http::fake(['api-checkout.cinetpay.com/*' => Http::response(['code' => '609', 'message' => 'AUTH_NOT_FOUND'])]);
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.account.check'))->assertRedirect();
+    expect(($this->in)(fn () => MerchantAccount::query()->sole()->last_error))->toBe('AUTH_NOT_FOUND');
+
+    // Reception neither sees nor changes the account.
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.deposits'))->assertOk()->assertInertia(fn ($page) => $page->where('account', null));
+    asStaffOf($this->hotel, $this->reception)->put(route('hotel.deposits.account'), ['driver' => 'cinetpay', 'mode' => 'live', 'active' => false])->assertForbidden();
+});
+
+it('never lets another hotel touch a deposit', function (): void {
+    depositBooking($this);
+    depositPayByLink($this);
+    ($this->in)(fn () => app(BookingLifecycle::class)->cancel(Booking::query()->sole(), 'x', $this->owner));
+    $link = depositLink($this);
+
+    $other = Hotel::factory()->create(['currency' => 'XOF', 'timezone' => 'Africa/Abidjan', 'default_locale' => 'fr']);
+    $otherOwner = staffMember($other, SystemRole::Owner);
+
+    asStaffOf($other, $otherOwner)->post(route('hotel.deposits.refunded', $link), ['note' => 'x'])->assertNotFound();
+    asStaffOf($other, $otherOwner)->get(route('hotel.deposits'))->assertOk()->assertInertia(fn ($page) => $page->has('refunds', 0)->has('paid', 0));
+});

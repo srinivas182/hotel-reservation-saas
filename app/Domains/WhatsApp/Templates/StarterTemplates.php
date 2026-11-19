@@ -46,6 +46,37 @@ final class StarterTemplates
                 ],
                 'examples' => ['Awa', 'First Class Lodge', 'FCL-26-0042', 'Executive', '12 November 2026', '14 November 2026', '15,000 F CFA', '2 November 18:00', 'Orange Money 07 00 00 00 00'],
             ],
+            'deposit_reminder' => [
+                'name' => 'deposit_reminder',
+                'category' => 'UTILITY',
+                'label' => __('Deposit reminder (Sprint F)'),
+                'bodies' => [
+                    'en' => 'Hello {{1}}, a reminder from {{2}}: your rooms for booking {{3}} are held until {{4}}. Pay the deposit of {{5}} to confirm it here: {{6}} . Thank you!',
+                    'fr' => 'Bonjour {{1}}, petit rappel de {{2}} : vos chambres pour la réservation {{3}} sont bloquées jusqu\'au {{4}}. Payez l\'acompte de {{5}} pour la confirmer ici : {{6}} . Merci !',
+                ],
+                'examples' => ['Awa', 'First Class Lodge', 'FCL-26-0042', '2 November 18:00', '15 000 F CFA', 'https://app.example.com/pay/abc'],
+            ],
+            'deposit_received' => [
+                'name' => 'deposit_received',
+                'category' => 'UTILITY',
+                'label' => __('Deposit received (Sprint F)'),
+                'bodies' => [
+                    'en' => 'Thank you {{1}}! We received {{2}} by {{3}} for booking {{4}} (receipt {{5}}). Your booking is confirmed; see you on {{6}}.',
+                    'fr' => 'Merci {{1}} ! Nous avons bien reçu {{2}} par {{3}} pour la réservation {{4}} (reçu {{5}}). Votre réservation est confirmée ; à bientôt, le {{6}}.',
+                ],
+                'examples' => ['Awa', '15 000 F CFA', 'Wave', 'FCL-26-0042', 'R261102-4KQ9ZD', '12 November'],
+            ],
+            'deposit_proof_check' => [
+                'name' => 'deposit_proof_check',
+                'category' => 'UTILITY',
+                'label' => __('Payment screenshot to check (staff)'),
+                'bodies' => [
+                    'en' => 'Payment to check for {{1}}: {{2}}. Tap a button once you have checked your account.',
+                    'fr' => 'Paiement à vérifier pour {{1}} : {{2}}. Touchez un bouton après avoir vérifié votre compte.',
+                ],
+                'examples' => ['First Class Lodge', 'Awa Koné sent a screenshot, booking FCL-26-0042, deposit 15 000 F CFA'],
+                'buttons' => ['en' => ['Received', 'Not received'], 'fr' => ['Reçu', 'Pas reçu']],
+            ],
             'booking_declined' => [
                 'name' => 'booking_declined',
                 'category' => 'UTILITY',

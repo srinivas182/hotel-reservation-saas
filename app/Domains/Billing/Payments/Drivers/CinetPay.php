@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\Billing\Payments\Drivers;
 
-use App\Domains\Billing\Payments\PaymentCheckout;
+use App\Domains\Billing\Payments\Payable;
+use App\Domains\Billing\Payments\PaymentCredentials;
 use App\Domains\Billing\Payments\PaymentDriver;
 use App\Domains\Billing\Payments\PaymentFailed;
-use App\Domains\Billing\Payments\PaymentGateway;
 use App\Domains\Billing\Payments\VerifiedPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -21,9 +21,9 @@ final class CinetPay implements PaymentDriver
 {
     private const BASE = 'https://api-checkout.cinetpay.com/v2';
 
-    public function __construct(private readonly PaymentGateway $gateway) {}
+    public function __construct(private readonly PaymentCredentials $gateway) {}
 
-    public function start(PaymentCheckout $checkout, array $customer): array
+    public function start(Payable $checkout, array $customer): array
     {
         $response = Http::acceptJson()->asJson()->timeout(20)->post(self::BASE.'/payment', [
             'apikey' => $this->gateway->credential('apikey'),
@@ -47,7 +47,7 @@ final class CinetPay implements PaymentDriver
         return ['url' => (string) $response->json('data.payment_url'), 'token' => (string) $response->json('data.payment_token')];
     }
 
-    public function verify(PaymentCheckout $checkout): VerifiedPayment
+    public function verify(Payable $checkout): VerifiedPayment
     {
         $response = Http::acceptJson()->asJson()->timeout(20)->post(self::BASE.'/payment/check', [
             'apikey' => $this->gateway->credential('apikey'),
@@ -67,7 +67,26 @@ final class CinetPay implements PaymentDriver
             $response->json('data.currency') !== null ? (string) $response->json('data.currency') : null,
             'cinetpay:'.$checkout->reference,
             (string) $response->json('message'),
+            self::method($response->json('data.payment_method')),
         );
+    }
+
+    /**
+     * CinetPay's channel codes as folio payment methods.
+     */
+    public static function method(mixed $code): ?string
+    {
+        $code = strtoupper((string) $code);
+
+        return match (true) {
+            $code === '' => null,
+            str_starts_with($code, 'OM') || str_contains($code, 'ORANGE') => 'orange_money',
+            str_starts_with($code, 'MOMO') || str_contains($code, 'MTN') => 'mtn_momo',
+            str_starts_with($code, 'FLOOZ') || str_contains($code, 'MOOV') => 'moov_money',
+            str_contains($code, 'WAVE') => 'wave',
+            str_contains($code, 'VISA') || str_contains($code, 'MASTER') || str_contains($code, 'CARD') => 'card',
+            default => null,
+        };
     }
 
     public function notification(Request $request): ?array

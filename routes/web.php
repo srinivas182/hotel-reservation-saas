@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Domains\Billing\Http\Controllers\PaymentReturnController;
 use App\Domains\Demo\Http\Controllers\PlatformDemoController;
+use App\Domains\Deposits\Http\Controllers\DepositWebhookController;
+use App\Domains\Deposits\Http\Controllers\PublicDepositController;
 use App\Domains\Events\Http\Controllers\PublicQuoteController;
 use App\Domains\Help\Http\Controllers\HelpController;
 use App\Domains\Identity\Http\Controllers\LocaleController;
@@ -128,6 +130,20 @@ Route::post('webhooks/payments/{driver}', [PaymentReturnController::class, 'noti
     ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:120,1')
     ->name('webhooks.payments');
+
+// Sprint F: the guest's deposit page (the link is the key) and the hotels' payment notifications.
+Route::middleware('throttle:30,1')->group(function (): void {
+    Route::get('pay/{token}', [PublicDepositController::class, 'show'])->name('deposits.show');
+    Route::post('pay/{token}', [PublicDepositController::class, 'pay'])->middleware('throttle:10,1')->name('deposits.pay');
+    Route::get('pay/{token}/back', [PublicDepositController::class, 'back'])->name('deposits.back');
+    Route::get('pay-simulation/{reference}', [PublicDepositController::class, 'simulate'])->name('deposits.simulate');
+    Route::post('pay-simulation/{reference}', [PublicDepositController::class, 'simulatePay'])->name('deposits.simulate.pay');
+});
+Route::post('webhooks/deposits/{account}', DepositWebhookController::class)
+    ->whereNumber('account')
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->middleware('throttle:120,1')
+    ->name('webhooks.deposits');
 
 Route::post('csp-report', CspReportController::class)
     ->middleware('throttle:60,1')

@@ -50,6 +50,12 @@ Schedule::command('bookings:expire-tentative')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Sprint F: guests whose rooms are released within two hours get a deposit reminder.
+Schedule::command('deposits:remind')
+    ->name('deposits:remind')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Every connected WhatsApp number is checked once a day (expired tokens, quality).
 Schedule::command('whatsapp:check')
     ->name('whatsapp:check')

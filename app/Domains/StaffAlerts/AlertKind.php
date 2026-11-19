@@ -17,6 +17,9 @@ enum AlertKind: string
     case EventOptionExpired = 'event_option';
     case EventEnquiry = 'event_enquiry';
     case CreditsLow = 'credits_low';
+    case DepositPaid = 'deposit_paid';
+    case DepositProof = 'deposit_proof';
+    case DepositRefund = 'deposit_refund';
     case Test = 'test';
 
     public function label(): string
@@ -31,6 +34,9 @@ enum AlertKind: string
             self::EventOptionExpired => __('Event option expired or space freed'),
             self::EventEnquiry => __('New event enquiry'),
             self::CreditsLow => __('AI or email credits running low'),
+            self::DepositPaid => __('Deposit paid by a guest'),
+            self::DepositProof => __('Guest sent a payment screenshot to check'),
+            self::DepositRefund => __('Deposit to refund after a cancellation'),
             self::Test => __('Test alert'),
         };
     }
@@ -46,6 +52,8 @@ enum AlertKind: string
             self::NewOrder => Permission::RestaurantOrders,
             self::EventOptionExpired, self::EventEnquiry => Permission::EventsManage,
             self::CreditsLow => Permission::BillingView,
+            self::DepositPaid => Permission::BookingsView,
+            self::DepositProof, self::DepositRefund => Permission::FolioPayments,
             default => Permission::ConversationsReply,
         };
     }
@@ -55,6 +63,6 @@ enum AlertKind: string
      */
     public static function choosable(): array
     {
-        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired, self::TableRequest, self::NewOrder, self::EventOptionExpired, self::EventEnquiry, self::CreditsLow];
+        return [self::NewRequest, self::Handover, self::GuestWaiting, self::RequestExpired, self::TableRequest, self::NewOrder, self::EventOptionExpired, self::EventEnquiry, self::DepositPaid, self::DepositProof, self::DepositRefund, self::CreditsLow];
     }
 }
