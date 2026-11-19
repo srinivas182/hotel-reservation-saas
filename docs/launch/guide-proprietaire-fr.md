@@ -86,3 +86,12 @@ Assistant IA → Mode **Désactivé** (ou bouton d'arrêt) : effet immédiat. L'
 - **Le soir à 18 h**, les clients de demain qui n'ont pas répondu sont signalés à l'équipe (une seule alerte), avec un bouton pour les appeler.
 - **Résumé du matin** : « 2 arrivées confirmées · sans réponse : … » et les heures d'arrivée prévues.
 - Hors de la fenêtre de 24 heures de WhatsApp, la carte part avec le modèle `arrival_card` (à faire approuver par Meta, avec ses trois boutons).
+
+## 12. Le kit WhatsApp : affiches, bouton du site, liens
+
+- **Réglages → Kit WhatsApp** : tout pour amener les clients vers votre assistant WhatsApp.
+- **Affiches** : pour chaque source, téléchargez l'**affiche A4** (mur de la réception, chambres) ou le **chevalet A5** (tables du restaurant : imprimez sur A4, pliez au milieu). Le client scanne le QR code avec l'appareil photo : WhatsApp s'ouvre avec son message déjà écrit (« Bonjour, je voudrais réserver une chambre »). Votre numéro est imprimé pour ceux qui ne scannent pas.
+- **Bouton du site** : copiez la ligne de code et collez-la avant `</body>` (WordPress, Wix : « code personnalisé »). Il prend votre couleur et affiche « En ligne » pendant vos heures, « Réponse rapide » sinon. Sans cookies ni traceurs.
+- **Google et réseaux** : copiez le lien dans votre fiche Google (Coordonnées → WhatsApp) et le texte prêt dans la bio Facebook ou Instagram.
+- **Lien court** (`…/w/votre-hotel`) : pour les SMS, cartes de visite et Google Maps. Sans WhatsApp, il montre le numéro et un bouton pour appeler.
+- **D'où viennent les clients** : chaque affiche ou lien ajoute un petit code (#R1) à la fin du message ; il est retiré et la conversation est marquée. Pour chaque source, vous voyez les ouvertures, conversations et réservations du mois, et le **résumé du lundi** donne la semaine passée. Ajoutez une source par endroit (« Affiche des chambres ») pour savoir laquelle marche le mieux.

@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint H — "Chat with us on WhatsApp" kit (0.25.0)
+
+#### Added
+
+- **WhatsApp kit page**, in two parts:
+    - Sources (posters, table tents, website button, short link, Google, Facebook, Instagram), each with a short link, a QR code (SVG) and print-ready posters: an A4 wall poster and an A5 table tent folded from an A4 sheet, in French or English.
+    - The website button snippet, and ready texts and links for Google Business Profile and the social pages.
+- **Source tracking** (addition 1): each source's pre-typed greeting ends with its code ("… #R1"). When the first message arrives, the conversation is tagged with that source and the code is removed from the message. Opens, chats and bookings per source are shown for the month.
+- **Greetings by intent** (addition 2): book a room, a room tonight, a table, an event, a question.
+- **Website button** (addition 3): one script tag, in the hotel's colour. It shows "Online" during the hotel's hours (in the hotel's time zone) and a bubble once per visit. No cookies and no trackers.
+- **Branded posters** (addition 4): hotel name, colour and logo, a large QR code, three reasons to write, and the number for guests who don't scan.
+- **Short link** `/w/{hotel}/{code}` (addition 5): counts the open without a cookie, opens WhatsApp with the message ready, and shows the number and a call button as a fallback.
+- **Results** (addition 6): chats and bookings by source on the kit page, and last week's figures in Monday's morning summary.
+
 ### Sprint G — WhatsApp arrival card and map pin the day before (0.24.0)
 
 #### Added

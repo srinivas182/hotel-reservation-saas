@@ -101,3 +101,8 @@ Dans **Mes alertes**, cochez « Me l'envoyer chaque matin » : la journée à ve
 - Sur **Aujourd'hui** : le bloc **Arrivées de demain** montre qui a répondu. À partir de 18 h, ceux qui n'ont pas répondu sont signalés : touchez **Appeler** pour les joindre.
 - Dans les arrivées du jour, vous voyez ✓ **Confirmé par le client**, l'heure prévue et les demandes.
 - **Je ne viens plus** : vous êtes prévenu. Annulez la réservation depuis sa fiche ; la règle de l'acompte s'applique. **J'ai une question** : la conversation vous est passée dans la messagerie.
+
+## Les affiches WhatsApp
+
+- Les affiches et chevalets avec QR code (réception, chambres, restaurant) ouvrent WhatsApp avec un message prêt. Si un client a du mal à scanner, montrez-lui le numéro imprimé en bas de l'affiche.
+- Dans la messagerie, vous ne voyez pas le petit code (#R1) : il sert seulement à savoir quelle affiche a amené le client.
