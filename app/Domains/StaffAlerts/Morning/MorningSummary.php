@@ -35,6 +35,7 @@ final class MorningSummary
         private readonly \App\Domains\Workspace\ShiftChecklists $checklists,
         private readonly \App\Domains\Deposits\Reconciliation $deposits,
         private readonly \App\Domains\Arrivals\ArrivalBoard $arrivalBoard,
+        private readonly \App\Domains\ChatKit\ChatKit $kit,
     ) {}
 
     /**
@@ -47,7 +48,8 @@ final class MorningSummary
      *   pending_requests: int, attention: int, quiet: bool,
      *   checklists: list<array{name: string, done: int, total: int, left: list<string>}>,
      *   deposits: array<string, array{count: int, minor: int}>, refunds_due: int,
-     *   answers: array{confirmed: int, waiting: list<string>, declined: int, etas: list<array{name: string, slot: string}>}
+     *   answers: array{confirmed: int, waiting: list<string>, declined: int, etas: list<array{name: string, slot: string}>},
+     *   sources_week: list<array{name: string, chats: int, bookings: int}>|null
      * }
      */
     public function build(): array
@@ -106,6 +108,8 @@ final class MorningSummary
             'refunds_due' => \App\Domains\Deposits\Models\DepositLink::query()->where('refund_status', 'due')->count(),
             // Sprint G: what today's guests answered to yesterday's arrival card.
             'answers' => $this->arrivalBoard->todaySummary(),
+            // Sprint H: on Mondays, last week's chats and bookings by kit source.
+            'sources_week' => $today->isMonday() ? $this->sourcesWeek($today) : null,
         ];
     }
 
@@ -210,6 +214,27 @@ final class MorningSummary
         }
 
         return $nights;
+    }
+
+    /**
+     * @return list<array{name: string, chats: int, bookings: int}>
+     */
+    private function sourcesWeek(CarbonImmutable $today): array
+    {
+        $tz = $this->context->hotel()->timezone;
+        $results = $this->kit->results($today->subDays(7)->shiftTimezone($tz)->utc(), $today->shiftTimezone($tz)->utc());
+        if ($results === []) {
+            return [];
+        }
+
+        $names = \App\Domains\ChatKit\Models\ChatSource::query()->whereIn('id', array_keys($results))->pluck('name', 'id');
+        $out = [];
+        foreach ($results as $id => $row) {
+            $out[] = ['name' => (string) ($names[$id] ?? '?'), 'chats' => $row['chats'], 'bookings' => $row['bookings']];
+        }
+        usort($out, fn (array $a, array $b): int => $b['chats'] <=> $a['chats']);
+
+        return $out;
     }
 
     private function today(): CarbonImmutable

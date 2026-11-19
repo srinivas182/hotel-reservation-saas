@@ -26,7 +26,7 @@ final class MorningSummaryText
         $date = $s['today']->settings(['locale' => $locale])->isoFormat('dddd D MMMM');
 
         if ($s['quiet']) {
-            return implode("\n", [(string) __('☀️ Good morning :name — :hotel, :date. Calm day: no arrivals, departures or requests. Tonight: :occupied/:rooms rooms (:percent%).', ['name' => $name, 'hotel' => $hotel->name, 'date' => $date, 'occupied' => $s['occupied'], 'rooms' => $s['rooms'], 'percent' => $s['percent']], $locale), ...self::depositLines($s, $locale, $money, $format), ...self::checklistLines($s, $locale)]);
+            return implode("\n", [(string) __('☀️ Good morning :name — :hotel, :date. Calm day: no arrivals, departures or requests. Tonight: :occupied/:rooms rooms (:percent%).', ['name' => $name, 'hotel' => $hotel->name, 'date' => $date, 'occupied' => $s['occupied'], 'rooms' => $s['rooms'], 'percent' => $s['percent']], $locale), ...self::depositLines($s, $locale, $money, $format), ...self::checklistLines($s, $locale), ...self::sourceLines($s, $locale)]);
         }
 
         $lines = [
@@ -66,7 +66,7 @@ final class MorningSummaryText
             $lines[] = __('Under :percent%: :nights', ['percent' => MorningSummary::WEAK_PERCENT, 'nights' => implode(', ', array_map(fn (string $d): string => \Carbon\CarbonImmutable::parse($d)->settings(['locale' => $locale])->isoFormat('dddd D'), $s['weak']))], $locale);
         }
 
-        $lines = [...$lines, ...self::depositLines($s, $locale, $money, $format), ...self::checklistLines($s, $locale)];
+        $lines = [...$lines, ...self::depositLines($s, $locale, $money, $format), ...self::checklistLines($s, $locale), ...self::sourceLines($s, $locale)];
 
         if ($s['pending_requests'] > 0 || $s['attention'] > 0) {
             $lines[] = '⚠️ '.implode(' · ', array_filter([
@@ -94,6 +94,30 @@ final class MorningSummaryText
             $money ? __('collected yesterday :total', ['total' => MoneyFormatter::format(Money::ofMinor($s['collected'], $hotel->currency), $locale)], $locale) : null,
             $s['pending_requests'] > 0 ? trans_choice(':count WhatsApp request waiting|:count WhatsApp requests waiting', $s['pending_requests'], [], $locale) : null,
         ]));
+    }
+
+    /**
+     * On Mondays, where last week's WhatsApp chats came from (Sprint H).
+     *
+     * @param  array<string, mixed>  $s
+     * @return list<string>
+     */
+    private static function sourceLines(array $s, string $locale): array
+    {
+        $week = $s['sources_week'] ?? null;
+        if (! is_array($week) || $week === []) {
+            return [];
+        }
+
+        $chats = array_sum(array_column($week, 'chats'));
+        $bookings = array_sum(array_column($week, 'bookings'));
+        $parts = array_map(fn (array $r): string => $r['name'].' '.$r['chats'], array_slice(array_filter($week, fn (array $r): bool => $r['chats'] > 0), 0, 4));
+
+        return ['📣 '.__('Last week on WhatsApp: :chats (:sources) · :bookings', [
+            'chats' => trans_choice(':count conversation|:count conversations', $chats, [], $locale),
+            'sources' => implode(', ', $parts),
+            'bookings' => trans_choice(':count booking|:count bookings', $bookings, [], $locale),
+        ], $locale)];
     }
 
     /**

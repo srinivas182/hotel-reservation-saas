@@ -4,6 +4,7 @@ import {
     LayoutGrid,
     ListChecks,
     MapPin,
+    QrCode,
     MessageCircle,
     PartyPopper,
     Rocket,
@@ -285,6 +286,11 @@ export function AppSidebar() {
                       title: 'Arrival card',
                       href: '/hotel/arrival-settings',
                       icon: MapPin,
+                  },
+                  {
+                      title: 'WhatsApp kit',
+                      href: '/hotel/whatsapp-kit',
+                      icon: QrCode,
                   },
               ]
             : []),

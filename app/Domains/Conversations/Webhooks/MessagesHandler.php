@@ -7,6 +7,7 @@ namespace App\Domains\Conversations\Webhooks;
 use App\Domains\Arrivals\ArrivalReplies;
 use App\Domains\Arrivals\Jobs\HandleArrivalReply;
 use App\Domains\Assistant\LanguageDetector;
+use App\Domains\ChatKit\ChatKit;
 use App\Domains\Conversations\ConversationDirectory;
 use App\Domains\Conversations\ConversationMode;
 use App\Domains\Conversations\Jobs\DownloadMedia;
@@ -97,6 +98,11 @@ final class MessagesHandler implements WebhookHandler
         $sentAt = $this->time($data['timestamp'] ?? null);
         $conversation = $this->directory->forWaId($from, $names[$from] ?? null);
         [$type, $body, $media] = $this->content($data);
+
+        // Sprint H: a code at the end of the pre-typed greeting tells where the guest came from.
+        if ($type === 'text' && $body !== null) {
+            $body = app(ChatKit::class)->attribute($conversation, $body);
+        }
 
         $message = $this->create([
             'conversation_id' => $conversation->id,

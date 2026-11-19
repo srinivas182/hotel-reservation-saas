@@ -107,6 +107,11 @@ final class PrepareEndToEnd extends Command
         // a tentative booking whose deposit link the guest test pays.
         $links = $context->run($hotel, function (): array {
             MerchantAccount::query()->updateOrCreate([], ['driver' => 'simulation', 'mode' => 'test', 'credentials' => [], 'active' => true]);
+            // Sprint H: the WhatsApp kit's links need the hotel's number.
+            $place = \App\Domains\Hotel\Models\HotelSettings::current();
+            if ($place->whatsapp_display_e164 === null) {
+                $place->forceFill(['whatsapp_display_e164' => '+2250500000000'])->save();
+            }
             HotelAssistantSettings::current()->update(['deposit_online' => true, 'deposit_allow_full' => true, 'deposit_refund_days' => 2]);
             $category = RoomCategory::query()->where('active', true)->orderBy('sort_order')->firstOrFail();
             $links = [];

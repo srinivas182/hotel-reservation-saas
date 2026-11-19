@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property string $id
  * @property string $hotel_id
+ * @property int|null $chat_source_id Sprint H: the poster, button or link the conversation started from
+ * @property CarbonImmutable|null $chat_source_at
  * @property string $whatsapp_contact_id
  * @property string $status
  * @property CarbonImmutable|null $last_message_at
@@ -57,6 +59,7 @@ class Conversation extends Model
             'mode' => ConversationMode::class,
             'needs_attention' => 'boolean',
             'handed_over_at' => 'immutable_datetime',
+            'chat_source_at' => 'immutable_datetime',
             'staff_replied_at' => 'immutable_datetime',
             'assigned_at' => 'immutable_datetime',
             'waiting_since' => 'immutable_datetime',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Arrivals\Http\Controllers\ArrivalSettingsController;
 use App\Domains\Billing\Http\Controllers\PaymentReturnController;
+use App\Domains\ChatKit\Http\Controllers\PublicKitController;
 use App\Domains\Demo\Http\Controllers\PlatformDemoController;
 use App\Domains\Deposits\Http\Controllers\DepositWebhookController;
 use App\Domains\Deposits\Http\Controllers\PublicDepositController;
@@ -131,6 +132,18 @@ Route::post('webhooks/payments/{driver}', [PaymentReturnController::class, 'noti
     ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:120,1')
     ->name('webhooks.payments');
+
+// Sprint H: the WhatsApp kit — the website button and the short links (no cookies, one counter).
+Route::middleware('throttle:120,1')->withoutMiddleware([
+    Illuminate\Session\Middleware\StartSession::class,
+    Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    PreventRequestForgery::class,
+    App\Http\Middleware\HandleInertiaRequests::class,
+])->group(function (): void {
+    Route::get('w/{hotel}/button.js', [PublicKitController::class, 'button'])->name('kit.button');
+    Route::get('w/{hotel}/{code?}', [PublicKitController::class, 'go'])->where('code', '[A-Za-z0-9]{1,8}')->name('kit.go');
+});
 
 // Sprint G: the entrance photo on the arrival card (WhatsApp fetches it).
 Route::get('a/{hotel}/entrance', [ArrivalSettingsController::class, 'entrance'])->middleware('throttle:60,1')->name('arrivals.entrance');

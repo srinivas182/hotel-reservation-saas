@@ -20,6 +20,7 @@ use App\Domains\Bookings\Http\Controllers\BookingActionController;
 use App\Domains\Bookings\Http\Controllers\BookingController;
 use App\Domains\Bookings\Http\Controllers\BookingExportController;
 use App\Domains\Bookings\Http\Controllers\TodayController;
+use App\Domains\ChatKit\Http\Controllers\KitController;
 use App\Domains\Conversations\Http\Controllers\InboxController;
 use App\Domains\Demo\Http\Controllers\HotelDemoController;
 use App\Domains\Deposits\Http\Controllers\DepositController;
@@ -199,6 +200,19 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     Route::put('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.update');
     Route::delete('hotel/checklists/{checklist}', [ShiftChecklistController::class, 'destroy'])->middleware('can:hotel.settings.manage')->name('hotel.checklists.destroy');
     Route::post('hotel/checklists/{checklist}/tick', [ShiftChecklistController::class, 'tick'])->middleware(['can:bookings.view', 'throttle:60,1'])->name('hotel.checklists.tick');
+
+    // Sprint H: the "Chat with us on WhatsApp" kit.
+    Route::middleware('can:hotel.settings.manage')->group(function (): void {
+        Route::get('hotel/whatsapp-kit', [KitController::class, 'index'])->name('hotel.whatsapp-kit');
+        Route::post('hotel/whatsapp-kit/sources', [KitController::class, 'store'])->name('hotel.whatsapp-kit.sources.store');
+        Route::put('hotel/whatsapp-kit/sources/{source}', [KitController::class, 'update'])->name('hotel.whatsapp-kit.sources.update');
+        Route::get('hotel/whatsapp-kit/sources/{source}/qr', [KitController::class, 'qr'])->name('hotel.whatsapp-kit.qr');
+        Route::get('hotel/whatsapp-kit/sources/{source}/poster', [KitController::class, 'poster'])->middleware('throttle:30,1')->name('hotel.whatsapp-kit.poster');
+        Route::put('hotel/whatsapp-kit/settings', [KitController::class, 'settings'])->name('hotel.whatsapp-kit.settings');
+        Route::get('hotel/whatsapp-kit/logo', [KitController::class, 'showLogo'])->name('hotel.whatsapp-kit.logo');
+        Route::post('hotel/whatsapp-kit/logo', [KitController::class, 'logo'])->middleware('throttle:20,1')->name('hotel.whatsapp-kit.logo.store');
+        Route::delete('hotel/whatsapp-kit/logo', [KitController::class, 'removeLogo'])->name('hotel.whatsapp-kit.logo.remove');
+    });
 
     // Sprint G: the arrival card the day before.
     Route::middleware('can:hotel.settings.manage')->group(function (): void {
