@@ -48,6 +48,15 @@ Then deploy:
 ./deploy.sh
 ```
 
+Then create the first platform user (no account exists by default on a server):
+
+```bash
+docker compose -f compose.prod.yaml exec app php artisan launch:defaults
+docker compose -f compose.prod.yaml exec app php artisan platform:create-admin you@example.com --first-name=You --last-name=Name
+```
+
+The command shows a one-time password; two-step login is required at the first sign-in. Add the rest of the team from **Platform → Users** (they get an e-mail to choose their password). Options: `--role=operations|finance|sales`, `--reset-password` for an existing account, `--force` for a second super admin. See [`developer-guide.md`](developer-guide.md).
+
 ## 3. Releases
 
 ```bash

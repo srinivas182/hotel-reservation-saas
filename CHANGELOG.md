@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Server set-up and developer guide (0.25.1)
+
+#### Added
+
+- **`php artisan platform:create-admin`**: creates the first platform super admin on a new server (or gives a platform role to an existing account), with a random password shown once. Two-step login is required at the first sign-in. `--role`, `--reset-password` and `--force`; every run is audited.
+- **Developer guide** (`docs/developer-guide.md`): local set-up with and without Docker, the default accounts and roles, simulation mode, tests and checks, DigitalOcean staging and production, and how each role uses the platform.
+
+#### Changed
+
+- The demo data no longer needs the test data generator, so `simulation:prepare` works on staging images built without development packages.
+- The demo super admin (`admin@example.com`) is created on a developer's machine only; staging gets its first admin from `platform:create-admin`.
+
 ### Sprint H — "Chat with us on WhatsApp" kit (0.25.0)
 
 #### Added

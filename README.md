@@ -2,9 +2,9 @@
 
 Multi-hotel SaaS platform that lets guests book rooms, tables and events over WhatsApp, while hotel staff manage availability, approvals and guest messaging from a phone-friendly dashboard. Built by **Mayura Consultancy Services**.
 
-> Status: **S0 — platform skeleton**: S0.1–S0.3 complete; staging deployment pending server access. See `CHANGELOG.md`.
+> Status: **0.25.1** — usability sprints A–H delivered; staging deployment pending server access. See `CHANGELOG.md`.
 >
-> Deploying: see [`docs/deployment.md`](docs/deployment.md).
+> **New here?** Read the [developer guide](docs/developer-guide.md): local set-up, DigitalOcean, default accounts and roles. Server reference: [`docs/deployment.md`](docs/deployment.md).
 
 ## Stack
 
@@ -29,7 +29,7 @@ make up          # start app, nginx, mysql, redis, horizon, scheduler, mailpit
 make install     # composer install, app key, migrations, frontend build
 ```
 
-- App: http://localhost:8080
+- App: http://localhost:8080 (demo sign-ins, all with the password `password`: `admin@example.com` for the platform, `owner.lodge@example.com` and `reception.lodge@example.com` for First Class Lodge; see the [developer guide](docs/developer-guide.md#4-default-accounts-and-passwords))
 - Mailpit (captured email): http://localhost:8025
 - Frontend dev server with hot reload: `docker compose --profile frontend up vite`
 

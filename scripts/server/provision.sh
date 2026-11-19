@@ -114,6 +114,8 @@ Server ready. Next, as the deploy user (su - $DEPLOY_USER):
   1. DNS: point $DOMAIN to this server's IP (Caddy gets the certificate on first deploy).
   2. cd $APP_DIR && ./deploy.sh
   3. docker compose -f compose.prod.yaml exec app php artisan launch:defaults
+     docker compose -f compose.prod.yaml exec app php artisan platform:create-admin you@example.com --first-name=You --last-name=Name
+     (shows a one-time password; two-step login is set up at the first sign-in)
   4. Staging: php artisan simulation:prepare, then ./scripts/drills/staging-drills.sh (S16.4).
   5. Production: Meta app secret and token, AI keys, e-mail and payment providers in the platform;
      SENTRY_LARAVEL_DSN in .env; CSP_ENFORCE=true after a week without unexpected reports
