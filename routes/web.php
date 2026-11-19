@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Arrivals\Http\Controllers\ArrivalSettingsController;
 use App\Domains\Billing\Http\Controllers\PaymentReturnController;
 use App\Domains\Demo\Http\Controllers\PlatformDemoController;
 use App\Domains\Deposits\Http\Controllers\DepositWebhookController;
@@ -130,6 +131,9 @@ Route::post('webhooks/payments/{driver}', [PaymentReturnController::class, 'noti
     ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:120,1')
     ->name('webhooks.payments');
+
+// Sprint G: the entrance photo on the arrival card (WhatsApp fetches it).
+Route::get('a/{hotel}/entrance', [ArrivalSettingsController::class, 'entrance'])->middleware('throttle:60,1')->name('arrivals.entrance');
 
 // Sprint F: the guest's deposit page (the link is the key) and the hotels' payment notifications.
 Route::middleware('throttle:30,1')->group(function (): void {

@@ -46,6 +46,17 @@ final class StarterTemplates
                 ],
                 'examples' => ['Awa', 'First Class Lodge', 'FCL-26-0042', 'Executive', '12 November 2026', '14 November 2026', '15,000 F CFA', '2 November 18:00', 'Orange Money 07 00 00 00 00'],
             ],
+            'arrival_card' => [
+                'name' => 'arrival_card',
+                'category' => 'UTILITY',
+                'label' => __('Arrival card, the day before (Sprint G)'),
+                'bodies' => [
+                    'en' => 'Hello {{1}}, we look forward to welcoming you tomorrow at {{2}} (booking {{3}}). Check-in from {{4}}. Tap a button to answer: we then send you the map pin.',
+                    'fr' => 'Bonjour {{1}}, nous vous attendons demain à {{2}} (réservation {{3}}). Arrivée à partir de {{4}}. Touchez un bouton pour répondre : nous vous envoyons ensuite le plan.',
+                ],
+                'examples' => ['Awa', 'First Class Lodge', 'FCL-26-0042', '14:00'],
+                'buttons' => ['en' => ['I confirm', 'Not coming', 'I have a question'], 'fr' => ['Je confirme', 'Je ne viens plus', 'J’ai une question']],
+            ],
             'deposit_reminder' => [
                 'name' => 'deposit_reminder',
                 'category' => 'UTILITY',

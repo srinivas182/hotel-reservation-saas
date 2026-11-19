@@ -27,9 +27,10 @@ final class Legal
         $kinds = $this->isOwner($user) ? LegalDocument::KINDS : ['privacy'];
         $accepted = LegalAcceptance::query()->where('user_id', $user->getKey())->pluck('legal_document_id')->all();
         $missing = [];
+        $all = LegalDocument::currentAll();
 
         foreach ($kinds as $kind) {
-            $current = LegalDocument::current($kind);
+            $current = $all[$kind] ?? null;
             if ($current !== null && ! in_array($current->id, $accepted, true)) {
                 $missing[] = $current;
             }

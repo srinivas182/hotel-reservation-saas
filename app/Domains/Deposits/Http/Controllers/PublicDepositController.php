@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domains\Deposits\Http\Controllers;
 
 use App\Domains\Ai\Models\HotelAssistantSettings;
-use App\Domains\Bookings\BookingStatus;
 use App\Domains\Deposits\DepositNotPossible;
 use App\Domains\Deposits\DepositPolicy;
 use App\Domains\Deposits\Deposits;
@@ -44,8 +43,9 @@ final class PublicDepositController extends Controller
             $settings = HotelAssistantSettings::current();
             $deposits = app(Deposits::class);
             $money = fn (int $minor): string => MoneyFormatter::format(Money::ofMinor($minor, $link->currency), $locale);
-            $open = $link->isOpen() && $booking->status === BookingStatus::Tentative;
-            $full = $open && $settings->deposit_allow_full ? $deposits->fullAmount($link) : null;
+            $open = $deposits->canPay($link);
+            $balance = $link->purpose === 'balance';
+            $full = $open && ! $balance && $settings->deposit_allow_full ? $deposits->fullAmount($link) : null;
             $pending = $link->attempts()->where('status', 'pending')->whereNotNull('checkout_url')->where('created_at', '>', now()->subMinutes(30))->exists();
             $hotelSettings = HotelSettings::current();
 
@@ -60,6 +60,7 @@ final class PublicDepositController extends Controller
                     $open => 'open',
                     default => 'closed',
                 },
+                'balance' => $balance,
                 'pending' => $pending && $link->status !== 'paid',
                 'deposit' => $money($link->deposit_minor),
                 'full' => $full !== null && $full > $link->deposit_minor ? $money($full) : null,

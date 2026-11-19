@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Conversations\Webhooks;
 
+use App\Domains\Arrivals\ArrivalReplies;
+use App\Domains\Arrivals\Jobs\HandleArrivalReply;
 use App\Domains\Assistant\LanguageDetector;
 use App\Domains\Conversations\ConversationDirectory;
 use App\Domains\Conversations\ConversationMode;
@@ -139,6 +141,14 @@ final class MessagesHandler implements WebhookHandler
 
         if ($media !== null && isset($media['media_id'])) {
             DownloadMedia::dispatch($message->id);
+        }
+
+        // Sprint G: a tap on the arrival card is answered by the card, not the assistant.
+        $arrival = ArrivalReplies::payloadOf($data);
+        if ($arrival !== null) {
+            HandleArrivalReply::dispatch($message->id, $arrival);
+
+            return;
         }
 
         // Voice notes are answered once transcribed (TranscribeMessage).

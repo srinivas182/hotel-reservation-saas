@@ -34,6 +34,7 @@ final class MorningSummary
         private readonly Folio $folio,
         private readonly \App\Domains\Workspace\ShiftChecklists $checklists,
         private readonly \App\Domains\Deposits\Reconciliation $deposits,
+        private readonly \App\Domains\Arrivals\ArrivalBoard $arrivalBoard,
     ) {}
 
     /**
@@ -45,7 +46,8 @@ final class MorningSummary
      *   to_collect: int, to_collect_guests: int,
      *   pending_requests: int, attention: int, quiet: bool,
      *   checklists: list<array{name: string, done: int, total: int, left: list<string>}>,
-     *   deposits: array<string, array{count: int, minor: int}>, refunds_due: int
+     *   deposits: array<string, array{count: int, minor: int}>, refunds_due: int,
+     *   answers: array{confirmed: int, waiting: list<string>, declined: int, etas: list<array{name: string, slot: string}>}
      * }
      */
     public function build(): array
@@ -102,6 +104,8 @@ final class MorningSummary
             // Sprint F: deposits received yesterday, by method, and refunds still to make.
             'deposits' => $this->deposits->day($today->subDay()),
             'refunds_due' => \App\Domains\Deposits\Models\DepositLink::query()->where('refund_status', 'due')->count(),
+            // Sprint G: what today's guests answered to yesterday's arrival card.
+            'answers' => $this->arrivalBoard->todaySummary(),
         ];
     }
 

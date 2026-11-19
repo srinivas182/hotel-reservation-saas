@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $token_hash
  * @property string $token encrypted; the link is /pay/{token}
  * @property string $status open, paid, expired, cancelled
+ * @property string $purpose deposit (tentative booking) or balance (Sprint G: the rest of a confirmed stay, before arrival)
  * @property int $deposit_minor
  * @property string $currency
  * @property CarbonImmutable|null $expires_at

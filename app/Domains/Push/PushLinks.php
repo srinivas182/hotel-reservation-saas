@@ -22,6 +22,8 @@ final class PushLinks
             AlertKind::CreditsLow => route('hotel.billing'),
             AlertKind::DepositPaid, AlertKind::DepositProof => $subjectId === null ? route('hotel.deposits') : route('hotel.bookings.show', $subjectId),
             AlertKind::DepositRefund => route('hotel.deposits'),
+            AlertKind::ArrivalCancelling, AlertKind::ArrivalRequest => $subjectId === null ? route('hotel.today') : route('hotel.bookings.show', $subjectId),
+            AlertKind::ArrivalUnconfirmed => route('hotel.today').'#tomorrow',
             default => route('hotel.today'),
         };
     }

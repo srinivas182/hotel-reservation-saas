@@ -41,6 +41,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $deposit_online Sprint F: send a mobile-money payment link when the hotel's merchant account is active
  * @property bool $deposit_allow_full Sprint F: the guest may pay the whole stay instead of the deposit
  * @property int|null $deposit_refund_days Sprint F: deposit refunded when cancelled at least this many days before arrival (null: never)
+ * @property array<string, string>|null $arrival_directions Sprint G: landmark directions, per language
+ * @property array<string, string>|null $arrival_tip Sprint G: moto-taxi or taxi tip, per language
+ * @property string|null $reception_closes_at Sprint G: HH:MM; later arrivals get the night instructions
+ * @property array<string, string>|null $night_arrival Sprint G: what to do when arriving after reception closes, per language
+ * @property array<string, array{enabled: bool, price_minor: int|null}>|null $arrival_extras Sprint G: pickup, early check-in, extra bed
+ * @property string|null $arrival_photo_path Sprint G: photo of the entrance, on the card
  * @property array<string, array<string, string>>|null $decision_messages
  */
 class HotelAssistantSettings extends Model
@@ -71,7 +77,7 @@ class HotelAssistantSettings extends Model
     protected $fillable = [
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
         'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes', 'request_escalate_minutes',
-        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'deposit_online', 'deposit_allow_full', 'deposit_refund_days', 'decision_messages', 'silence_minutes', 'daily_alert_cap', 'stay_messages', 'review_url',
+        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'deposit_online', 'deposit_allow_full', 'deposit_refund_days', 'arrival_directions', 'arrival_tip', 'reception_closes_at', 'night_arrival', 'arrival_extras', 'arrival_photo_path', 'decision_messages', 'silence_minutes', 'daily_alert_cap', 'stay_messages', 'review_url',
         'mode', 'privacy_url', 'human_keywords', 'readiness_override_at', 'readiness_override_reason', 'readiness_override_by',
     ];
 
@@ -92,6 +98,10 @@ class HotelAssistantSettings extends Model
             'deposit_online' => 'boolean',
             'deposit_allow_full' => 'boolean',
             'deposit_refund_days' => 'integer',
+            'arrival_directions' => 'array',
+            'arrival_tip' => 'array',
+            'night_arrival' => 'array',
+            'arrival_extras' => 'array',
             'silence_minutes' => 'integer',
             'daily_alert_cap' => 'integer',
             'stay_messages' => 'array',

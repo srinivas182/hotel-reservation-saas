@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint G — WhatsApp arrival card and map pin the day before (0.24.0)
+
+#### Added
+
+- **Arrival card the day before**, replacing the plain reminder: the booking, check-in time and what is left to pay, with three buttons (I confirm / Not coming / I have a question). An optional photo of the entrance appears on top. A **real WhatsApp map pin** follows, with the hotel's local directions. Outside the 24-hour window, the new `arrival_card` template carries the same buttons; the tap reopens the window, so the pin follows then.
+- **One-tap confirmation** (addition 1): confirmed guests show ✓ on Today. "Not coming" asks first, then alerts staff; the booking is left for staff to cancel, so the deposit rule applies. A question passes the conversation to staff.
+- **Arrival time** list (addition 2), shown on Today and in the morning summary. Guests arriving after reception closes get the hotel's night instructions.
+- **Local directions and transport tip** (addition 3), per language, sent under the pin.
+- **Pre-arrival extras** (addition 4): pickup, early check-in and extra bed, each optional with a price. A request alerts reception.
+- **Pay the balance before arrival** (addition 5): the card carries a Sprint F payment link for what is left (purpose `balance`).
+- **Safety net** (addition 6): from 18:00 the day before, guests who have not answered are flagged with one alert to staff. Today's new "Tomorrow's arrivals" card lists them with a call button. The morning summary counts confirmed and silent arrivals.
+- Arrival card settings page and help article. Guest button codes (`ga:…`) only count from the booking's own WhatsApp number.
+
+#### Changed
+
+- `MessageSender` sends interactive messages (buttons, lists), map pins and template quick-reply codes.
+- The current legal texts are read in one query per request.
+
 ### Sprint F — Mobile-money deposit link that confirms itself (0.23.0)
 
 #### Added

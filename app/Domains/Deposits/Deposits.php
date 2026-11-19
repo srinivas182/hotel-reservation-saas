@@ -66,7 +66,7 @@ final class Deposits
      */
     public function linkFor(Booking $booking, ?User $by = null): DepositLink
     {
-        $open = DepositLink::query()->where('booking_id', $booking->id)->where('status', 'open')->latest()->first();
+        $open = DepositLink::query()->where('booking_id', $booking->id)->where('purpose', 'deposit')->where('status', 'open')->latest()->first();
         if ($open !== null) {
             if ($open->expires_at?->toIso8601String() !== $booking->tentative_until?->toIso8601String()) {
                 $open->forceFill(['expires_at' => $booking->tentative_until])->save();
@@ -93,6 +93,58 @@ final class Deposits
         Audit::record('deposits.link_created', 'Deposit link created', subject: $booking, causer: $by, properties: ['link' => $link->id, 'deposit_minor' => $link->deposit_minor]);
 
         return $link;
+    }
+
+    /**
+     * Sprint G: a link to pay what is left of a confirmed stay before
+     * arriving, when the hotel takes mobile money online. Null when nothing
+     * is left to pay.
+     */
+    public function balanceLinkFor(Booking $booking): ?DepositLink
+    {
+        if (! in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::CheckedIn], true) || ! (MerchantAccount::current()?->usable() ?? false) || ! HotelAssistantSettings::current()->deposit_online) {
+            return null;
+        }
+
+        $balance = self::payable($this->folio->balance($booking), $booking->currency);
+        if ($balance <= 0) {
+            return null;
+        }
+
+        $open = DepositLink::query()->where('booking_id', $booking->id)->where('purpose', 'balance')->where('status', 'open')->latest()->first();
+        if ($open !== null) {
+            if ($open->deposit_minor !== $balance) {
+                $open->forceFill(['deposit_minor' => $balance])->save();
+            }
+
+            return $open;
+        }
+
+        $token = Str::random(40);
+        $link = DepositLink::query()->create([
+            'booking_id' => $booking->id,
+            'purpose' => 'balance',
+            'token' => $token,
+            'token_hash' => hash('sha256', $token),
+            'deposit_minor' => $balance,
+            'currency' => $booking->currency,
+            // Valid until the morning of departure, hotel time.
+            'expires_at' => $booking->check_out->shiftTimezone($this->context->hotel()->timezone)->setTime(12, 0)->utc(),
+        ]);
+
+        Audit::record('deposits.balance_link_created', 'Balance link created', subject: $booking, properties: ['link' => $link->id, 'balance_minor' => $balance]);
+
+        return $link;
+    }
+
+    /** The link can be paid now: open, and the booking in the state it was made for. */
+    public function canPay(DepositLink $link): bool
+    {
+        $status = $link->booking->status;
+
+        return $link->isOpen() && ($link->purpose === 'balance'
+            ? in_array($status, [BookingStatus::Confirmed, BookingStatus::CheckedIn], true)
+            : $status === BookingStatus::Tentative);
     }
 
     public function url(DepositLink $link): string
@@ -133,7 +185,7 @@ final class Deposits
      */
     public function start(DepositLink $link, string $choice): DepositAttempt
     {
-        if (! $link->isOpen() || $link->booking->status !== BookingStatus::Tentative) {
+        if (! $this->canPay($link)) {
             throw new DepositNotPossible(__('This payment link is no longer valid. Write to the hotel on WhatsApp.'));
         }
 
@@ -143,7 +195,14 @@ final class Deposits
         }
 
         $settings = HotelAssistantSettings::current();
-        $amount = $choice === 'full' && $settings->deposit_allow_full ? $this->fullAmount($link) : $link->deposit_minor;
+        $amount = match (true) {
+            $link->purpose === 'balance' => self::payable($this->folio->balance($link->booking), $link->currency),
+            $choice === 'full' && $settings->deposit_allow_full => $this->fullAmount($link),
+            default => $link->deposit_minor,
+        };
+        if ($amount <= 0) {
+            throw new DepositNotPossible(__('Nothing is left to pay on this booking.'));
+        }
         $hotel = $this->context->hotel();
         $booking = $link->booking->loadMissing('guest');
 

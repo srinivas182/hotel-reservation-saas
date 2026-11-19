@@ -1,3 +1,11 @@
+import {
+    ArrivalAnswerLine,
+    TomorrowCard,
+} from '@/components/arrivals/arrival-answer';
+import type {
+    ArrivalAnswer,
+    TomorrowArrival,
+} from '@/components/arrivals/arrival-answer';
 import type { RequestPayload } from '@inertiajs/core';
 import { Head, Link, router, useForm, usePoll } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
@@ -40,6 +48,7 @@ type Item = {
     tentative_until: string | null;
     overdue: boolean;
     suggested_rooms: Record<string, string> | null;
+    arrival?: ArrivalAnswer | null;
 };
 
 type BoardRoom = {
@@ -59,6 +68,7 @@ type Props = {
     date: string;
     dateLabel: string;
     arrivals: Item[];
+    tomorrow: TomorrowArrival[];
     inHouse: Item[];
     departures: Item[];
     noShows: Item[];
@@ -147,6 +157,7 @@ function Line({ item, action }: { item: Item; action?: React.ReactNode }) {
                         ` · ${t('room(s) :numbers', { numbers: item.room_numbers.join(', ') })}`}
                     {` · ${item.check_in} → ${item.check_out}`}
                 </div>
+                {item.arrival && <ArrivalAnswerLine answer={item.arrival} />}
             </div>
             {action}
         </li>
@@ -268,6 +279,7 @@ export default function Today(props: Props) {
             'freeTonight',
             'nextUp',
             'checklists',
+            'tomorrow',
         ],
     });
     const simple = useWorkspace()?.simple === true;
@@ -415,6 +427,8 @@ export default function Today(props: Props) {
                         ))}
                     </section>
                 )}
+
+                <TomorrowCard items={props.tomorrow} />
 
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Section

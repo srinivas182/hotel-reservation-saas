@@ -93,3 +93,11 @@ Dans **Mes alertes**, cochez « Me l'envoyer chaque matin » : la journée à ve
 - Le client a envoyé une **capture d'écran** d'un transfert ? Vous recevez une carte « Reçu / Pas reçu ». **Vérifiez d'abord votre compte**, puis touchez Reçu : vous avez une minute pour annuler.
 - Sur la fiche de la réservation, bloc **Acompte** : renvoyer le lien, copier le lien, ou **Argent reçu** pour confirmer un paiement vu sur votre compte (ou en espèces).
 - Menu **Acomptes** : ceux en attente, ceux payés ce mois-ci, et les **remboursements à faire** après une annulation.
+
+## La carte d'arrivée, la veille
+
+- La veille à 10 h, chaque client confirmé reçoit une **carte** sur WhatsApp : sa réservation, l'heure d'arrivée, ce qui reste à payer (avec le lien pour payer), puis le **plan** et les indications de l'hôtel.
+- Il répond avec un bouton : **Je confirme**, **Je ne viens plus** ou **J'ai une question**. Il choisit ensuite son **heure d'arrivée** et peut demander une navette, une arrivée tôt ou un lit en plus.
+- Sur **Aujourd'hui** : le bloc **Arrivées de demain** montre qui a répondu. À partir de 18 h, ceux qui n'ont pas répondu sont signalés : touchez **Appeler** pour les joindre.
+- Dans les arrivées du jour, vous voyez ✓ **Confirmé par le client**, l'heure prévue et les demandes.
+- **Je ne viens plus** : vous êtes prévenu. Annulez la réservation depuis sa fiche ; la règle de l'acompte s'applique. **J'ai une question** : la conversation vous est passée dans la messagerie.

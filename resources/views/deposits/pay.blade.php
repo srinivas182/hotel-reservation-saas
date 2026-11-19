@@ -52,14 +52,14 @@
 
     @if ($state === 'paid')
         <div class="ok" role="status">
-            <strong>{{ __('Payment received. Your booking is confirmed.') }}</strong><br>
+            <strong>{{ $balance ? __('Payment received. Thank you, see you soon!') : __('Payment received. Your booking is confirmed.') }}</strong><br>
             {{ __(':amount by :method · receipt :receipt', ['amount' => $paid, 'method' => $method, 'receipt' => $link->receipt_number]) }}
             @if ($left !== null)
                 <br>{{ __('Left to pay at the hotel: :left.', ['left' => $left]) }}
             @endif
         </div>
     @elseif ($state === 'open')
-        @if ($deadline)
+        @if ($deadline && ! $balance)
             <p class="held">⏳ {{ __('Your rooms are held until :deadline.', ['deadline' => $deadline]) }}</p>
         @endif
 
@@ -69,10 +69,10 @@
 
         <form method="post" action="{{ route('deposits.pay', $token) }}" class="card">
             @csrf
-            <h2>{{ __('Pay to confirm') }}</h2>
+            <h2>{{ $balance ? __('Pay before you arrive') : __('Pay to confirm') }}</h2>
             <label class="choice">
                 <input type="radio" name="choice" value="deposit" checked>
-                <span><span class="amount">{{ $deposit }}</span><br><span class="muted">{{ __('The deposit, to confirm the booking') }}</span></span>
+                <span><span class="amount">{{ $deposit }}</span><br><span class="muted">{{ $balance ? __('What is left of your stay: no queue on arrival') : __('The deposit, to confirm the booking') }}</span></span>
             </label>
             @if ($full)
                 <label class="choice">

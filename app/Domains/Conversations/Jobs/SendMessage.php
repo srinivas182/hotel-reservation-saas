@@ -125,6 +125,11 @@ final class SendMessage implements RequiresHotelContext, ShouldQueue
                     ...(is_array($message->media['components'] ?? null) ? ['components' => $message->media['components']] : []),
                 ],
             ],
+            'interactive' => ['type' => 'interactive', 'interactive' => $message->media['interactive'] ?? []],
+            'location' => ['type' => 'location', 'location' => [
+                'latitude' => $message->media['latitude'] ?? 0, 'longitude' => $message->media['longitude'] ?? 0,
+                'name' => $message->media['name'] ?? '', 'address' => $message->media['address'] ?? '',
+            ]],
             default => [
                 'type' => 'text',
                 'text' => ['body' => (string) $message->body, 'preview_url' => false],
