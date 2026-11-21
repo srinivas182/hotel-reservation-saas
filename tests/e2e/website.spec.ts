@@ -8,6 +8,11 @@ test('the website in French: home, prices, demo request', async ({
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expectAccessible(page);
 
+    // On a phone the links are behind the menu button.
+    const menu = page.getByLabel('Menu', { exact: true });
+    if (await menu.isVisible()) {
+        await menu.click();
+    }
     await page
         .getByRole('navigation', { name: 'Principal' })
         .getByRole('link', { name: 'Tarifs' })

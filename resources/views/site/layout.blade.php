@@ -24,82 +24,130 @@
     @if ($brand['analytics_script'] && $brand['analytics_domain'])
         <script defer nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" data-domain="{{ $brand['analytics_domain'] }}" src="{{ $brand['analytics_script'] }}"></script>
     @endif
-    <style>
-        :root { color-scheme: light dark; --brand: {{ $brand['color'] }}; --bg: #ffffff; --soft: #f6f7fb; --fg: #111827; --muted: #4b5563; --line: #e5e7eb; --card: #ffffff; }
-        @media (prefers-color-scheme: dark) { :root { --bg: #0b1020; --soft: #111827; --fg: #f3f4f6; --muted: #cbd5e1; --line: #1f2937; --card: #111827; } }
-        * { box-sizing: border-box; }
-        body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
-        a { color: inherit; }
-        .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
-        header { border-bottom: 1px solid var(--line); background: var(--bg); position: sticky; top: 0; z-index: 2; }
-        .bar { display: flex; align-items: center; gap: 16px; min-height: 64px; flex-wrap: wrap; }
-        .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; }
-        .logo img { width: 32px; height: 32px; border-radius: 8px; }
-        nav { display: flex; gap: 14px; flex-wrap: wrap; margin-left: auto; align-items: center; font-size: 15px; }
-        nav a { text-decoration: none; padding: 6px 2px; }
-        nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
-        .btn { display: inline-block; background: var(--brand); color: #fff !important; text-decoration: none; padding: 10px 16px; border-radius: 10px; font-weight: 600; border: 0; cursor: pointer; font-size: 15px; }
-        .btn.ghost { background: transparent; color: var(--fg) !important; border: 1px solid var(--line); }
-        a:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
-        .hero { padding: 56px 0 32px; }
-        .hero h1 { font-size: clamp(28px, 6vw, 44px); line-height: 1.15; margin: 0 0 16px; }
-        .hero p { font-size: 18px; color: var(--muted); max-width: 640px; margin: 0 0 24px; }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .content { padding: 24px 0 56px; }
-        .content h2 { margin-top: 36px; } .content h3 { margin-top: 24px; }
-        .content p, .content li { color: var(--muted); }
-        .chat { background: var(--soft); border: 1px solid var(--line); border-radius: 16px; padding: 16px; max-width: 420px; display: grid; gap: 8px; margin: 8px 0 24px; }
-        .msg { padding: 8px 12px; border-radius: 14px; max-width: 85%; font-size: 15px; }
-        .msg.in { background: var(--card); border: 1px solid var(--line); }
-        .msg.out { background: var(--brand); color: #fff; justify-self: end; }
-        .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
-        .card.featured { border: 2px solid var(--brand); }
-        .price { font-size: 26px; font-weight: 700; margin: 8px 0 0; color: var(--fg); }
-        .muted { color: var(--muted); font-size: 14px; }
-        ul.ticks { padding-left: 18px; } ul.ticks li { margin: 4px 0; }
-        form.demo { display: grid; gap: 12px; max-width: 560px; }
-        label { display: grid; gap: 4px; font-weight: 600; font-size: 14px; }
-        input, select, textarea { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
-        .two { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-        .notice { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
-        .error { color: #b91c1c; font-size: 14px; font-weight: 600; }
-        @media (prefers-color-scheme: dark) { .error { color: #fca5a5; } }
-        .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
-        footer { border-top: 1px solid var(--line); padding: 24px 0 40px; font-size: 14px; color: var(--muted); }
-        footer .links { display: flex; flex-wrap: wrap; gap: 14px; }
-        .countries { columns: 2 220px; padding-left: 18px; }
+    @php
+        $palette = \App\Support\BrandPalette::for($brand['color'] ?? \App\Support\BrandPalette::DEFAULT);
+    @endphp
+    @vite('resources/css/site.css')
+    <style nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+        :root { --brand: {{ $palette['light']['--brand'] }}; --brand-ink: {{ $palette['light']['--brand-ink'] }}; --brand-soft: {{ $palette['light']['--brand-soft'] }}; }
+        @media (prefers-color-scheme: dark) { :root { --brand: {{ $palette['light']['--brand'] }}; --brand-ink: {{ $palette['dark']['--brand-ink'] }}; --brand-soft: {{ $palette['dark']['--brand-soft'] }}; } }
     </style>
+    @stack('head')
 </head>
+@php
+    $langs = ['fr' => 'Français', 'en' => 'English'];
+    $wa = preg_replace('/\D+/', '', (string) ($brand['support_whatsapp'] ?? ''));
+    $onDark = $page === 'home';
+@endphp
 <body>
-<a href="#main" class="hp">{{ __('Skip to content') }}</a>
-<header>
+<a href="#main" class="skip">{{ __('Skip to content') }}</a>
+<header class="top {{ $onDark ? 'on-dark' : '' }}">
     <div class="wrap bar">
-        <a class="logo" href="{{ $link('home') }}"><img src="{{ $brand['logo'] ?? route('brand.logo') }}" alt="" width="32" height="32"><span>{{ $brand['name'] }}</span></a>
-        <nav aria-label="{{ __('Main') }}">
+        <a class="logo" href="{{ $link('home') }}"><img src="{{ $brand['logo'] ?? route('brand.logo') }}" alt="" width="34" height="34"><span>{{ $brand['name'] }}</span></a>
+        <nav class="menu" aria-label="{{ __('Main') }}">
             @foreach ($nav as $key => $label)
                 <a href="{{ $link($key) }}" @if ($page === $key) aria-current="page" @endif>{{ $label }}</a>
             @endforeach
-            <a href="{{ $locale === 'en' ? $alt($page)['fr'] : $alt($page)['en'] }}" hreflang="{{ $locale === 'en' ? 'fr' : 'en' }}" lang="{{ $locale === 'en' ? 'fr' : 'en' }}">{{ $locale === 'en' ? 'Français' : 'English' }}</a>
+            <span class="sep" aria-hidden="true"></span>
+            <details class="lang" data-close>
+                <summary>
+                    <span class="sr">{{ __('Language') }}: {{ $langs[$locale] }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+                    {{ strtoupper($locale) }}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </summary>
+                <ul>
+                    @foreach ($langs as $code => $name)
+                        <li><a href="{{ $alt($page)[$code] }}" hreflang="{{ $code }}" lang="{{ $code }}" @if ($code === $locale) aria-current="true" @endif>{{ $name }} <span class="code">{{ $code === $locale ? '✓' : strtoupper($code) }}</span></a></li>
+                    @endforeach
+                </ul>
+            </details>
             <a href="/login">{{ __('Log in') }}</a>
-            <a class="btn" href="{{ $link('demo') }}">{{ __('Ask for a demo') }}</a>
+            <a class="btn sm" href="{{ $link('demo') }}">{{ __('Ask for a demo') }}</a>
         </nav>
+        <details class="burger" data-close>
+            <summary aria-label="{{ __('Menu') }}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+            <nav aria-label="{{ __('Main') }}">
+                @foreach ($nav as $key => $label)
+                    <a href="{{ $link($key) }}" @if ($page === $key) aria-current="page" @endif>{{ $label }}</a>
+                @endforeach
+                <a href="/login">{{ __('Log in') }}</a>
+                <a class="btn" href="{{ $link('demo') }}">{{ __('Ask for a demo') }}</a>
+                <div class="langs" role="group" aria-label="{{ __('Language') }}">
+                    @foreach ($langs as $code => $name)
+                        <a href="{{ $alt($page)[$code] }}" hreflang="{{ $code }}" lang="{{ $code }}" @if ($code === $locale) aria-current="true" @endif>{{ $name }}</a>
+                    @endforeach
+                </div>
+            </nav>
+        </details>
     </div>
 </header>
 <main id="main">
     @yield('main')
 </main>
-<footer>
+<footer class="site">
     <div class="wrap">
-        <div class="links">
+        <div class="foot">
+            <div>
+                <a class="logo" href="{{ $link('home') }}"><img src="{{ $brand['logo'] ?? route('brand.logo') }}" alt="" width="34" height="34"><span>{{ $brand['name'] }}</span></a>
+                <p>{{ ($brand['tagline'][$locale] ?? '') ?: __('Your hotel answers on WhatsApp, day and night.') }}</p>
+            </div>
+            <div>
+                <h3>{{ __('Product') }}</h3>
+                <ul>
+                    <li><a href="{{ $link('features') }}">{{ __('Features') }}</a></li>
+                    <li><a href="{{ $link('pricing') }}">{{ __('Pricing') }}</a></li>
+                    <li><a href="{{ $link('countries') }}">{{ __('Countries') }}</a></li>
+                    <li><a href="{{ $link('demo') }}">{{ __('Ask for a demo') }}</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3>{{ __('Resources') }}</h3>
+                <ul>
+                    <li><a href="{{ $link('faq') }}">{{ __('FAQ') }}</a></li>
+                    <li><a href="{{ $link('help') }}">{{ __('Help') }}</a></li>
+                    <li><a href="{{ $locale === 'en' ? '/en/status' : '/status' }}">{{ __('Service status') }}</a></li>
+                    @if ($brand['support_email'])<li><a href="mailto:{{ $brand['support_email'] }}">{{ $brand['support_email'] }}</a></li>@endif
+                </ul>
+            </div>
+            <div>
+                <h3>{{ __('Legal') }}</h3>
+                <ul>
+                    <li><a href="/legal/terms?lang={{ $locale }}">{{ __('Terms of service') }}</a></li>
+                    <li><a href="/legal/privacy?lang={{ $locale }}">{{ __('Privacy notice') }}</a></li>
+                    <li><a href="/legal/dpa?lang={{ $locale }}">{{ __('Data processing agreement') }}</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="legal">
             <span>© {{ date('Y') }} {{ $brand['name'] }}</span>
-            <a href="/legal/terms?lang={{ $locale }}">{{ __('Terms of service') }}</a>
-            <a href="/legal/privacy?lang={{ $locale }}">{{ __('Privacy notice') }}</a>
-            <a href="/legal/dpa?lang={{ $locale }}">{{ __('Data processing agreement') }}</a>
-            <a href="{{ $locale === 'en' ? '/en/status' : '/status' }}">{{ __('Service status') }}</a>
-            @if ($brand['support_email'])<a href="mailto:{{ $brand['support_email'] }}">{{ $brand['support_email'] }}</a>@endif
+            <span>
+                @foreach ($langs as $code => $name)
+                    <a href="{{ $alt($page)[$code] }}" hreflang="{{ $code }}" lang="{{ $code }}" @if ($code === $locale) aria-current="true" style="font-weight:700" @endif>{{ $name }}</a>@if (! $loop->last) · @endif
+                @endforeach
+            </span>
         </div>
     </div>
 </footer>
+@if ($page !== 'demo')
+    {{-- The same "chat with us" button hotels get (Sprint H), for the sales team. --}}
+    <a class="chat-fab" aria-label="{{ __('Chat with us') }}" href="{{ $wa !== '' ? 'https://wa.me/'.$wa.'?text='.rawurlencode(__('Hello, I would like to know more about :name for my hotel.', ['name' => $brand['name']])) : $link('demo') }}" @if ($wa !== '') target="_blank" rel="noopener" @endif>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20.5l1.6-4.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.3 3.5h.5a8.5 8.5 0 0 1 8.2 8z"/></svg>
+        <span>{{ __('Chat with us') }}</span>
+    </a>
+@endif
+<script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+    // Over the dark opening section the header is dark; below it, light.
+    (() => {
+        const top = document.querySelector('.top'); const hero = document.querySelector('.hero-dark');
+        if (!top || !hero) return;
+        const sync = () => top.classList.toggle('on-dark', hero.getBoundingClientRect().bottom > 70);
+        addEventListener('scroll', sync, { passive: true }); sync();
+    })();
+    // Menus close on a click outside or on Escape.
+    document.addEventListener('click', (e) => document.querySelectorAll('details[data-close][open]').forEach((d) => { if (!d.contains(e.target)) d.removeAttribute('open'); }));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('details[data-close][open]').forEach((d) => { d.removeAttribute('open'); d.querySelector('summary')?.focus(); }); });
+</script>
+@stack('scripts')
 </body>
 </html>
