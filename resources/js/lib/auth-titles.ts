@@ -16,10 +16,12 @@ export const authTitles = (): string[] => [
     t(
         'Enter the authentication code provided by your authenticator application.',
     ),
-    t('Enter your email and password below to log in'),
     t('Enter your email to receive a password reset link'),
     t('Forgot password'),
-    t('Log in to your account'),
+    t('Log in to your hotel'),
+    t('Use the e-mail address your hotel invited you with.'),
+    t('Open your hotel account'),
+    t('Three short steps, 14 days free, no card needed.'),
     t(
         'Please confirm access to your account by entering one of your emergency recovery codes.',
     ),

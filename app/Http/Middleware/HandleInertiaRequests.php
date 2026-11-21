@@ -46,6 +46,12 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'brandLogo' => fn (): ?string => \App\Domains\Site\Models\BrandSettings::cached()['logo'] ?? null,
+            // Sprint I: the accent colours (hotel's own, else the platform's) and the sign-in photo.
+            'palette' => fn (): array => \App\Support\BrandPalette::for(\App\Support\BrandPalette::currentColor()),
+            'brand' => fn (): array => [
+                'loginPhoto' => \App\Domains\Site\Models\BrandSettings::cached()['login_photo'] ?? null,
+                'tagline' => (\App\Domains\Site\Models\BrandSettings::cached()['tagline'] ?? [])[app()->getLocale()] ?? null,
+            ],
             'locale' => app()->getLocale(),
             'locales' => Locales::SUPPORTED,
             'auth' => [

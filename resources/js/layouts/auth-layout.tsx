@@ -1,5 +1,5 @@
 import { useLocaleSync } from '@/hooks/use-locale-sync';
-import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
+import AuthLayoutTemplate from '@/layouts/auth/auth-split-brand-layout';
 import { t } from '@/lib/i18n';
 
 export default function AuthLayout({

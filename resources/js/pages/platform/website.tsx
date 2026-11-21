@@ -27,6 +27,7 @@ type Brand = {
     analytics_domain: string | null;
     analytics_script: string | null;
     logo: string | null;
+    login_photo: string | null;
 };
 type Props = { pages: Page[]; brand: Brand; canBrand: boolean };
 
@@ -43,6 +44,8 @@ function BrandForm({ brand }: { brand: Brand }) {
         analytics_domain: string;
         analytics_script: string;
         logo: File | null;
+        login_photo: File | null;
+        remove_login_photo: boolean;
     }>({
         name: brand.name,
         tagline_fr: brand.tagline_fr,
@@ -55,6 +58,8 @@ function BrandForm({ brand }: { brand: Brand }) {
         analytics_domain: brand.analytics_domain ?? '',
         analytics_script: brand.analytics_script ?? '',
         logo: null,
+        login_photo: null,
+        remove_login_photo: false,
     });
     const errors = form.errors as Record<string, string | undefined>;
     const field = (
@@ -131,6 +136,46 @@ function BrandForm({ brand }: { brand: Brand }) {
                     className="size-12 rounded-md border object-contain"
                 />
             )}
+            <div className="grid gap-2 sm:col-span-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                <label className="grid gap-0.5 text-xs">
+                    {t(
+                        'Photo beside the sign-in and sign-up forms (JPG, PNG or WebP, 3 MB max, at least 800×600). Without one, a colour gradient is shown.',
+                    )}
+                    <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        onChange={(e) =>
+                            form.setData(
+                                'login_photo',
+                                e.target.files?.[0] ?? null,
+                            )
+                        }
+                    />
+                    <InputError message={errors.login_photo} />
+                </label>
+                {brand.login_photo && (
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={brand.login_photo}
+                            alt={t('Current sign-in photo')}
+                            className="h-16 w-28 rounded-lg border object-cover"
+                        />
+                        <label className="flex items-center gap-1.5 text-xs">
+                            <input
+                                type="checkbox"
+                                checked={form.data.remove_login_photo}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'remove_login_photo',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            {t('Remove')}
+                        </label>
+                    </div>
+                )}
+            </div>
             <div className="sm:col-span-3">
                 <Button size="sm" disabled={form.processing}>
                     {t('Save the brand')}

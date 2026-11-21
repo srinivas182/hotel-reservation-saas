@@ -14,7 +14,7 @@ export default function Heading({
                 className={
                     variant === 'small'
                         ? 'mb-0.5 text-base font-medium'
-                        : 'text-xl font-semibold tracking-tight'
+                        : 'font-display text-2xl font-extrabold tracking-tight'
                 }
             >
                 {t(title)}

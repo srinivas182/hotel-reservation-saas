@@ -48,7 +48,10 @@ final class HotelSettingsController extends Controller
                 'tentative_hours' => $settings->tentative_hours,
                 'staffed_hours' => $settings->staffed_hours ?? (object) [],
                 'enabled_locales' => $settings->enabled_locales ?? [$hotel->default_locale],
+                'app_color' => $settings->app_color,
             ],
+            'platformColor' => \App\Domains\Site\Models\BrandSettings::cached()['color'] ?? \App\Support\BrandPalette::DEFAULT,
+            'kitColor' => \App\Domains\ChatKit\Models\ChatKitSettings::query()->value('color'),
             'options' => [
                 'locales' => Locales::SUPPORTED,
                 'timezones' => timezone_identifiers_list(),
@@ -67,6 +70,20 @@ final class HotelSettingsController extends Controller
             ],
             'canManage' => $request->user()?->can('hotel.settings.manage') === true,
         ]);
+    }
+
+    /**
+     * The hotel's own colour for its back office (Sprint I); null brings back the platform colour.
+     */
+    public function appearance(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['app_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/']]);
+        $settings = HotelSettings::current();
+        $settings->update(['app_color' => isset($data['app_color']) ? strtolower((string) $data['app_color']) : null]);
+        Audit::record('hotel.appearance_updated', 'Back-office colour changed', subject: $this->context->hotel(), properties: ['app_color' => $settings->app_color]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Colour saved.')]);
+
+        return back();
     }
 
     public function update(HotelSettingsRequest $request): RedirectResponse

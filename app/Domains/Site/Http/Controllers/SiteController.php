@@ -108,6 +108,22 @@ final class SiteController extends Controller
         ]);
     }
 
+    /**
+     * The photo beside the sign-in and sign-up forms (Sprint I).
+     */
+    public function loginPhoto(): StreamedResponse
+    {
+        $path = BrandSettings::current()->login_photo_path;
+        if ($path === null || ! Storage::disk('local')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($path, null, [
+            'Cache-Control' => 'public, max-age=86400',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function sitemap(): Response
     {
         $paths = ['', ...self::PAGES];

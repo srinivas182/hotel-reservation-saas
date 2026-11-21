@@ -36,7 +36,8 @@ void createInertiaApp({
         );
     },
     progress: {
-        color: '#4B5563',
+        // Sprint I: the progress bar takes the hotel's (or platform's) colour.
+        color: 'var(--brand)',
     },
 });
 

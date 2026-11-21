@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint I — "Indigo Aurora" design (0.26.0)
+
+#### Changed
+
+- **New look across the whole app**: a deep navy menu with indigo highlights, airy light surfaces and Manrope headings over Inter, with rounded cards and soft shadows. Dark mode follows the phone's setting. Every screen takes its colours from shared tokens, so all of them follow.
+- **Entry screens** (sign-in, sign-up, password reset, two-step login, e-mail check, legal texts, invitations): a split screen with the brand panel (tagline, a sample WhatsApp exchange, key figures) beside the form, a language switch and, on a phone, a slim header band.
+- **E-mails and PDFs** (invoices, statements of account) in the same colours.
+
+#### Added
+
+- **Each hotel's own colour** (addition 1): Hotel → Settings → "Colour of your back office". Text stays readable whatever colour is picked: the shades are adjusted to WCAG AA contrast, in light and dark mode. The colour is applied from the first paint.
+- **Sign-in photo** (addition 2): Platform → Website → Brand, shown behind the brand panel; without it, the aurora gradient.
+- **Greeting on Today** (addition 3): "Good evening, Awa" in the hotel's time of day, the day's summary, and tonight's occupancy, arrivals (with WhatsApp confirmations), departures and guests in house. No extra database query.
+- **Guided sign-up** (addition 4): three short steps (you, your hotel, agreements) with a progress bar and a live preview of the greeting guests will see on WhatsApp. A server error opens the step it belongs to.
+- **Smooth movement and loading** (addition 5): each screen fades in, a screen that takes a moment shows a placeholder, and the progress bar takes the hotel's colour. Everything is still for people who ask their phone for reduced motion.
+- **Matching e-mails and PDFs** (addition 6): the mail theme, invoice and statement in the new colours.
+- Browser test of the entry screens, with the accessibility check, in light and dark mode.
+
 ### Server set-up and developer guide (0.25.1)
 
 #### Added

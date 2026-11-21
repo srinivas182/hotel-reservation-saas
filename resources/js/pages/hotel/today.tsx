@@ -31,6 +31,7 @@ import type { NextUpItem } from '@/components/workspace/next-up';
 import { ShiftChecklistsCard } from '@/components/workspace/checklists';
 import type { DayChecklist } from '@/components/workspace/checklists';
 import { ScreenTip } from '@/components/workspace/screen-tip';
+import { TodayHero } from '@/components/workspace/today-hero';
 import { cn } from '@/lib/utils';
 
 type Item = {
@@ -118,14 +119,14 @@ function Section({
     return (
         <section
             id={id}
-            className="flex scroll-mt-4 flex-col gap-2 rounded-xl border p-4"
+            className="flex scroll-mt-4 flex-col gap-2 rounded-2xl border bg-card p-4 shadow-card sm:p-5"
         >
             <div className="flex items-center justify-between">
-                <h2 className="flex items-center gap-2 font-medium">
+                <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">
                     {title}
                     {tip && <ScreenTip title={title} text={tip} />}
                 </h2>
-                <Badge variant="secondary">{count}</Badge>
+                <Badge variant="soft">{count}</Badge>
             </div>
             {count === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -288,7 +289,7 @@ export default function Today(props: Props) {
     return (
         <>
             <Head title={t('Today')} />
-            <div className="flex flex-col gap-6 p-4">
+            <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
                 {props.setup && (
                     <Link
                         href={SetupController.show()}
@@ -308,16 +309,29 @@ export default function Today(props: Props) {
                         </span>
                     </Link>
                 )}
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <Heading title={t('Today')} description={props.dateLabel} />
-                    {props.can.create && (
-                        <Button asChild>
-                            <Link href={BookingController.create()}>
-                                <Plus /> {t('New booking')}
-                            </Link>
-                        </Button>
-                    )}
-                </div>
+                <TodayHero
+                    dateLabel={props.dateLabel}
+                    board={props.board}
+                    arrivals={props.arrivals.length}
+                    confirmed={
+                        props.arrivals.filter(
+                            (a) => a.arrival?.state === 'confirmed',
+                        ).length
+                    }
+                    departures={props.departures.length}
+                    inHouse={props.inHouse.length}
+                    requests={props.can.decide ? props.requests.length : null}
+                    showFigures={!simple}
+                    action={
+                        props.can.create && (
+                            <Button asChild size="lg">
+                                <Link href={BookingController.create()}>
+                                    <Plus /> {t('New booking')}
+                                </Link>
+                            </Button>
+                        )
+                    }
+                />
 
                 {props.nextUp && (
                     <NextUpCard item={props.nextUp} big={simple} />
@@ -389,7 +403,7 @@ export default function Today(props: Props) {
                         className="flex flex-col gap-2 rounded-xl border border-primary/40 p-4"
                     >
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h2 className="flex items-center gap-2 font-medium">
+                            <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">
                                 {t('WhatsApp booking requests')}{' '}
                                 <Badge>{props.requests.length}</Badge>
                                 <ScreenTip
@@ -590,7 +604,11 @@ export default function Today(props: Props) {
                         </Section>
                     )}
 
-                    <Section title={t('In house')} count={props.inHouse.length}>
+                    <Section
+                        id="in-house"
+                        title={t('In house')}
+                        count={props.inHouse.length}
+                    >
                         {props.inHouse.map((item) => (
                             <Line key={item.id} item={item} />
                         ))}

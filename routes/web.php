@@ -54,6 +54,7 @@ Route::middleware('throttle:120,1')->group(function (): void {
     Route::get('en/{page}', [SiteController::class, 'page'])->whereIn('page', ['features', 'pricing', 'countries', 'faq', 'demo'])->name('site.page.en');
     Route::get('sitemap.xml', [SiteController::class, 'sitemap'])->name('site.sitemap');
     Route::get('brand/logo', [SiteController::class, 'logo'])->name('brand.logo');
+    Route::get('brand/login-photo', [SiteController::class, 'loginPhoto'])->name('brand.login-photo');
 });
 // Help centre (S17): public, French at /help and English at /en/help.
 Route::middleware('throttle:120,1')->group(function (): void {

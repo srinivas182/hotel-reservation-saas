@@ -105,7 +105,7 @@ final class PlatformSiteController extends Controller
                 'name' => $brand->name, 'tagline_fr' => $brand->tagline['fr'] ?? '', 'tagline_en' => $brand->tagline['en'] ?? '',
                 'support_hours_fr' => $brand->support_hours['fr'] ?? '', 'support_hours_en' => $brand->support_hours['en'] ?? '', 'primary_color' => $brand->primary_color,
                 'support_email' => $brand->support_email, 'support_whatsapp' => $brand->support_whatsapp,
-                'analytics_domain' => $brand->analytics_domain, 'analytics_script' => $brand->analytics_script, 'logo' => BrandSettings::cached()['logo'] ?? null,
+                'analytics_domain' => $brand->analytics_domain, 'analytics_script' => $brand->analytics_script, 'logo' => BrandSettings::cached()['logo'] ?? null, 'login_photo' => BrandSettings::cached()['login_photo'] ?? null,
             ],
             'canBrand' => $user->platformCan(PlatformAbility::Configuration),
         ]);
@@ -137,6 +137,8 @@ final class PlatformSiteController extends Controller
             'analytics_domain' => ['nullable', 'string', 'max:191', 'regex:/^[a-z0-9.-]+\.[a-z]{2,}$/i'],
             'analytics_script' => ['nullable', 'url:https', 'max:255'],
             'logo' => ['nullable', 'file', 'max:512', 'mimes:png,webp,svg'],
+            'login_photo' => ['nullable', 'image', 'max:3072', 'mimes:jpg,jpeg,png,webp', 'dimensions:min_width=800,min_height=600'],
+            'remove_login_photo' => ['nullable', 'boolean'],
         ]);
 
         $brand = BrandSettings::current();
@@ -162,6 +164,21 @@ final class PlatformSiteController extends Controller
                 Storage::disk('local')->delete($brand->logo_path);
             }
             $values['logo_path'] = $path;
+        }
+
+        // Sprint I: the photo beside the sign-in form (a hotel, a room, a terrace).
+        $photo = $request->file('login_photo');
+        if ($photo instanceof \Illuminate\Http\UploadedFile || $request->boolean('remove_login_photo')) {
+            if ($brand->login_photo_path !== null) {
+                Storage::disk('local')->delete($brand->login_photo_path);
+            }
+            $values['login_photo_path'] = null;
+            if ($photo instanceof \Illuminate\Http\UploadedFile) {
+                // The extension comes from the content (validated as an image), not from the file name.
+                $name = 'login-'.Str::random(8).'.'.($photo->extension() ?? 'jpg');
+                Storage::disk('local')->putFileAs('brand', $photo, $name);
+                $values['login_photo_path'] = 'brand/'.$name;
+            }
         }
 
         $brand->update($values);

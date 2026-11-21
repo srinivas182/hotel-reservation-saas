@@ -89,6 +89,7 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
 
     Route::get('hotel/settings', [HotelSettingsController::class, 'edit'])->middleware('can:hotel.settings.view')->name('hotel.settings.edit');
     Route::put('hotel/settings', [HotelSettingsController::class, 'update'])->middleware('can:hotel.settings.manage')->name('hotel.settings.update');
+    Route::put('hotel/settings/appearance', [HotelSettingsController::class, 'appearance'])->middleware('can:hotel.settings.manage')->name('hotel.settings.appearance');
 
     Route::get('hotel/audit', HotelAuditController::class)->middleware('can:audit.view')->name('hotel.audit');
 
