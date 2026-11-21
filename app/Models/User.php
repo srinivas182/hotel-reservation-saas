@@ -151,6 +151,12 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      */
     public function requiresTwoFactor(): bool
     {
+        // Testing servers only: AUTH_TWO_FACTOR_REQUIRED=false lets platform staff and
+        // owners in without two-step login. Ignored in production, whatever .env says.
+        if (! config('auth.two_factor_required', true) && ! app()->isProduction()) {
+            return false;
+        }
+
         return $this->isPlatformStaff()
             || $this->ownedHotels()->exists()
             || $this->holdsOwnerRoleAnywhere();
