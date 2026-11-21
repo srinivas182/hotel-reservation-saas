@@ -56,7 +56,8 @@ final class SiteController extends Controller
             'countries' => CountryTemplate::query()->where('active', true)->get()->map(fn (CountryTemplate $c): array => ['code' => $c->country_code, 'name' => $c->localizedName($locale), 'currency' => $c->currency])->sortBy('name')->values(),
         ];
 
-        if ($page === 'pricing') {
+        // Sprint J: the home page shows the plans too.
+        if ($page === 'pricing' || $page === 'home') {
             $currency = Pricing::currencyFor($request->query('currency') === null ? null : (string) $request->query('currency'), $request->header('CF-IPCountry'));
             $data['pricing'] = Pricing::build($currency, $locale);
             $data['currencies'] = Pricing::currencies();

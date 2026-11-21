@@ -208,6 +208,13 @@ function PageForm({ page }: { page: Page }) {
             }}
             className="mt-2 grid gap-2 sm:grid-cols-2"
         >
+            {page.key === 'home' && (
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                    {t(
+                        'Home page: the title (the part after the last comma is highlighted) and the description open the page. The other sections are part of the design, so the text is not shown here.',
+                    )}
+                </p>
+            )}
             {(['fr', 'en'] as const).map((lang) => (
                 <div key={lang} className="grid gap-2">
                     <Input
@@ -223,6 +230,7 @@ function PageForm({ page }: { page: Page }) {
                         }
                     />
                     <textarea
+                        hidden={page.key === 'home'}
                         aria-label={`${t('Text (Markdown)')} ${lang}`}
                         className="min-h-60 rounded-md border border-input bg-transparent p-2 font-mono text-xs"
                         value={form.data.body[lang]}

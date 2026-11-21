@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Sprint J — landing page and public website redesign (0.27.0)
+
+#### Changed
+
+- **Public website in the "Indigo Aurora" style**: new header, footer, inner-page headers, pricing cards and demo form; Manrope headings over Inter, light and dark mode. Help centre and status page follow.
+- **Language selector**: a globe button showing the current language (FR / EN) with a choice of Français or English, instead of a language link in the menu. On phones the menu sits behind a menu button, with the language choice inside.
+
+#### Added
+
+- **Landing page sections**: dark opening section with the editable title (the part after the last comma highlighted), the two calls to action, and a laptop and phone drawn in HTML (back office "Today" and a WhatsApp conversation).
+- **Live demo** (addition 2): a guest's question, the assistant's answer and reception's one-tap approval play when the section comes into view, with "Play again".
+- **How it works** in three steps (addition 3), **for each role** (addition 4: owner, reception, restaurant and bar, events), **features** and **built for West Africa**.
+- **Pricing on the home page** (addition 5) from Billing, in the visitor's currency, with a monthly / yearly switch.
+- **"Chat with us" button** (addition 6) to the sales WhatsApp number from Platform → Website (the demo form when none is set).
+- **Trust band** (addition 7): countries served and a link to the live service status page.
+- Structured data (schema.org SoftwareApplication) on the home page.
+- Platform → Website explains which home texts are shown.
+
 ### Sprint I — "Indigo Aurora" design (0.26.0)
 
 #### Changed
