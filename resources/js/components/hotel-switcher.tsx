@@ -38,15 +38,16 @@ export function HotelSwitcher() {
                             size="lg"
                             tooltip={{ children: current?.name ?? 'Hotel' }}
                             data-testid="hotel-switcher"
+                            className="bg-sidebar-accent/70 ring-1 ring-sidebar-border hover:bg-sidebar-accent disabled:opacity-100"
                         >
-                            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-accent">
+                            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary/15 text-sidebar-primary">
                                 <Building2 className="size-4" />
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate text-xs text-muted-foreground">
+                                <span className="truncate text-[11px] text-sidebar-foreground/65">
                                     {t('Current hotel')}
                                 </span>
-                                <span className="truncate font-medium">
+                                <span className="truncate font-semibold text-sidebar-accent-foreground">
                                     {current?.name ?? t('Select a hotel')}
                                 </span>
                             </div>

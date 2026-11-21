@@ -2,6 +2,8 @@ import { usePage } from '@inertiajs/react';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
+import { BrandAccent } from '@/components/brand/brand-accent';
+import { PageTransition } from '@/components/brand/page-transition';
 import { PhoneApp } from '@/components/app/phone-app';
 import { WorkspaceLayer } from '@/components/workspace/workspace-layer';
 import { ViewAsBanner } from '@/components/workspace/view-as-banner';
@@ -20,6 +22,7 @@ export default function AppSidebarLayout({
         true;
     return (
         <AppShell variant="sidebar">
+            <BrandAccent />
             <AppSidebar />
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
@@ -37,7 +40,7 @@ export default function AppSidebarLayout({
                         )}
                     </p>
                 )}
-                {children}
+                <PageTransition>{children}</PageTransition>
                 <WorkspaceLayer />
             </AppContent>
         </AppShell>

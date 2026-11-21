@@ -4,19 +4,19 @@
     <meta charset="utf-8">
     <title>{{ $invoice->number }}</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 10.5px; color: #111827; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 10.5px; color: #14142b; border-top: 6px solid #4f46e5; padding-top: 14px; }
         .top { width: 100%; }
         .top td { vertical-align: top; }
-        h1 { font-size: 18px; color: #312e81; margin: 0 0 4px; }
+        h1 { font-size: 19px; color: #3730a3; margin: 0 0 4px; }
         .muted { color: #6b7280; }
         table.lines { width: 100%; border-collapse: collapse; margin-top: 18px; }
-        table.lines th { background: #eef2ff; text-align: left; padding: 6px; }
-        table.lines td { padding: 6px; border-bottom: 1px solid #e5e7eb; }
+        table.lines th { background: #eeedfd; color: #3730a3; text-align: left; padding: 7px 6px; }
+        table.lines td { padding: 6px; border-bottom: 1px solid #e4e4ef; }
         .num { text-align: right; white-space: nowrap; }
         .totals { width: 45%; margin-left: 55%; margin-top: 10px; border-collapse: collapse; }
         .totals td { padding: 4px 6px; }
-        .grand td { font-weight: bold; border-top: 2px solid #111827; }
-        .box { border: 1px solid #e5e7eb; padding: 8px; margin-top: 16px; }
+        .grand td { font-weight: bold; border-top: 2px solid #4f46e5; }
+        .box { border: 1px solid #e4e4ef; background: #f6f6fb; padding: 8px; margin-top: 16px; }
         .stamp { color: #047857; font-weight: bold; font-size: 14px; margin-top: 10px; }
     </style>
 </head>

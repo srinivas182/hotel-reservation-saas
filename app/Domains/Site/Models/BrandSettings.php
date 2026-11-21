@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Schema;
  * @property array<string, string>|null $tagline
  * @property string $primary_color
  * @property string|null $logo_path
+ * @property string|null $login_photo_path photo beside the sign-in and sign-up forms (Sprint I)
  * @property string|null $support_email
  * @property string|null $support_whatsapp
  * @property string|null $analytics_domain
@@ -67,7 +68,7 @@ class BrandSettings extends Model
     /**
      * The brand as plain values, cached; null before the table exists.
      *
-     * @return array{name: string, tagline: array<string, string>, color: string, logo: string|null, support_email: string|null, support_whatsapp: string|null, analytics_domain: string|null, analytics_script: string|null}|null
+     * @return array{name: string, tagline: array<string, string>, color: string, logo: string|null, login_photo: string|null, support_email: string|null, support_whatsapp: string|null, analytics_domain: string|null, analytics_script: string|null}|null
      */
     public static function cached(): ?array
     {
@@ -81,6 +82,7 @@ class BrandSettings extends Model
                 return $b === null ? null : [
                     'name' => $b->name, 'tagline' => $b->tagline ?? [], 'color' => $b->primary_color,
                     'logo' => $b->logo_path === null ? null : route('brand.logo', ['v' => substr(md5((string) $b->updated_at), 0, 8)]),
+                    'login_photo' => $b->login_photo_path === null ? null : route('brand.login-photo', ['v' => substr(md5((string) $b->updated_at), 0, 8)]),
                     'support_email' => $b->support_email, 'support_whatsapp' => $b->support_whatsapp,
                     'analytics_domain' => $b->analytics_domain, 'analytics_script' => $b->analytics_script, 'support_hours' => $b->support_hours ?? [],
                 ];

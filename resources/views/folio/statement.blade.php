@@ -8,15 +8,15 @@
     <style>
         body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#111827; margin:0; }
         main { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
-        header { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; border-bottom:2px solid #312e81; padding-bottom:12px; }
-        h1 { font-size:1.3rem; margin:0; color:#312e81; }
+        header { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; border-bottom:3px solid #4f46e5; padding-bottom:12px; }
+        h1 { font-size:1.4rem; margin:0; color:#3730a3; letter-spacing:-0.01em; }
         .muted { color:#6b7280; font-size:.85rem; }
         table { width:100%; border-collapse:collapse; margin-top:16px; font-size:.9rem; }
         th, td { text-align:left; padding:6px 4px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
         td.num, th.num { text-align:right; white-space:nowrap; }
         tr.corrected td { color:#9ca3af; text-decoration:line-through; }
         tfoot td { font-weight:600; border-bottom:none; }
-        .balance td { font-size:1.05rem; border-top:2px solid #111827; }
+        .balance td { font-size:1.05rem; border-top:2px solid #4f46e5; }
         .note { margin-top:24px; font-size:.8rem; color:#6b7280; }
         @media print { .no-print { display:none; } main { padding:0; } }
     </style>

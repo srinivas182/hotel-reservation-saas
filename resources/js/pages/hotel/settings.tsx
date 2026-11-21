@@ -10,12 +10,15 @@ import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
 import { EmailIdentityForm } from '@/components/hotel/email-identity-form';
 import type { EmailIdentity } from '@/components/hotel/email-identity-form';
+import { AppearanceForm } from '@/components/hotel/appearance-form';
 
 type Interval = { from: string; to: string };
 type StaffedHours = Record<string, Interval[]>;
 
 type Props = {
     emailIdentity: EmailIdentity;
+    platformColor: string;
+    kitColor: string | null;
     hotel: {
         name: string;
         legal_name: string | null;
@@ -24,6 +27,7 @@ type Props = {
         default_locale: string;
     };
     settings: {
+        app_color: string | null;
         phone_e164: string | null;
         whatsapp_display_e164: string | null;
         email: string | null;
@@ -89,6 +93,8 @@ export default function HotelSettingsPage({
     preview,
     canManage,
     emailIdentity,
+    platformColor,
+    kitColor,
 }: Props) {
     const form = useForm({
         name: hotel.name,
@@ -649,6 +655,14 @@ export default function HotelSettingsPage({
                 </fieldset>
             </form>
             <div className="max-w-3xl p-4 pt-0">
+                <div className="border-t pt-10 pb-10">
+                    <AppearanceForm
+                        value={settings.app_color}
+                        platformColor={platformColor}
+                        kitColor={kitColor}
+                        canManage={canManage}
+                    />
+                </div>
                 <div className="border-t pt-10">
                     <EmailIdentityForm
                         identity={emailIdentity}

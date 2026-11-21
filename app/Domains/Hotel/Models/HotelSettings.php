@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $phone_e164
  * @property string $support_access notify, ask_first
  * @property string|null $whatsapp_display_e164
+ * @property string|null $app_color #rrggbb back-office colour (Sprint I); null = platform colour
  * @property string|null $email
  * @property string|null $address_line1
  * @property string|null $address_line2
@@ -48,6 +49,7 @@ class HotelSettings extends Model
         'support_access',
         'phone_e164', 'whatsapp_display_e164', 'email',
         'address_line1', 'address_line2', 'city', 'map_url', 'latitude', 'longitude', 'simple_mode_roles',
+        'app_color',
         'check_in_time', 'check_out_time', 'late_checkout_until',
         'staffed_hours', 'enabled_locales',
         'child_age_bands', 'hold_minutes', 'booking_prefix', 'tentative_hours',

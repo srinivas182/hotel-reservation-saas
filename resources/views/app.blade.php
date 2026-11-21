@@ -23,12 +23,15 @@
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style nonce="{{ Vite::cspNonce() }}">
             html {
-                background-color: oklch(1 0 0);
+                background-color: #f6f6fb;
             }
 
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: #0b0c1a;
             }
+
+            {{-- Sprint I: the hotel's (or platform's) accent colour from the first paint. --}}
+            {!! \App\Support\BrandPalette::css(\App\Support\BrandPalette::currentColor()) !!}
         </style>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
@@ -36,7 +39,7 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         {{-- Sprint D: the staff app on the phone --}}
         <link rel="manifest" href="/manifest.webmanifest">
-        <meta name="theme-color" content="#0f766e">
+        <meta name="theme-color" content="#0e0f24">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">

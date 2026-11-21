@@ -79,14 +79,18 @@ export default function Login({ status, canResetPassword, canSignUp }: Props) {
                                     name="remember"
                                     tabIndex={3}
                                 />
-                                <Label htmlFor="remember">
-                                    {t('Remember me')}
+                                <Label
+                                    htmlFor="remember"
+                                    className="font-normal text-muted-foreground"
+                                >
+                                    {t('Keep me signed in on this device')}
                                 </Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                size="lg"
+                                className="mt-2 w-full"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -105,18 +109,26 @@ export default function Login({ status, canResetPassword, canSignUp }: Props) {
                 </div>
             )}
             {canSignUp && (
-                <p className="text-center text-sm text-muted-foreground">
-                    {t('New hotel?')}{' '}
-                    <a href="/signup" className="underline">
-                        {t('Create an account')}
+                <>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+                        {t('New hotel?')}
+                    </div>
+                    <a
+                        href="/signup"
+                        className="flex h-11 items-center justify-center gap-1.5 rounded-lg border bg-card text-sm font-semibold shadow-xs transition-colors hover:bg-accent"
+                    >
+                        {t('Create a hotel account')}
+                        <span className="font-medium text-brand-ink">
+                            · {t('14 days free')}
+                        </span>
                     </a>
-                </p>
+                </>
             )}
         </>
     );
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    title: 'Log in to your hotel',
+    description: 'Use the e-mail address your hotel invited you with.',
 };
