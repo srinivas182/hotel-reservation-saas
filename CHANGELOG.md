@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Unreadable saved keys (0.29.1)
+
+#### Fixed
+
+- **Platform → AI showed "500 Something went wrong"** when a provider key had been saved under an earlier `APP_KEY` ("The MAC is invalid"). Provider keys (AI, e-mail, hotel payment accounts) saved under another key now read as missing: the page opens, the provider shows "No key: edit and enter it again", and a warning is logged. Set `APP_PREVIOUS_KEYS` to keep reading values saved under an earlier key.
+
 ### Real WhatsApp on a testing server (0.29.0)
 
 #### Added

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Messaging\Email\Models;
 
 use App\Domains\Messaging\Email\MailDriver;
+use App\Support\Casts\RecoverableEncryptedArray;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -37,7 +38,7 @@ class MailProvider extends Model
     {
         return [
             'driver' => MailDriver::class,
-            'credentials' => 'encrypted:array',
+            'credentials' => RecoverableEncryptedArray::class,
             'enabled' => 'boolean',
             'priority' => 'integer',
             'last_tested_at' => 'datetime',

@@ -536,6 +536,13 @@ export default function PlatformAi({
                                             {t('Inactive')}
                                         </Badge>
                                     )}
+                                    {provider.key_hint === null && (
+                                        <Badge variant="destructive">
+                                            {t(
+                                                'No key: edit and enter it again',
+                                            )}
+                                        </Badge>
+                                    )}
                                     <div className="ml-auto flex gap-1">
                                         <Button
                                             size="sm"

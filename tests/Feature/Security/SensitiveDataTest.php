@@ -32,7 +32,10 @@ it('stores secrets and personal notes encrypted', function (string $model, array
     $casts = (new $model)->getCasts();
 
     foreach ($columns as $column) {
-        expect($casts[$column] ?? null)->toStartWith('encrypted', "{$model}::{$column} must be encrypted");
+        $cast = (string) ($casts[$column] ?? '');
+        // Provider keys use an encrypted cast that tolerates a changed APP_KEY.
+        expect(str_starts_with($cast, 'encrypted') || $cast === App\Support\Casts\RecoverableEncryptedArray::class)
+            ->toBeTrue("{$model}::{$column} must be encrypted");
     }
 })->with(collect(ENCRYPTED_COLUMNS)->map(fn ($c, $m) => [$m, $c])->values()->all());
 
