@@ -453,6 +453,7 @@ export function SidePanel({
     description,
     children,
     footer,
+    wide = false,
 }: {
     open: boolean;
     onClose: () => void;
@@ -460,10 +461,16 @@ export function SidePanel({
     description?: string;
     children: ReactNode;
     footer?: ReactNode;
+    wide?: boolean;
 }) {
     return (
         <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-            <SheetContent className="w-full gap-0 sm:max-w-xl">
+            <SheetContent
+                className={cn(
+                    'w-full gap-0',
+                    wide ? 'sm:max-w-3xl' : 'sm:max-w-xl',
+                )}
+            >
                 <SheetHeader className="border-b px-6 py-4">
                     <SheetTitle>{title}</SheetTitle>
                     {description && (

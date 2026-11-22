@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Professional layout: the rest of the platform pages (0.33.1)
+
+#### Changed
+
+- The hotel page (Platform → Hotels → a hotel) has a header with the hotel's status, problems and buttons (Full history, Billing, Edit), four number tiles (setup, WhatsApp, conversations, AI credits) and tabs: Overview, Staff, Internal notes, Recent history, and Support and access (help sessions, manual WhatsApp connection, closing the hotel).
+- Editing a hotel: grouped into Hotel, Region and Owner; staff in a table, "Add to hotel" opens a side panel.
+- A hotel's billing page: tabs Plan and credits, Invoicing and History, with labelled fields.
+- Operations: problems listed in plain words at the top, tiles for the scheduler, workers, waiting jobs and the last backup, tables for failed jobs, WhatsApp connections, backups and incidents.
+- Launch: a progress ring, the checklist grouped by area with a done count; an item opens in a side panel. The launch-week watch has its own tab.
+- Go-live readiness, Pilot dashboard (pilot hotels side by side, measures grouped), Help centre (Articles and "What readers miss" tabs, a wide editor) and Demo hotel use the same layout.
+- docs/cloudpanel.md: keeping Horizon running without root (a CloudPanel cron job with `flock`).
+
 ### Professional layout: platform admin pages (0.33.0)
 
 #### Changed

@@ -1,6 +1,14 @@
 import { Head, router } from '@inertiajs/react';
+import { ExternalLink, RotateCcw } from 'lucide-react';
 import PlatformDemoController from '@/actions/App/Domains/Demo/Http/Controllers/PlatformDemoController';
-import Heading from '@/components/heading';
+import {
+    DataTable,
+    EmptyState,
+    PageBody,
+    PageHeader,
+    Section,
+} from '@/components/page';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
 
@@ -31,122 +39,154 @@ export default function PlatformDemo({
     return (
         <>
             <Head title={t('Demo hotel')} />
-            <div className="flex max-w-4xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Demo hotel')}
                     description={t(
                         'A realistic hotel for sales demos. The assistant answers for real; nothing is sent on WhatsApp. Reset every night at 03:15.',
                     )}
+                    actions={
+                        !demo && (
+                            <Button
+                                onClick={() =>
+                                    router.post(
+                                        PlatformDemoController.create.url(),
+                                    )
+                                }
+                            >
+                                {t('Create the demo hotel')}
+                            </Button>
+                        )
+                    }
                 />
                 {credentials && (
-                    <p
+                    <div
                         role="status"
-                        className="rounded-lg border border-amber-600 px-3 py-2"
+                        className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
                     >
                         {t('Login: :email · password: :password (shown once)', {
                             email: credentials.email,
                             password: credentials.password,
                         })}
-                    </p>
+                    </div>
                 )}
                 {demoLink && (
-                    <p
+                    <div
                         role="status"
-                        className="rounded-lg border px-3 py-2 break-all"
+                        className="rounded-xl border border-brand/30 bg-brand/5 px-4 py-3 text-sm break-all"
                     >
                         {t('Private demo link (48 h):')} {demoLink}
-                    </p>
+                    </div>
                 )}
                 {demo ? (
-                    <section className="flex flex-col gap-2 rounded-xl border p-3">
-                        <p className="font-medium">{demo.name}</p>
-                        <p className="text-muted-foreground">
-                            {t('Login: :email', { email: demo.login ?? '' })}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            <a
-                                href={demo.link}
-                                className="underline"
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                {t('Open the demo (link valid 1 hour)')}
-                            </a>
+                    <Section
+                        title={demo.name}
+                        description={t('Login: :email', {
+                            email: demo.login ?? '',
+                        })}
+                        actions={
+                            <>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                        router.post(
+                                            PlatformDemoController.password.url(),
+                                        )
+                                    }
+                                >
+                                    {t('New password')}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                        router.post(
+                                            PlatformDemoController.reset.url(),
+                                        )
+                                    }
+                                >
+                                    <RotateCcw /> {t('Reset now')}
+                                </Button>
+                            </>
+                        }
+                    >
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button asChild>
+                                <a
+                                    href={demo.link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <ExternalLink />{' '}
+                                    {t('Open the demo (link valid 1 hour)')}
+                                </a>
+                            </Button>
                             <span className="text-xs text-muted-foreground">
                                 {t(
                                     'Open it in a private window to stay signed in here.',
                                 )}
                             </span>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                    router.post(
-                                        PlatformDemoController.password.url(),
-                                    )
-                                }
-                            >
-                                {t('New password')}
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                    router.post(
-                                        PlatformDemoController.reset.url(),
-                                    )
-                                }
-                            >
-                                {t('Reset now')}
-                            </Button>
                         </div>
-                    </section>
+                    </Section>
                 ) : (
-                    <div>
-                        <Button
-                            onClick={() =>
-                                router.post(PlatformDemoController.create.url())
-                            }
-                        >
-                            {t('Create the demo hotel')}
-                        </Button>
-                    </div>
+                    <EmptyState text={t('No demo hotel yet.')} />
                 )}
-                <section className="flex flex-col gap-2">
-                    <Heading
-                        variant="small"
-                        title={t('Private demos for prospects')}
-                        description={t(
-                            'Sent from Leads; deleted after 48 hours.',
-                        )}
+                <Section
+                    flush
+                    title={t('Private demos for prospects')}
+                    description={t('Sent from Leads; deleted after 48 hours.')}
+                >
+                    <DataTable
+                        rows={privateDemos}
+                        rowKey={(d) => d.id}
+                        empty={t('None right now.')}
+                        columns={[
+                            {
+                                key: 'name',
+                                header: t('Prospect'),
+                                cell: (d) => (
+                                    <div>
+                                        <div className="font-medium">
+                                            {d.name}
+                                        </div>
+                                        {d.lead && (
+                                            <div className="text-xs text-muted-foreground">
+                                                {d.lead}
+                                            </div>
+                                        )}
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'opened',
+                                header: t('Status'),
+                                cell: (d) =>
+                                    d.opened ? (
+                                        <Badge>
+                                            {t('Opened :date', {
+                                                date: d.opened,
+                                            })}
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline">
+                                            {t('Not opened yet')}
+                                        </Badge>
+                                    ),
+                            },
+                            {
+                                key: 'expires',
+                                header: t('Deleted on'),
+                                cell: (d) => (
+                                    <span className="text-xs text-muted-foreground">
+                                        {d.expires ?? '—'}
+                                    </span>
+                                ),
+                            },
+                        ]}
                     />
-                    <ul className="divide-y rounded-xl border">
-                        {privateDemos.length === 0 && (
-                            <li className="px-3 py-2 text-muted-foreground">
-                                {t('None right now.')}
-                            </li>
-                        )}
-                        {privateDemos.map((d) => (
-                            <li
-                                key={d.id}
-                                className="flex flex-wrap gap-2 px-3 py-2"
-                            >
-                                <span className="font-medium">{d.name}</span>
-                                <span className="text-muted-foreground">
-                                    {d.opened
-                                        ? t('Opened :date', { date: d.opened })
-                                        : t('Not opened yet')}
-                                </span>
-                                <span className="ml-auto text-xs text-muted-foreground">
-                                    {t('until :date', {
-                                        date: d.expires ?? '',
-                                    })}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            </div>
+                </Section>
+            </PageBody>
         </>
     );
 }

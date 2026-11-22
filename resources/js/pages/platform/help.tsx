@@ -1,8 +1,19 @@
 import { Head, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import PlatformHelpController from '@/actions/App/Domains/Help/Http/Controllers/PlatformHelpController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import {
+    DataTable,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    Switch,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,8 +38,6 @@ type Props = {
     comments: { slug: string; comment: string; created_at: string }[];
 };
 
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
 const blank: Omit<Article, 'id' | 'helpful' | 'not_helpful'> = {
     slug: '',
     category: 'start',
@@ -112,83 +121,102 @@ function ArticleForm({
                     form.post(PlatformHelpController.store.url(), options);
                 }
             }}
-            className="mt-2 grid gap-2 text-sm sm:grid-cols-2"
+            className="grid gap-6"
         >
-            <label className="grid gap-0.5 text-xs">
-                {t('Address (slug)')}
-                <Input
-                    value={form.data.slug}
-                    onChange={(e) => form.setData('slug', e.target.value)}
-                />
-                <InputError message={errors.slug} />
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t('Category')}
-                <select
-                    className={selectClass}
-                    value={form.data.category}
-                    onChange={(e) => form.setData('category', e.target.value)}
-                >
-                    {categories.map((c) => (
-                        <option key={c.value} value={c.value}>
-                            {c.label}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label className="grid gap-0.5 text-xs sm:col-span-2">
-                {t(
-                    'Screens this article helps with (comma separated, e.g. hotel/today)',
-                )}
-                <Input
-                    value={form.data.screens}
-                    onChange={(e) => form.setData('screens', e.target.value)}
-                />
-            </label>
-            {(['fr', 'en'] as const).map((lang) => (
-                <div key={lang} className="grid gap-2">
-                    <Input
-                        aria-label={`${t('Title')} ${lang}`}
-                        placeholder={`${t('Title')} (${lang})`}
-                        value={form.data.title[lang]}
-                        onChange={(e) => set('title', lang, e.target.value)}
-                    />
-                    <textarea
-                        aria-label={`${t('Text (Markdown)')} ${lang}`}
-                        className="min-h-60 rounded-md border border-input bg-transparent p-2 font-mono text-xs"
-                        value={form.data.body[lang]}
-                        onChange={(e) => set('body', lang, e.target.value)}
-                    />
+            <FieldGroup title={t('Article')}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={t('Address (slug)')} error={errors.slug}>
+                        <Input
+                            value={form.data.slug}
+                            onChange={(e) =>
+                                form.setData('slug', e.target.value)
+                            }
+                        />
+                    </Field>
+                    <Field label={t('Category')}>
+                        <select
+                            className="h-9"
+                            value={form.data.category}
+                            onChange={(e) =>
+                                form.setData('category', e.target.value)
+                            }
+                        >
+                            {categories.map((c) => (
+                                <option key={c.value} value={c.value}>
+                                    {c.label}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
                 </div>
-            ))}
-            <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-                <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={form.data.published}
+                <Field
+                    label={t(
+                        'Screens this article helps with (comma separated, e.g. hotel/today)',
+                    )}
+                >
+                    <Input
+                        value={form.data.screens}
                         onChange={(e) =>
-                            form.setData('published', e.target.checked)
+                            form.setData('screens', e.target.value)
                         }
                     />
-                    {t('Published')}
-                </label>
-                <label className="text-xs">
-                    {uploading
+                </Field>
+                <Switch
+                    checked={form.data.published}
+                    onChange={(v) => form.setData('published', v)}
+                    label={t('Published')}
+                />
+            </FieldGroup>
+            {(['fr', 'en'] as const).map((lang) => (
+                <FieldGroup
+                    key={lang}
+                    title={lang === 'fr' ? t('French') : t('English')}
+                >
+                    <Field label={t('Title')} error={errors[`title.${lang}`]}>
+                        <Input
+                            value={form.data.title[lang]}
+                            onChange={(e) => set('title', lang, e.target.value)}
+                        />
+                    </Field>
+                    <Field
+                        label={t('Text (Markdown)')}
+                        error={errors[`body.${lang}`]}
+                    >
+                        <textarea
+                            className="min-h-60 font-mono text-xs"
+                            value={form.data.body[lang]}
+                            onChange={(e) => set('body', lang, e.target.value)}
+                        />
+                    </Field>
+                </FieldGroup>
+            ))}
+            <Field
+                label={
+                    uploading
                         ? t('Uploading…')
                         : t(
                               'Insert a picture or animation (PNG, JPG, GIF, WebP)',
-                          )}
-                    <input
-                        type="file"
-                        accept=".png,.jpg,.jpeg,.gif,.webp"
-                        className="ml-2"
-                        onChange={(e) =>
-                            e.target.files?.[0] &&
-                            void upload(e.target.files[0])
-                        }
-                    />
-                </label>
-                <Button size="sm" disabled={form.processing}>
+                          )
+                }
+                hint={t('Added at the end of both texts.')}
+            >
+                <input
+                    type="file"
+                    accept=".png,.jpg,.jpeg,.gif,.webp"
+                    onChange={(e) =>
+                        e.target.files?.[0] && void upload(e.target.files[0])
+                    }
+                />
+            </Field>
+            <div className="flex justify-end gap-2 border-t pt-4">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => onDone?.()}
+                >
+                    {t('Cancel')}
+                </Button>
+                <Button disabled={form.processing}>
                     {article ? t('Save') : t('Add article')}
                 </Button>
             </div>
@@ -202,108 +230,175 @@ export default function PlatformHelp({
     gaps,
     comments,
 }: Props) {
-    const [adding, setAdding] = useState(false);
+    const tabs = [
+        { key: 'articles', label: t('Articles'), count: articles.length },
+        {
+            key: 'feedback',
+            label: t('What readers miss'),
+            count: gaps.length + comments.length,
+        },
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const [editing, setEditing] = useState<Article | 'new' | null>(null);
+    const article = editing === 'new' || editing === null ? undefined : editing;
+    const categoryLabel = (v: string) =>
+        categories.find((c) => c.value === v)?.label ?? v;
 
     return (
         <>
             <Head title={t('Help centre')} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4 text-sm">
-                <div className="flex items-start justify-between gap-2">
-                    <Heading
-                        title={t('Help centre')}
-                        description={t(
-                            'Articles in French and English, shown on the website and in the “?” panel of each screen.',
-                        )}
-                    />
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setAdding(!adding)}
+            <PageBody>
+                <PageHeader
+                    title={t('Help centre')}
+                    description={t(
+                        'Articles in French and English, shown on the website and in the “?” panel of each screen.',
+                    )}
+                    actions={
+                        <Button onClick={() => setEditing('new')}>
+                            <Plus /> {t('Add article')}
+                        </Button>
+                    }
+                />
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+
+                {tab === 'articles' && (
+                    <Section
+                        flush
+                        title={t('Articles')}
+                        description={t('Click an article to edit it.')}
                     >
-                        {adding ? t('Close') : t('Add article')}
-                    </Button>
-                </div>
-                {adding && (
-                    <div className="rounded-xl border p-3">
-                        <ArticleForm
-                            categories={categories}
-                            onDone={() => setAdding(false)}
+                        <DataTable
+                            rows={articles}
+                            rowKey={(a) => a.id}
+                            empty={t('No articles yet.')}
+                            onRowClick={setEditing}
+                            columns={[
+                                {
+                                    key: 'title',
+                                    header: t('Title'),
+                                    cell: (a) => (
+                                        <div>
+                                            <div className="font-medium">
+                                                {a.title.fr}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                /{a.slug}
+                                            </div>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'category',
+                                    header: t('Category'),
+                                    cell: (a) => categoryLabel(a.category),
+                                },
+                                {
+                                    key: 'votes',
+                                    header: t('Helpful'),
+                                    align: 'right',
+                                    cell: (a) => (
+                                        <span className="text-xs whitespace-nowrap text-muted-foreground">
+                                            👍 {a.helpful} · 👎 {a.not_helpful}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (a) =>
+                                        a.published ? (
+                                            <Badge variant="outline">
+                                                {t('Published')}
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="secondary">
+                                                {t('Hidden')}
+                                            </Badge>
+                                        ),
+                                },
+                            ]}
                         />
-                    </div>
+                    </Section>
                 )}
 
-                <section className="grid gap-4 md:grid-cols-2">
-                    <div className="flex flex-col gap-2">
-                        <Heading
-                            variant="small"
+                {tab === 'feedback' && (
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <Section
+                            flush
                             title={t('Searches with no answer (60 days)')}
                             description={t(
                                 'What hotels looked for and did not find: write these next.',
                             )}
-                        />
-                        <ul className="divide-y rounded-xl border">
-                            {gaps.length === 0 && (
-                                <li className="px-3 py-2 text-muted-foreground">
-                                    {t('Nothing yet.')}
-                                </li>
-                            )}
-                            {gaps.map((g) => (
-                                <li
-                                    key={g.q}
-                                    className="flex justify-between gap-2 px-3 py-1.5"
-                                >
-                                    <span>{g.q}</span>
-                                    <Badge variant="outline">{g.n}</Badge>
-                                </li>
-                            ))}
-                        </ul>
+                        >
+                            <DataTable
+                                rows={gaps}
+                                rowKey={(g) => g.q}
+                                empty={t('Nothing yet.')}
+                                columns={[
+                                    {
+                                        key: 'q',
+                                        header: t('Search'),
+                                        cell: (g) => g.q,
+                                    },
+                                    {
+                                        key: 'n',
+                                        header: t('Times'),
+                                        align: 'right',
+                                        cell: (g) => g.n,
+                                    },
+                                    {
+                                        key: 'last',
+                                        header: t('Last'),
+                                        cell: (g) => (
+                                            <span className="text-xs text-muted-foreground">
+                                                {g.last}
+                                            </span>
+                                        ),
+                                    },
+                                ]}
+                            />
+                        </Section>
+                        <Section flush title={t('“Not helpful” comments')}>
+                            <DataTable
+                                rows={comments.map((c, i) => ({ ...c, i }))}
+                                rowKey={(c) => c.i}
+                                empty={t('Nothing yet.')}
+                                columns={[
+                                    {
+                                        key: 'comment',
+                                        header: t('Comment'),
+                                        cell: (c) => c.comment,
+                                    },
+                                    {
+                                        key: 'slug',
+                                        header: t('Article'),
+                                        cell: (c) => (
+                                            <span className="font-mono text-xs">
+                                                /{c.slug}
+                                            </span>
+                                        ),
+                                    },
+                                ]}
+                            />
+                        </Section>
                     </div>
-                    <div className="flex flex-col gap-2">
-                        <Heading
-                            variant="small"
-                            title={t('“Not helpful” comments')}
-                        />
-                        <ul className="divide-y rounded-xl border">
-                            {comments.length === 0 && (
-                                <li className="px-3 py-2 text-muted-foreground">
-                                    {t('Nothing yet.')}
-                                </li>
-                            )}
-                            {comments.map((c, i) => (
-                                <li key={i} className="px-3 py-1.5">
-                                    <span className="font-mono text-xs">
-                                        {c.slug}
-                                    </span>{' '}
-                                    · {c.comment}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </section>
-
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Articles')} />
-                    {articles.map((a) => (
-                        <details key={a.id} className="rounded-xl border p-2">
-                            <summary className="flex cursor-pointer flex-wrap items-center gap-2">
-                                {a.title.fr}
-                                <span className="text-xs text-muted-foreground">
-                                    /{a.slug}
-                                </span>
-                                {!a.published && (
-                                    <Badge variant="outline">
-                                        {t('Hidden')}
-                                    </Badge>
-                                )}
-                                <span className="ml-auto text-xs text-muted-foreground">
-                                    👍 {a.helpful} · 👎 {a.not_helpful}
-                                </span>
-                            </summary>
-                            <ArticleForm article={a} categories={categories} />
-                        </details>
-                    ))}
-                </section>
-            </div>
+                )}
+            </PageBody>
+            <SidePanel
+                wide
+                open={editing !== null}
+                onClose={() => setEditing(null)}
+                title={article ? article.title.fr : t('Add article')}
+            >
+                {editing !== null && (
+                    <ArticleForm
+                        key={article?.id ?? 'new'}
+                        article={article}
+                        categories={categories}
+                        onDone={() => setEditing(null)}
+                    />
+                )}
+            </SidePanel>
         </>
     );
 }
