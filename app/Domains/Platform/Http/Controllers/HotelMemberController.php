@@ -7,6 +7,7 @@ namespace App\Domains\Platform\Http\Controllers;
 use App\Domains\Access\HotelRoles;
 use App\Domains\Access\StaffService;
 use App\Domains\Access\SystemRole;
+use App\Domains\Platform\HotelPeople;
 use App\Domains\Tenancy\HotelMembershipService;
 use App\Domains\Tenancy\Models\Hotel;
 use App\Domains\Tenancy\TenantContext;
@@ -19,25 +20,34 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 /**
- * Adds existing users to a hotel and removes them. Proper staff invitations
- * (email invite, role choice) arrive in S1.
+ * Adds people to a hotel (an existing account, or a new one created with the
+ * name and password the admin gives) and removes them.
  */
 final class HotelMemberController extends Controller
 {
-    public function store(Request $request, Hotel $hotel, StaffService $staff, HotelRoles $roles): RedirectResponse
+    public function store(Request $request, Hotel $hotel, StaffService $staff, HotelRoles $roles, HotelPeople $people): RedirectResponse
     {
         Gate::authorize('manageMembers', $hotel);
 
         $request->merge(['email' => strtolower((string) $request->input('email'))]);
 
         $validated = $request->validate([
-            'email' => ['required', 'email', Rule::exists('users', 'email')->whereNull('deleted_at')],
+            'email' => ['required', 'email:rfc', 'max:255'],
             'role' => ['nullable', Rule::enum(SystemRole::class)],
-        ], [
-            'email.exists' => __('No user with this email exists.'),
+            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
+            'password' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $user = User::query()->where('email', $validated['email'])->firstOrFail();
+        // 0.31.3: a new e-mail creates the account with the name and password given.
+        $user = $people->findOrCreate(
+            (string) $validated['email'],
+            $validated['first_name'] ?? null,
+            $validated['last_name'] ?? null,
+            $validated['password'] ?? null,
+            $hotel->default_locale,
+            $request->user(),
+        );
         $role = SystemRole::tryFrom((string) ($validated['role'] ?? '')) ?? SystemRole::Reception;
         $staff->assign($hotel, $user, $roles->system($hotel, $role));
 

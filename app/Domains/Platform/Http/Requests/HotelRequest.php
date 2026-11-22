@@ -58,7 +58,11 @@ final class HotelRequest extends FormRequest
             'currency' => ['required', 'string', 'size:3', 'regex:/^[A-Z]{3}$/'],
             'default_locale' => ['required', Rule::in(self::LOCALES)],
             'status' => [$hotel instanceof Hotel ? 'required' : 'nullable', Rule::enum(HotelStatus::class)],
-            'owner_email' => ['nullable', 'email', Rule::exists('users', 'email')->whereNull('deleted_at')],
+            // 0.31.3: a new e-mail creates the owner's account (name and password below).
+            'owner_email' => ['nullable', 'email:rfc', 'max:255'],
+            'owner_first_name' => ['nullable', 'string', 'max:100'],
+            'owner_last_name' => ['nullable', 'string', 'max:100'],
+            'owner_password' => ['nullable', 'string', 'max:200'],
         ];
     }
 
@@ -68,7 +72,6 @@ final class HotelRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'owner_email.exists' => __('No user with this email exists. Create the user first.'),
             'slug.regex' => __('Use lowercase letters, numbers and single hyphens only.'),
         ];
     }
