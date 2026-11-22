@@ -8,6 +8,7 @@ import { HotelForm } from '@/components/platform/hotel-form';
 import { StatusBadge } from '@/components/platform/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import PasswordInput from '@/components/password-input';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 
@@ -159,9 +160,8 @@ export default function HotelsEdit({
                                         />
                                         <InputError message={errors.email} />
                                     </div>
-                                    <Input
+                                    <PasswordInput
                                         name="password"
-                                        type="password"
                                         autoComplete="new-password"
                                         placeholder={t(
                                             'Password (new account)',

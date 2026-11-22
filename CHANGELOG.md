@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Show the password while typing (0.31.4)
+
+#### Changed
+
+- The new-account password fields in Platform → Hotels (New hotel, Edit, Add to hotel) have the eye button to show or hide what is typed, like the sign-in page.
+
 ### Admin creates hotel accounts (0.31.3)
 
 #### Added
