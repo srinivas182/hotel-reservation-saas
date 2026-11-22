@@ -71,3 +71,17 @@ step "Restarting the queue workers"
 trap - EXIT
 step "Done: $(cat VERSION 2>/dev/null || echo '?') is live"
 echo "Check: $("$PHP" artisan tinker --execute='echo config("app.url");' 2>/dev/null)/up"
+
+# Warnings that would otherwise stay invisible until something is missed.
+MAILER=$(grep -E '^MAIL_MAILER=' .env | cut -d= -f2 | tr -d '"')
+if [ "$MAILER" != "platform" ]; then
+    echo "WARNING: MAIL_MAILER=$MAILER, so invitations and password resets are not sent through the email providers."
+    echo "         Set MAIL_MAILER=platform in .env, then: $PHP artisan config:cache"
+fi
+if grep -qE '^QUEUE_CONNECTION=redis' .env; then
+    sleep 8
+    if ! "$PHP" artisan horizon:status 2>/dev/null | grep -qi running; then
+        echo "WARNING: Horizon is not running, so background jobs wait. Nothing restarts it after an update:"
+        echo "         run it under supervisor (docs/cloudpanel.md, \"Queue workers\")."
+    fi
+fi

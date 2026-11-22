@@ -18,6 +18,7 @@ All notable changes to this project are documented here. The format follows [Kee
 #### Added
 
 - Operations check "Emails are not being delivered": raised outside local and tests when MAIL_MAILER is not `platform`, or when no email provider is enabled and the fallback only writes to the log. The provider's "Send test" button talks to the provider directly, so a passing test did not prove that invitations and password resets go out.
+- `update.sh` ends with warnings when `MAIL_MAILER` is not `platform` or Horizon is not running after the update; docs/cloudpanel.md explains why supervisor is required (the update stops Horizon and only supervisor starts it again).
 
 ### Professional page layout: Billing and AI (0.32.0)
 
