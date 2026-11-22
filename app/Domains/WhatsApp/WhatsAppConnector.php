@@ -27,15 +27,7 @@ final class WhatsAppConnector
 
     public function connect(Hotel $hotel, string $code, string $wabaId, string $phoneNumberId, bool $coexistence, ?User $by = null): WhatsAppAccount
     {
-        // A number can belong to one hotel only (checked across hotels).
-        $elsewhere = $this->context->bypass('WhatsApp number uniqueness check', fn (): bool => WhatsAppAccount::query()
-            ->where('phone_number_id', $phoneNumberId)
-            ->where('hotel_id', '!=', $hotel->getKey())
-            ->exists());
-
-        if ($elsewhere) {
-            throw new WhatsAppConnectionFailed(__('This WhatsApp number is already connected to another hotel.'));
-        }
+        $this->ensureNotElsewhere($hotel, $phoneNumberId);
 
         try {
             $token = $this->graph->exchangeCode($code);
@@ -58,7 +50,55 @@ final class WhatsAppConnector
             throw new WhatsAppConnectionFailed(__('Meta refused the connection: :reason', ['reason' => $exception->getMessage()]), previous: $exception);
         }
 
-        $account = $this->context->run($hotel, function () use ($wabaId, $phoneNumberId, $coexistence, $token, $pin, $details, $by): WhatsAppAccount {
+        $account = $this->store($hotel, $wabaId, $phoneNumberId, $coexistence, $token, $pin, $details, $by);
+
+        Audit::record('whatsapp.connected', 'WhatsApp number connected', subject: $hotel, causer: $by, properties: [
+            'display_phone' => $account->display_phone,
+            'coexistence' => $coexistence,
+        ]);
+
+        return $account;
+    }
+
+    /**
+     * Connect a number with a token from a Meta system user instead of
+     * Embedded Signup: Meta's test number, or a number in a WhatsApp
+     * Business account the platform's own business owns. The number must
+     * already be registered for the Cloud API (Meta's test number is).
+     */
+    public function connectWithToken(Hotel $hotel, string $wabaId, string $phoneNumberId, string $token, User $by): WhatsAppAccount
+    {
+        $this->ensureNotElsewhere($hotel, $phoneNumberId);
+
+        try {
+            $details = $this->graph->phoneNumber($phoneNumberId, $token);
+            $this->graph->subscribeApp($wabaId, $token);
+        } catch (GraphException $exception) {
+            Audit::record('whatsapp.connect_failed', 'WhatsApp connection failed', subject: $hotel, causer: $by, properties: [
+                'phone_number_id' => $phoneNumberId,
+                'manual' => true,
+                'error' => Str::limit($exception->getMessage(), 300),
+            ]);
+
+            throw new WhatsAppConnectionFailed(__('Meta refused the connection: :reason', ['reason' => $exception->getMessage()]), previous: $exception);
+        }
+
+        $account = $this->store($hotel, $wabaId, $phoneNumberId, false, $token, null, $details, $by);
+
+        Audit::record('whatsapp.connected_manually', 'WhatsApp number connected manually by the platform', subject: $hotel, causer: $by, properties: [
+            'display_phone' => $account->display_phone,
+            'phone_number_id' => $phoneNumberId,
+        ]);
+
+        return $account;
+    }
+
+    /**
+     * @param  array<string, mixed>  $details
+     */
+    private function store(Hotel $hotel, string $wabaId, string $phoneNumberId, bool $coexistence, string $token, ?string $pin, array $details, ?User $by): WhatsAppAccount
+    {
+        return $this->context->run($hotel, function () use ($wabaId, $phoneNumberId, $coexistence, $token, $pin, $details, $by): WhatsAppAccount {
             $account = WhatsAppAccount::query()->firstOrNew();
             $account->fill([
                 'waba_id' => $wabaId,
@@ -76,13 +116,19 @@ final class WhatsAppConnector
 
             return $account;
         });
+    }
 
-        Audit::record('whatsapp.connected', 'WhatsApp number connected', subject: $hotel, causer: $by, properties: [
-            'display_phone' => $account->display_phone,
-            'coexistence' => $coexistence,
-        ]);
+    /** A number can belong to one hotel only (checked across hotels). */
+    private function ensureNotElsewhere(Hotel $hotel, string $phoneNumberId): void
+    {
+        $elsewhere = $this->context->bypass('WhatsApp number uniqueness check', fn (): bool => WhatsAppAccount::query()
+            ->where('phone_number_id', $phoneNumberId)
+            ->where('hotel_id', '!=', $hotel->getKey())
+            ->exists());
 
-        return $account;
+        if ($elsewhere) {
+            throw new WhatsAppConnectionFailed(__('This WhatsApp number is already connected to another hotel.'));
+        }
     }
 
     /**

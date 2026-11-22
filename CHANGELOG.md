@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Real WhatsApp on a testing server (0.29.0)
+
+#### Added
+
+- **Platform → Hotels → a hotel → Connect a WhatsApp number manually (testing).** Super admins connect a number with a Meta system-user token, the Phone Number ID and the WhatsApp Business account ID, without Embedded Signup. For Meta's test number and the platform's own numbers while business verification and App Review are pending. The token is checked with Meta, the app is subscribed to the account's webhooks, the token is stored encrypted, and the connection is recorded in the audit log. Off in production unless `WHATSAPP_MANUAL_CONNECT=true`.
+- `SIMULATION_FAKE_AI` (default `true`): set it to `false` to get real AI answers on a testing server once an AI provider is added.
+
+#### Changed
+
+- **Simulation and real WhatsApp side by side.** Simulation mode used to send every WhatsApp call to the simulator. Now only simulated numbers, accounts, media and templates (`SIM-…`, `sim-…`) go there; real numbers reach Meta. `simulation:guests` keeps working while a real number is connected.
+- CloudPanel guide: new section "Real WhatsApp on a testing server".
+
 ### App frame polish (0.28.2)
 
 #### Fixed

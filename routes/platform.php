@@ -17,6 +17,7 @@ use App\Domains\Platform\Http\Controllers\HotelController;
 use App\Domains\Platform\Http\Controllers\HotelMemberController;
 use App\Domains\Platform\Http\Controllers\HotelOverviewController;
 use App\Domains\Platform\Http\Controllers\MailProviderController;
+use App\Domains\Platform\Http\Controllers\ManualWhatsAppController;
 use App\Domains\Platform\Http\Controllers\OperationsController;
 use App\Domains\Platform\Http\Controllers\PilotDashboardController;
 use App\Domains\Platform\Http\Controllers\PlatformHomeController;
@@ -78,6 +79,8 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::put('hotels/{hotel}', [HotelController::class, 'update'])->name('hotels.update');
             Route::post('hotels/{hotel}/members', [HotelMemberController::class, 'store'])->name('hotels.members.store');
             Route::delete('hotels/{hotel}/members/{user}', [HotelMemberController::class, 'destroy'])->name('hotels.members.destroy');
+            // Super admins only (checked in the controller); off in production by default.
+            Route::post('hotels/{hotel}/whatsapp/manual', [ManualWhatsAppController::class, 'store'])->middleware('throttle:10,1')->name('hotels.whatsapp.manual');
         });
 
         Route::middleware('platform.can:golive')->group(function (): void {

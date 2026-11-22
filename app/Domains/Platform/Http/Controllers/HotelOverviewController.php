@@ -54,6 +54,7 @@ final class HotelOverviewController extends Controller
                 'billing' => $user->platformCan(PlatformAbility::BillingView),
                 'audit' => $user->platformCan(PlatformAbility::AuditView),
                 'lifecycle' => $user->platformCan(PlatformAbility::Configuration),
+                'manualWhatsApp' => ManualWhatsAppController::allowed($user),
             ],
         ]);
     }

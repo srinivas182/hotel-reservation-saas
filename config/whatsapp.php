@@ -28,6 +28,14 @@ return [
 
     'graph_version' => env('WHATSAPP_GRAPH_VERSION', 'v23.0'),
 
+    // Set by simulation mode: where simulated numbers ("SIM-…") are sent.
+    'simulation_graph_url' => null,
+
+    // Super admins may connect a number with a system-user token instead of
+    // Embedded Signup (Meta's test number, own numbers). Off in production
+    // unless explicitly enabled.
+    'manual_connect' => env('WHATSAPP_MANUAL_CONNECT'),
+
     // Raw webhook events are kept this long for troubleshooting and replay.
     'webhook_retention_days' => 30,
 

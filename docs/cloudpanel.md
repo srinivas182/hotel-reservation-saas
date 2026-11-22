@@ -108,7 +108,21 @@ Check: `supervisorctl status`, and `https://<domain>/up` answers "OK". Errors ar
 
 ---
 
-## 6. Common problems
+## 6. Real WhatsApp on a testing server
+
+Simulation and real WhatsApp work side by side: only the simulated demo numbers (`SIM-…`) go to the simulator, every other number goes to Meta.
+
+1. In `.env`: `WHATSAPP_APP_ID`, `WHATSAPP_APP_SECRET` (Meta app → App settings → Basic) and `WHATSAPP_VERIFY_TOKEN` (any long random text, `openssl rand -hex 24`). Then `php8.4 artisan optimize`.
+2. Meta app → Use cases → WhatsApp → Customize → Configuration: callback URL `https://<domain>/webhooks/whatsapp`, the same verify token, **Verify and save**, subscribe to **messages**. **Publish** the app: an unpublished app receives no real messages.
+3. **Meta's test number** (no Embedded Signup needed): Business settings → System users → add an admin system user, assign the app and the WhatsApp Business account (full control), **Generate token** with `whatsapp_business_messaging` and `whatsapp_business_management`, expiry **Never**. Then Platform → Hotels → the hotel → **Connect a WhatsApp number manually (testing)**: Phone Number ID and WhatsApp Business account ID from WhatsApp → API Setup, and the token. The test number can message up to 5 numbers added as recipients in API Setup.
+4. Answers stay simulated while `SIMULATION_FAKE_AI=true` (the default). For real AI answers: add a provider in Platform → AI, set `SIMULATION_FAKE_AI=false`, `php8.4 artisan optimize`.
+5. A hotel's own number, later: `WHATSAPP_CONFIG_ID` (Facebook Login for Business → Configurations → WhatsApp Embedded Signup) and the hotel connects from Hotel → WhatsApp.
+
+Manual connection is for super admins only and is off in production unless `WHATSAPP_MANUAL_CONNECT=true`.
+
+---
+
+## 7. Common problems
 
 | Problem                                           | Fix                                                                                                                                         |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
