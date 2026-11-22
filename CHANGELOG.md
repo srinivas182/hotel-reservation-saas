@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Professional layout: the rest of the hotel pages (0.35.0)
+
+#### Changed
+
+- My alerts, Support, Privacy, Simple mode and checklists, Arrival card, WhatsApp kit, Plan and credits, AI assistant, Information pack, Usage, Activity log, WhatsApp, Message templates, Go-live, Support access and Events use the shared page layout: the same width and header as every other page, and their groups shown as cards (white background, title and help line) instead of loose blocks on the page background.
+- Smaller cards (Today, Calendar, Restaurant outlets and others) get the same card background.
+
+#### Fixed
+
+- Accessibility: the "Change plan" list on Plan and credits has a name, and the occupancy percentage on Today is readable on the dark card.
+
 ### Professional layout: hotel Bookings, Rates, Rooms, Discount codes, Taxes, Settings, Deposits; CloudPanel backups (0.34.0)
 
 #### Changed

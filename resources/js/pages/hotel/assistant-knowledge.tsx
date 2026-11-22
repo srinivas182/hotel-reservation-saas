@@ -2,10 +2,10 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AssistantSettingsController from '@/actions/App/Domains/Assistant/Http/Controllers/AssistantSettingsController';
 import KnowledgeController from '@/actions/App/Domains/Assistant/Http/Controllers/KnowledgeController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageBody, PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Entry = { section: string; question: string | null; content: string };
@@ -52,9 +52,9 @@ export default function Knowledge({
     return (
         <>
             <Head title={t('Information pack')} />
-            <div className="flex max-w-4xl flex-col gap-6 p-4">
+            <PageBody>
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                    <Heading
+                    <PageHeader
                         title={t('Information pack')}
                         description={t(
                             'What the assistant may tell guests. Room categories, check-in times, contact details and languages are added automatically. Prices always come from the rates.',
@@ -101,7 +101,7 @@ export default function Knowledge({
                         return (
                             <section
                                 key={section.value}
-                                className="flex flex-col gap-2 rounded-xl border p-4"
+                                className="flex flex-col gap-2 rounded-xl border bg-card p-4"
                             >
                                 <div className="flex items-center justify-between">
                                     <h2 className="font-medium">
@@ -227,8 +227,7 @@ export default function Knowledge({
                     </pre>
                 )}
 
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Published versions')} />
+                <Section title={t('Published versions')}>
                     {versions.length === 0 && (
                         <p className="text-sm text-muted-foreground">
                             {t('Not published yet')}
@@ -242,8 +241,8 @@ export default function Knowledge({
                             </li>
                         ))}
                     </ul>
-                </section>
-            </div>
+                </Section>
+            </PageBody>
         </>
     );
 }

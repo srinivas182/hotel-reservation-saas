@@ -92,7 +92,7 @@ export default function Practice() {
                             {t('Start again')}
                         </Button>
                     </div>
-                    <div className="flex min-h-64 flex-col gap-2 rounded-xl border p-4">
+                    <div className="flex min-h-64 flex-col gap-2 rounded-xl border bg-card p-4">
                         {turns.length === 0 && (
                             <p className="text-sm text-muted-foreground">
                                 {t(

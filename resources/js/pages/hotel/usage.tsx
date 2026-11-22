@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
-import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
+import { PageBody, PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type CategoryRow = {
@@ -41,8 +41,8 @@ export default function Usage({
     return (
         <>
             <Head title={t('Usage')} />
-            <div className="flex max-w-4xl flex-col gap-8 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Usage')}
                     description={t('Emails sent by your hotel in :month.', {
                         month,
@@ -50,13 +50,13 @@ export default function Usage({
                 />
 
                 <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-xl border p-4">
+                    <div className="rounded-xl border bg-card p-4">
                         <div className="text-sm text-muted-foreground">
                             {t('Counted emails')}
                         </div>
                         <div className="text-2xl font-semibold">{counted}</div>
                     </div>
-                    <div className="rounded-xl border p-4">
+                    <div className="rounded-xl border bg-card p-4">
                         <div className="text-sm text-muted-foreground">
                             {t('Email limit')}
                         </div>
@@ -64,7 +64,7 @@ export default function Usage({
                             {limit === null ? t('Unlimited (pilot)') : limit}
                         </div>
                     </div>
-                    <div className="rounded-xl border p-4">
+                    <div className="rounded-xl border bg-card p-4">
                         <div className="text-sm text-muted-foreground">
                             {t('Failed this month')}
                         </div>
@@ -72,14 +72,12 @@ export default function Usage({
                     </div>
                 </div>
 
-                <section className="flex flex-col gap-3">
-                    <Heading
-                        variant="small"
-                        title="WhatsApp"
-                        description={t(
-                            'Messages sent by the hotel this month. Meta bills the hotel directly.',
-                        )}
-                    />
+                <Section
+                    title="WhatsApp"
+                    description={t(
+                        'Messages sent by the hotel this month. Meta bills the hotel directly.',
+                    )}
+                >
                     <div className="grid gap-4 sm:grid-cols-4">
                         {[
                             [
@@ -95,7 +93,7 @@ export default function Usage({
                         ].map(([label, value]) => (
                             <div
                                 key={String(label)}
-                                className="rounded-xl border p-4"
+                                className="rounded-xl border bg-card p-4"
                             >
                                 <div className="text-sm text-muted-foreground">
                                     {label}
@@ -106,7 +104,7 @@ export default function Usage({
                             </div>
                         ))}
                     </div>
-                </section>
+                </Section>
 
                 <div tabIndex={0} className="overflow-x-auto rounded-xl border">
                     <table className="w-full text-sm">
@@ -146,14 +144,12 @@ export default function Usage({
                     </table>
                 </div>
 
-                <section className="flex flex-col gap-3">
-                    <Heading
-                        variant="small"
-                        title={t('Last 30 days')}
-                        description={t('Emails sent per day')}
-                    />
+                <Section
+                    title={t('Last 30 days')}
+                    description={t('Emails sent per day')}
+                >
                     <div
-                        className="flex h-32 items-end gap-1 rounded-xl border p-3"
+                        className="flex h-32 items-end gap-1 rounded-xl border bg-card p-4"
                         role="img"
                         aria-label={t('Emails sent per day')}
                     >
@@ -169,8 +165,8 @@ export default function Usage({
                             />
                         ))}
                     </div>
-                </section>
-            </div>
+                </Section>
+            </PageBody>
         </>
     );
 }

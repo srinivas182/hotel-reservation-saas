@@ -2,11 +2,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import TemplateController from '@/actions/App/Domains/WhatsApp/Http/Controllers/TemplateController';
 import { useState } from 'react';
 import WhatsAppConnectionController from '@/actions/App/Domains/WhatsApp/Http/Controllers/WhatsAppConnectionController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { launchEmbeddedSignup } from '@/lib/embedded-signup';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Account = {
@@ -74,8 +74,8 @@ export default function WhatsAppConnection({ account, signup, errors }: Props) {
     return (
         <>
             <Head title="WhatsApp" />
-            <div className="flex max-w-3xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title="WhatsApp"
                     description={t(
                         'Connect the hotel’s WhatsApp number so guests can message you and the assistant can answer.',
@@ -282,7 +282,7 @@ export default function WhatsAppConnection({ account, signup, errors }: Props) {
                         'The hotel pays Meta directly for WhatsApp messages: add a payment method to the WhatsApp account in Meta Business Suite after connecting.',
                     )}
                 </p>
-            </div>
+            </PageBody>
         </>
     );
 }

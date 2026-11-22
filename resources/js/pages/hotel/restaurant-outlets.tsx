@@ -661,7 +661,7 @@ export default function RestaurantOutlets({
                     </Button>
                 </div>
                 {adding && (
-                    <section className="rounded-xl border p-4">
+                    <section className="rounded-xl border bg-card p-4">
                         <OutletForm
                             types={types}
                             locales={locales}
@@ -678,7 +678,7 @@ export default function RestaurantOutlets({
                 {outlets.map((outlet) => (
                     <section
                         key={outlet.id}
-                        className="flex flex-col gap-4 rounded-xl border p-4"
+                        className="flex flex-col gap-4 rounded-xl border bg-card p-4"
                     >
                         <h2 className="font-medium">
                             {Object.values(outlet.name)[0]}

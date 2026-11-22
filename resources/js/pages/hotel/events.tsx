@@ -3,12 +3,12 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import EventController from '@/actions/App/Domains/Events/Http/Controllers/EventController';
 import EventSetupController from '@/actions/App/Domains/Events/Http/Controllers/EventSetupController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -265,7 +265,7 @@ export default function Events({
             <Head title={t('Events')} />
             <div className="flex flex-col gap-6 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                    <Heading
+                    <PageHeader
                         title={t('Events')}
                         description={t(
                             'Meeting rooms, seminars, weddings and private parties.',
@@ -426,11 +426,7 @@ export default function Events({
                     </p>
                 </section>
 
-                <section className="flex flex-col gap-2">
-                    <Heading
-                        variant="small"
-                        title={t('Open enquiries and options')}
-                    />
+                <Section title={t('Open enquiries and options')}>
                     {open.length === 0 && (
                         <p className="text-sm text-muted-foreground">
                             {t('Nothing open.')}
@@ -476,7 +472,7 @@ export default function Events({
                             </li>
                         ))}
                     </ul>
-                </section>
+                </Section>
             </div>
         </>
     );

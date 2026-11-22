@@ -183,7 +183,7 @@ function RegisterCheckForm({
     };
 
     return (
-        <section className="flex flex-col gap-3 rounded-xl border p-4">
+        <section className="flex flex-col gap-3 rounded-xl border bg-card p-4">
             <Heading
                 variant="small"
                 title={t('Evening register check')}
@@ -377,7 +377,7 @@ export default function Today(props: Props) {
                     {props.freeTonight.map((category) => (
                         <div
                             key={category.name}
-                            className="rounded-xl border p-3"
+                            className="rounded-xl border bg-card p-4"
                         >
                             <div className="text-sm text-muted-foreground">
                                 {category.name}

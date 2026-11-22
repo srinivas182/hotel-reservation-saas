@@ -2,8 +2,8 @@ import { Head, Link } from '@inertiajs/react';
 import { CheckCircle2, Circle, XCircle } from 'lucide-react';
 import AssistantSettingsController from '@/actions/App/Domains/Assistant/Http/Controllers/AssistantSettingsController';
 import GoLiveController from '@/actions/App/Domains/GoLive/Http/Controllers/GoLiveController';
-import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
+import { PageBody, PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Check = {
@@ -72,8 +72,8 @@ export default function GoLive({
     return (
         <>
             <Head title={t('Go-live')} />
-            <div className="flex max-w-3xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Go-live')}
                     description={t(
                         'Everything that must be ready before the assistant answers your guests.',
@@ -104,32 +104,28 @@ export default function GoLive({
                     </p>
                 )}
 
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Required')} />
+                <Section title={t('Required')}>
                     <ul className="divide-y rounded-xl border">
                         {required.map((check) => (
                             <Row key={check.key} check={check} />
                         ))}
                     </ul>
-                </section>
+                </Section>
 
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Recommended')} />
+                <Section title={t('Recommended')}>
                     <ul className="divide-y rounded-xl border">
                         {recommended.map((check) => (
                             <Row key={check.key} check={check} />
                         ))}
                     </ul>
-                </section>
+                </Section>
 
-                <section className="flex flex-col gap-2 rounded-xl border p-4 text-sm">
-                    <Heading
-                        variant="small"
-                        title={t('Supervised mode results')}
-                        description={t(
-                            'Switch to automatic when most drafts are sent unchanged.',
-                        )}
-                    />
+                <Section
+                    title={t('Supervised mode results')}
+                    description={t(
+                        'Switch to automatic when most drafts are sent unchanged.',
+                    )}
+                >
                     {drafts.handled === 0 ? (
                         <p className="text-muted-foreground">
                             {t('No drafts handled yet.')}
@@ -147,8 +143,8 @@ export default function GoLive({
                             )}
                         </p>
                     )}
-                </section>
-            </div>
+                </Section>
+            </PageBody>
         </>
     );
 }

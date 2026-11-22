@@ -132,7 +132,7 @@ export default function Demo({
                         </p>
                     </section>
                     {phone && (
-                        <section className="flex flex-col gap-2 rounded-xl border p-3">
+                        <section className="flex flex-col gap-2 rounded-xl border bg-card p-4">
                             <h2 className="font-semibold">
                                 {t('Try it on your own phone')}
                             </h2>
@@ -157,7 +157,7 @@ export default function Demo({
                             />
                         </section>
                     )}
-                    <details className="rounded-xl border p-3">
+                    <details className="rounded-xl border bg-card p-4">
                         <summary className="cursor-pointer font-semibold">
                             {t('Show the prospect’s own hotel')}
                         </summary>

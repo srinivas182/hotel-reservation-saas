@@ -1,8 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import SupportSessionController from '@/actions/App/Domains/Platform/Http/Controllers/SupportSessionController';
-import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Session = {
@@ -22,14 +22,14 @@ export default function SupportSessions({ setting, sessions }: Props) {
     return (
         <>
             <Head title={t('Support access')} />
-            <div className="flex max-w-4xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Support access')}
                     description={t(
                         'When our support team helps inside your account, it appears here. Every action they take is in your history.',
                     )}
                 />
-                <section className="flex flex-col gap-2 rounded-xl border p-3">
+                <section className="flex flex-col gap-2 rounded-xl border bg-card p-4">
                     <label className="flex items-center gap-2">
                         <input
                             type="radio"
@@ -159,7 +159,7 @@ export default function SupportSessions({ setting, sessions }: Props) {
                         </li>
                     ))}
                 </ul>
-            </div>
+            </PageBody>
         </>
     );
 }

@@ -2,11 +2,11 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/HotelAuditController';
-import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFormat } from '@/hooks/use-format';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Entry = {
@@ -49,8 +49,8 @@ export default function HotelAudit({
     return (
         <>
             <Head title={t('Audit log')} />
-            <div className="flex max-w-5xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Audit log')}
                     description={t(
                         'A permanent record of sign-ins and changes in this hotel.',
@@ -210,7 +210,7 @@ export default function HotelAudit({
                         ))}
                     </nav>
                 )}
-            </div>
+            </PageBody>
         </>
     );
 }

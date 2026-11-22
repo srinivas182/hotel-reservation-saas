@@ -3,11 +3,11 @@ import type { FormEvent } from 'react';
 import AssistantSettingsController from '@/actions/App/Domains/Assistant/Http/Controllers/AssistantSettingsController';
 import KnowledgeController from '@/actions/App/Domains/Assistant/Http/Controllers/KnowledgeController';
 import PracticeController from '@/actions/App/Domains/Assistant/Http/Controllers/PracticeController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Props = {
@@ -74,8 +74,8 @@ export default function AssistantSettings({
     return (
         <>
             <Head title={t('AI assistant')} />
-            <div className="flex max-w-3xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('AI assistant')}
                     description={t(
                         'Answers guests on WhatsApp with the hotel’s real prices and availability, and passes them to staff when needed.',
@@ -125,7 +125,7 @@ export default function AssistantSettings({
 
                 <form
                     onSubmit={submit}
-                    className="flex flex-col gap-4 rounded-xl border p-4"
+                    className="flex flex-col gap-4 rounded-xl border bg-card p-4"
                 >
                     <fieldset className="flex flex-col gap-2 text-sm">
                         <legend className="mb-1 font-medium">
@@ -623,7 +623,7 @@ export default function AssistantSettings({
                         <Button disabled={form.processing}>{t('Save')}</Button>
                     </div>
                 </form>
-            </div>
+            </PageBody>
         </>
     );
 }
