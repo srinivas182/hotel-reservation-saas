@@ -28,6 +28,7 @@ type Brand = {
     analytics_script: string | null;
     logo: string | null;
     login_photo: string | null;
+    default_locale: 'en' | 'fr' | null;
 };
 type Props = { pages: Page[]; brand: Brand; canBrand: boolean };
 
@@ -46,6 +47,7 @@ function BrandForm({ brand }: { brand: Brand }) {
         logo: File | null;
         login_photo: File | null;
         remove_login_photo: boolean;
+        default_locale: string;
     }>({
         name: brand.name,
         tagline_fr: brand.tagline_fr,
@@ -60,6 +62,7 @@ function BrandForm({ brand }: { brand: Brand }) {
         logo: null,
         login_photo: null,
         remove_login_photo: false,
+        default_locale: brand.default_locale ?? '',
     });
     const errors = form.errors as Record<string, string | undefined>;
     const field = (
@@ -108,6 +111,30 @@ function BrandForm({ brand }: { brand: Brand }) {
                         form.setData('primary_color', e.target.value)
                     }
                 />
+            </label>
+            <label className="grid gap-0.5 text-xs">
+                {t('Default language')}
+                <select
+                    className="h-9 rounded-md border bg-card px-2 text-sm"
+                    value={form.data.default_locale}
+                    onChange={(e) =>
+                        form.setData('default_locale', e.target.value)
+                    }
+                >
+                    <option value="">
+                        {t(
+                            'Automatic: French website, browser language in the app',
+                        )}
+                    </option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                </select>
+                <span className="text-muted-foreground">
+                    {t(
+                        'Where visitors start: the website address, the sign-in pages and new hotels. Everyone can still switch language.',
+                    )}
+                </span>
+                <InputError message={errors.default_locale} />
             </label>
             {field('support_hours_fr', t('Support hours (FR)'))}
             {field('support_hours_en', t('Support hours (EN)'))}

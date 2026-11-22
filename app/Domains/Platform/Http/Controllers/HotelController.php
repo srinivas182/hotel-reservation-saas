@@ -57,7 +57,11 @@ final class HotelController extends Controller
     {
         Gate::authorize('create', Hotel::class);
 
-        return Inertia::render('platform/hotels/create', $this->formOptions());
+        return Inertia::render('platform/hotels/create', [
+            ...$this->formOptions(),
+            // A new hotel starts in the platform's default language when one is chosen.
+            'defaultLocale' => \App\Domains\Site\Models\BrandSettings::defaultLocale() ?? 'fr',
+        ]);
     }
 
     public function store(HotelRequest $request, HotelAdministration $administration): RedirectResponse

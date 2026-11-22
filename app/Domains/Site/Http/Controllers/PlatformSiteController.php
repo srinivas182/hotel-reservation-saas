@@ -105,7 +105,7 @@ final class PlatformSiteController extends Controller
                 'name' => $brand->name, 'tagline_fr' => $brand->tagline['fr'] ?? '', 'tagline_en' => $brand->tagline['en'] ?? '',
                 'support_hours_fr' => $brand->support_hours['fr'] ?? '', 'support_hours_en' => $brand->support_hours['en'] ?? '', 'primary_color' => $brand->primary_color,
                 'support_email' => $brand->support_email, 'support_whatsapp' => $brand->support_whatsapp,
-                'analytics_domain' => $brand->analytics_domain, 'analytics_script' => $brand->analytics_script, 'logo' => BrandSettings::cached()['logo'] ?? null, 'login_photo' => BrandSettings::cached()['login_photo'] ?? null,
+                'analytics_domain' => $brand->analytics_domain, 'analytics_script' => $brand->analytics_script, 'logo' => BrandSettings::cached()['logo'] ?? null, 'login_photo' => BrandSettings::cached()['login_photo'] ?? null, 'default_locale' => BrandSettings::defaultLocale(),
             ],
             'canBrand' => $user->platformCan(PlatformAbility::Configuration),
         ]);
@@ -139,6 +139,7 @@ final class PlatformSiteController extends Controller
             'logo' => ['nullable', 'file', 'max:512', 'mimes:png,webp,svg'],
             'login_photo' => ['nullable', 'image', 'max:3072', 'mimes:jpg,jpeg,png,webp', 'dimensions:min_width=800,min_height=600'],
             'remove_login_photo' => ['nullable', 'boolean'],
+            'default_locale' => ['nullable', 'in:en,fr'],
         ]);
 
         $brand = BrandSettings::current();
@@ -148,6 +149,10 @@ final class PlatformSiteController extends Controller
             'primary_color' => strtolower((string) $data['primary_color']), 'support_email' => $data['support_email'] ?? null, 'support_whatsapp' => $data['support_whatsapp'] ?? null,
             'analytics_domain' => $data['analytics_domain'] ?? null, 'analytics_script' => $data['analytics_script'] ?? null,
         ];
+        // The default language is only changed when the form sends it (empty = automatic).
+        if ($request->exists('default_locale')) {
+            $values['default_locale'] = $data['default_locale'] ?? null;
+        }
 
         $file = $request->file('logo');
         if ($file instanceof \Illuminate\Http\UploadedFile) {

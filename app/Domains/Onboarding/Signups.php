@@ -107,7 +107,8 @@ final class Signups
             'country_code' => $template->country_code,
             'timezone' => $template->timezone,
             'currency' => $template->currency,
-            'default_locale' => $template->locale,
+            // The platform's default language (Platform → Website) when one is chosen, else the country's.
+            'default_locale' => \App\Domains\Site\Models\BrandSettings::defaultLocale() ?? $template->locale,
             'owner_email' => $user->email,
             'status' => HotelStatus::Trial->value,
         ]);

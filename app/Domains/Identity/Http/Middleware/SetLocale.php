@@ -67,6 +67,12 @@ final class SetLocale
             return $this->context->hotel()->default_locale;
         }
 
+        // Platform → Website → Default language, when one is chosen; else the browser's.
+        $platform = \App\Domains\Site\Models\BrandSettings::defaultLocale();
+        if ($platform !== null && in_array($platform, $supported, true)) {
+            return $platform;
+        }
+
         return $request->getPreferredLanguage($supported) ?? 'en';
     }
 }

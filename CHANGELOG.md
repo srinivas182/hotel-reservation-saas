@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Default language setting (0.28.0)
+
+#### Added
+
+- **Platform → Website → Default language** (Automatic, English or French). With English: the bare website address opens the English site (the French home moves to `/fr`, with the language selector, links, sitemap and search-engine tags following); sign-in, sign-up and invitation pages start in English for new visitors; new hotels (sign-up and Platform → Hotels → Create) start in English. Everyone can still switch language, and the choice is remembered. "Automatic" keeps the previous behaviour.
+
 ### Heartbeat fix (0.27.2)
 
 #### Fixed
