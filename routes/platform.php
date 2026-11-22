@@ -127,6 +127,7 @@ Route::middleware(['auth', 'verified', 'platform'])
             Route::post('ai/providers', [AiController::class, 'storeProvider'])->name('ai.providers.store');
             Route::put('ai/providers/{aiProvider}', [AiController::class, 'updateProvider'])->name('ai.providers.update');
             Route::delete('ai/providers/{aiProvider}', [AiController::class, 'destroyProvider'])->name('ai.providers.destroy');
+            Route::get('ai/providers/{aiProvider}/models', [AiController::class, 'providerModels'])->middleware('throttle:20,1')->name('ai.providers.models');
             Route::post('ai/models', [AiController::class, 'storeModel'])->name('ai.models.store');
             Route::put('ai/models/{aiModel}', [AiController::class, 'updateModel'])->name('ai.models.update');
             Route::delete('ai/models/{aiModel}', [AiController::class, 'destroyModel'])->name('ai.models.destroy');

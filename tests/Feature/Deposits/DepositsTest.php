@@ -226,6 +226,38 @@ it('settles CinetPay notifications only after checking with CinetPay, for the ri
         ->and($booking->refresh()->status)->toBe(BookingStatus::Confirmed);
 });
 
+it('lets a hotel take deposits by card with its own Stripe account', function (): void {
+    $booking = depositBooking($this);
+    $account = ($this->in)(function (): MerchantAccount {
+        $account = MerchantAccount::query()->sole();
+        $account->update(['driver' => 'stripe', 'mode' => 'test', 'credentials' => ['secret_key' => 'sk_test_hotel', 'webhook_secret' => 'whsec_hotel']]); // gitleaks:allow
+
+        return $account;
+    });
+    $link = depositLink($this);
+    Http::fake([
+        'api.stripe.com/v1/checkout/sessions/*' => fn () => Http::response([
+            'id' => 'cs_dep', 'payment_status' => 'paid', 'status' => 'complete', 'amount_total' => $link->deposit_minor, 'currency' => 'xof', 'payment_intent' => 'pi_dep',
+            'client_reference_id' => Illuminate\Support\Facades\DB::table('deposit_attempts')->value('reference'),
+        ]),
+        'api.stripe.com/v1/checkout/sessions' => Http::response(['id' => 'cs_dep', 'url' => 'https://checkout.stripe.com/c/pay/cs_dep']),
+        'graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.X']]]),
+    ]);
+
+    $this->post(route('deposits.pay', $link->token), ['choice' => 'deposit'])->assertRedirect('https://checkout.stripe.com/c/pay/cs_dep');
+    $reference = ($this->in)(fn () => DepositAttempt::query()->sole()->reference);
+    $body = (string) json_encode(['type' => 'checkout.session.completed', 'data' => ['object' => ['id' => 'cs_dep', 'client_reference_id' => $reference]]]);
+    $sign = fn (string $secret): string => 't='.time().',v1='.hash_hmac('sha256', time().'.'.$body, $secret);
+
+    $this->call('POST', route('webhooks.deposits', $account->id), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $sign('whsec_other'), 'CONTENT_TYPE' => 'application/json'], $body)->assertStatus(401);
+    expect($booking->refresh()->status)->not->toBe(BookingStatus::Confirmed);
+
+    $this->call('POST', route('webhooks.deposits', $account->id), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $sign('whsec_hotel'), 'CONTENT_TYPE' => 'application/json'], $body)->assertOk();
+
+    expect(depositLink($this)->method)->toBe('card')
+        ->and($booking->refresh()->status)->toBe(BookingStatus::Confirmed);
+});
+
 it('rejects a payment whose amount differs from what was asked', function (): void {
     depositBooking($this);
     ($this->in)(fn () => MerchantAccount::query()->sole()->update(['driver' => 'cinetpay', 'credentials' => ['apikey' => 'k', 'site_id' => '1', 'secret_key' => 's']]));

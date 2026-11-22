@@ -9,6 +9,7 @@ use App\Domains\Ai\AiDriver;
 use App\Domains\Ai\Evals\AiEvalRun;
 use App\Domains\Ai\Evals\RunEvalSuite;
 use App\Domains\Ai\Gateway\ProviderRegistry;
+use App\Domains\Ai\ModelCatalog;
 use App\Domains\Ai\Models\AiModel;
 use App\Domains\Ai\Models\AiPlatformSettings;
 use App\Domains\Ai\Models\AiProvider;
@@ -19,12 +20,14 @@ use App\Domains\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -156,6 +159,25 @@ final class AiController extends Controller
         return back();
     }
 
+    /**
+     * The models this provider's key can use, read from the provider, so
+     * they are picked rather than typed.
+     */
+    public function providerModels(AiProvider $aiProvider, ModelCatalog $catalog, #[CurrentUser] User $user): JsonResponse
+    {
+        $this->authorizeSuperAdmin($user);
+
+        try {
+            $models = $catalog->for($aiProvider);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => Str::limit($e->getMessage(), 300)], 422);
+        }
+
+        $known = AiModel::query()->where('ai_provider_id', $aiProvider->id)->pluck('model')->all();
+
+        return response()->json(['models' => array_map(fn (array $m): array => [...$m, 'added' => in_array($m['id'], $known, true)], $models)]);
+    }
+
     public function storeModel(Request $request, #[CurrentUser] User $user): RedirectResponse
     {
         $this->authorizeSuperAdmin($user);
@@ -249,7 +271,7 @@ final class AiController extends Controller
         $provider = $aiModel->provider;
 
         try {
-            $reply = (new PingAgent)->prompt('Ping', provider: $registry->register($provider ?? throw new \RuntimeException('No provider')), model: $aiModel->model, timeout: 20);
+            $reply = (new PingAgent)->prompt('Ping', provider: $registry->register($provider ?? throw new RuntimeException('No provider')), model: $aiModel->model, timeout: 20);
             Inertia::flash('toast', ['type' => 'success', 'message' => __('The model answered: :reply', ['reply' => Str::limit(trim($reply->text), 40)])]);
         } catch (Throwable $exception) {
             Inertia::flash('toast', ['type' => 'error', 'message' => __('The model did not answer: :reason', ['reason' => Str::limit($exception->getMessage(), 200)])]);

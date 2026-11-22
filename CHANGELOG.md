@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Stripe payments, AI models loaded from the provider (0.30.0)
+
+#### Added
+
+- **Stripe** as a payment provider, in test or live mode:
+    - **Platform → Billing → Payment gateways:** hotels pay invoices, plans and credit packs by card on Stripe Checkout.
+    - **Hotel → Deposits:** a hotel takes guest deposits by card with its own Stripe account.
+    - Payments are confirmed with Stripe server to server.
+    - Notifications are checked against the endpoint's signing secret (`whsec_…`), and signatures older than 5 minutes are refused.
+    - XOF, XAF and other zero-decimal currencies are sent in whole units.
+    - A live key is refused in test mode, and a test key in live mode.
+    - The key check uses Stripe's balance endpoint.
+- **Platform → AI → Add model → Load models from the provider:** the models the key can use are read from OpenAI, Anthropic, Gemini or an OpenAI-compatible service and picked from a list, instead of typing the model ID.
+    - Picking a model fills its label and capabilities: speech models get transcription, the others chat and tools.
+    - Models already added are marked.
+
 ### Unreadable saved keys (0.29.1)
 
 #### Fixed

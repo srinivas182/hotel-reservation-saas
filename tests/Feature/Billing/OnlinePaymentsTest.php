@@ -25,7 +25,16 @@ const CREDENTIALS = [
     'flutterwave' => ['secret_key' => 'FLWSECK_TEST-abc', 'webhook_hash' => 'flw-hash'],
     'cinetpay' => ['apikey' => 'cp-key', 'site_id' => '105', 'secret_key' => 'cp-secret'],
     'paydunya' => ['master_key' => 'pd-master', 'private_key' => 'test_private_x', 'token' => 'pd-token'],
+    'stripe' => ['secret_key' => 'sk_test_stripe', 'webhook_secret' => 'whsec_test'],
 ];
+
+/** A Stripe notification signed like Stripe signs it. */
+function stripeSigned(string $body, string $secret = 'whsec_test', ?int $at = null): string
+{
+    $at ??= time();
+
+    return 't='.$at.',v1='.hash_hmac('sha256', $at.'.'.$body, $secret);
+}
 
 function gatewayFor(string $driver, string $mode = 'test'): PaymentGateway
 {
@@ -48,6 +57,14 @@ function fakeProviders(int $paidXof, string $status = 'paid'): void
         'api-checkout.cinetpay.com/v2/payment' => Http::response(['code' => '201', 'data' => ['payment_url' => 'https://checkout.cinetpay.com/payment/abc', 'payment_token' => 'cptok']]),
         'app.paydunya.com/sandbox-api/v1/checkout-invoice/create' => Http::response(['response_code' => '00', 'response_text' => 'https://app.paydunya.com/sandbox-checkout/invoice/test_abc', 'token' => 'test_abc']),
         'app.paydunya.com/sandbox-api/v1/checkout-invoice/confirm/*' => Http::response(['response_code' => '00', 'status' => $ok ? 'completed' : 'cancelled', 'invoice' => ['total_amount' => $paidXof]]),
+        // Stripe: XOF has no decimals, so amounts are whole francs.
+        'api.stripe.com/v1/checkout/sessions/*' => fn () => Http::response([
+            'id' => 'cs_test_1', 'payment_status' => $ok ? 'paid' : 'unpaid', 'status' => $ok ? 'complete' : 'expired',
+            'amount_total' => $paidXof, 'currency' => 'xof', 'payment_intent' => 'pi_1',
+            'client_reference_id' => DB::table('payment_checkouts')->where('provider_token', 'cs_test_1')->value('reference')
+                ?? DB::table('deposit_attempts')->where('provider_token', 'cs_test_1')->value('reference'),
+        ]),
+        'api.stripe.com/v1/checkout/sessions' => Http::response(['id' => 'cs_test_1', 'url' => 'https://checkout.stripe.com/c/pay/cs_test_1']),
     ]);
 }
 
@@ -78,7 +95,7 @@ it('pays an invoice online with each provider, confirmed server to server', func
     expect(($this->in)(fn () => $checkout->fresh()->status))->toBe('paid')
         ->and($this->invoice->fresh()->status())->toBe('paid')
         ->and($this->invoice->fresh()->payments()->sole()->method)->toBe($driver);
-})->with(['paystack', 'flutterwave', 'cinetpay', 'paydunya']);
+})->with(['paystack', 'flutterwave', 'cinetpay', 'paydunya', 'stripe']);
 
 it('refuses a confirmation for a different amount', function (): void {
     $gateway = gatewayFor('paystack');
@@ -118,6 +135,14 @@ it('accepts only genuine notifications, and counts a payment once', function (st
             fn () => $this->post(route('webhooks.payments', 'paydunya'), ['data' => ['hash' => hash('sha512', 'pd-master'), 'invoice' => ['token' => 'test_abc'], 'custom_data' => ['reference' => $checkout->reference]]]),
             fn () => $this->post(route('webhooks.payments', 'paydunya'), ['data' => ['hash' => 'forged', 'custom_data' => ['reference' => $checkout->reference]]]),
         ],
+        'stripe' => (function () use ($checkout): array {
+            $body = (string) json_encode(['type' => 'checkout.session.completed', 'data' => ['object' => ['id' => 'cs_test_1', 'client_reference_id' => $checkout->reference]]]);
+
+            return [
+                fn () => $this->call('POST', route('webhooks.payments', 'stripe'), [], [], [], ['HTTP_STRIPE_SIGNATURE' => stripeSigned($body), 'CONTENT_TYPE' => 'application/json'], $body),
+                fn () => $this->call('POST', route('webhooks.payments', 'stripe'), [], [], [], ['HTTP_STRIPE_SIGNATURE' => stripeSigned($body, 'whsec_forged'), 'CONTENT_TYPE' => 'application/json'], $body),
+            ];
+        })(),
     };
 
     $forged()->assertStatus(401);
@@ -128,7 +153,7 @@ it('accepts only genuine notifications, and counts a payment once', function (st
     $this->get(route('payments.return', $checkout));
 
     expect($this->invoice->fresh()->payments()->count())->toBe(1)->and($this->invoice->fresh()->status())->toBe('paid');
-})->with(['paystack', 'flutterwave', 'cinetpay', 'paydunya']);
+})->with(['paystack', 'flutterwave', 'cinetpay', 'paydunya', 'stripe']);
 
 it('grants a credit pack only once it is paid, with its own invoice', function (): void {
     $gateway = gatewayFor('cinetpay');
@@ -167,7 +192,7 @@ it('lets the platform configure every provider, with keys kept secret', function
         ])->assertSessionHasNoErrors();
     }
 
-    expect(PaymentGateway::query()->count())->toBe(4)
+    expect(PaymentGateway::query()->count())->toBe(5)
         ->and((string) DB::table('payment_gateways')->where('driver', 'paystack')->value('credentials'))->not->toContain('sk_test_abc');
 
     $paystack = PaymentGateway::query()->where('driver', 'paystack')->sole();

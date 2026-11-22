@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Deposits\Models;
 
 use App\Domains\Billing\Payments\Drivers\CinetPay;
+use App\Domains\Billing\Payments\Drivers\Stripe;
 use App\Domains\Billing\Payments\PaymentCredentials;
 use App\Domains\Billing\Payments\PaymentDriver;
 use App\Domains\Deposits\Drivers\SimulatedDeposits;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @property int $id
  * @property string $hotel_id
- * @property string $driver cinetpay, simulation
+ * @property string $driver cinetpay, stripe, simulation
  * @property string $mode test, live
  * @property array<string, string> $credentials
  * @property bool $active
@@ -34,6 +35,7 @@ class MerchantAccount extends Model implements PaymentCredentials
     /** Each driver and the keys it needs. The simulation is only offered in simulation mode. */
     public const DRIVERS = [
         'cinetpay' => ['label' => 'CinetPay (Wave, Orange Money, MTN MoMo, Moov Money, cartes)', 'fields' => ['apikey', 'site_id', 'secret_key']],
+        'stripe' => ['label' => 'Stripe (cartes / cards)', 'fields' => ['secret_key', 'webhook_secret']],
         'simulation' => ['label' => 'Simulation', 'fields' => []],
     ];
 
@@ -64,6 +66,7 @@ class MerchantAccount extends Model implements PaymentCredentials
     {
         return match ($this->driver) {
             'cinetpay' => new CinetPay($this),
+            'stripe' => new Stripe($this),
             'simulation' => new SimulatedDeposits,
             default => throw new \InvalidArgumentException("Unknown deposit driver {$this->driver}."),
         };

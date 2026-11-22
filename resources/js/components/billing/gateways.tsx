@@ -30,6 +30,7 @@ const fieldLabel = (f: string) =>
     ({
         secret_key: t('Secret key'),
         webhook_hash: t('Webhook secret hash'),
+        webhook_secret: t('Webhook signing secret (whsec_…)'),
         apikey: t('API key'),
         site_id: t('Site ID'),
         master_key: t('Master key'),
@@ -170,6 +171,13 @@ function GatewayForm({
                     {t(
                         'Notification (webhook) URL to set in the provider dashboard: :url',
                         { url: driver.webhook },
+                    )}
+                    {driver.value === 'stripe' && (
+                        <span className="block">
+                            {t(
+                                'Stripe: Developers → Webhooks → Add endpoint with this URL and the events checkout.session.completed, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed and checkout.session.expired; then copy its signing secret here. Use an sk_test_ key in Test mode.',
+                            )}
+                        </span>
                     )}
                 </p>
             )}
