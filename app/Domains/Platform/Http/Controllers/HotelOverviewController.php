@@ -37,7 +37,7 @@ final class HotelOverviewController extends Controller
             'health' => $state,
             'issueLabels' => array_map(fn (string $i): string => HotelHealth::issueLabel($i), $state['issues']),
             'staff' => $hotel->members()->get()->map(fn (User $m): array => ['name' => $m->name, 'email' => $m->email, 'status' => $m->pivot->status ?? null, 'last_login' => $m->last_login_at?->toDateTimeString()])->values(),
-            'history' => AuditLog::query()->where('hotel_id', $hotel->id)->latest('id')->limit(50)->get()
+            'history' => AuditLog::query()->with('causer')->where('hotel_id', $hotel->id)->latest('id')->limit(50)->get()
                 ->map(fn (AuditLog $a): array => ['id' => $a->id, 'event' => $a->event, 'description' => __($a->description), 'by' => $a->causer instanceof User ? $a->causer->name : null, 'at' => $a->created_at?->toDateTimeString()])->values(),
             'notes' => HotelNote::query()->with('author')->where('hotel_id', $hotel->id)->latest('id')->get()
                 ->map(fn (HotelNote $n): array => ['id' => $n->id, 'body' => $n->body, 'by' => $n->author?->name, 'at' => $n->created_at?->toDateTimeString(), 'mine' => $n->author_id === $user->id])->values(),

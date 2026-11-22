@@ -89,3 +89,15 @@ it('sends only simulated numbers to the simulator when simulation is on', functi
     config(['simulation.enabled' => false]);
     expect($graph->url('SIM-5550001/messages'))->toBe('https://graph.facebook.com/v23.0/SIM-5550001/messages');
 });
+
+it('opens the hotel page when its history has several entries by people', function (): void {
+    fakeGraph();
+    foreach (['first', 'second'] as $note) {
+        App\Domains\Audit\Audit::record('test.'.$note, 'Test entry', subject: $this->hotel, causer: $this->admin);
+    }
+    App\Domains\Audit\Models\AuditLog::query()->update(['hotel_id' => $this->hotel->id]);
+
+    $this->actingAs($this->admin)->get(route('platform.hotels.show', $this->hotel))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('history', fn ($history) => collect($history)->where('by', $this->admin->name)->count() >= 2));
+});

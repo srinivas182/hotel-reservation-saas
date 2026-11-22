@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Hotel page fix (0.31.5)
+
+#### Fixed
+
+- Platform → Hotels → a hotel showed "500 Something went wrong" once its history had several entries made by people. The history now loads who did what in one go, with no lazy loading.
+
 ### Show the password while typing (0.31.4)
 
 #### Changed
