@@ -33,6 +33,11 @@ final class SiteController extends Controller
         if ($request->user() !== null && $request->route()?->getName() === 'home') {
             return to_route('dashboard');
         }
+        // English as the default language (Platform → Website): the bare address opens
+        // the English site; the French home stays at /fr.
+        if ($request->route()?->getName() === 'home' && BrandSettings::defaultLocale() === 'en') {
+            return redirect('/en', 302)->header('Cache-Control', 'no-store');
+        }
 
         return $this->page($request, 'home');
     }
@@ -130,7 +135,7 @@ final class SiteController extends Controller
         $paths = ['', ...self::PAGES];
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
         foreach ($paths as $p) {
-            $fr = url($p === '' ? '/' : '/'.$p);
+            $fr = url($p === '' ? (BrandSettings::defaultLocale() === 'en' ? '/fr' : '/') : '/'.$p);
             $en = url($p === '' ? '/en' : '/en/'.$p);
             foreach ([$fr, $en] as $loc) {
                 $xml .= "\n<url><loc>{$loc}</loc><xhtml:link rel=\"alternate\" hreflang=\"fr\" href=\"{$fr}\"/><xhtml:link rel=\"alternate\" hreflang=\"en\" href=\"{$en}\"/></url>";

@@ -8,9 +8,15 @@ type Props = {
     statuses: string[];
     locales: string[];
     timezones: string[];
+    defaultLocale: string;
 };
 
-export default function HotelsCreate({ statuses, locales, timezones }: Props) {
+export default function HotelsCreate({
+    statuses,
+    locales,
+    timezones,
+    defaultLocale,
+}: Props) {
     return (
         <>
             <Head title={t('New hotel')} />
@@ -24,7 +30,7 @@ export default function HotelsCreate({ statuses, locales, timezones }: Props) {
                 <HotelForm
                     action={HotelController.store.form()}
                     values={{
-                        default_locale: 'fr',
+                        default_locale: defaultLocale,
                         country_code: 'CI',
                         currency: 'XOF',
                         timezone: 'Africa/Abidjan',

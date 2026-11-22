@@ -1,6 +1,7 @@
 @php
-    $alt = fn (string $p) => $p === 'home' ? ['fr' => url('/'), 'en' => url('/en')] : ['fr' => url('/'.$p), 'en' => url('/en/'.$p)];
-    $link = fn (string $p) => $locale === 'en' ? ($p === 'home' ? '/en' : '/en/'.$p) : ($p === 'home' ? '/' : '/'.$p);
+    $frHome = \App\Domains\Site\Models\BrandSettings::defaultLocale() === 'en' ? '/fr' : '/';
+    $alt = fn (string $p) => $p === 'home' ? ['fr' => url($frHome), 'en' => url('/en')] : ['fr' => url('/'.$p), 'en' => url('/en/'.$p)];
+    $link = fn (string $p) => $locale === 'en' ? ($p === 'home' ? '/en' : '/en/'.$p) : ($p === 'home' ? (\App\Domains\Site\Models\BrandSettings::defaultLocale() === 'en' ? '/fr' : '/') : '/'.$p);
     $nav = ['features' => __('Features'), 'pricing' => __('Pricing'), 'countries' => __('Countries'), 'faq' => __('FAQ'), 'help' => __('Help')];
 @endphp
 <!DOCTYPE html>
@@ -13,7 +14,7 @@
     <link rel="canonical" href="{{ $alt($page)[$locale] }}">
     <link rel="alternate" hreflang="fr" href="{{ $alt($page)['fr'] }}">
     <link rel="alternate" hreflang="en" href="{{ $alt($page)['en'] }}">
-    <link rel="alternate" hreflang="x-default" href="{{ $alt($page)['fr'] }}">
+    <link rel="alternate" hreflang="x-default" href="{{ $alt($page)[\App\Domains\Site\Models\BrandSettings::defaultLocale() ?? 'fr'] }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ $brand['name'] }}">
     <meta property="og:title" content="{{ $title }}">

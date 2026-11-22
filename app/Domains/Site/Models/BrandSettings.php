@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Schema;
  * @property array<string, string>|null $tagline
  * @property string $primary_color
  * @property string|null $logo_path
+ * @property string|null $default_locale 'en' or 'fr'; null = French website, browser language in the app
  * @property string|null $login_photo_path photo beside the sign-in and sign-up forms (Sprint I)
  * @property string|null $support_email
  * @property string|null $support_whatsapp
@@ -66,9 +67,19 @@ class BrandSettings extends Model
     }
 
     /**
+     * The platform's chosen default language, or null when none is chosen.
+     */
+    public static function defaultLocale(): ?string
+    {
+        $locale = self::cached()['default_locale'] ?? null;
+
+        return in_array($locale, ['en', 'fr'], true) ? $locale : null;
+    }
+
+    /**
      * The brand as plain values, cached; null before the table exists.
      *
-     * @return array{name: string, tagline: array<string, string>, color: string, logo: string|null, login_photo: string|null, support_email: string|null, support_whatsapp: string|null, analytics_domain: string|null, analytics_script: string|null}|null
+     * @return array{name: string, tagline: array<string, string>, color: string, logo: string|null, login_photo: string|null, default_locale: string|null, support_email: string|null, support_whatsapp: string|null, analytics_domain: string|null, analytics_script: string|null}|null
      */
     public static function cached(): ?array
     {
@@ -84,6 +95,7 @@ class BrandSettings extends Model
                     'logo' => $b->logo_path === null ? null : route('brand.logo', ['v' => substr(md5((string) $b->updated_at), 0, 8)]),
                     'login_photo' => $b->login_photo_path === null ? null : route('brand.login-photo', ['v' => substr(md5((string) $b->updated_at), 0, 8)]),
                     'support_email' => $b->support_email, 'support_whatsapp' => $b->support_whatsapp,
+                    'default_locale' => $b->default_locale,
                     'analytics_domain' => $b->analytics_domain, 'analytics_script' => $b->analytics_script, 'support_hours' => $b->support_hours ?? [],
                 ];
             });

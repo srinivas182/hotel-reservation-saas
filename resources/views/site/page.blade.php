@@ -2,7 +2,7 @@
 
 @section('main')
     @php
-        $link = fn (string $p) => $locale === 'en' ? ($p === 'home' ? '/en' : '/en/'.$p) : ($p === 'home' ? '/' : '/'.$p);
+        $link = fn (string $p) => $locale === 'en' ? ($p === 'home' ? '/en' : '/en/'.$p) : ($p === 'home' ? (\App\Domains\Site\Models\BrandSettings::defaultLocale() === 'en' ? '/fr' : '/') : '/'.$p);
         $icons = [
             'chat' => '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20.5l1.6-4.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.3 3.5h.5a8.5 8.5 0 0 1 8.2 8z"/>',
             'calendar' => '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
