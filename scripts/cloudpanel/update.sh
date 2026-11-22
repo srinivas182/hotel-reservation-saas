@@ -43,6 +43,11 @@ git log -1 --format='Now at %h %s'
 step "PHP packages"
 "$PHP" "$COMPOSER" install --no-dev --optimize-autoloader --no-interaction --no-progress
 
+# Cached routes and config from the previous version would hide new pages
+# from the build (it reads the routes to generate the screens' links).
+step "Clearing old caches"
+"$PHP" artisan optimize:clear >/dev/null
+
 step "Screens (frontend build)"
 if command -v npm >/dev/null; then
     npm ci --no-audit --no-fund

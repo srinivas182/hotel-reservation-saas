@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Update script fix (0.31.2)
+
+#### Fixed
+
+- `scripts/cloudpanel/update.sh` clears Laravel's caches before building the screens. A route cache left by the previous version hid new pages from the build. The symptom was "Could not load …/ManualWhatsAppController" on a server updated from 0.27.
+
 ### WhatsApp fees, said plainly (0.31.1)
 
 #### Changed
