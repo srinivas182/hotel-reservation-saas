@@ -1,11 +1,17 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import BookingExportController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingExportController';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
-import Heading from '@/components/heading';
+import {
+    DataTable,
+    Field,
+    PageBody,
+    PageHeader,
+    Pagination,
+} from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
@@ -48,9 +54,6 @@ type Props = {
     canExport: boolean;
 };
 
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs';
-
 export default function BookingsIndex({
     bookings,
     filters,
@@ -82,229 +85,212 @@ export default function BookingsIndex({
     return (
         <>
             <Head title={t('Bookings')} />
-            <div className="flex flex-col gap-6 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <Heading
-                        title={t('Bookings')}
-                        description={t(':count bookings', {
-                            count: bookings.total,
-                        })}
-                    />
-                    {canCreate && (
-                        <Button asChild>
-                            <Link href={BookingController.create()}>
-                                <Plus /> {t('New booking')}
-                            </Link>
-                        </Button>
-                    )}
-                </div>
-
-                <form
-                    onSubmit={submit}
-                    className="flex flex-wrap items-end gap-2"
-                >
-                    <Input
-                        className="w-64"
-                        type="search"
-                        placeholder={t('Reference, name or phone')}
-                        aria-label={t('Search bookings')}
-                        value={form.search}
-                        onChange={(e) =>
-                            setForm({ ...form, search: e.target.value })
-                        }
-                    />
-                    <select
-                        aria-label={t('Status')}
-                        className={selectClass}
-                        value={form.status}
-                        onChange={(e) =>
-                            setForm({ ...form, status: e.target.value })
-                        }
-                    >
-                        <option value="">{t('All statuses')}</option>
-                        {statuses.map((s) => (
-                            <option key={s.value} value={s.value}>
-                                {s.label}
-                            </option>
-                        ))}
-                    </select>
-                    <select
-                        aria-label={t('Channel')}
-                        className={selectClass}
-                        value={form.channel}
-                        onChange={(e) =>
-                            setForm({ ...form, channel: e.target.value })
-                        }
-                    >
-                        <option value="">{t('All channels')}</option>
-                        {channels.map((c) => (
-                            <option key={c.value} value={c.value}>
-                                {c.label}
-                            </option>
-                        ))}
-                    </select>
-                    <Input
-                        className="w-40"
-                        type="date"
-                        aria-label={t('From')}
-                        value={form.from}
-                        onChange={(e) =>
-                            setForm({ ...form, from: e.target.value })
-                        }
-                    />
-                    <Input
-                        className="w-40"
-                        type="date"
-                        aria-label={t('To')}
-                        value={form.to}
-                        onChange={(e) =>
-                            setForm({ ...form, to: e.target.value })
-                        }
-                    />
-                    <Button variant="outline">{t('Search')}</Button>
-                </form>
-
-                {canExport && (
-                    <div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={!form.from || !form.to}
-                            title={t('Choose From and To dates to export')}
-                            onClick={() => {
-                                window.location.href =
-                                    BookingExportController.url({
-                                        query: {
-                                            from: form.from,
-                                            to: form.to,
-                                            ...(form.status
-                                                ? { status: form.status }
-                                                : {}),
-                                        },
-                                    });
-                            }}
-                        >
-                            {t('Export CSV')}
-                        </Button>
-                    </div>
-                )}
-
-                <div tabIndex={0} className="overflow-x-auto rounded-xl border">
-                    <table className="w-full text-sm">
-                        <thead className="bg-muted/50 text-left text-muted-foreground">
-                            <tr>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Reference')}
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Guest')}
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Stay')}
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Room category')}
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Status')}
-                                </th>
-                                <th className="px-4 py-3 text-right font-medium">
-                                    {t('Total')}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {bookings.data.length === 0 && (
-                                <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="px-4 py-8 text-center text-muted-foreground"
-                                    >
-                                        {t('No bookings found.')}
-                                    </td>
-                                </tr>
+            <PageBody wide>
+                <PageHeader
+                    title={t('Bookings')}
+                    description={t(':count bookings', {
+                        count: bookings.total,
+                    })}
+                    actions={
+                        <>
+                            {canExport && (
+                                <Button
+                                    variant="outline"
+                                    disabled={!form.from || !form.to}
+                                    title={t(
+                                        'Choose From and To dates to export',
+                                    )}
+                                    onClick={() => {
+                                        window.location.href =
+                                            BookingExportController.url({
+                                                query: {
+                                                    from: form.from,
+                                                    to: form.to,
+                                                    ...(form.status
+                                                        ? {
+                                                              status: form.status,
+                                                          }
+                                                        : {}),
+                                                },
+                                            });
+                                    }}
+                                >
+                                    <Download /> {t('Export CSV')}
+                                </Button>
                             )}
-                            {bookings.data.map((booking) => (
-                                <tr key={booking.id} className="border-t">
-                                    <td className="px-4 py-3">
-                                        <Link
-                                            href={BookingController.show(
-                                                booking.id,
-                                            )}
-                                            className="font-medium hover:underline"
-                                        >
-                                            {booking.reference}
-                                        </Link>
-                                        <div className="text-xs text-muted-foreground">
-                                            {booking.channel_label}
+                            {canCreate && (
+                                <Button asChild>
+                                    <Link href={BookingController.create()}>
+                                        <Plus /> {t('New booking')}
+                                    </Link>
+                                </Button>
+                            )}
+                        </>
+                    }
+                />
+
+                <section className="overflow-hidden rounded-xl border bg-card">
+                    <form
+                        onSubmit={submit}
+                        className="grid items-end gap-3 border-b bg-muted/30 px-5 py-4 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_9rem_9rem_auto]"
+                    >
+                        <Field label={t('Search bookings')}>
+                            <div className="relative">
+                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    className="pl-9"
+                                    type="search"
+                                    aria-label={t('Search bookings')}
+                                    placeholder={t('Reference, name or phone')}
+                                    value={form.search}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            search: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                        </Field>
+                        <Field label={t('Status')}>
+                            <select
+                                className="h-9"
+                                value={form.status}
+                                onChange={(e) =>
+                                    setForm({ ...form, status: e.target.value })
+                                }
+                            >
+                                <option value="">{t('All statuses')}</option>
+                                {statuses.map((s) => (
+                                    <option key={s.value} value={s.value}>
+                                        {s.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label={t('Channel')}>
+                            <select
+                                className="h-9"
+                                value={form.channel}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        channel: e.target.value,
+                                    })
+                                }
+                            >
+                                <option value="">{t('All channels')}</option>
+                                {channels.map((c) => (
+                                    <option key={c.value} value={c.value}>
+                                        {c.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label={t('From')}>
+                            <Input
+                                type="date"
+                                value={form.from}
+                                onChange={(e) =>
+                                    setForm({ ...form, from: e.target.value })
+                                }
+                            />
+                        </Field>
+                        <Field label={t('To')}>
+                            <Input
+                                type="date"
+                                value={form.to}
+                                onChange={(e) =>
+                                    setForm({ ...form, to: e.target.value })
+                                }
+                            />
+                        </Field>
+                        <Button>{t('Search')}</Button>
+                    </form>
+                    <DataTable
+                        rows={bookings.data}
+                        rowKey={(b) => b.id}
+                        empty={t('No bookings found.')}
+                        onRowClick={(b) =>
+                            router.visit(BookingController.show(b.id))
+                        }
+                        columns={[
+                            {
+                                key: 'guest',
+                                header: t('Guest'),
+                                cell: (b) => (
+                                    <div>
+                                        <div className="font-medium">
+                                            {b.guest_name ?? '—'}
                                         </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div>{booking.guest_name}</div>
                                         <div className="text-xs text-muted-foreground">
-                                            {booking.guest_phone}
+                                            <Link
+                                                href={BookingController.show(
+                                                    b.id,
+                                                )}
+                                                className="hover:underline"
+                                            >
+                                                {b.reference}
+                                            </Link>{' '}
+                                            · {b.channel_label}
                                         </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {booking.check_in} → {booking.check_out}
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'stay',
+                                header: t('Stay'),
+                                cell: (b) => (
+                                    <div>
+                                        <div className="tabular-nums">
+                                            {b.check_in} → {b.check_out}
+                                        </div>
                                         <div className="text-xs text-muted-foreground">
                                             {t(
                                                 ':nights night(s) · :guests guest(s)',
                                                 {
-                                                    nights: booking.nights,
-                                                    guests: booking.guests,
+                                                    nights: b.nights,
+                                                    guests: b.guests,
                                                 },
                                             )}
                                         </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {booking.category} × {booking.rooms}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <BookingStatusBadge
-                                            status={booking.status}
-                                            label={booking.status_label}
-                                        />
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        {booking.total}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {bookings.links.length > 3 && (
-                    <nav
-                        className="flex flex-wrap gap-1"
-                        aria-label={t('Pagination')}
-                    >
-                        {bookings.links.map((link, index) => (
-                            <Button
-                                key={index}
-                                variant={link.active ? 'default' : 'outline'}
-                                size="sm"
-                                disabled={link.url === null}
-                                onClick={() =>
-                                    link.url &&
-                                    router.get(
-                                        link.url,
-                                        {},
-                                        { preserveState: true },
-                                    )
-                                }
-                            >
-                                <span
-                                    dangerouslySetInnerHTML={{
-                                        __html: link.label,
-                                    }}
-                                />
-                            </Button>
-                        ))}
-                    </nav>
-                )}
-            </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'room',
+                                header: t('Room category'),
+                                cell: (b) =>
+                                    `${b.category ?? '—'} × ${b.rooms}`,
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (b) => (
+                                    <BookingStatusBadge
+                                        status={b.status}
+                                        label={b.status_label}
+                                    />
+                                ),
+                            },
+                            {
+                                key: 'total',
+                                header: t('Total'),
+                                align: 'right',
+                                cell: (b) => (
+                                    <span className="font-medium">
+                                        {b.total}
+                                    </span>
+                                ),
+                            },
+                        ]}
+                    />
+                    <Pagination
+                        links={bookings.links}
+                        label={t('Pagination')}
+                    />
+                </section>
+            </PageBody>
         </>
     );
 }

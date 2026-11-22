@@ -139,7 +139,7 @@ export default function Operations({
                                 <span
                                     className={
                                         h.ok
-                                            ? 'text-emerald-600'
+                                            ? 'text-emerald-700 dark:text-emerald-400'
                                             : 'text-destructive'
                                     }
                                 >

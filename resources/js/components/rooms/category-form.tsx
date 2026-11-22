@@ -95,10 +95,7 @@ export function CategoryForm({
     );
 
     return (
-        <form
-            onSubmit={submit}
-            className="flex flex-col gap-4 rounded-xl border p-4"
-        >
+        <form onSubmit={submit} className="flex flex-col gap-5">
             <div className="grid gap-4 sm:grid-cols-4">
                 <div className="grid gap-2">
                     <Label htmlFor={`code-${category?.id ?? 'new'}`}>
@@ -250,12 +247,12 @@ export function CategoryForm({
                 </div>
             </div>
 
-            <div className="flex gap-2">
-                <Button disabled={form.processing}>
-                    {category ? t('Save category') : t('Add category')}
-                </Button>
+            <div className="flex justify-end gap-2 border-t pt-4">
                 <Button type="button" variant="ghost" onClick={onDone}>
                     {t('Cancel')}
+                </Button>
+                <Button disabled={form.processing}>
+                    {category ? t('Save category') : t('Add category')}
                 </Button>
             </div>
         </form>

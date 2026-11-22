@@ -132,7 +132,9 @@ function ItemForm({ item, onDone }: { item: Item; onDone: () => void }) {
 
 function StatusIcon({ status }: { status: string }) {
     if (status === 'done') {
-        return <CircleCheck className="size-5 shrink-0 text-emerald-600" />;
+        return (
+            <CircleCheck className="size-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+        );
     }
 
     if (status === 'not_needed') {

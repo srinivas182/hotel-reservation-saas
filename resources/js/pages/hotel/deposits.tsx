@@ -4,6 +4,15 @@ import { useState } from 'react';
 import { DepositStatus } from '@/components/bookings/deposit-panel';
 import type { DepositRow } from '@/components/bookings/deposit-panel';
 import Heading from '@/components/heading';
+import {
+    DataTable,
+    PageBody,
+    PageHeader,
+    Section,
+    StatTile,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -141,7 +150,7 @@ function AccountForm({
 
     return (
         <form
-            className="flex flex-col gap-3 rounded-xl border p-4 text-sm"
+            className="flex flex-col gap-3 rounded-xl border bg-card p-5 text-sm"
             onSubmit={(e) => {
                 e.preventDefault();
                 form.put('/hotel/deposits/account', {
@@ -289,7 +298,7 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
 
     return (
         <form
-            className="flex flex-col gap-3 rounded-xl border p-4 text-sm"
+            className="flex flex-col gap-3 rounded-xl border bg-card p-5 text-sm"
             onSubmit={(e) => {
                 e.preventDefault();
                 form.transform((data) => ({
@@ -443,12 +452,19 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
 
 export default function Deposits(props: Props) {
     const [month, setMonth] = useState(props.month);
+    const tabs = [
+        { key: 'payments', label: t('Payments') },
+        ...(props.canManage
+            ? [{ key: 'settings', label: t('Account and rules') }]
+            : []),
+    ];
+    const [tab, setTab] = useTabs(tabs);
 
     return (
         <>
             <Head title={t('Deposits')} />
-            <div className="flex max-w-4xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Deposits')}
                     description={
                         props.online
@@ -459,211 +475,231 @@ export default function Deposits(props: Props) {
                                   'Online payment is off: guests follow your instructions and you confirm each deposit on its booking.',
                               )
                     }
-                />
-
-                <section
-                    className="flex flex-wrap items-end gap-3"
-                    aria-label={t('Month')}
-                >
-                    <label className="grid gap-1 text-sm">
-                        <span className="font-medium">{t('Month')}</span>
-                        <Input
-                            type="month"
-                            value={month}
-                            onChange={(e) => {
-                                setMonth(e.target.value);
-                                router.get(
-                                    '/hotel/deposits',
-                                    { month: e.target.value },
-                                    {
-                                        preserveState: true,
-                                        preserveScroll: true,
-                                    },
-                                );
-                            }}
-                        />
-                    </label>
-                    <Button asChild variant="outline" size="sm">
-                        <a href={`/hotel/deposits/export?month=${month}`}>
-                            <Download aria-hidden />
-                            {t('Export for the accountant')}
-                        </a>
-                    </Button>
-                </section>
-
-                <section className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border p-4">
-                        <p className="text-sm text-muted-foreground">
-                            {t('Deposits received')}
-                        </p>
-                        <p className="text-2xl font-semibold">
-                            {props.totals.count}
-                        </p>
-                        <p className="text-sm">{props.totals.total ?? '—'}</p>
-                    </div>
-                    <div className="rounded-xl border p-4 sm:col-span-2">
-                        <p className="text-sm text-muted-foreground">
-                            {t('By method')}
-                        </p>
-                        {props.totals.by_method.length === 0 ? (
-                            <p className="text-sm">—</p>
-                        ) : (
-                            <ul className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-                                {props.totals.by_method.map((m) => (
-                                    <li key={m.method}>
-                                        <span className="font-medium">
-                                            {m.method}
-                                        </span>{' '}
-                                        {m.count} · {m.total}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                </section>
-
-                {props.refunds.length > 0 && (
-                    <section aria-labelledby="refunds-heading">
-                        <h2
-                            id="refunds-heading"
-                            className="font-medium text-destructive"
-                        >
-                            {t('Refunds to make')}
-                        </h2>
-                        <ul className="divide-y">
-                            {props.refunds.map((row) => (
-                                <RefundRow
-                                    key={row.id}
-                                    row={row}
-                                    canRefund={props.canRefund}
+                    actions={
+                        tab === 'payments' && (
+                            <>
+                                <Input
+                                    type="month"
+                                    aria-label={t('Month')}
+                                    className="w-44"
+                                    value={month}
+                                    onChange={(e) => {
+                                        setMonth(e.target.value);
+                                        router.get(
+                                            '/hotel/deposits',
+                                            { month: e.target.value },
+                                            {
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                            },
+                                        );
+                                    }}
                                 />
-                            ))}
-                        </ul>
-                    </section>
+                                <Button asChild variant="outline">
+                                    <a
+                                        href={`/hotel/deposits/export?month=${month}`}
+                                    >
+                                        <Download aria-hidden />
+                                        {t('Export for the accountant')}
+                                    </a>
+                                </Button>
+                            </>
+                        )
+                    }
+                />
+                {tabs.length > 1 && (
+                    <Tabs tabs={tabs} active={tab} onSelect={setTab} />
                 )}
 
-                <section aria-labelledby="open-heading">
-                    <h2 id="open-heading" className="font-medium">
-                        {t('Waiting for payment')}
-                    </h2>
-                    {props.open.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                            {t('No deposit is waiting.')}
-                        </p>
-                    ) : (
-                        <ul className="divide-y text-sm">
-                            {props.open.map((row) => (
-                                <li
-                                    key={row.id}
-                                    className="flex flex-wrap items-center gap-x-3 py-2"
-                                >
-                                    <Link
-                                        href={`/hotel/bookings/${row.booking_id}`}
-                                        className="font-medium underline-offset-4 hover:underline"
+                {tab === 'payments' && (
+                    <>
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                            <StatTile
+                                label={t('Deposits received')}
+                                value={props.totals.count}
+                                hint={props.totals.total ?? undefined}
+                            />
+                            <StatTile
+                                label={t('Waiting for payment')}
+                                value={props.open.length}
+                            />
+                            <StatTile
+                                label={t('Refunds to make')}
+                                value={
+                                    <span
+                                        className={
+                                            props.refunds.length > 0
+                                                ? 'text-destructive'
+                                                : ''
+                                        }
                                     >
-                                        {row.guest} · {row.reference}
-                                    </Link>
-                                    <span>{row.deposit}</span>
-                                    <span className="text-muted-foreground">
-                                        {t('held until :at', {
-                                            at: row.expires_at ?? '—',
-                                        })}
-                                        {row.reminded_at &&
-                                            ' · ' + t('reminded')}
+                                        {props.refunds.length}
                                     </span>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </section>
+                                }
+                            />
+                            <StatTile
+                                label={t('By method')}
+                                value={
+                                    <span className="text-base">
+                                        {props.totals.by_method.length === 0
+                                            ? '—'
+                                            : props.totals.by_method
+                                                  .map(
+                                                      (m) =>
+                                                          `${m.method} ${m.count}`,
+                                                  )
+                                                  .join(' · ')}
+                                    </span>
+                                }
+                            />
+                        </div>
 
-                <section aria-labelledby="paid-heading">
-                    <h2 id="paid-heading" className="font-medium">
-                        {t('Paid this month')}
-                    </h2>
-                    {props.paid.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                            {t('No deposit paid this month.')}
-                        </p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="text-left text-muted-foreground">
-                                        <th className="py-2 pr-3 font-normal">
-                                            {t('Paid at')}
-                                        </th>
-                                        <th className="py-2 pr-3 font-normal">
-                                            {t('Guest')}
-                                        </th>
-                                        <th className="py-2 pr-3 font-normal">
-                                            {t('Amount')}
-                                        </th>
-                                        <th className="py-2 pr-3 font-normal">
-                                            {t('Method')}
-                                        </th>
-                                        <th className="py-2 pr-3 font-normal">
-                                            {t('Receipt')}
-                                        </th>
-                                        <th className="py-2 font-normal">
-                                            {t('Status')}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                    {props.paid.map((row) => (
-                                        <tr key={row.id}>
-                                            <td className="py-2 pr-3 whitespace-nowrap">
-                                                {row.paid_at}
-                                            </td>
-                                            <td className="py-2 pr-3">
+                        {props.refunds.length > 0 && (
+                            <section
+                                aria-labelledby="refunds-heading"
+                                className="overflow-hidden rounded-xl border border-destructive/40 bg-card"
+                            >
+                                <h2
+                                    id="refunds-heading"
+                                    className="border-b border-destructive/30 bg-destructive/5 px-5 py-3 font-medium text-destructive"
+                                >
+                                    {t('Refunds to make')}
+                                </h2>
+                                <ul className="divide-y px-5">
+                                    {props.refunds.map((row) => (
+                                        <RefundRow
+                                            key={row.id}
+                                            row={row}
+                                            canRefund={props.canRefund}
+                                        />
+                                    ))}
+                                </ul>
+                            </section>
+                        )}
+
+                        <Section flush title={t('Waiting for payment')}>
+                            <DataTable
+                                rows={props.open}
+                                rowKey={(r) => r.id}
+                                empty={t('No deposit is waiting.')}
+                                onRowClick={(r) =>
+                                    router.visit(
+                                        `/hotel/bookings/${r.booking_id}`,
+                                    )
+                                }
+                                columns={[
+                                    {
+                                        key: 'guest',
+                                        header: t('Guest'),
+                                        cell: (r) => (
+                                            <div>
+                                                <div className="font-medium">
+                                                    {r.guest}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {r.reference}
+                                                </div>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'deposit',
+                                        header: t('Amount'),
+                                        align: 'right',
+                                        cell: (r) => r.deposit,
+                                    },
+                                    {
+                                        key: 'held',
+                                        header: t('Held until'),
+                                        cell: (r) => (
+                                            <span className="text-muted-foreground">
+                                                {r.expires_at ?? '—'}
+                                                {r.reminded_at &&
+                                                    ' · ' + t('reminded')}
+                                            </span>
+                                        ),
+                                    },
+                                ]}
+                            />
+                        </Section>
+
+                        <Section flush title={t('Paid this month')}>
+                            <DataTable
+                                rows={props.paid}
+                                rowKey={(r) => r.id}
+                                empty={t('No deposit paid this month.')}
+                                columns={[
+                                    {
+                                        key: 'guest',
+                                        header: t('Guest'),
+                                        cell: (r) => (
+                                            <div>
                                                 <Link
-                                                    href={`/hotel/bookings/${row.booking_id}`}
-                                                    className="underline-offset-4 hover:underline"
+                                                    href={`/hotel/bookings/${r.booking_id}`}
+                                                    className="font-medium hover:underline"
                                                 >
-                                                    {row.guest} ·{' '}
-                                                    {row.reference}
+                                                    {r.guest}
                                                 </Link>
-                                            </td>
-                                            <td className="py-2 pr-3 whitespace-nowrap">
-                                                {row.paid}
-                                            </td>
-                                            <td className="py-2 pr-3">
-                                                {row.method}
-                                                {row.via === 'manual' && (
-                                                    <span className="block text-xs text-muted-foreground">
+                                                <div className="text-xs text-muted-foreground">
+                                                    {r.reference} · {r.paid_at}
+                                                </div>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'amount',
+                                        header: t('Amount'),
+                                        align: 'right',
+                                        cell: (r) => r.paid,
+                                    },
+                                    {
+                                        key: 'method',
+                                        header: t('Method'),
+                                        cell: (r) => (
+                                            <div>
+                                                {r.method}
+                                                {r.via === 'manual' && (
+                                                    <div className="text-xs text-muted-foreground">
                                                         {t('by :name', {
                                                             name:
-                                                                row.confirmed_by ??
+                                                                r.confirmed_by ??
                                                                 '—',
                                                         })}
-                                                    </span>
+                                                    </div>
                                                 )}
-                                            </td>
-                                            <td className="py-2 pr-3 font-mono text-xs">
-                                                {row.receipt}
-                                            </td>
-                                            <td className="py-2">
-                                                <DepositStatus row={row} />
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </section>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'receipt',
+                                        header: t('Receipt'),
+                                        cell: (r) => (
+                                            <span className="font-mono text-xs">
+                                                {r.receipt}
+                                            </span>
+                                        ),
+                                    },
+                                    {
+                                        key: 'status',
+                                        header: t('Status'),
+                                        cell: (r) => <DepositStatus row={r} />,
+                                    },
+                                ]}
+                            />
+                        </Section>
+                    </>
+                )}
 
-                {props.canManage && (
-                    <section className="flex flex-col gap-4">
+                {tab === 'settings' && props.canManage && (
+                    <>
                         <AccountForm
                             account={props.account}
                             drivers={props.drivers}
                         />
                         <RulesForm settings={props.settings} />
-                    </section>
+                    </>
                 )}
-            </div>
+            </PageBody>
         </>
     );
 }
