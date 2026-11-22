@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domains\BookingRequests;
 
 use App\Domains\Finance\Money\MoneyFormatter;
+use App\Domains\Rates\Coupons\Coupons;
+use App\Domains\Rates\Models\Coupon;
 use App\Domains\Rates\Quote\QuoteIssue;
 use App\Domains\Rates\Quote\QuoteService;
 use App\Domains\Tenancy\TenantContext;
@@ -64,6 +66,15 @@ final class BookingRequestPresenter
         $locale = $hotel->default_locale;
         $now = $this->quotes->quote($request->stay());
         $quoted = Money::ofMinor($request->total_minor, $request->currency);
+        // 0.31: the coupon the guest gave comes off today's price too.
+        $current = $now->total;
+        if ($request->coupon_code !== null) {
+            $coupon = Coupon::query()->where('code', $request->coupon_code)->first();
+            $off = $coupon === null
+                ? Money::ofMinor(min($request->discount_minor, $current->getMinorAmount()->toInt()), $current->getCurrency())
+                : app(Coupons::class)->discount($coupon, $current);
+            $current = $current->minus($off);
+        }
         // The request's own held rooms are not free to itself: ignore "not available" here.
         $issues = array_values(array_filter($now->issues, fn (QuoteIssue $i): bool => $i->code !== 'not_available'));
 
@@ -84,8 +95,12 @@ final class BookingRequestPresenter
             'breakfast' => $request->breakfast,
             'extra_bed' => $request->extra_bed,
             'quoted_total' => MoneyFormatter::format($quoted, $locale),
-            'current_total' => MoneyFormatter::format($now->total, $locale),
-            'price_changed' => ! $now->total->isEqualTo($quoted),
+            'current_total' => MoneyFormatter::format($current, $locale),
+            'price_changed' => ! $current->isEqualTo($quoted),
+            'coupon' => $request->coupon_code === null ? null : [
+                'code' => $request->coupon_code,
+                'discount' => MoneyFormatter::format(Money::ofMinor($request->discount_minor, $request->currency), $locale),
+            ],
             'problems' => array_map(fn (QuoteIssue $i): string => $i->message, $issues),
             'received_at' => $request->created_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             'waiting_minutes' => $request->created_at === null ? 0 : (int) $request->created_at->diffInMinutes(now()),

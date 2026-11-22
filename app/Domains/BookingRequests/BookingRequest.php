@@ -43,6 +43,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $decided_at
  * @property string|null $decline_reason
  * @property string|null $booking_id
+ * @property string|null $coupon_code
+ * @property int $discount_minor coupon discount already taken off total_minor
  * @property CarbonImmutable|null $created_at
  */
 class BookingRequest extends Model
@@ -65,6 +67,7 @@ class BookingRequest extends Model
             'extra_bed' => 'boolean',
             'price_snapshot' => 'array',
             'total_minor' => 'integer',
+            'discount_minor' => 'integer',
             'expires_at' => 'immutable_datetime',
             'decided_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',

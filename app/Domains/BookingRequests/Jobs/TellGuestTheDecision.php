@@ -78,13 +78,16 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
         // Sprint F: the deposit is paid through a link when the hotel takes mobile money online.
         $deposits = app(Deposits::class);
         $link = $kind === 'deposit' && $request->booking !== null && $deposits->online() ? $deposits->linkFor($request->booking) : null;
+        // 0.31: a confirmed booking can still be paid now, at the pay-now price.
+        $payNowLink = $kind === 'confirmed' && $request->booking !== null && $deposits->prepayTotal($request->booking) !== null ? $deposits->balanceLinkFor($request->booking) : null;
         $values = $this->values($request, $kind, $locale, $settings, $link);
+        $values['{pay_now}'] = $this->payNow($request, $kind, $locale, $settings, $link ?? $payNowLink, $deposits);
         $conversation = $request->conversation;
 
         try {
             if ($conversation->windowOpen()) {
                 $sender->sendText($conversation, DecisionMessages::fill(DecisionMessages::text($settings, $kind, $locale), $values), null, MessageSource::System);
-                $this->done($request, $kind, 'text', $link);
+                $this->done($request, $kind, 'text', $link ?? $payNowLink);
 
                 return;
             }
@@ -103,6 +106,46 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
 
         $conversation->forceFill(['needs_attention' => true, 'handover_reason' => "guest_not_told:{$kind}"])->save();
         Audit::record('booking_requests.guest_not_told', 'The guest could not be told the decision on WhatsApp', subject: $request, properties: ['kind' => $kind]);
+    }
+
+    /**
+     * 0.31: the guest's choice, in one or two sentences: pay the whole stay
+     * now at the pay-now price, or pay at the hotel (room kept until the
+     * hotel's time on the arrival day). Empty when neither applies.
+     */
+    private function payNow(BookingRequest $request, string $kind, string $locale, HotelAssistantSettings $settings, ?DepositLink $link, Deposits $deposits): string
+    {
+        $booking = $request->booking;
+        if ($booking === null || ! in_array($kind, ['confirmed', 'deposit'], true)) {
+            return '';
+        }
+
+        $prepay = $deposits->prepayTotal($booking);
+        $percent = $deposits->prepayPercent();
+        $hold = $settings->pay_at_hotel_hold_until;
+        $parts = [];
+
+        if ($prepay !== null && $link !== null && ($kind === 'confirmed' || $settings->deposit_allow_full)) {
+            $amounts = [
+                'percent' => $percent,
+                'pay_now' => MoneyFormatter::format(Money::ofMinor($prepay, $booking->currency), $locale),
+                'total' => MoneyFormatter::format(Money::ofMinor($booking->total_minor, $booking->currency), $locale),
+                'url' => $deposits->url($link),
+            ];
+            $parts[] = $kind === 'confirmed'
+                ? (string) __('Pay now online and save :percent%: :pay_now instead of :total — :url', $amounts, $locale)
+                : (string) __('Or pay the whole stay now and save :percent%: :pay_now instead of :total, with the same link.', $amounts, $locale);
+        }
+
+        if ($kind === 'confirmed' && $hold !== null && $hold !== '') {
+            $parts[] = $prepay !== null && $link !== null
+                ? (string) __('Or pay at the hotel on arrival: your room is kept until :time on your arrival day.', ['time' => $hold], $locale)
+                : (string) __('You pay at the hotel on arrival: your room is kept until :time on your arrival day. Tell us if you will arrive later.', ['time' => $hold], $locale);
+        } elseif ($kind === 'confirmed' && $parts !== []) {
+            $parts[] = (string) __('Or pay at the hotel on arrival.', locale: $locale);
+        }
+
+        return implode(' ', $parts);
     }
 
     private function template(string $kind, string $locale): ?MessageTemplate

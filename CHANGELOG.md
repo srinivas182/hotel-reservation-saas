@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Pay now or pay at the hotel, discount codes (0.31.0)
+
+#### Added
+
+- **Pay now and save, or pay at the hotel** (Hotel → Deposits → Pay now or pay at the hotel).
+    - The hotel sets a discount for paying the whole stay online before arrival (0 = off).
+    - The confirmation message offers both: the pay-now price with a payment link, or the full price at the hotel. For bookings that need a deposit, the payment page's "whole stay" option carries the discount.
+    - Once the whole stay is paid at the pay-now price, the discount goes on the booking and its bill, the booking is marked prepaid, and the audit log records it. A deposit alone gets no discount.
+- **Hold time for pay-at-the-hotel bookings.** The hotel sets the time on the arrival day until which the room is kept, and the confirmation tells the guest.
+- **Discount codes** (Hotel → Discount codes, for those who set prices).
+    - Each code is a percentage (up to 90%) or a fixed amount, with optional start and end dates, a maximum number of uses and a minimum stay, and can be switched off.
+    - The page shows how many bookings used each code and the total discount given.
+    - The guest gives the code on WhatsApp. The assistant checks it, quotes the reduced price, and sends it with the booking request; an invalid code is explained to the guest.
+    - Reception sees the code on the request. The discount is kept when the booking is approved, and one use is counted.
+- The guest payment page shows "Pay by card" with card brands when the hotel takes payments through Stripe.
+
+#### Changed
+
+- The assistant may mention discount codes and the pay-now price returned by its tools, and still never invents other discounts.
+- The booking reference (for example `FCL-26-0042`) is the confirmation code in every confirmation.
+
 ### Stripe payments, AI models loaded from the provider (0.30.0)
 
 #### Added

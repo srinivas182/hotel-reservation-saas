@@ -20,6 +20,9 @@ use App\Domains\Bookings\NewBooking;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Hotel\StaffedHours;
+use App\Domains\Rates\Coupons\CouponNotValid;
+use App\Domains\Rates\Coupons\Coupons;
+use App\Domains\Rates\Models\Coupon;
 use App\Domains\Rates\Quote\QuoteIssue;
 use App\Domains\Rates\Quote\QuoteService;
 use App\Domains\Rates\Quote\StayRequest;
@@ -48,12 +51,13 @@ final class BookingRequestService
         private readonly QuoteService $quotes,
         private readonly HoldService $holds,
         private readonly BookingService $bookings,
+        private readonly Coupons $coupons,
     ) {}
 
     /**
      * Create (or replace) the conversation's open request and hold its rooms.
      */
-    public function submit(Conversation $conversation, StayRequest $stay, string $guestName): BookingRequest
+    public function submit(Conversation $conversation, StayRequest $stay, string $guestName, ?string $couponCode = null): BookingRequest
     {
         $guest = $conversation->contact->guest ?? throw new RequestNotPossible('no_guest', 'The conversation has no guest.');
         $name = trim($guestName);
@@ -77,8 +81,20 @@ final class BookingRequestService
         $expiresAt = $this->expiryFrom(CarbonImmutable::now());
         $category = RoomCategory::query()->findOrFail($stay->categoryId);
 
+        // 0.31: a coupon the guest gave, checked for this stay before anything is held.
+        $coupon = null;
+        $discount = Money::zero($quote->total->getCurrency());
+        if ($couponCode !== null && trim($couponCode) !== '') {
+            try {
+                $coupon = $this->coupons->check($couponCode, $stay->nights());
+            } catch (CouponNotValid $exception) {
+                throw new RequestNotPossible('coupon_not_valid', $exception->getMessage());
+            }
+            $discount = $this->coupons->discount($coupon, $quote->total);
+        }
+
         try {
-            $request = DB::transaction(function () use ($conversation, $guest, $name, $stay, $quote, $hotel, $expiresAt, $category): BookingRequest {
+            $request = DB::transaction(function () use ($conversation, $guest, $name, $stay, $quote, $hotel, $expiresAt, $category, $coupon, $discount): BookingRequest {
                 // One open request per conversation: the previous one is replaced.
                 foreach (BookingRequest::query()->where('conversation_id', $conversation->id)->where('status', BookingRequestStatus::Pending->value)->lockForUpdate()->get() as $previous) {
                     $this->releaseHold($previous);
@@ -102,7 +118,9 @@ final class BookingRequestService
                     'breakfast' => $stay->breakfast,
                     'extra_bed' => $stay->extraBed,
                     'price_snapshot' => BookingService::snapshot($quote),
-                    'total_minor' => $quote->total->getMinorAmount()->toInt(),
+                    'total_minor' => $quote->total->minus($discount)->getMinorAmount()->toInt(),
+                    'coupon_code' => $coupon?->code,
+                    'discount_minor' => $discount->getMinorAmount()->toInt(),
                     'currency' => $hotel->currency,
                     'expires_at' => $expiresAt,
                 ]);
@@ -168,6 +186,18 @@ final class BookingRequestService
 
         $stay = $changedStay ?? $request->stay();
         $quote = $this->quotes->quote($stay);
+        // 0.31: the coupon promised to the guest is kept on the price of the stay as approved.
+        $couponDiscount = Money::zero($quote->total->getCurrency());
+        if ($request->coupon_code !== null && $overrideTotal === null) {
+            $coupon = Coupon::query()->where('code', $request->coupon_code)->first();
+            $couponDiscount = $coupon === null
+                ? Money::ofMinor(min($request->discount_minor, $quote->total->getMinorAmount()->toInt()), $quote->total->getCurrency())
+                : $this->coupons->discount($coupon, $quote->total);
+            if ($couponDiscount->isPositive()) {
+                $overrideTotal = $quote->total->minus($couponDiscount);
+                $overrideReason = (string) __('Coupon :code', ['code' => $request->coupon_code]);
+            }
+        }
         $priced = $overrideTotal ?? $quote->total;
         $quoted = Money::ofMinor($request->total_minor, $request->currency);
 
@@ -182,7 +212,7 @@ final class BookingRequestService
         $settings = HotelAssistantSettings::current();
 
         try {
-            $booking = DB::transaction(function () use ($request, $by, $stay, $guest, $overrideTotal, $overrideReason, $settings): Booking {
+            $booking = DB::transaction(function () use ($request, $by, $stay, $guest, $overrideTotal, $overrideReason, $settings, $couponDiscount): Booking {
                 $this->releaseHold($request);
 
                 $booking = $this->bookings->create(new NewBooking(
@@ -196,6 +226,11 @@ final class BookingRequestService
                     overrideReason: $overrideReason,
                     tentativeHours: $settings->deposit_hours,
                 ), $by);
+
+                if ($couponDiscount->isPositive()) {
+                    $booking->forceFill(['coupon_code' => $request->coupon_code, 'coupon_discount_minor' => $couponDiscount->getMinorAmount()->toInt()])->save();
+                    $this->coupons->redeem((string) $request->coupon_code);
+                }
 
                 $request->forceFill([
                     'status' => BookingRequestStatus::Approved,

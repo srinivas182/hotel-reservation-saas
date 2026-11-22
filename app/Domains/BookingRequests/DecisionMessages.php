@@ -15,7 +15,7 @@ final class DecisionMessages
 {
     public const KINDS = ['confirmed', 'deposit', 'declined', 'expired'];
 
-    public const PLACEHOLDERS = ['{name}', '{reference}', '{room}', '{check_in}', '{check_out}', '{total}', '{deposit}', '{deposit_deadline}', '{payment_instructions}', '{hotel}'];
+    public const PLACEHOLDERS = ['{name}', '{reference}', '{room}', '{check_in}', '{check_out}', '{total}', '{deposit}', '{deposit_deadline}', '{payment_instructions}', '{hotel}', '{pay_now}'];
 
     public static function default(string $kind, string $locale): string
     {
@@ -41,6 +41,14 @@ final class DecisionMessages
      */
     public static function fill(string $text, array $values): string
     {
-        return strtr($text, $values);
+        $filled = strtr($text, $values);
+        $payNow = trim($values['{pay_now}'] ?? '');
+
+        // 0.31: the pay-now / pay-at-the-hotel choice is added to texts that do not place it.
+        if ($payNow !== '' && ! str_contains($text, '{pay_now}')) {
+            $filled = rtrim($filled)."\n\n".$payNow;
+        }
+
+        return $filled;
     }
 }

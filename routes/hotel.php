@@ -43,6 +43,7 @@ use App\Domains\Orders\Http\Controllers\StayPhoneController;
 use App\Domains\Privacy\Http\Controllers\GuestDataController;
 use App\Domains\Push\Http\Controllers\PushSubscriptionController;
 use App\Domains\Rates\Http\Controllers\CategoryRateController;
+use App\Domains\Rates\Http\Controllers\CouponController;
 use App\Domains\Rates\Http\Controllers\RateOverrideController;
 use App\Domains\Rates\Http\Controllers\RatesController;
 use App\Domains\Rates\Http\Controllers\RateSettingsController;
@@ -113,6 +114,11 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     });
 
     Route::get('hotel/rates', RatesController::class)->middleware('can:rates.view')->name('hotel.rates');
+    Route::get('hotel/coupons', [CouponController::class, 'index'])->middleware('can:rates.view')->name('hotel.coupons');
+    Route::middleware('can:rates.manage')->group(function (): void {
+        Route::post('hotel/coupons', [CouponController::class, 'store'])->name('hotel.coupons.store');
+        Route::put('hotel/coupons/{coupon}', [CouponController::class, 'update'])->name('hotel.coupons.update');
+    });
     Route::middleware('can:rates.manage')->group(function (): void {
         Route::put('hotel/rates/categories/{roomCategory}', [CategoryRateController::class, 'update'])->name('hotel.rates.category');
         Route::put('hotel/rates/settings', [RateSettingsController::class, 'update'])->name('hotel.rates.settings');

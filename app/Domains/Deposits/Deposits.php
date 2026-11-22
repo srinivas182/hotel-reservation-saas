@@ -106,7 +106,7 @@ final class Deposits
             return null;
         }
 
-        $balance = self::payable($this->folio->balance($booking), $booking->currency);
+        $balance = $this->dueNow($booking);
         if ($balance <= 0) {
             return null;
         }
@@ -165,11 +165,58 @@ final class Deposits
     }
 
     /**
-     * What is left to pay on the whole stay (the "pay everything" choice).
+     * What is left to pay on the whole stay (the "pay everything" choice),
+     * with the pay-now discount when it applies.
      */
     public function fullAmount(DepositLink $link): int
     {
-        return self::payable(max($link->deposit_minor, $this->folio->balance($link->booking)), $link->currency);
+        return self::payable(max($link->deposit_minor, $this->dueNow($link->booking)), $link->currency);
+    }
+
+    /**
+     * 0.31: the discount (percent) for paying the whole stay online before
+     * arrival; 0 when the hotel does not offer it or cannot take payments online.
+     */
+    public function prepayPercent(): int
+    {
+        $settings = HotelAssistantSettings::current();
+
+        return $settings->deposit_online && (MerchantAccount::current()?->usable() ?? false) ? max(0, min(50, $settings->prepay_discount_percent)) : 0;
+    }
+
+    /**
+     * The pay-now price of the whole stay, when it still applies: discount
+     * on, nothing paid yet, not already applied. Null otherwise.
+     */
+    public function prepayTotal(Booking $booking): ?int
+    {
+        $percent = $this->prepayPercent();
+
+        if ($percent === 0 || $booking->prepaid_at !== null || $this->folio->payments($booking) > 0
+            || ! in_array($booking->status, [BookingStatus::Tentative, BookingStatus::Confirmed], true)) {
+            return null;
+        }
+
+        return $this->prepayPrice($booking->total_minor, $booking->currency);
+    }
+
+    /** The pay-now price of a total, or null when the hotel offers no pay-now discount. */
+    public function prepayPrice(int $totalMinor, string $currency): ?int
+    {
+        $percent = $this->prepayPercent();
+        if ($percent === 0) {
+            return null;
+        }
+
+        $discounted = Money::ofMinor($totalMinor, $currency)->multipliedBy(100 - $percent)->dividedBy(100, RoundingMode::Up);
+
+        return self::payable($discounted->getMinorAmount()->toInt(), $currency);
+    }
+
+    /** What paying everything now costs: the pay-now price, else the balance. */
+    public function dueNow(Booking $booking): int
+    {
+        return $this->prepayTotal($booking) ?? self::payable($this->folio->balance($booking), $booking->currency);
     }
 
     /** Amounts in F CFA go up to a multiple of 5 (provider rule). */
@@ -196,7 +243,7 @@ final class Deposits
 
         $settings = HotelAssistantSettings::current();
         $amount = match (true) {
-            $link->purpose === 'balance' => self::payable($this->folio->balance($link->booking), $link->currency),
+            $link->purpose === 'balance' => $this->dueNow($link->booking),
             $choice === 'full' && $settings->deposit_allow_full => $this->fullAmount($link),
             default => $link->deposit_minor,
         };
@@ -281,6 +328,21 @@ final class Deposits
         return $attempt;
     }
 
+    private function applyPrepay(Booking $booking, int $prepay): void
+    {
+        $discount = max(0, $booking->total_minor - $prepay);
+        $note = (string) __('Paid in full online before arrival, with a :percent% pay-now discount', ['percent' => $this->prepayPercent()]);
+
+        $booking->forceFill([
+            'total_minor' => $booking->total_minor - $discount,
+            'prepay_discount_minor' => $discount,
+            'prepaid_at' => now(),
+            'payment_note' => trim(($booking->payment_note ?? '').' '.$note),
+        ])->save();
+
+        Audit::record('deposits.prepaid', 'Stay paid in full with the pay-now discount', subject: $booking, properties: ['discount_minor' => $discount, 'paid_minor' => $prepay]);
+    }
+
     /**
      * Staff saw the money arrive (a transfer, cash at a counter…).
      */
@@ -306,8 +368,14 @@ final class Deposits
                 }
 
                 $booking = Booking::query()->findOrFail($locked->booking_id);
+                $prepay = $this->prepayTotal($booking);
                 $receipt = 'R'.HotelClock::today($hotel)->format('ymd').'-'.strtoupper(substr($locked->id, -6));
                 $line = $this->folio->pay($booking, Money::ofMinor($amount, $locked->currency), $method, $receipt, $by, 'deposit', $locked->id);
+
+                // 0.31: the whole stay paid at the pay-now price: the discount goes on the booking.
+                if ($prepay !== null && $amount >= $prepay) {
+                    $this->applyPrepay($booking, $prepay);
+                }
 
                 $locked->forceFill([
                     'status' => 'paid',

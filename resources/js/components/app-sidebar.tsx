@@ -41,6 +41,7 @@ import {
     Settings2,
     UserCog,
     Users,
+    TicketPercent,
 } from 'lucide-react';
 import HotelAuditController from '@/actions/App/Domains/Audit/Http/Controllers/HotelAuditController';
 import UsageController from '@/actions/App/Domains/Messaging/Http/Controllers/UsageController';
@@ -76,6 +77,7 @@ import CalendarController from '@/actions/App/Domains/Availability/Http/Controll
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/TodayController';
 import InboxController from '@/actions/App/Domains/Conversations/Http/Controllers/InboxController';
+import CouponController from '@/actions/App/Domains/Rates/Http/Controllers/CouponController';
 import RatesController from '@/actions/App/Domains/Rates/Http/Controllers/RatesController';
 import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
 import AiController from '@/actions/App/Domains/Platform/Http/Controllers/AiController';
@@ -366,7 +368,14 @@ export function AppSidebar() {
               ]
             : []),
         ...(auth.permissions.includes('rates.view')
-            ? [{ title: 'Rates', href: RatesController(), icon: Tags }]
+            ? [
+                  { title: 'Rates', href: RatesController(), icon: Tags },
+                  {
+                      title: 'Discount codes',
+                      href: CouponController.index(),
+                      icon: TicketPercent,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('staff.manage')
             ? [

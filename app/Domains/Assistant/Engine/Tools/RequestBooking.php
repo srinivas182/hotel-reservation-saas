@@ -7,6 +7,7 @@ namespace App\Domains\Assistant\Engine\Tools;
 use App\Domains\BookingRequests\BookingRequestService;
 use App\Domains\BookingRequests\Exceptions\RequestNotPossible;
 use App\Domains\Conversations\Models\Conversation;
+use App\Domains\Deposits\Deposits;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Rates\Quote\StayRequest;
 use App\Domains\Rooms\Models\RoomCategory;
@@ -44,6 +45,7 @@ final class RequestBooking extends AssistantTool
             'rooms' => $schema->integer(),
             'breakfast' => $schema->boolean(),
             'extra_bed' => $schema->boolean(),
+            'coupon_code' => $schema->string()->description('A discount code the guest gave, if any'),
         ];
     }
 
@@ -89,18 +91,33 @@ final class RequestBooking extends AssistantTool
         }
 
         try {
-            $request = app(BookingRequestService::class)->submit($conversation, $stay, (string) ($arguments['guest_name'] ?? ''));
+            $request = app(BookingRequestService::class)->submit($conversation, $stay, (string) ($arguments['guest_name'] ?? ''), isset($arguments['coupon_code']) ? (string) $arguments['coupon_code'] : null);
         } catch (RequestNotPossible $exception) {
             return ['request_sent' => false, 'reason' => $exception->reason, 'message' => $exception->getMessage()];
         }
 
+        $locale = $this->context->locale !== '' ? $this->context->locale : $hotel->default_locale;
         $total = Money::ofMinor($request->total_minor, $request->currency);
         $this->context->allowMoney($total);
+        $prepay = app(Deposits::class)->prepayPrice($request->total_minor, $request->currency);
+        $extra = [];
+        if ($request->discount_minor > 0) {
+            $off = Money::ofMinor($request->discount_minor, $request->currency);
+            $this->context->allowMoney($off);
+            $extra['coupon_discount'] = MoneyFormatter::format($off, $locale);
+        }
+        if ($prepay !== null) {
+            $payNow = Money::ofMinor($prepay, $request->currency);
+            $this->context->allowMoney($payNow);
+            $extra['pay_now_online'] = MoneyFormatter::format($payNow, $locale);
+            $extra['payment_choice'] = 'Once reception confirms, the guest receives a link to pay the whole stay now for pay_now_online, or can pay total_to_pay at the hotel.';
+        }
 
         return [
+            ...$extra,
             'request_sent' => true,
             'reference' => $request->reference,
-            'total_to_pay' => MoneyFormatter::format($total, $this->context->locale !== '' ? $this->context->locale : $hotel->default_locale),
+            'total_to_pay' => MoneyFormatter::format($total, $locale),
             'rooms_held_until' => $request->expires_at->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             'next_step' => 'Tell the guest the request was sent and reception will confirm it. Do NOT say it is confirmed.',
         ];
