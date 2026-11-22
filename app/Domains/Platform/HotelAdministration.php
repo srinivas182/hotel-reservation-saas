@@ -22,6 +22,7 @@ final class HotelAdministration
     public function __construct(
         private readonly StaffService $staff,
         private readonly HotelRoles $roles,
+        private readonly HotelPeople $people,
     ) {}
 
     /**
@@ -99,7 +100,19 @@ final class HotelAdministration
     {
         $email = $data['owner_email'] ?? null;
 
-        return is_string($email) ? User::query()->where('email', $email)->first() : null;
+        if (! is_string($email) || $email === '') {
+            return null;
+        }
+
+        return $this->people->findOrCreate(
+            $email,
+            is_string($data['owner_first_name'] ?? null) ? $data['owner_first_name'] : null,
+            is_string($data['owner_last_name'] ?? null) ? $data['owner_last_name'] : null,
+            is_string($data['owner_password'] ?? null) ? $data['owner_password'] : null,
+            is_string($data['default_locale'] ?? null) ? $data['default_locale'] : 'fr',
+            auth()->user() instanceof User ? auth()->user() : null,
+            'owner_',
+        );
     }
 
     private function uniqueSlug(string $source): string

@@ -82,9 +82,61 @@ it('validates hotel details', function (): void {
         ->post(route('platform.hotels.store'), validHotelPayload([
             'timezone' => 'Mars/Olympus',
             'country_code' => 'CIV',
-            'owner_email' => 'nobody@example.com',
+            'owner_email' => 'not-an-email',
         ]))
         ->assertSessionHasErrors(['timezone', 'country_code', 'owner_email']);
+});
+
+it('creates the owner\'s account with the password the admin gives', function (): void {
+    $this->actingAs($this->admin)
+        ->post(route('platform.hotels.store'), validHotelPayload([
+            'owner_email' => 'New.Owner@Lodge.test',
+            'owner_first_name' => 'Awa',
+            'owner_last_name' => 'Koné',
+            'owner_password' => 'Lodge-Korhogo-2026!',
+        ]))
+        ->assertSessionHasNoErrors();
+
+    $owner = User::query()->where('email', 'new.owner@lodge.test')->sole();
+    $hotel = Hotel::query()->sole();
+
+    expect($hotel->owner_user_id)->toBe($owner->id)
+        ->and(Illuminate\Support\Facades\Hash::check('Lodge-Korhogo-2026!', $owner->password))->toBeTrue()
+        ->and($owner->email_verified_at)->not->toBeNull()
+        ->and(app(App\Domains\Access\StaffService::class)->roleOf($hotel, $owner)?->name)->toBe('owner')
+        ->and(AuditLog::query()->where('event', 'platform.hotel_user_created')->sole()->properties)->not->toHaveKey('password');
+
+    $this->post(route('logout'));
+    $this->post(route('login.store'), ['email' => 'new.owner@lodge.test', 'password' => 'Lodge-Korhogo-2026!']);
+    $this->assertAuthenticatedAs($owner);
+});
+
+it('asks for a name and password before creating an unknown owner, and creates nothing', function (): void {
+    $this->actingAs($this->admin)
+        ->post(route('platform.hotels.store'), validHotelPayload(['owner_email' => 'nobody@example.com']))
+        ->assertSessionHasErrors(['owner_first_name', 'owner_last_name', 'owner_password']);
+
+    $this->actingAs($this->admin)
+        ->post(route('platform.hotels.store'), validHotelPayload(['owner_email' => 'nobody@example.com', 'owner_first_name' => 'A', 'owner_last_name' => 'B', 'owner_password' => 'short']))
+        ->assertSessionHasErrors(['owner_password']);
+
+    expect(Hotel::query()->count())->toBe(0)->and(User::query()->where('email', 'nobody@example.com')->exists())->toBeFalse();
+});
+
+it('adds a new person to a hotel with a name and password', function (): void {
+    $hotel = Hotel::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->post(route('platform.hotels.members.store', $hotel), ['email' => 'night@lodge.test', 'role' => 'reception'])
+        ->assertSessionHasErrors(['first_name', 'password']);
+
+    $this->actingAs($this->admin)
+        ->post(route('platform.hotels.members.store', $hotel), ['email' => 'night@lodge.test', 'role' => 'reception', 'first_name' => 'Koffi', 'last_name' => 'Yao', 'password' => 'Night-Shift-2026!'])
+        ->assertSessionHasNoErrors();
+
+    $user = User::query()->where('email', 'night@lodge.test')->sole();
+    expect(app(App\Domains\Access\StaffService::class)->roleOf($hotel, $user)?->name)->toBe('reception')
+        ->and(Illuminate\Support\Facades\Hash::check('Night-Shift-2026!', $user->password))->toBeTrue();
 });
 
 it('does not let support staff create or change hotels', function (): void {

@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Admin creates hotel accounts (0.31.3)
+
+#### Added
+
+- **Platform → Hotels → New hotel / Edit:** the owner can be someone without an account.
+    - Enter their e-mail, first and last name and a password: the account is created (e-mail marked as confirmed), made owner, and signs in with that password. The owner can change it in their settings.
+    - An existing e-mail is simply made owner, as before.
+- **Platform → Hotels → Edit → Add to hotel:** the same, with a role (owner, manager, reception, …).
+- The password follows the platform's password rules and is never written to the audit log. Account creation is recorded as `platform.hotel_user_created`.
+
 ### Update script fix (0.31.2)
 
 #### Fixed

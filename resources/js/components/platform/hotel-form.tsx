@@ -172,18 +172,63 @@ export function HotelForm({
                         )}
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="owner_email">
-                            {t('Owner email (existing user, optional)')}
-                        </Label>
-                        <Input
-                            id="owner_email"
-                            name="owner_email"
-                            type="email"
-                            defaultValue={values.owner_email ?? ''}
-                        />
-                        <InputError message={errors.owner_email} />
-                    </div>
+                    <fieldset className="grid gap-4 rounded-xl border p-4 sm:grid-cols-2">
+                        <legend className="px-1 text-sm font-medium">
+                            {t('Owner (optional)')}
+                        </legend>
+                        <p className="text-xs text-muted-foreground sm:col-span-2">
+                            {t(
+                                'An existing account is simply made owner. For a new e-mail, enter the name and a password: the account is created and the owner signs in with them (and can change the password in their settings). Share the password privately.',
+                            )}
+                        </p>
+                        <div className="grid content-start gap-2 sm:col-span-2">
+                            <Label htmlFor="owner_email">
+                                {t('Owner e-mail')}
+                            </Label>
+                            <Input
+                                id="owner_email"
+                                name="owner_email"
+                                type="email"
+                                autoComplete="off"
+                                defaultValue={values.owner_email ?? ''}
+                            />
+                            <InputError message={errors.owner_email} />
+                        </div>
+                        <div className="grid content-start gap-2">
+                            <Label htmlFor="owner_first_name">
+                                {t('First name (new account)')}
+                            </Label>
+                            <Input
+                                id="owner_first_name"
+                                name="owner_first_name"
+                                autoComplete="off"
+                            />
+                            <InputError message={errors.owner_first_name} />
+                        </div>
+                        <div className="grid content-start gap-2">
+                            <Label htmlFor="owner_last_name">
+                                {t('Last name (new account)')}
+                            </Label>
+                            <Input
+                                id="owner_last_name"
+                                name="owner_last_name"
+                                autoComplete="off"
+                            />
+                            <InputError message={errors.owner_last_name} />
+                        </div>
+                        <div className="grid content-start gap-2 sm:col-span-2">
+                            <Label htmlFor="owner_password">
+                                {t('Password (new account)')}
+                            </Label>
+                            <Input
+                                id="owner_password"
+                                name="owner_password"
+                                type="password"
+                                autoComplete="new-password"
+                            />
+                            <InputError message={errors.owner_password} />
+                        </div>
+                    </fieldset>
 
                     {!readOnly && (
                         <Button disabled={processing}>{submitLabel}</Button>

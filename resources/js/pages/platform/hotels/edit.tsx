@@ -137,27 +137,71 @@ export default function HotelsEdit({
                             {...HotelMemberController.store.form(hotel.id)}
                             options={{ preserveScroll: true }}
                             resetOnSuccess
-                            className="flex flex-col gap-2 sm:flex-row sm:items-start"
+                            className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"
                         >
                             {({ processing, errors }) => (
                                 <>
-                                    <div className="flex-1">
+                                    <p className="text-xs text-muted-foreground sm:col-span-2">
+                                        {t(
+                                            'Add someone by e-mail. For a new e-mail, also enter the name and a password: the account is created and they sign in with them.',
+                                        )}
+                                    </p>
+                                    <div className="grid content-start gap-1.5">
                                         <Input
                                             name="email"
                                             type="email"
-                                            placeholder={t(
-                                                'Email of an existing user',
-                                            )}
+                                            autoComplete="off"
+                                            placeholder={t('E-mail')}
                                             aria-label={t(
                                                 'Email of the user to add',
                                             )}
                                             required
                                         />
+                                        <InputError message={errors.email} />
+                                    </div>
+                                    <Input
+                                        name="password"
+                                        type="password"
+                                        autoComplete="new-password"
+                                        placeholder={t(
+                                            'Password (new account)',
+                                        )}
+                                        aria-label={t('Password (new account)')}
+                                    />
+                                    <div className="grid content-start gap-1.5">
+                                        <Input
+                                            name="first_name"
+                                            autoComplete="off"
+                                            placeholder={t(
+                                                'First name (new account)',
+                                            )}
+                                            aria-label={t(
+                                                'First name (new account)',
+                                            )}
+                                        />
                                         <InputError
-                                            className="mt-2"
-                                            message={errors.email}
+                                            message={errors.first_name}
                                         />
                                     </div>
+                                    <div className="grid content-start gap-1.5">
+                                        <Input
+                                            name="last_name"
+                                            autoComplete="off"
+                                            placeholder={t(
+                                                'Last name (new account)',
+                                            )}
+                                            aria-label={t(
+                                                'Last name (new account)',
+                                            )}
+                                        />
+                                        <InputError
+                                            message={errors.last_name}
+                                        />
+                                    </div>
+                                    <InputError
+                                        className="sm:col-span-2"
+                                        message={errors.password}
+                                    />
                                     <select
                                         name="role"
                                         aria-label={t('Role')}
