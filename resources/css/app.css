@@ -218,6 +218,20 @@
         max-width: 100%;
     }
 
+    /* Thin, quiet scrollbars (the menu and panels), never the bulky default. */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in oklab, currentColor 22%, transparent)
+            transparent;
+    }
+    [data-sidebar='content'] {
+        scrollbar-color: transparent transparent;
+    }
+    [data-sidebar='content']:hover {
+        scrollbar-color: color-mix(in oklab, currentColor 28%, transparent)
+            transparent;
+    }
+
     /* A label stacking its text over a control: the control fits the label. */
     :where(label.grid) {
         grid-template-columns: minmax(0, 1fr);
@@ -307,4 +321,13 @@ html[data-large='true']
     html[data-simple='true'] main {
         padding-bottom: calc(5rem + env(safe-area-inset-bottom));
     }
+}
+
+/*
+ * A page heading inside a flex or grid column: the column's gap spaces it,
+ * so its own bottom margin would double the space under it. Outside the
+ * layers so it wins over the heading's mb-8 utility.
+ */
+:is(.flex, .grid) > .page-heading {
+    margin-bottom: 0;
 }
