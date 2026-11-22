@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Professional layout: hotel Bookings, Rates, Rooms, Discount codes; CloudPanel backups (0.34.0)
+
+#### Changed
+
+- Bookings: filters in one labelled bar, a clean table (a click opens the booking), Export CSV and New booking in the header.
+- Rates: tabs Room rates, Date overrides and Pricing settings. Rates are a table (per night, extra adult and child, breakfast, minimum nights); a category opens in a side panel grouped into room price, extra people and breakfast. Overrides are a table with their rules as badges; weekdays are pills, Stop sale and No arrivals are switches with a line of help. "Try a stay" sits under the rates.
+- Rooms: number tiles (rooms, in service, sellable tonight, categories) and each category as a grid of room tiles with a status dot; a room opens in a side panel (status, category, closed dates, remove). Adding rooms and categories happens in side panels.
+- Discount codes: tiles (active codes, bookings with a code, discount given), a table and a side-panel editor.
+- Page headers keep their buttons on the right even with a long description.
+
+#### Added
+
+- `scripts/cloudpanel/backup.sh`: nightly backup for a CloudPanel install (database dump and uploaded files in `~/backups`, 14 days, password never on the command line), recorded so the Operations page and the go-live check "Backup succeeded in the last 26 hours" see it. Set up in docs/cloudpanel.md.
+
 ### Professional layout: the rest of the platform pages (0.33.1)
 
 #### Changed

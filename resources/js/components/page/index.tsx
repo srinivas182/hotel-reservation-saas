@@ -33,7 +33,9 @@ export function PageHeader({
 }) {
     return (
         <div className="flex flex-wrap items-start justify-between gap-4">
-            <Heading title={title} description={description} />
+            <div className="min-w-0 flex-1 basis-80">
+                <Heading title={title} description={description} />
+            </div>
             {actions && (
                 <div className="flex flex-wrap items-center gap-2">
                     {actions}

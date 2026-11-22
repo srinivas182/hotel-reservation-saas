@@ -1,18 +1,28 @@
 import { Form, Head, router } from '@inertiajs/react';
+import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import RoomCategoryController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomCategoryController';
 import RoomClosureController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomClosureController';
 import RoomController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomController';
 import RoomsController from '@/actions/App/Domains/Rooms/Http/Controllers/RoomsController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import {
+    ChoiceCards,
+    EmptyState,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    StatTile,
+} from '@/components/page';
 import type { Category, Option } from '@/components/rooms/category-form';
 import { CategoryForm } from '@/components/rooms/category-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 type Closure = {
     id: string;
@@ -41,23 +51,30 @@ type Props = {
     canManage: boolean;
 };
 
-const selectClass =
-    'flex h-9 w-full rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50';
+const selectClass = 'h-9 w-full disabled:opacity-50';
 
-function RoomRow({
+const statusTone: Record<string, string> = {
+    in_service: 'bg-emerald-500',
+    out_of_order: 'bg-red-500',
+    out_of_service: 'bg-red-500',
+    maintenance: 'bg-amber-500',
+};
+
+function RoomPanel({
     room,
     categories,
     statuses,
     canManage,
+    onClose,
 }: {
-    room: Room;
+    room: Room | undefined;
     categories: Category[];
     statuses: Option[];
     canManage: boolean;
+    onClose: () => void;
 }) {
-    const [closing, setClosing] = useState(false);
-
     const update = (changes: Partial<Room>) =>
+        room &&
         router.put(
             RoomController.update.url(room.id),
             {
@@ -72,161 +89,370 @@ function RoomRow({
         );
 
     return (
-        <li className="flex flex-col gap-2 px-4 py-3 text-sm">
-            <div className="flex flex-wrap items-center gap-3">
-                <span className="w-16 font-medium">{room.number}</span>
-                <span className="w-20 text-muted-foreground">
-                    {room.floor ? t('Floor :floor', { floor: room.floor }) : ''}
-                </span>
-                <div className="w-40">
-                    <select
-                        aria-label={t('Status of room :number', {
-                            number: room.number,
-                        })}
-                        className={selectClass}
-                        value={room.status}
-                        disabled={!canManage}
-                        onChange={(e) => update({ status: e.target.value })}
+        <SidePanel
+            open={room !== undefined}
+            onClose={onClose}
+            title={room ? t('Room :number', { number: room.number }) : ''}
+            description={
+                room?.floor
+                    ? t('Floor :floor', { floor: room.floor })
+                    : undefined
+            }
+        >
+            {room && (
+                <div className="grid gap-6">
+                    <FieldGroup title={t('Room')}>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Field label={t('Status')}>
+                                <select
+                                    className={selectClass}
+                                    value={room.status}
+                                    disabled={!canManage}
+                                    onChange={(e) =>
+                                        update({ status: e.target.value })
+                                    }
+                                >
+                                    {statuses.map((s) => (
+                                        <option key={s.value} value={s.value}>
+                                            {s.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+                            <Field label={t('Category')}>
+                                <select
+                                    className={selectClass}
+                                    value={room.room_category_id}
+                                    disabled={!canManage}
+                                    onChange={(e) =>
+                                        update({
+                                            room_category_id: e.target.value,
+                                        })
+                                    }
+                                >
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.display_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+                        </div>
+                    </FieldGroup>
+                    <FieldGroup
+                        title={t('Closed for dates')}
+                        description={t(
+                            'The room is not sold on these nights (works, private use).',
+                        )}
                     >
-                        {statuses.map((s) => (
-                            <option key={s.value} value={s.value}>
-                                {s.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="w-48">
-                    <select
-                        aria-label={t('Category of room :number', {
-                            number: room.number,
-                        })}
-                        className={selectClass}
-                        value={room.room_category_id}
-                        disabled={!canManage}
-                        onChange={(e) =>
-                            update({ room_category_id: e.target.value })
-                        }
-                    >
-                        {categories.map((c) => (
-                            <option key={c.id} value={c.id}>
-                                {c.display_name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                {canManage && (
-                    <div className="ml-auto flex gap-1">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setClosing(!closing)}
-                        >
-                            {t('Close for dates')}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => {
-                                if (
-                                    window.confirm(
-                                        t('Remove room :number?', {
-                                            number: room.number,
-                                        }),
-                                    )
-                                ) {
-                                    router.delete(
-                                        RoomController.destroy.url(room.id),
-                                        { preserveScroll: true },
-                                    );
-                                }
-                            }}
-                        >
-                            {t('Remove')}
-                        </Button>
-                    </div>
-                )}
-            </div>
-
-            {room.closures.map((closure) => (
-                <div
-                    key={closure.id}
-                    className="flex flex-wrap items-center gap-2 pl-16 text-muted-foreground"
-                >
-                    <Badge variant="outline">{t('Closed')}</Badge>
-                    {closure.from_date} → {closure.to_date}
-                    {closure.reason ? ` · ${closure.reason}` : ''}
+                        {room.closures.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                {t('Open every night.')}
+                            </p>
+                        ) : (
+                            <ul className="divide-y rounded-lg border text-sm">
+                                {room.closures.map((closure) => (
+                                    <li
+                                        key={closure.id}
+                                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                                    >
+                                        <span>
+                                            <span className="tabular-nums">
+                                                {closure.from_date} →{' '}
+                                                {closure.to_date}
+                                            </span>
+                                            {closure.reason && (
+                                                <span className="text-muted-foreground">
+                                                    {' '}
+                                                    · {closure.reason}
+                                                </span>
+                                            )}
+                                        </span>
+                                        {canManage && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    router.delete(
+                                                        RoomClosureController.destroy.url(
+                                                            closure.id,
+                                                        ),
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                            >
+                                                {t('Reopen')}
+                                            </Button>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {canManage && (
+                            <Form
+                                {...RoomClosureController.store.form(room.id)}
+                                options={{ preserveScroll: true }}
+                                resetOnSuccess
+                                className="grid gap-3 sm:grid-cols-2"
+                            >
+                                {({ processing, errors }) => (
+                                    <>
+                                        <Field
+                                            label={t('First night')}
+                                            htmlFor={`from-${room.id}`}
+                                            error={errors.from_date}
+                                        >
+                                            <Input
+                                                id={`from-${room.id}`}
+                                                type="date"
+                                                name="from_date"
+                                                required
+                                            />
+                                        </Field>
+                                        <Field
+                                            label={t('Last night')}
+                                            htmlFor={`to-${room.id}`}
+                                            error={errors.to_date}
+                                        >
+                                            <Input
+                                                id={`to-${room.id}`}
+                                                type="date"
+                                                name="to_date"
+                                                required
+                                            />
+                                        </Field>
+                                        <Field
+                                            label={t('Reason')}
+                                            htmlFor={`reason-${room.id}`}
+                                            className="sm:col-span-2"
+                                        >
+                                            <Input
+                                                id={`reason-${room.id}`}
+                                                name="reason"
+                                                maxLength={200}
+                                            />
+                                        </Field>
+                                        <div className="sm:col-span-2">
+                                            <Button
+                                                variant="outline"
+                                                disabled={processing}
+                                            >
+                                                {t('Close room')}
+                                            </Button>
+                                        </div>
+                                    </>
+                                )}
+                            </Form>
+                        )}
+                    </FieldGroup>
                     {canManage && (
-                        <Button
-                            variant="link"
-                            size="sm"
-                            className="h-auto p-0"
-                            onClick={() =>
-                                router.delete(
-                                    RoomClosureController.destroy.url(
-                                        closure.id,
-                                    ),
-                                    { preserveScroll: true },
-                                )
-                            }
-                        >
-                            {t('Reopen')}
-                        </Button>
+                        <div className="flex justify-start border-t pt-4">
+                            <Button
+                                variant="ghost"
+                                className="text-destructive"
+                                onClick={() => {
+                                    if (
+                                        window.confirm(
+                                            t('Remove room :number?', {
+                                                number: room.number,
+                                            }),
+                                        )
+                                    ) {
+                                        router.delete(
+                                            RoomController.destroy.url(room.id),
+                                            {
+                                                preserveScroll: true,
+                                                onSuccess: onClose,
+                                            },
+                                        );
+                                    }
+                                }}
+                            >
+                                {t('Remove')}
+                            </Button>
+                        </div>
                     )}
                 </div>
-            ))}
+            )}
+        </SidePanel>
+    );
+}
 
-            {closing && (
+function AddRooms({
+    categories,
+    onDone,
+}: {
+    categories: Category[];
+    onDone: () => void;
+}) {
+    const [mode, setMode] = useState<'room' | 'bulk'>('bulk');
+
+    return (
+        <div className="grid gap-6">
+            <ChoiceCards
+                label={t('How many')}
+                value={mode}
+                onChange={(v) => setMode(v as 'room' | 'bulk')}
+                options={[
+                    {
+                        value: 'bulk',
+                        label: t('Add several rooms'),
+                        hint: t('A range of numbers, for example 101 to 110.'),
+                    },
+                    { value: 'room', label: t('Add a room') },
+                ]}
+            />
+            {mode === 'room' ? (
                 <Form
-                    {...RoomClosureController.store.form(room.id)}
+                    {...RoomController.store.form()}
                     options={{ preserveScroll: true }}
-                    onSuccess={() => setClosing(false)}
-                    className="grid gap-2 pl-16 sm:grid-cols-[auto_auto_1fr_auto] sm:items-end"
+                    resetOnSuccess={['number']}
+                    className="grid gap-4 sm:grid-cols-2"
                 >
                     {({ processing, errors }) => (
                         <>
-                            <div className="grid gap-1">
-                                <Label htmlFor={`from-${room.id}`}>
-                                    {t('First night')}
-                                </Label>
+                            <Field
+                                label={t('Room number')}
+                                htmlFor="new-number"
+                                error={errors.number}
+                            >
                                 <Input
-                                    id={`from-${room.id}`}
-                                    type="date"
-                                    name="from_date"
+                                    id="new-number"
+                                    name="number"
+                                    required
+                                    maxLength={20}
+                                />
+                            </Field>
+                            <Field label={t('Floor')} htmlFor="new-floor">
+                                <Input
+                                    id="new-floor"
+                                    name="floor"
+                                    maxLength={20}
+                                />
+                            </Field>
+                            <Field
+                                label={t('Category')}
+                                htmlFor="new-category"
+                                className="sm:col-span-2"
+                            >
+                                <select
+                                    id="new-category"
+                                    name="room_category_id"
+                                    className={selectClass}
+                                >
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.display_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+                            <input
+                                type="hidden"
+                                name="status"
+                                value="in_service"
+                            />
+                            <div className="flex justify-end gap-2 border-t pt-4 sm:col-span-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={onDone}
+                                >
+                                    {t('Close')}
+                                </Button>
+                                <Button disabled={processing}>
+                                    {t('Add room')}
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </Form>
+            ) : (
+                <Form
+                    {...RoomController.bulk.form()}
+                    options={{ preserveScroll: true }}
+                    onSuccess={onDone}
+                    className="grid gap-4 sm:grid-cols-2"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <Field
+                                label={t('Category')}
+                                htmlFor="bulk-category"
+                                className="sm:col-span-2"
+                            >
+                                <select
+                                    id="bulk-category"
+                                    name="room_category_id"
+                                    className={selectClass}
+                                >
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.display_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+                            <Field label={t('From number')} htmlFor="bulk-from">
+                                <Input
+                                    id="bulk-from"
+                                    name="from"
+                                    type="number"
+                                    min={0}
                                     required
                                 />
-                                <InputError message={errors.from_date} />
-                            </div>
-                            <div className="grid gap-1">
-                                <Label htmlFor={`to-${room.id}`}>
-                                    {t('Last night')}
-                                </Label>
+                            </Field>
+                            <Field
+                                label={t('To number')}
+                                htmlFor="bulk-to"
+                                error={errors.to}
+                            >
                                 <Input
-                                    id={`to-${room.id}`}
-                                    type="date"
-                                    name="to_date"
+                                    id="bulk-to"
+                                    name="to"
+                                    type="number"
+                                    min={0}
                                     required
                                 />
-                                <InputError message={errors.to_date} />
-                            </div>
-                            <div className="grid gap-1">
-                                <Label htmlFor={`reason-${room.id}`}>
-                                    {t('Reason')}
-                                </Label>
+                            </Field>
+                            <Field
+                                label={t('Prefix')}
+                                htmlFor="bulk-prefix"
+                                hint={t('Optional, for example A-')}
+                            >
                                 <Input
-                                    id={`reason-${room.id}`}
-                                    name="reason"
-                                    maxLength={200}
+                                    id="bulk-prefix"
+                                    name="prefix"
+                                    maxLength={5}
+                                    placeholder="A-"
                                 />
+                            </Field>
+                            <Field label={t('Floor')} htmlFor="bulk-floor">
+                                <Input
+                                    id="bulk-floor"
+                                    name="floor"
+                                    maxLength={20}
+                                />
+                            </Field>
+                            <div className="flex justify-end gap-2 border-t pt-4 sm:col-span-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={onDone}
+                                >
+                                    {t('Cancel')}
+                                </Button>
+                                <Button disabled={processing}>
+                                    {t('Add rooms')}
+                                </Button>
                             </div>
-                            <Button disabled={processing}>
-                                {t('Close room')}
-                            </Button>
                         </>
                     )}
                 </Form>
             )}
-        </li>
+        </div>
     );
 }
 
@@ -240,95 +466,99 @@ export default function Rooms({
     canManage,
 }: Props) {
     const [editing, setEditing] = useState<string | null>(null);
-    const [adding, setAdding] = useState<'room' | 'bulk' | null>(null);
+    const [adding, setAdding] = useState(false);
+    const [roomId, setRoomId] = useState<string | null>(null);
     const total = rooms.length;
     const inService = rooms.filter((r) => r.status === 'in_service').length;
+    const sellable = categories.reduce((n, c) => n + c.sellable_tonight, 0);
+    const editingCategory = categories.find((c) => c.id === editing);
+    const statusLabel = (v: string) =>
+        statuses.find((s) => s.value === v)?.label ?? v;
 
     return (
         <>
             <Head title={t('Rooms')} />
-            <div className="flex max-w-5xl flex-col gap-8 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <Heading
-                        title={t('Rooms')}
-                        description={t(
-                            ':total rooms, :inService in service. Rooms are sold by category.',
-                            { total, inService },
-                        )}
-                    />
-                    {canManage && editing === null && (
-                        <Button onClick={() => setEditing('new')}>
-                            {t('Add category')}
-                        </Button>
+            <PageBody>
+                <PageHeader
+                    title={t('Rooms')}
+                    description={t(
+                        ':total rooms, :inService in service. Rooms are sold by category.',
+                        { total, inService },
                     )}
+                    actions={
+                        canManage && (
+                            <>
+                                {categories.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setAdding(true)}
+                                    >
+                                        <Plus /> {t('Add rooms')}
+                                    </Button>
+                                )}
+                                <Button onClick={() => setEditing('new')}>
+                                    <Plus /> {t('Add category')}
+                                </Button>
+                            </>
+                        )
+                    }
+                />
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile label={t('Rooms')} value={total} />
+                    <StatTile label={t('In service')} value={inService} />
+                    <StatTile label={t('Sellable tonight')} value={sellable} />
+                    <StatTile
+                        label={t('Categories')}
+                        value={categories.length}
+                    />
                 </div>
 
-                {editing === 'new' && (
-                    <CategoryForm
-                        locales={locales}
-                        defaultLocale={defaultLocale}
-                        amenities={amenities}
-                        onDone={() => setEditing(null)}
+                {categories.length === 0 && (
+                    <EmptyState
+                        text={t(
+                            'Start by adding your room categories, for example Standard or Suite.',
+                        )}
                     />
                 )}
 
-                {categories.length === 0 && editing === null && (
-                    <p className="rounded-xl border px-4 py-8 text-center text-sm text-muted-foreground">
-                        {t(
-                            'Start by adding your room categories, for example Standard or Suite.',
-                        )}
-                    </p>
-                )}
+                {categories.map((category) => {
+                    const list = rooms.filter(
+                        (r) => r.room_category_id === category.id,
+                    );
 
-                {categories.map((category) =>
-                    editing === category.id ? (
-                        <CategoryForm
+                    return (
+                        <Section
                             key={category.id}
-                            category={category}
-                            locales={locales}
-                            defaultLocale={defaultLocale}
-                            amenities={amenities}
-                            onDone={() => setEditing(null)}
-                        />
-                    ) : (
-                        <section
-                            key={category.id}
-                            className="flex flex-col gap-2"
-                        >
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="text-base font-semibold">
-                                    {category.display_name}{' '}
-                                    <span className="text-muted-foreground">
-                                        ({category.code})
-                                    </span>
-                                </h2>
-                                {!category.active && (
-                                    <Badge variant="secondary">
-                                        {t('Not on sale')}
-                                    </Badge>
-                                )}
-                                <span className="text-sm text-muted-foreground">
-                                    {t(
-                                        ':count rooms · :sellable sellable tonight · up to :max guests',
-                                        {
-                                            count: category.rooms_count,
-                                            sellable: category.sellable_tonight,
-                                            max: category.max_occupancy,
-                                        },
+                            title={`${category.display_name} (${category.code})`}
+                            description={t(
+                                ':count rooms · :sellable sellable tonight · up to :max guests',
+                                {
+                                    count: category.rooms_count,
+                                    sellable: category.sellable_tonight,
+                                    max: category.max_occupancy,
+                                },
+                            )}
+                            actions={
+                                <>
+                                    {!category.active && (
+                                        <Badge variant="secondary">
+                                            {t('Not on sale')}
+                                        </Badge>
                                     )}
-                                </span>
-                                {canManage && (
-                                    <div className="ml-auto flex gap-1">
+                                    {canManage && (
                                         <Button
-                                            variant="ghost"
+                                            variant="outline"
                                             size="sm"
                                             onClick={() =>
                                                 setEditing(category.id)
                                             }
                                         >
-                                            {t('Edit')}
+                                            <Pencil /> {t('Edit')}
                                         </Button>
-                                        {category.rooms_count === 0 && (
+                                    )}
+                                    {canManage &&
+                                        category.rooms_count === 0 && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -355,212 +585,102 @@ export default function Rooms({
                                                 {t('Delete')}
                                             </Button>
                                         )}
-                                    </div>
-                                )}
-                            </div>
-                            <ul className="divide-y rounded-xl border">
-                                {rooms.filter(
-                                    (r) => r.room_category_id === category.id,
-                                ).length === 0 && (
-                                    <li className="px-4 py-4 text-sm text-muted-foreground">
-                                        {t('No rooms in this category yet.')}
-                                    </li>
-                                )}
-                                {rooms
-                                    .filter(
-                                        (r) =>
-                                            r.room_category_id === category.id,
-                                    )
-                                    .map((room) => (
-                                        <RoomRow
-                                            key={room.id}
-                                            room={room}
-                                            categories={categories}
-                                            statuses={statuses}
-                                            canManage={canManage}
-                                        />
+                                </>
+                            }
+                        >
+                            {list.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    {t('No rooms in this category yet.')}
+                                </p>
+                            ) : (
+                                <ul className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-2">
+                                    {list.map((room) => (
+                                        <li key={room.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setRoomId(room.id)
+                                                }
+                                                aria-label={t('Room :number', {
+                                                    number: room.number,
+                                                })}
+                                                className="flex w-full flex-col items-start gap-1 rounded-lg border bg-background px-3 py-2 text-left transition-colors hover:border-brand/50 hover:bg-muted/40"
+                                            >
+                                                <span className="flex w-full items-center justify-between gap-2">
+                                                    <span className="font-semibold tabular-nums">
+                                                        {room.number}
+                                                    </span>
+                                                    <span
+                                                        className={cn(
+                                                            'size-2 rounded-full',
+                                                            statusTone[
+                                                                room.status
+                                                            ] ??
+                                                                'bg-muted-foreground',
+                                                        )}
+                                                    />
+                                                </span>
+                                                <span className="truncate text-[11px] text-muted-foreground">
+                                                    {statusLabel(room.status)}
+                                                </span>
+                                                {room.closures.length > 0 && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-[10px]"
+                                                    >
+                                                        {t('Closed')}
+                                                    </Badge>
+                                                )}
+                                            </button>
+                                        </li>
                                     ))}
-                            </ul>
-                        </section>
-                    ),
+                                </ul>
+                            )}
+                        </Section>
+                    );
+                })}
+            </PageBody>
+
+            <SidePanel
+                wide
+                open={editing !== null}
+                onClose={() => setEditing(null)}
+                title={
+                    editingCategory
+                        ? editingCategory.display_name
+                        : t('Add category')
+                }
+            >
+                {editing !== null && (
+                    <CategoryForm
+                        key={editing}
+                        category={editingCategory}
+                        locales={locales}
+                        defaultLocale={defaultLocale}
+                        amenities={amenities}
+                        onDone={() => setEditing(null)}
+                    />
                 )}
-
-                {canManage && categories.length > 0 && (
-                    <section className="flex flex-col gap-3 rounded-xl border p-4">
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                variant={
-                                    adding === 'room' ? 'default' : 'outline'
-                                }
-                                onClick={() =>
-                                    setAdding(adding === 'room' ? null : 'room')
-                                }
-                            >
-                                {t('Add a room')}
-                            </Button>
-                            <Button
-                                variant={
-                                    adding === 'bulk' ? 'default' : 'outline'
-                                }
-                                onClick={() =>
-                                    setAdding(adding === 'bulk' ? null : 'bulk')
-                                }
-                            >
-                                {t('Add several rooms')}
-                            </Button>
-                        </div>
-
-                        {adding === 'room' && (
-                            <Form
-                                {...RoomController.store.form()}
-                                options={{ preserveScroll: true }}
-                                resetOnSuccess={['number']}
-                                className="grid gap-3 sm:grid-cols-4 sm:items-end"
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="new-number">
-                                                {t('Room number')}
-                                            </Label>
-                                            <Input
-                                                id="new-number"
-                                                name="number"
-                                                required
-                                                maxLength={20}
-                                            />
-                                            <InputError
-                                                message={errors.number}
-                                            />
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="new-category">
-                                                {t('Category')}
-                                            </Label>
-                                            <select
-                                                id="new-category"
-                                                name="room_category_id"
-                                                className={selectClass}
-                                            >
-                                                {categories.map((c) => (
-                                                    <option
-                                                        key={c.id}
-                                                        value={c.id}
-                                                    >
-                                                        {c.display_name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="new-floor">
-                                                {t('Floor')}
-                                            </Label>
-                                            <Input
-                                                id="new-floor"
-                                                name="floor"
-                                                maxLength={20}
-                                            />
-                                        </div>
-                                        <input
-                                            type="hidden"
-                                            name="status"
-                                            value="in_service"
-                                        />
-                                        <Button disabled={processing}>
-                                            {t('Add room')}
-                                        </Button>
-                                    </>
-                                )}
-                            </Form>
-                        )}
-
-                        {adding === 'bulk' && (
-                            <Form
-                                {...RoomController.bulk.form()}
-                                options={{ preserveScroll: true }}
-                                className="grid gap-3 sm:grid-cols-6 sm:items-end"
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        <div className="grid gap-1 sm:col-span-2">
-                                            <Label htmlFor="bulk-category">
-                                                {t('Category')}
-                                            </Label>
-                                            <select
-                                                id="bulk-category"
-                                                name="room_category_id"
-                                                className={selectClass}
-                                            >
-                                                {categories.map((c) => (
-                                                    <option
-                                                        key={c.id}
-                                                        value={c.id}
-                                                    >
-                                                        {c.display_name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="bulk-prefix">
-                                                {t('Prefix')}
-                                            </Label>
-                                            <Input
-                                                id="bulk-prefix"
-                                                name="prefix"
-                                                maxLength={5}
-                                                placeholder="A-"
-                                            />
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="bulk-from">
-                                                {t('From number')}
-                                            </Label>
-                                            <Input
-                                                id="bulk-from"
-                                                name="from"
-                                                type="number"
-                                                min={0}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="bulk-to">
-                                                {t('To number')}
-                                            </Label>
-                                            <Input
-                                                id="bulk-to"
-                                                name="to"
-                                                type="number"
-                                                min={0}
-                                                required
-                                            />
-                                            <InputError message={errors.to} />
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="bulk-floor">
-                                                {t('Floor')}
-                                            </Label>
-                                            <Input
-                                                id="bulk-floor"
-                                                name="floor"
-                                                maxLength={20}
-                                            />
-                                        </div>
-                                        <Button
-                                            className="sm:col-span-6 sm:w-fit"
-                                            disabled={processing}
-                                        >
-                                            {t('Add rooms')}
-                                        </Button>
-                                    </>
-                                )}
-                            </Form>
-                        )}
-                    </section>
+            </SidePanel>
+            <SidePanel
+                open={adding}
+                onClose={() => setAdding(false)}
+                title={t('Add rooms')}
+            >
+                {adding && (
+                    <AddRooms
+                        categories={categories}
+                        onDone={() => setAdding(false)}
+                    />
                 )}
-            </div>
+            </SidePanel>
+            <RoomPanel
+                room={rooms.find((r) => r.id === roomId)}
+                categories={categories}
+                statuses={statuses}
+                canManage={canManage}
+                onClose={() => setRoomId(null)}
+            />
         </>
     );
 }

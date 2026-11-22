@@ -1,11 +1,24 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import CategoryRateController from '@/actions/App/Domains/Rates/Http/Controllers/CategoryRateController';
 import RateOverrideController from '@/actions/App/Domains/Rates/Http/Controllers/RateOverrideController';
 import RatesController from '@/actions/App/Domains/Rates/Http/Controllers/RatesController';
 import RateSettingsController from '@/actions/App/Domains/Rates/Http/Controllers/RateSettingsController';
-import Heading from '@/components/heading';
+import {
+    ChipSelect,
+    DataTable,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    Switch,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,8 +77,7 @@ type Props = {
     canManage: boolean;
 };
 
-const selectClass =
-    'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50';
+const selectClass = 'h-9 w-full disabled:opacity-50';
 
 const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -79,9 +91,11 @@ function today(offset = 0): string {
 function CategoryRateForm({
     category,
     props,
+    onDone,
 }: {
     category: Category;
     props: Props;
+    onDone: () => void;
 }) {
     const form = useForm({
         base: category.rate?.base ?? '',
@@ -98,6 +112,7 @@ function CategoryRateForm({
         event.preventDefault();
         form.put(CategoryRateController.update.url(category.id), {
             preserveScroll: true,
+            onSuccess: onDone,
         });
     };
 
@@ -123,102 +138,121 @@ function CategoryRateForm({
     );
 
     return (
-        <form onSubmit={submit} className="rounded-xl border p-4">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="font-medium">{category.name}</span>
-                <span className="text-sm text-muted-foreground">
-                    {category.code}
-                </span>
-                {!category.active && (
-                    <Badge variant="secondary">{t('Not on sale')}</Badge>
-                )}
-                {category.rate === null && (
-                    <Badge variant="destructive">{t('No rate yet')}</Badge>
-                )}
-            </div>
-            <fieldset
-                disabled={!props.canManage}
-                className="grid gap-3 sm:grid-cols-4"
-            >
-                {field(
-                    'base',
-                    t('Nightly rate (:guests guests)', {
-                        guests: category.standard_occupancy,
-                    }),
-                )}
-                {field('extra_adult', t('Extra adult per night'))}
-                {field('child', t('Child per night'))}
-                {field('extra_bed', t('Extra bed per night'))}
-                <div className="grid gap-1">
-                    <Label
-                        htmlFor={`${category.id}-breakfast_mode`}
-                        className="text-xs"
-                    >
-                        {t('Breakfast')}
-                    </Label>
-                    <select
-                        id={`${category.id}-breakfast_mode`}
-                        className={selectClass}
-                        value={form.data.breakfast_mode}
-                        onChange={(e) =>
-                            form.setData('breakfast_mode', e.target.value)
-                        }
-                    >
-                        {props.breakfastModes.map((mode) => (
-                            <option key={mode.value} value={mode.value}>
-                                {mode.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                {form.data.breakfast_mode === 'optional' && (
-                    <div className="grid gap-1">
-                        <Label
-                            htmlFor={`${category.id}-breakfast`}
-                            className="text-xs"
-                        >
-                            {t('Breakfast per person per night')}
-                        </Label>
-                        <Input
-                            id={`${category.id}-breakfast`}
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={form.data.breakfast}
-                            onChange={(e) =>
-                                form.setData('breakfast', e.target.value)
-                            }
-                        />
-                        <InputError message={errors.breakfast} />
+        <form onSubmit={submit} className="grid gap-6">
+            <fieldset disabled={!props.canManage} className="grid gap-6">
+                <FieldGroup
+                    title={t('Room price')}
+                    description={t('Per night, in :currency.', {
+                        currency: props.currency,
+                    })}
+                >
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {field(
+                            'base',
+                            t('Nightly rate (:guests guests)', {
+                                guests: category.standard_occupancy,
+                            }),
+                        )}
+                        <div className="grid gap-1">
+                            <Label
+                                htmlFor={`${category.id}-min_nights`}
+                                className="text-xs"
+                            >
+                                {t('Minimum nights')}
+                            </Label>
+                            <Input
+                                id={`${category.id}-min_nights`}
+                                type="number"
+                                min="1"
+                                max="30"
+                                value={form.data.min_nights}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'min_nights',
+                                        Number(e.target.value),
+                                    )
+                                }
+                            />
+                            <InputError message={errors.min_nights} />
+                        </div>
                     </div>
-                )}
-                <div className="grid gap-1">
-                    <Label
-                        htmlFor={`${category.id}-min_nights`}
-                        className="text-xs"
-                    >
-                        {t('Minimum nights')}
-                    </Label>
-                    <Input
-                        id={`${category.id}-min_nights`}
-                        type="number"
-                        min="1"
-                        max="30"
-                        value={form.data.min_nights}
-                        onChange={(e) =>
-                            form.setData('min_nights', Number(e.target.value))
-                        }
-                    />
-                    <InputError message={errors.min_nights} />
-                </div>
-                {props.canManage && (
-                    <div className="flex items-end">
-                        <Button disabled={form.processing}>
-                            {t('Save rate')}
-                        </Button>
+                </FieldGroup>
+                <FieldGroup
+                    title={t('Extra people')}
+                    description={
+                        category.extra_bed_allowed
+                            ? undefined
+                            : t('Extra beds are off for this category.')
+                    }
+                >
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        {field('extra_adult', t('Extra adult per night'))}
+                        {field('child', t('Child per night'))}
+                        {field('extra_bed', t('Extra bed per night'))}
                     </div>
-                )}
+                </FieldGroup>
+                <FieldGroup title={t('Breakfast')}>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-1">
+                            <Label
+                                htmlFor={`${category.id}-breakfast_mode`}
+                                className="text-xs"
+                            >
+                                {t('Breakfast')}
+                            </Label>
+                            <select
+                                id={`${category.id}-breakfast_mode`}
+                                className={selectClass}
+                                value={form.data.breakfast_mode}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'breakfast_mode',
+                                        e.target.value,
+                                    )
+                                }
+                            >
+                                {props.breakfastModes.map((mode) => (
+                                    <option key={mode.value} value={mode.value}>
+                                        {mode.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {form.data.breakfast_mode === 'optional' && (
+                            <div className="grid gap-1">
+                                <Label
+                                    htmlFor={`${category.id}-breakfast`}
+                                    className="text-xs"
+                                >
+                                    {t('Breakfast per person per night')}
+                                </Label>
+                                <Input
+                                    id={`${category.id}-breakfast`}
+                                    type="number"
+                                    min="0"
+                                    step="any"
+                                    value={form.data.breakfast}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'breakfast',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                <InputError message={errors.breakfast} />
+                            </div>
+                        )}
+                    </div>
+                </FieldGroup>
             </fieldset>
+            {props.canManage && (
+                <div className="flex justify-end gap-2 border-t pt-4">
+                    <Button type="button" variant="ghost" onClick={onDone}>
+                        {t('Cancel')}
+                    </Button>
+                    <Button disabled={form.processing}>{t('Save rate')}</Button>
+                </div>
+            )}
         </form>
     );
 }
@@ -262,21 +296,10 @@ function OverrideForm({
         }
     };
 
-    const toggleDay = (day: number) =>
-        form.setData(
-            'weekdays',
-            form.data.weekdays.includes(day)
-                ? form.data.weekdays.filter((d) => d !== day)
-                : [...form.data.weekdays, day],
-        );
-
     return (
-        <form
-            onSubmit={submit}
-            className="flex flex-col gap-4 rounded-xl border p-4"
-        >
-            <div className="grid gap-3 sm:grid-cols-4">
-                <div className="grid gap-1 sm:col-span-2">
+        <form onSubmit={submit} className="grid gap-6">
+            <div className="grid gap-4 sm:grid-cols-4">
+                <div className="grid gap-1 sm:col-span-4">
                     <Label htmlFor="override-label">{t('Label')}</Label>
                     <Input
                         id="override-label"
@@ -287,7 +310,7 @@ function OverrideForm({
                     />
                     <InputError message={errors.label} />
                 </div>
-                <div className="grid gap-1 sm:col-span-2">
+                <div className="grid gap-1 sm:col-span-4">
                     <Label htmlFor="override-category">
                         {t('Room category')}
                     </Label>
@@ -307,7 +330,7 @@ function OverrideForm({
                         ))}
                     </select>
                 </div>
-                <div className="grid gap-1">
+                <div className="grid gap-1 sm:col-span-2">
                     <Label htmlFor="override-from">{t('From')}</Label>
                     <Input
                         id="override-from"
@@ -319,7 +342,7 @@ function OverrideForm({
                         required
                     />
                 </div>
-                <div className="grid gap-1">
+                <div className="grid gap-1 sm:col-span-2">
                     <Label htmlFor="override-to">{t('To (last night)')}</Label>
                     <Input
                         id="override-to"
@@ -332,7 +355,7 @@ function OverrideForm({
                     />
                     <InputError message={errors.to_date} />
                 </div>
-                <div className="grid gap-1">
+                <div className="grid gap-1 sm:col-span-2">
                     <Label htmlFor="override-rate">
                         {t('Nightly rate (optional)')}
                     </Label>
@@ -346,7 +369,7 @@ function OverrideForm({
                     />
                     <InputError message={errors.rate} />
                 </div>
-                <div className="grid gap-1">
+                <div className="grid gap-1 sm:col-span-2">
                     <Label htmlFor="override-min">
                         {t('Minimum nights (optional)')}
                     </Label>
@@ -367,52 +390,43 @@ function OverrideForm({
                     />
                 </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-muted-foreground">{t('Only on:')}</span>
-                {weekdayNames.map((name, index) => (
-                    <label key={name} className="flex items-center gap-1">
-                        <input
-                            type="checkbox"
-                            className="size-4"
-                            checked={form.data.weekdays.includes(index + 1)}
-                            onChange={() => toggleDay(index + 1)}
-                        />
-                        {t(name)}
-                    </label>
-                ))}
-                <span className="text-muted-foreground">
-                    {t('(none ticked = every day)')}
-                </span>
+            <Field label={t('Only on:')} hint={t('(none ticked = every day)')}>
+                <ChipSelect
+                    label={t('Only on:')}
+                    value={form.data.weekdays.map(String)}
+                    onChange={(v) =>
+                        form.setData(
+                            'weekdays',
+                            v.map(Number).sort((x, y) => x - y),
+                        )
+                    }
+                    options={weekdayNames.map((name, index) => ({
+                        value: String(index + 1),
+                        label: t(name),
+                    }))}
+                />
+            </Field>
+            <div className="grid gap-3">
+                <Switch
+                    checked={form.data.stop_sell}
+                    onChange={(v) => form.setData('stop_sell', v)}
+                    label={t('Stop sale')}
+                    hint={t('No booking at all on these dates.')}
+                />
+                <Switch
+                    checked={form.data.closed_to_arrival}
+                    onChange={(v) => form.setData('closed_to_arrival', v)}
+                    label={t('No arrivals')}
+                    hint={t(
+                        'Guests already staying can continue; nobody can check in on these dates.',
+                    )}
+                />
             </div>
-            <div className="flex flex-wrap gap-4 text-sm">
-                <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        className="size-4"
-                        checked={form.data.stop_sell}
-                        onChange={(e) =>
-                            form.setData('stop_sell', e.target.checked)
-                        }
-                    />
-                    {t('Stop sale')}
-                </label>
-                <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        className="size-4"
-                        checked={form.data.closed_to_arrival}
-                        onChange={(e) =>
-                            form.setData('closed_to_arrival', e.target.checked)
-                        }
-                    />
-                    {t('No arrivals')}
-                </label>
-            </div>
-            <div className="flex gap-2">
-                <Button disabled={form.processing}>{t('Save override')}</Button>
+            <div className="flex justify-end gap-2 border-t pt-4">
                 <Button type="button" variant="ghost" onClick={onDone}>
                     {t('Cancel')}
                 </Button>
+                <Button disabled={form.processing}>{t('Save override')}</Button>
             </div>
         </form>
     );
@@ -438,128 +452,146 @@ function SettingsForm({ props }: { props: Props }) {
     };
 
     return (
-        <form
-            onSubmit={submit}
-            className="flex flex-col gap-4 rounded-xl border p-4"
-        >
-            <fieldset
-                disabled={!props.canManage}
-                className="flex flex-col gap-3"
-            >
-                <Label>{t('Child age bands')}</Label>
-                <p className="text-sm text-muted-foreground">
-                    {t(
+        <form onSubmit={submit} className="flex flex-col gap-6">
+            <fieldset disabled={!props.canManage} className="contents">
+                <Section
+                    aside
+                    title={t('Child age bands')}
+                    description={t(
                         'Older children are charged as adults. With no bands, every child pays the child rate.',
                     )}
-                </p>
-                {bands.map((band, index) => (
-                    <div
-                        key={index}
-                        className="flex flex-wrap items-center gap-2 text-sm"
-                    >
-                        <Input
-                            type="number"
-                            min="0"
-                            max="17"
-                            className="h-8 w-20"
-                            aria-label={t('From age')}
-                            value={band.from}
-                            onChange={(e) =>
-                                setBand(index, { from: Number(e.target.value) })
+                >
+                    <div className="grid gap-3">
+                        {bands.map((band, index) => (
+                            <div
+                                key={index}
+                                className="flex flex-wrap items-center gap-2 text-sm"
+                            >
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    max="17"
+                                    className="h-8 w-20"
+                                    aria-label={t('From age')}
+                                    value={band.from}
+                                    onChange={(e) =>
+                                        setBand(index, {
+                                            from: Number(e.target.value),
+                                        })
+                                    }
+                                />
+                                –
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    max="17"
+                                    className="h-8 w-20"
+                                    aria-label={t('To age')}
+                                    value={band.to}
+                                    onChange={(e) =>
+                                        setBand(index, {
+                                            to: Number(e.target.value),
+                                        })
+                                    }
+                                />
+                                <select
+                                    className={`${selectClass} h-8 w-auto`}
+                                    aria-label={t('Charge')}
+                                    value={band.charge}
+                                    onChange={(e) =>
+                                        setBand(index, {
+                                            charge: e.target.value,
+                                        })
+                                    }
+                                >
+                                    {props.childCharges.map((charge) => (
+                                        <option
+                                            key={charge.value}
+                                            value={charge.value}
+                                        >
+                                            {charge.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                        form.setData(
+                                            'child_age_bands',
+                                            bands.filter((_, i) => i !== index),
+                                        )
+                                    }
+                                >
+                                    {t('Remove')}
+                                </Button>
+                            </div>
+                        ))}
+                        <InputError
+                            message={
+                                errors['child_age_bands.0.from'] ??
+                                errors['child_age_bands.1.from'] ??
+                                errors['child_age_bands.2.from']
                             }
                         />
-                        –
+                        {bands.length < 3 && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-fit"
+                                onClick={() => {
+                                    const from =
+                                        bands.length === 0
+                                            ? 0
+                                            : bands[bands.length - 1].to + 1;
+                                    form.setData('child_age_bands', [
+                                        ...bands,
+                                        {
+                                            from,
+                                            to: Math.min(17, from + 5),
+                                            charge: 'child',
+                                        },
+                                    ]);
+                                }}
+                            >
+                                {t('Add age band')}
+                            </Button>
+                        )}
+                    </div>
+                </Section>
+                <Section
+                    aside
+                    title={t('Rooms on hold')}
+                    description={t(
+                        'While a guest is booking on WhatsApp, the rooms are kept for them this long.',
+                    )}
+                >
+                    <div className="grid max-w-xs gap-1">
+                        <Label htmlFor="hold_minutes">
+                            {t(
+                                'Hold rooms while a booking is in progress (minutes)',
+                            )}
+                        </Label>
                         <Input
+                            id="hold_minutes"
                             type="number"
-                            min="0"
-                            max="17"
-                            className="h-8 w-20"
-                            aria-label={t('To age')}
-                            value={band.to}
+                            min="5"
+                            max="1440"
+                            value={form.data.hold_minutes}
                             onChange={(e) =>
-                                setBand(index, { to: Number(e.target.value) })
-                            }
-                        />
-                        <select
-                            className={`${selectClass} h-8 w-auto`}
-                            aria-label={t('Charge')}
-                            value={band.charge}
-                            onChange={(e) =>
-                                setBand(index, { charge: e.target.value })
-                            }
-                        >
-                            {props.childCharges.map((charge) => (
-                                <option key={charge.value} value={charge.value}>
-                                    {charge.label}
-                                </option>
-                            ))}
-                        </select>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
                                 form.setData(
-                                    'child_age_bands',
-                                    bands.filter((_, i) => i !== index),
+                                    'hold_minutes',
+                                    Number(e.target.value),
                                 )
                             }
-                        >
-                            {t('Remove')}
-                        </Button>
+                        />
+                        <InputError message={errors.hold_minutes} />
                     </div>
-                ))}
-                <InputError
-                    message={
-                        errors['child_age_bands.0.from'] ??
-                        errors['child_age_bands.1.from'] ??
-                        errors['child_age_bands.2.from']
-                    }
-                />
-                {bands.length < 3 && (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="w-fit"
-                        onClick={() => {
-                            const from =
-                                bands.length === 0
-                                    ? 0
-                                    : bands[bands.length - 1].to + 1;
-                            form.setData('child_age_bands', [
-                                ...bands,
-                                {
-                                    from,
-                                    to: Math.min(17, from + 5),
-                                    charge: 'child',
-                                },
-                            ]);
-                        }}
-                    >
-                        {t('Add age band')}
-                    </Button>
-                )}
-                <div className="grid max-w-xs gap-1">
-                    <Label htmlFor="hold_minutes">
-                        {t(
-                            'Hold rooms while a booking is in progress (minutes)',
-                        )}
-                    </Label>
-                    <Input
-                        id="hold_minutes"
-                        type="number"
-                        min="5"
-                        max="1440"
-                        value={form.data.hold_minutes}
-                        onChange={(e) =>
-                            form.setData('hold_minutes', Number(e.target.value))
-                        }
-                    />
-                    <InputError message={errors.hold_minutes} />
-                </div>
+                </Section>
                 {props.canManage && (
-                    <div>
+                    <div className="flex justify-end">
                         <Button disabled={form.processing}>
                             {t('Save pricing settings')}
                         </Button>
@@ -570,168 +602,344 @@ function SettingsForm({ props }: { props: Props }) {
     );
 }
 
+const amount = (value: string | null | undefined) =>
+    value === null || value === undefined || value === ''
+        ? '—'
+        : Number(value).toLocaleString();
+
 export default function Rates(props: Props) {
-    const [editing, setEditing] = useState<string | null>(null);
+    const tabs = [
+        {
+            key: 'rooms',
+            label: t('Room rates'),
+            count: props.categories.length,
+        },
+        {
+            key: 'dates',
+            label: t('Date overrides'),
+            count: props.overrides.length,
+        },
+        { key: 'settings', label: t('Pricing settings') },
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const [category, setCategory] = useState<Category | null>(null);
+    const [editing, setEditing] = useState<Override | 'new' | null>(null);
+    const override =
+        editing === 'new' || editing === null ? undefined : editing;
     const categoryName = (id: string | null) =>
         id === null
             ? t('All categories')
             : (props.categories.find((c) => c.id === id)?.name ?? '—');
+    const breakfastLabel = (mode: string) =>
+        props.breakfastModes.find((m) => m.value === mode)?.label ?? mode;
 
     return (
         <>
             <Head title={t('Rates')} />
-            <div className="flex max-w-5xl flex-col gap-8 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Rates')}
                     description={t(
                         'Prices in :currency. Taxes are applied from your tax settings.',
                         { currency: props.currency },
                     )}
-                />
-
-                <section className="flex flex-col gap-3">
-                    {props.categories.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                            {t('Add room categories first.')}
-                        </p>
-                    )}
-                    {props.categories.map((category) => (
-                        <CategoryRateForm
-                            key={category.id}
-                            category={category}
-                            props={props}
-                        />
-                    ))}
-                </section>
-
-                <section className="flex flex-col gap-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Heading
-                            variant="small"
-                            title={t('Date overrides')}
-                            description={t(
-                                'Seasons, events and restrictions. When overrides overlap, the most recently changed one sets the price.',
-                            )}
-                        />
-                        {props.canManage && editing === null && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setEditing('new')}
-                            >
-                                {t('Add override')}
+                    actions={
+                        tab === 'dates' &&
+                        props.canManage && (
+                            <Button onClick={() => setEditing('new')}>
+                                <Plus /> {t('Add override')}
                             </Button>
+                        )
+                    }
+                />
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+
+                {tab === 'rooms' && (
+                    <>
+                        <Section
+                            flush
+                            title={t('Room rates')}
+                            description={t(
+                                'The usual price of each room category. Click a category to change it.',
+                            )}
+                        >
+                            <DataTable
+                                rows={props.categories}
+                                rowKey={(c) => c.id}
+                                empty={t('Add room categories first.')}
+                                onRowClick={setCategory}
+                                columns={[
+                                    {
+                                        key: 'name',
+                                        header: t('Room category'),
+                                        cell: (c) => (
+                                            <div>
+                                                <div className="font-medium">
+                                                    {c.name}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {c.code} ·{' '}
+                                                    {t(':count guests', {
+                                                        count: c.standard_occupancy,
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'base',
+                                        header: t('Per night'),
+                                        align: 'right',
+                                        cell: (c) =>
+                                            c.rate ? (
+                                                <span className="font-semibold">
+                                                    {amount(c.rate.base)}{' '}
+                                                    <span className="text-xs font-normal text-muted-foreground">
+                                                        {props.currency}
+                                                    </span>
+                                                </span>
+                                            ) : (
+                                                <Badge variant="destructive">
+                                                    {t('No rate yet')}
+                                                </Badge>
+                                            ),
+                                    },
+                                    {
+                                        key: 'extra',
+                                        header: t('Extra adult / child'),
+                                        align: 'right',
+                                        cell: (c) =>
+                                            c.rate
+                                                ? `${amount(c.rate.extra_adult)} / ${amount(c.rate.child)}`
+                                                : '—',
+                                    },
+                                    {
+                                        key: 'breakfast',
+                                        header: t('Breakfast'),
+                                        cell: (c) =>
+                                            c.rate
+                                                ? breakfastLabel(
+                                                      c.rate.breakfast_mode,
+                                                  )
+                                                : '—',
+                                    },
+                                    {
+                                        key: 'min',
+                                        header: t('Minimum nights'),
+                                        align: 'right',
+                                        cell: (c) => c.rate?.min_nights ?? '—',
+                                    },
+                                    {
+                                        key: 'status',
+                                        header: t('Status'),
+                                        cell: (c) =>
+                                            c.active ? (
+                                                <Badge variant="outline">
+                                                    {t('On sale')}
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary">
+                                                    {t('Not on sale')}
+                                                </Badge>
+                                            ),
+                                    },
+                                ]}
+                            />
+                        </Section>
+                        {props.categories.length > 0 && (
+                            <TryAStay
+                                categories={props.categories}
+                                quote={props.quote}
+                            />
                         )}
-                    </div>
-                    {editing === 'new' && (
-                        <OverrideForm
-                            props={props}
-                            onDone={() => setEditing(null)}
-                        />
-                    )}
-                    <ul className="flex flex-col gap-2">
-                        {props.overrides.map((override) =>
-                            editing === override.id ? (
-                                <li key={override.id}>
-                                    <OverrideForm
-                                        props={props}
-                                        override={override}
-                                        onDone={() => setEditing(null)}
-                                    />
-                                </li>
-                            ) : (
-                                <li
-                                    key={override.id}
-                                    className="flex flex-wrap items-center gap-2 rounded-xl border px-4 py-3 text-sm"
-                                >
-                                    <div className="min-w-0 flex-1">
-                                        <div className="font-medium">
-                                            {override.label}
+                    </>
+                )}
+
+                {tab === 'dates' && (
+                    <Section
+                        flush
+                        title={t('Date overrides')}
+                        description={t(
+                            'Seasons, events and restrictions. When overrides overlap, the most recently changed one sets the price.',
+                        )}
+                    >
+                        <DataTable
+                            rows={props.overrides}
+                            rowKey={(o) => o.id}
+                            empty={t(
+                                'No override yet: the usual rates apply every day.',
+                            )}
+                            onRowClick={
+                                props.canManage ? setEditing : undefined
+                            }
+                            columns={[
+                                {
+                                    key: 'label',
+                                    header: t('Label'),
+                                    cell: (o) => (
+                                        <div>
+                                            <div className="font-medium">
+                                                {o.label}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {categoryName(
+                                                    o.room_category_id,
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="text-muted-foreground">
-                                            {categoryName(
-                                                override.room_category_id,
-                                            )}{' '}
-                                            · {override.from_date} →{' '}
-                                            {override.to_date}
-                                            {override.weekdays.length > 0 &&
-                                                ` · ${override.weekdays.map((d) => t(weekdayNames[d - 1])).join(', ')}`}
-                                            {override.rate !== null &&
-                                                ` · ${override.rate} ${props.currency}`}
-                                            {override.min_nights !== null &&
-                                                ` · ${t('min :nights nights', { nights: override.min_nights })}`}
-                                        </div>
-                                    </div>
-                                    {override.stop_sell && (
-                                        <Badge variant="destructive">
-                                            {t('Stop sale')}
-                                        </Badge>
-                                    )}
-                                    {override.closed_to_arrival && (
-                                        <Badge variant="secondary">
-                                            {t('No arrivals')}
-                                        </Badge>
-                                    )}
-                                    {override.overlaps && (
-                                        <Badge variant="outline">
-                                            {t('Overlaps another override')}
-                                        </Badge>
-                                    )}
-                                    {props.canManage && (
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() =>
-                                                    setEditing(override.id)
-                                                }
-                                            >
-                                                {t('Edit')}
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-destructive"
-                                                onClick={() => {
-                                                    if (
-                                                        window.confirm(
-                                                            t('Delete :name?', {
-                                                                name: override.label,
-                                                            }),
-                                                        )
-                                                    ) {
-                                                        router.delete(
-                                                            RateOverrideController.destroy.url(
-                                                                override.id,
+                                    ),
+                                },
+                                {
+                                    key: 'dates',
+                                    header: t('Dates'),
+                                    cell: (o) => (
+                                        <div>
+                                            <div className="tabular-nums">
+                                                {o.from_date} → {o.to_date}
+                                            </div>
+                                            {o.weekdays.length > 0 && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    {o.weekdays
+                                                        .map((d) =>
+                                                            t(
+                                                                weekdayNames[
+                                                                    d - 1
+                                                                ],
                                                             ),
-                                                            {
-                                                                preserveScroll: true,
-                                                            },
-                                                        );
-                                                    }
-                                                }}
-                                            >
-                                                {t('Delete')}
-                                            </Button>
+                                                        )
+                                                        .join(', ')}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </li>
-                            ),
-                        )}
-                    </ul>
-                </section>
+                                    ),
+                                },
+                                {
+                                    key: 'rate',
+                                    header: t('Per night'),
+                                    align: 'right',
+                                    cell: (o) =>
+                                        o.rate !== null
+                                            ? `${amount(o.rate)} ${props.currency}`
+                                            : '—',
+                                },
+                                {
+                                    key: 'rules',
+                                    header: t('Rules'),
+                                    cell: (o) => (
+                                        <div className="flex flex-wrap gap-1">
+                                            {o.min_nights !== null && (
+                                                <Badge variant="outline">
+                                                    {t('min :nights nights', {
+                                                        nights: o.min_nights,
+                                                    })}
+                                                </Badge>
+                                            )}
+                                            {o.stop_sell && (
+                                                <Badge variant="destructive">
+                                                    {t('Stop sale')}
+                                                </Badge>
+                                            )}
+                                            {o.closed_to_arrival && (
+                                                <Badge variant="secondary">
+                                                    {t('No arrivals')}
+                                                </Badge>
+                                            )}
+                                            {o.overlaps && (
+                                                <Badge variant="outline">
+                                                    {t(
+                                                        'Overlaps another override',
+                                                    )}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    ),
+                                },
+                                ...(props.canManage
+                                    ? [
+                                          {
+                                              key: 'delete',
+                                              header: '',
+                                              align: 'right' as const,
+                                              cell: (o: Override) => (
+                                                  <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      className="text-destructive"
+                                                      onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          if (
+                                                              window.confirm(
+                                                                  t(
+                                                                      'Delete :name?',
+                                                                      {
+                                                                          name: o.label,
+                                                                      },
+                                                                  ),
+                                                              )
+                                                          ) {
+                                                              router.delete(
+                                                                  RateOverrideController.destroy.url(
+                                                                      o.id,
+                                                                  ),
+                                                                  {
+                                                                      preserveScroll: true,
+                                                                  },
+                                                              );
+                                                          }
+                                                      }}
+                                                  >
+                                                      {t('Delete')}
+                                                  </Button>
+                                              ),
+                                          },
+                                      ]
+                                    : []),
+                            ]}
+                        />
+                    </Section>
+                )}
 
-                <section className="flex flex-col gap-3">
-                    <Heading variant="small" title={t('Pricing settings')} />
-                    <SettingsForm props={props} />
-                </section>
+                {tab === 'settings' && <SettingsForm props={props} />}
+            </PageBody>
 
-                {props.categories.length > 0 && (
-                    <TryAStay
-                        categories={props.categories}
-                        quote={props.quote}
+            <SidePanel
+                open={category !== null}
+                onClose={() => setCategory(null)}
+                title={category ? category.name : ''}
+                description={
+                    category
+                        ? t('Nightly rate (:guests guests)', {
+                              guests: category.standard_occupancy,
+                          })
+                        : undefined
+                }
+            >
+                {category && (
+                    <CategoryRateForm
+                        key={category.id}
+                        category={category}
+                        props={props}
+                        onDone={() => setCategory(null)}
                     />
                 )}
-            </div>
+            </SidePanel>
+            <SidePanel
+                open={editing !== null}
+                onClose={() => setEditing(null)}
+                title={override ? override.label : t('Add override')}
+                description={t(
+                    'A different price or rule for some dates (a season, an event, a closure).',
+                )}
+            >
+                {editing !== null && (
+                    <OverrideForm
+                        key={override?.id ?? 'new'}
+                        props={props}
+                        override={override}
+                        onDone={() => setEditing(null)}
+                    />
+                )}
+            </SidePanel>
         </>
     );
 }

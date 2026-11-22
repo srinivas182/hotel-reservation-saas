@@ -114,6 +114,14 @@ Without root (no supervisor): open the DigitalOcean Droplet Console (it logs in 
 cd /home/<site-user>/htdocs/<domain> && /usr/bin/flock -n /tmp/hotel-horizon.lock /usr/bin/php8.4 artisan horizon >> /home/<site-user>/logs/horizon.log 2>&1
 ```
 
+**Backups.** CloudPanel → Cron Jobs, every night (`15 2 * * *`):
+
+```
+bash /home/<site-user>/htdocs/<domain>/scripts/cloudpanel/backup.sh >> /home/<site-user>/logs/backup.log 2>&1
+```
+
+It dumps the database (`mysqldump --single-transaction`, password from `.env` through `MYSQL_PWD`, never on the command line) and `storage/app` into `~/backups` (only the site user can read it), keeps 14 days, and records the result so Platform → Operations and the go-live check "Backup succeeded in the last 26 hours" see it. Run it once by hand after setting it up. Copy `~/backups` off the server too (CloudPanel's remote backups, or `rclone`): a backup on the same disk does not survive losing the droplet.
+
 **Email.** `MAIL_MAILER=platform` in `.env` (then `php8.4 artisan config:cache`), and enable a provider in Platform → Email providers. With `MAIL_MAILER=log` nothing is sent, even though a provider's "Send test" button works (it talks to the provider directly). `update.sh` and Platform → Operations warn about both.
 
 ---
