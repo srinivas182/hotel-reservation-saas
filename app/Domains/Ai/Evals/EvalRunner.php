@@ -31,6 +31,23 @@ final class EvalRunner
 
     public const DEFAULT_SUITE = 'resources/ai-evals/assistant.json';
 
+    /** The model PrepareSimulation creates for staging. */
+    public const SIMULATED_MODEL = 'simulated-model';
+
+    /**
+     * With SIMULATION_FAKE_AI on, every answer comes from the simulator,
+     * whatever the model: a run would grade the simulator, not the model,
+     * and could approve (or fail) a model that was never called.
+     */
+    public static function blockedReason(AiModel $model): ?string
+    {
+        if (! config('simulation.enabled') || ! config('simulation.fake_ai') || $model->model === self::SIMULATED_MODEL) {
+            return null;
+        }
+
+        return __('SIMULATION_FAKE_AI is on, so the simulator answers instead of :model and the results would mean nothing. Set SIMULATION_FAKE_AI=false in .env, run php artisan config:cache, then run the test suite again.', ['model' => $model->model]);
+    }
+
     public function __construct(private readonly TenantContext $context) {}
 
     /**

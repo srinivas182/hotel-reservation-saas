@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### The AI test suite refuses to grade the simulator (0.35.1)
+
+#### Fixed
+
+- `php artisan ai:eval` and Platform → AI → "Run test suite" now refuse to run against a real model while staging answers with the simulator (`SIMULATION_MODE` and `SIMULATION_FAKE_AI` on). Before, the run graded the simulator instead of the chosen model: most cases failed, at no cost, which looked like a weak model. The message says what to change. The staging "Simulated" model can still be tested.
+
 ### Professional layout: the rest of the hotel pages (0.35.0)
 
 #### Changed

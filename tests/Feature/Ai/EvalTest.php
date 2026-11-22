@@ -112,3 +112,20 @@ it('runs the suite in the background from the platform, for super admins only', 
 
     Queue::assertPushed(RunEvalSuite::class, fn (RunEvalSuite $job): bool => $job->modelId === $this->models['main']->id && $job->approve);
 });
+
+it('refuses to grade a real model while the simulator answers instead of it', function (): void {
+    config(['simulation.enabled' => true, 'simulation.fake_ai' => true]);
+    $admin = User::factory()->platformAdmin()->withTwoFactor()->create();
+
+    $this->artisan('ai:eval', ['model' => 'main-model', '--suite' => $this->suite])
+        ->expectsOutputToContain('SIMULATION_FAKE_AI')
+        ->assertFailed();
+    expect(AiEvalRun::query()->count())->toBe(0);
+
+    Queue::fake();
+    $this->actingAs($admin)->post(route('platform.ai.models.evaluate', $this->models['main']))->assertRedirect();
+    Queue::assertNothingPushed();
+
+    config(['simulation.fake_ai' => false]);
+    expect(EvalRunner::blockedReason($this->models['main']))->toBeNull();
+});

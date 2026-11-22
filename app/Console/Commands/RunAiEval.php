@@ -25,6 +25,12 @@ final class RunAiEval extends Command
             return self::FAILURE;
         }
 
+        if (($blocked = EvalRunner::blockedReason($model)) !== null) {
+            $this->components->error($blocked);
+
+            return self::FAILURE;
+        }
+
         $this->components->info("Running the test suite against {$model->label} ({$model->model})…");
 
         $run = $runner->run(
