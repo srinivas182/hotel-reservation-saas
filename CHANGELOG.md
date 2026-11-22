@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Testing switch for two-step login, CloudPanel guide (0.27.1)
+
+#### Added
+
+- **`AUTH_TWO_FACTOR_REQUIRED=false`** lets platform staff and hotel owners in without two-step login on a testing server. Ignored in production, where two-step login is always required.
+- **CloudPanel guide** (`docs/cloudpanel.md`) and **`scripts/cloudpanel/update.sh`**: update a CloudPanel server in one command (maintenance mode, pull, packages, build, migrations, caches, queue restart), create the super admin, testing settings, scheduler and queue workers, common problems.
+- The frontend build can use a given PHP version (`PHP_BIN=php8.4 npm run build`) on servers with several.
+
 ### Sprint J — landing page and public website redesign (0.27.0)
 
 #### Changed

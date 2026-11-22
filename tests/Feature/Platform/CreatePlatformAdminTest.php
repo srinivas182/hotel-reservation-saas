@@ -61,3 +61,14 @@ it('seeds the demo super admin on a developer machine', function (): void {
     // No factory or fake() left in the seeder (staging images have no Faker).
     expect(file_get_contents(database_path('seeders/LocalDemoSeeder.php')))->not->toContain('factory(')->not->toContain('fake(');
 });
+
+it('skips two-step login on a testing server when switched off, never in production', function (): void {
+    $this->artisan('platform:create-admin', ['email' => 'tester@example.com'])->assertSuccessful();
+    $admin = User::query()->where('email', 'tester@example.com')->sole();
+
+    config(['auth.two_factor_required' => false]);
+    $this->actingAs($admin)->get('/platform')->assertOk();
+
+    $this->app['env'] = 'production';
+    $this->actingAs($admin)->get('/platform')->assertRedirect(route('security.edit'));
+});

@@ -24,6 +24,12 @@ export default defineConfig({
         tailwindcss(),
         wayfinder({
             formVariants: true,
+            // Servers with several PHP versions (CloudPanel): PHP_BIN=php8.4 npm run build
+            ...(process.env.PHP_BIN
+                ? {
+                      command: `${process.env.PHP_BIN} artisan wayfinder:generate`,
+                  }
+                : {}),
         }),
     ]),
     server: {

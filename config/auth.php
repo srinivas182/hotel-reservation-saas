@@ -116,4 +116,11 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    | Two-step login for platform staff and hotel owners. Set
+    | AUTH_TWO_FACTOR_REQUIRED=false on a testing server to skip it while
+    | trying the platform; it is always required in production.
+    */
+    'two_factor_required' => (bool) env('AUTH_TWO_FACTOR_REQUIRED', true),
+
 ];

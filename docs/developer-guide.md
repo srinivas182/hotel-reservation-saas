@@ -13,7 +13,7 @@ How to run Assistant Hôtel on your own computer and on DigitalOcean, which acco
 | Use the platform day to day               | [9. Using the platform](#9-using-the-platform)                         |
 | Fix a common problem                      | [10. Troubleshooting](#10-troubleshooting)                             |
 
-Related documents: [`deployment.md`](deployment.md) (server reference), [`operations.md`](operations.md), [`security.md`](security.md), [`launch-defaults.md`](launch-defaults.md), [`release-process.md`](release-process.md).
+Related documents: [`deployment.md`](deployment.md) (server reference), [`cloudpanel.md`](cloudpanel.md) (servers managed with CloudPanel), [`operations.md`](operations.md), [`security.md`](security.md), [`launch-defaults.md`](launch-defaults.md), [`release-process.md`](release-process.md).
 
 ---
 
