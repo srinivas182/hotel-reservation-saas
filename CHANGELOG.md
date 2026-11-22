@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Heartbeat fix (0.27.2)
+
+#### Fixed
+
+- The health check read the scheduler and queue heartbeats only as numbers; Redis returns them as text, so `/health` reported "No heartbeat recorded yet" on Redis servers. Both forms are accepted now (found and fixed first on the CloudPanel server by the developer).
+
 ### Testing switch for two-step login, CloudPanel guide (0.27.1)
 
 #### Added
