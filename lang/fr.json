@@ -2828,6 +2828,7 @@
     "Simple prices, in your currency": "Des prix simples, dans votre monnaie",
     "Simulated payment": "Paiement simulé",
     "Simulation: no real money": "Simulation : pas d’argent réel",
+    "SIMULATION_FAKE_AI is on, so the simulator answers instead of :model and the results would mean nothing. Set SIMULATION_FAKE_AI=false in .env, run php artisan config:cache, then run the test suite again.": "SIMULATION_FAKE_AI est activé : le simulateur répond à la place de :model et les résultats ne voudraient rien dire. Mettez SIMULATION_FAKE_AI=false dans .env, lancez php artisan config:cache, puis relancez la batterie de tests.",
     "since :date": "depuis le :date",
     "since :time": "depuis :time",
     "Site ID": "Site ID",

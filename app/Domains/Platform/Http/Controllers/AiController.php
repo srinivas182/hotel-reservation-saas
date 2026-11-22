@@ -7,6 +7,7 @@ namespace App\Domains\Platform\Http\Controllers;
 use App\Domains\Ai\Agents\PingAgent;
 use App\Domains\Ai\AiDriver;
 use App\Domains\Ai\Evals\AiEvalRun;
+use App\Domains\Ai\Evals\EvalRunner;
 use App\Domains\Ai\Evals\RunEvalSuite;
 use App\Domains\Ai\Gateway\ProviderRegistry;
 use App\Domains\Ai\ModelCatalog;
@@ -254,6 +255,12 @@ final class AiController extends Controller
     public function evaluate(Request $request, AiModel $aiModel, #[CurrentUser] User $user): RedirectResponse
     {
         $this->authorizeSuperAdmin($user);
+
+        if (($blocked = EvalRunner::blockedReason($aiModel)) !== null) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $blocked]);
+
+            return back();
+        }
 
         RunEvalSuite::dispatch($aiModel->id, $user->id, $request->boolean('approve'));
 
