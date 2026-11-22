@@ -1,8 +1,20 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import PlatformSignupController from '@/actions/App/Domains/Onboarding/Http/Controllers/PlatformSignupController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import {
+    DataTable,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    StatTile,
+    Switch,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,17 +85,17 @@ type Props = {
     funnel: { key: string; label: string; count: number }[];
 };
 
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
-
-function SettingsForm({ settings }: { settings: Settings }) {
+/** Who can sign up and what happens next: one settings card. */
+function SettingsTab({ settings }: { settings: Settings }) {
     const form = useForm({
         ...settings,
         notify_emails: (settings.notify_emails ?? []).join(', '),
     });
+    const errors = form.errors as Record<string, string | undefined>;
 
     return (
         <form
+            className="flex flex-col gap-6"
             onSubmit={(e) => {
                 e.preventDefault();
                 form.transform((d) => ({
@@ -97,176 +109,198 @@ function SettingsForm({ settings }: { settings: Settings }) {
                     preserveScroll: true,
                 });
             }}
-            className="grid gap-2 rounded-xl border p-3 text-sm sm:grid-cols-2"
         >
-            <label className="grid gap-0.5 text-xs">
-                {t('Who can sign up')}
-                <select
-                    className={selectClass}
-                    value={form.data.mode}
-                    onChange={(e) => form.setData('mode', e.target.value)}
-                >
-                    <option value="open">{t('Anyone')}</option>
-                    <option value="code">{t('Invitation code only')}</option>
-                    <option value="closed">{t('Closed')}</option>
-                </select>
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t('Notify these emails of sign-ups and go-live requests')}
-                <Input
-                    value={form.data.notify_emails}
-                    onChange={(e) =>
-                        form.setData('notify_emails', e.target.value)
-                    }
-                    placeholder="ops@cnh.example, sales@cnh.example"
-                />
-                <InputError
-                    message={
-                        (form.errors as Record<string, string | undefined>)[
-                            'notify_emails.0'
-                        ]
-                    }
-                />
-            </label>
-            {(
-                [
-                    'approval_required',
-                    'block_disposable_emails',
-                    'emails_enabled',
-                ] as const
-            ).map((key) => (
-                <label key={key} className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={form.data[key]}
-                        onChange={(e) => form.setData(key, e.target.checked)}
+            <Section
+                aside
+                title={t('Access')}
+                description={t(
+                    'Who can create a hotel account on the website.',
+                )}
+            >
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={t('Who can sign up')}>
+                        <select
+                            className="h-9"
+                            value={form.data.mode}
+                            onChange={(e) =>
+                                form.setData('mode', e.target.value)
+                            }
+                        >
+                            <option value="open">{t('Anyone')}</option>
+                            <option value="code">
+                                {t('Invitation code only')}
+                            </option>
+                            <option value="closed">{t('Closed')}</option>
+                        </select>
+                    </Field>
+                    <div className="grid content-start gap-4 sm:pt-6">
+                        <Switch
+                            checked={form.data.block_disposable_emails}
+                            onChange={(v) =>
+                                form.setData('block_disposable_emails', v)
+                            }
+                            label={t('Block throwaway email addresses')}
+                        />
+                    </div>
+                </div>
+            </Section>
+            <Section
+                aside
+                title={t('Going live')}
+                description={t(
+                    'What happens after a hotel signs up and finishes its setup.',
+                )}
+            >
+                <div className="grid gap-4">
+                    <Switch
+                        checked={form.data.approval_required}
+                        onChange={(v) => form.setData('approval_required', v)}
+                        label={t('Going live needs platform approval')}
                     />
-                    {
-                        {
-                            approval_required: t(
-                                'Going live needs platform approval',
-                            ),
-                            block_disposable_emails: t(
-                                'Block throwaway email addresses',
-                            ),
-                            emails_enabled: t(
-                                'Send onboarding emails to hotels',
-                            ),
-                        }[key]
-                    }
-                </label>
-            ))}
-            <div>
-                <Button size="sm" disabled={form.processing}>
-                    {t('Save')}
-                </Button>
+                    <Switch
+                        checked={form.data.emails_enabled}
+                        onChange={(v) => form.setData('emails_enabled', v)}
+                        label={t('Send onboarding emails to hotels')}
+                    />
+                    <Field
+                        label={t(
+                            'Notify these emails of sign-ups and go-live requests',
+                        )}
+                        hint={t('Separate addresses with commas.')}
+                        error={errors['notify_emails.0']}
+                    >
+                        <Input
+                            value={form.data.notify_emails}
+                            onChange={(e) =>
+                                form.setData('notify_emails', e.target.value)
+                            }
+                            placeholder="ops@cnh.example, sales@cnh.example"
+                        />
+                    </Field>
+                </div>
+            </Section>
+            <div className="flex justify-end">
+                <Button disabled={form.processing}>{t('Save settings')}</Button>
             </div>
         </form>
     );
 }
 
-function Codes({ codes }: { codes: Code[] }) {
+function CodeEditor({ open, onClose }: { open: boolean; onClose: () => void }) {
     const form = useForm({ code: '', note: '', max_uses: '', expires_at: '' });
+    const errors = form.errors as Record<string, string | undefined>;
+    const submit = () => {
+        form.transform((d) => ({
+            ...d,
+            code: d.code || null,
+            max_uses: d.max_uses === '' ? null : Number(d.max_uses),
+            expires_at: d.expires_at || null,
+        }));
+        form.post(PlatformSignupController.storeCode.url(), {
+            preserveScroll: true,
+            onSuccess: () => {
+                form.reset();
+                onClose();
+            },
+        });
+    };
 
     return (
-        <section className="flex flex-col gap-2 text-sm">
-            <Heading variant="small" title={t('Invitation codes')} />
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    form.transform((d) => ({
-                        ...d,
-                        code: d.code || null,
-                        max_uses: d.max_uses === '' ? null : Number(d.max_uses),
-                        expires_at: d.expires_at || null,
-                    }));
-                    form.post(PlatformSignupController.storeCode.url(), {
-                        preserveScroll: true,
-                        onSuccess: () => form.reset(),
-                    });
-                }}
-                className="flex flex-wrap items-end gap-2"
-            >
-                <Input
-                    aria-label={t('Code')}
-                    placeholder={t('Code (empty: random)')}
-                    className="w-40"
-                    value={form.data.code}
-                    onChange={(e) => form.setData('code', e.target.value)}
+        <SidePanel
+            open={open}
+            onClose={onClose}
+            title={t('New invitation code')}
+            description={t(
+                'Give it to a hotel so it can sign up while sign-ups need a code.',
+            )}
+            footer={
+                <>
+                    <Button variant="ghost" onClick={onClose}>
+                        {t('Cancel')}
+                    </Button>
+                    <Button disabled={form.processing} onClick={submit}>
+                        {t('Create code')}
+                    </Button>
+                </>
+            }
+        >
+            <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                    label={t('Code')}
+                    hint={t('Leave empty for a random code.')}
+                    error={errors.code}
+                >
+                    <Input
+                        className="font-mono uppercase"
+                        value={form.data.code}
+                        onChange={(e) => form.setData('code', e.target.value)}
+                    />
+                </Field>
+                <Field label={t('Note')} error={errors.note}>
+                    <Input
+                        placeholder={t('e.g. CNH sales, Abidjan')}
+                        value={form.data.note}
+                        onChange={(e) => form.setData('note', e.target.value)}
+                    />
+                </Field>
+                <Field
+                    label={t('Max uses')}
+                    hint={t('Empty: no limit')}
+                    error={errors.max_uses}
+                >
+                    <Input
+                        type="number"
+                        min={1}
+                        value={form.data.max_uses}
+                        onChange={(e) =>
+                            form.setData('max_uses', e.target.value)
+                        }
+                    />
+                </Field>
+                <Field label={t('Expires on')} error={errors.expires_at}>
+                    <Input
+                        type="date"
+                        value={form.data.expires_at}
+                        onChange={(e) =>
+                            form.setData('expires_at', e.target.value)
+                        }
+                    />
+                </Field>
+            </div>
+        </SidePanel>
+    );
+}
+
+function TemplateEditor({
+    template,
+    onClose,
+}: {
+    template: Template | 'new' | null;
+    onClose: () => void;
+}) {
+    const tpl = template === 'new' || template === null ? undefined : template;
+
+    return (
+        <SidePanel
+            open={template !== null}
+            onClose={onClose}
+            title={
+                tpl
+                    ? t('Edit :country', { country: tpl.name })
+                    : t('Add country')
+            }
+            description={t(
+                'Defaults a new hotel in this country starts with. Tax rates are starting values: check them with a local accountant.',
+            )}
+        >
+            {template !== null && (
+                <TemplateForm
+                    key={tpl?.id ?? 'new'}
+                    template={tpl}
+                    onDone={onClose}
                 />
-                <Input
-                    aria-label={t('Note')}
-                    placeholder={t('Note (e.g. CNH sales, Abidjan)')}
-                    className="w-56"
-                    value={form.data.note}
-                    onChange={(e) => form.setData('note', e.target.value)}
-                />
-                <Input
-                    aria-label={t('Uses')}
-                    placeholder={t('Max uses')}
-                    type="number"
-                    min={1}
-                    className="w-28"
-                    value={form.data.max_uses}
-                    onChange={(e) => form.setData('max_uses', e.target.value)}
-                />
-                <Input
-                    aria-label={t('Expires on')}
-                    type="date"
-                    className="w-40"
-                    value={form.data.expires_at}
-                    onChange={(e) => form.setData('expires_at', e.target.value)}
-                />
-                <Button size="sm" disabled={form.processing}>
-                    {t('Create code')}
-                </Button>
-            </form>
-            <ul className="divide-y rounded-xl border">
-                {codes.map((c) => (
-                    <li
-                        key={c.id}
-                        className="flex flex-wrap items-center gap-3 px-3 py-1.5"
-                    >
-                        <span className="font-mono">{c.code}</span>
-                        <span className="text-muted-foreground">{c.note}</span>
-                        <span>
-                            {t(':uses used', { uses: c.uses })}
-                            {c.max_uses ? ` / ${c.max_uses}` : ''}
-                        </span>
-                        {c.expires_at && (
-                            <span className="text-muted-foreground">
-                                {t('until :date', { date: c.expires_at })}
-                            </span>
-                        )}
-                        <Badge variant={c.usable ? 'secondary' : 'outline'}>
-                            {c.usable
-                                ? t('Active')
-                                : c.revoked
-                                  ? t('Revoked')
-                                  : t('Used up or expired')}
-                        </Badge>
-                        {!c.revoked && (
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="ml-auto"
-                                onClick={() =>
-                                    router.post(
-                                        PlatformSignupController.revokeCode.url(
-                                            c.id,
-                                        ),
-                                        {},
-                                        { preserveScroll: true },
-                                    )
-                                }
-                            >
-                                {t('Revoke')}
-                            </Button>
-                        )}
-                    </li>
-                ))}
-            </ul>
-        </section>
+            )}
+        </SidePanel>
     );
 }
 
@@ -275,7 +309,7 @@ function TemplateForm({
     onDone,
 }: {
     template?: Template;
-    onDone?: () => void;
+    onDone: () => void;
 }) {
     const form = useForm({
         country_code: template?.country_code ?? '',
@@ -291,38 +325,36 @@ function TemplateForm({
         active: template?.active ?? true,
     });
     const errors = form.errors as Record<string, string | undefined>;
-    const text = (
-        key:
-            | 'country_code'
-            | 'name_fr'
-            | 'name_en'
-            | 'currency'
-            | 'timezone'
-            | 'check_in'
-            | 'check_out'
-            | 'categories',
-        label: string,
-        disabled = false,
-    ) => (
-        <label className="grid gap-0.5 text-xs">
-            {label}
+    type TextKey =
+        | 'country_code'
+        | 'name_fr'
+        | 'name_en'
+        | 'currency'
+        | 'timezone'
+        | 'check_in'
+        | 'check_out'
+        | 'categories';
+    const text = (key: TextKey, label: string, disabled = false) => (
+        <Field label={label} error={errors[key]}>
             <Input
                 disabled={disabled}
                 value={form.data[key]}
                 onChange={(e) => form.setData(key, e.target.value)}
             />
-            <InputError message={errors[key]} />
-        </label>
+        </Field>
     );
+    const setTax = (i: number, patch: Partial<Template['taxes'][number]>) =>
+        form.setData(
+            'taxes',
+            form.data.taxes.map((x, j) => (j === i ? { ...x, ...patch } : x)),
+        );
 
     return (
         <form
+            className="grid gap-6"
             onSubmit={(e) => {
                 e.preventDefault();
-                const options = {
-                    preserveScroll: true,
-                    onSuccess: () => onDone?.(),
-                };
+                const options = { preserveScroll: true, onSuccess: onDone };
                 if (template) {
                     form.transform(({ country_code: _code, ...rest }) => rest);
                     form.put(
@@ -338,130 +370,151 @@ function TemplateForm({
                     );
                 }
             }}
-            className="grid gap-2 p-2 text-sm sm:grid-cols-4"
         >
-            {text('country_code', t('Country code'), !!template)}
-            {text('name_fr', t('Name (FR)'))}
-            {text('name_en', t('Name (EN)'))}
-            {text('currency', t('Currency'))}
-            {text('timezone', t('Time zone'))}
-            <label className="grid gap-0.5 text-xs">
-                {t('Language')}
-                <select
-                    className={selectClass}
-                    value={form.data.locale}
-                    onChange={(e) => form.setData('locale', e.target.value)}
-                >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                </select>
-            </label>
-            {text('check_in', t('Check-in from'))}
-            {text('check_out', t('Check-out until'))}
-            <div className="flex flex-wrap items-end gap-2 sm:col-span-4">
-                {form.data.taxes.map((tax, i) => (
-                    <span key={i} className="flex items-end gap-1">
-                        <Input
-                            aria-label={t('Tax name')}
-                            className="w-32"
-                            value={tax.name}
+            <FieldGroup title={t('Country')}>
+                <div className="grid gap-4 sm:grid-cols-3">
+                    {text('country_code', t('Country code'), !!template)}
+                    {text('name_fr', t('Name (French)'))}
+                    {text('name_en', t('Name (English)'))}
+                </div>
+            </FieldGroup>
+            <FieldGroup title={t('Defaults')}>
+                <div className="grid gap-4 sm:grid-cols-3">
+                    {text('currency', t('Currency'))}
+                    {text('timezone', t('Time zone'))}
+                    <Field label={t('Language')}>
+                        <select
+                            className="h-9"
+                            value={form.data.locale}
                             onChange={(e) =>
-                                form.setData(
-                                    'taxes',
-                                    form.data.taxes.map((x, j) =>
-                                        j === i
-                                            ? { ...x, name: e.target.value }
-                                            : x,
-                                    ),
-                                )
-                            }
-                        />
-                        <Input
-                            aria-label={t('Rate (%)')}
-                            type="number"
-                            step="any"
-                            className="w-20"
-                            value={tax.rate}
-                            onChange={(e) =>
-                                form.setData(
-                                    'taxes',
-                                    form.data.taxes.map((x, j) =>
-                                        j === i
-                                            ? {
-                                                  ...x,
-                                                  rate: Number(e.target.value),
-                                              }
-                                            : x,
-                                    ),
-                                )
-                            }
-                        />
-                        <label className="flex items-center gap-1 text-xs">
-                            <input
-                                type="checkbox"
-                                checked={tax.inclusive}
-                                onChange={(e) =>
-                                    form.setData(
-                                        'taxes',
-                                        form.data.taxes.map((x, j) =>
-                                            j === i
-                                                ? {
-                                                      ...x,
-                                                      inclusive:
-                                                          e.target.checked,
-                                                  }
-                                                : x,
-                                        ),
-                                    )
-                                }
-                            />
-                            {t('included in prices')}
-                        </label>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                                form.setData(
-                                    'taxes',
-                                    form.data.taxes.filter((_, j) => j !== i),
-                                )
+                                form.setData('locale', e.target.value)
                             }
                         >
-                            ×
-                        </Button>
-                    </span>
-                ))}
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                        form.setData('taxes', [
-                            ...form.data.taxes,
-                            { name: '', rate: 0, inclusive: true },
-                        ])
-                    }
-                >
-                    {t('Add a tax')}
-                </Button>
-            </div>
-            <div className="sm:col-span-3">
+                            <option value="fr">Français</option>
+                            <option value="en">English</option>
+                        </select>
+                    </Field>
+                    {text('check_in', t('Check-in from'))}
+                    {text('check_out', t('Check-out until'))}
+                </div>
                 {text(
                     'categories',
                     t('Suggested room categories (comma separated)'),
                 )}
-            </div>
-            <label className="flex items-center gap-1 text-xs">
-                <input
-                    type="checkbox"
+            </FieldGroup>
+            <FieldGroup
+                title={t('Taxes')}
+                description={t('Applied to room prices by default.')}
+            >
+                <div className="overflow-hidden rounded-lg border">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                                <th className="px-3 py-2 font-medium">
+                                    {t('Tax name')}
+                                </th>
+                                <th className="px-3 py-2 font-medium">
+                                    {t('Rate (%)')}
+                                </th>
+                                <th className="px-3 py-2 font-medium">
+                                    {t('Included in prices')}
+                                </th>
+                                <th />
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {form.data.taxes.map((tax, i) => (
+                                <tr key={i}>
+                                    <td className="px-3 py-2">
+                                        <Input
+                                            aria-label={t('Tax name')}
+                                            value={tax.name}
+                                            onChange={(e) =>
+                                                setTax(i, {
+                                                    name: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </td>
+                                    <td className="w-28 px-3 py-2">
+                                        <Input
+                                            aria-label={t('Rate (%)')}
+                                            type="number"
+                                            step="any"
+                                            value={tax.rate}
+                                            onChange={(e) =>
+                                                setTax(i, {
+                                                    rate: Number(
+                                                        e.target.value,
+                                                    ),
+                                                })
+                                            }
+                                        />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <Switch
+                                            checked={tax.inclusive}
+                                            onChange={(v) =>
+                                                setTax(i, { inclusive: v })
+                                            }
+                                            label={
+                                                tax.inclusive
+                                                    ? t('Yes')
+                                                    : t('No')
+                                            }
+                                        />
+                                    </td>
+                                    <td className="w-10 px-1 py-2 text-right">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            aria-label={t('Remove')}
+                                            onClick={() =>
+                                                form.setData(
+                                                    'taxes',
+                                                    form.data.taxes.filter(
+                                                        (_, j) => j !== i,
+                                                    ),
+                                                )
+                                            }
+                                        >
+                                            ×
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                            form.setData('taxes', [
+                                ...form.data.taxes,
+                                { name: '', rate: 0, inclusive: true },
+                            ])
+                        }
+                    >
+                        <Plus /> {t('Add a tax')}
+                    </Button>
+                </div>
+            </FieldGroup>
+            <FieldGroup title={t('Availability')}>
+                <Switch
                     checked={form.data.active}
-                    onChange={(e) => form.setData('active', e.target.checked)}
+                    onChange={(v) => form.setData('active', v)}
+                    label={t('Offered at sign-up')}
                 />
-                {t('Offered at sign-up')}
-            </label>
-            <div>
-                <Button size="sm" disabled={form.processing}>
+            </FieldGroup>
+            <div className="flex justify-end gap-2 border-t pt-4">
+                <Button type="button" variant="ghost" onClick={onDone}>
+                    {t('Cancel')}
+                </Button>
+                <Button disabled={form.processing}>
                     {template ? t('Save') : t('Add country')}
                 </Button>
             </div>
@@ -469,61 +522,147 @@ function TemplateForm({
     );
 }
 
-function LegalEditor({ doc }: { doc: Legal }) {
+function LegalEditor({
+    doc,
+    onClose,
+}: {
+    doc: Legal | null;
+    onClose: () => void;
+}) {
+    return (
+        <SidePanel
+            open={doc !== null}
+            onClose={onClose}
+            title={doc?.label ?? ''}
+            description={t(
+                'Markdown. Each change is published as a new version.',
+            )}
+        >
+            {doc && <LegalForm key={doc.kind} doc={doc} onDone={onClose} />}
+        </SidePanel>
+    );
+}
+
+function LegalForm({ doc, onDone }: { doc: Legal; onDone: () => void }) {
     const form = useForm({ fr: doc.fr, en: doc.en });
 
     return (
-        <details className="rounded-xl border p-2 text-sm">
-            <summary className="cursor-pointer">
-                {doc.label} ·{' '}
-                {t('version :version', { version: doc.version ?? 0 })}
-            </summary>
-            {/* Outside the summary: links may not sit inside it (accessibility). */}
-            <a
-                href={doc.url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1 inline-block underline"
-            >
-                {t('View')}
-            </a>
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    if (
-                        window.confirm(
-                            t(
-                                'Publish a new version? Owners will be asked to accept it at their next login.',
-                            ),
-                        )
-                    ) {
-                        form.post(
-                            PlatformSignupController.publishLegal.url(doc.kind),
+        <form
+            className="grid gap-4"
+            onSubmit={(e) => {
+                e.preventDefault();
+                if (
+                    window.confirm(
+                        t(
+                            'Publish a new version? Owners will be asked to accept it at their next login.',
+                        ),
+                    )
+                ) {
+                    form.post(
+                        PlatformSignupController.publishLegal.url(doc.kind),
+                        { preserveScroll: true, onSuccess: onDone },
+                    );
+                }
+            }}
+        >
+            <Field label={t('French')}>
+                <textarea
+                    className="min-h-64 font-mono text-xs"
+                    value={form.data.fr}
+                    onChange={(e) => form.setData('fr', e.target.value)}
+                />
+            </Field>
+            <Field label={t('English')}>
+                <textarea
+                    className="min-h-64 font-mono text-xs"
+                    value={form.data.en}
+                    onChange={(e) => form.setData('en', e.target.value)}
+                />
+            </Field>
+            <div className="flex items-center justify-between gap-2 border-t pt-4">
+                <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-brand underline-offset-4 hover:underline"
+                >
+                    {t('View the published version')}
+                </a>
+                <Button disabled={form.processing}>
+                    {t('Publish a new version')}
+                </Button>
+            </div>
+        </form>
+    );
+}
+
+function SignupActions({ s }: { s: Signup }) {
+    if (!s.hotel_id) {
+        return null;
+    }
+
+    const id = s.hotel_id;
+    const asks = s.golive?.requested_at && s.golive.decision === null;
+
+    return (
+        <div className="flex justify-end gap-1">
+            {asks && (
+                <>
+                    <Button
+                        size="sm"
+                        onClick={() =>
+                            router.post(
+                                PlatformSignupController.decideGoLive.url(id),
+                                { approve: true },
+                                { preserveScroll: true },
+                            )
+                        }
+                    >
+                        {t('Approve')}
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                            const reason = window.prompt(
+                                t('What should the hotel change?'),
+                            );
+                            if (reason) {
+                                router.post(
+                                    PlatformSignupController.decideGoLive.url(
+                                        id,
+                                    ),
+                                    { approve: false, reason },
+                                    { preserveScroll: true },
+                                );
+                            }
+                        }}
+                    >
+                        {t('Refuse')}
+                    </Button>
+                </>
+            )}
+            <Button
+                size="sm"
+                variant="ghost"
+                className={s.status === 'suspended' ? '' : 'text-destructive'}
+                onClick={() => {
+                    const suspend = s.status !== 'suspended';
+                    const reason = suspend
+                        ? window.prompt(t('Reason for suspending'))
+                        : '';
+                    if (!suspend || reason) {
+                        router.post(
+                            PlatformSignupController.suspend.url(id),
+                            { suspend, reason },
                             { preserveScroll: true },
                         );
                     }
                 }}
-                className="mt-2 grid gap-2 sm:grid-cols-2"
             >
-                <textarea
-                    aria-label="FR"
-                    className="min-h-60 rounded-md border border-input bg-transparent p-2 font-mono text-xs"
-                    value={form.data.fr}
-                    onChange={(e) => form.setData('fr', e.target.value)}
-                />
-                <textarea
-                    aria-label="EN"
-                    className="min-h-60 rounded-md border border-input bg-transparent p-2 font-mono text-xs"
-                    value={form.data.en}
-                    onChange={(e) => form.setData('en', e.target.value)}
-                />
-                <div>
-                    <Button size="sm" disabled={form.processing}>
-                        {t('Publish a new version')}
-                    </Button>
-                </div>
-            </form>
-        </details>
+                {s.status === 'suspended' ? t('Reactivate') : t('Suspend')}
+            </Button>
+        </div>
     );
 }
 
@@ -535,239 +674,386 @@ export default function PlatformSignups({
     legal,
     funnel,
 }: Props) {
-    const [addingCountry, setAddingCountry] = useState(false);
+    const tabs = [
+        { key: 'hotels', label: t('New hotels'), count: signups.length },
+        { key: 'codes', label: t('Invitation codes'), count: codes.length },
+        {
+            key: 'countries',
+            label: t('Country templates'),
+            count: templates.length,
+        },
+        { key: 'legal', label: t('Legal texts') },
+        { key: 'settings', label: t('Settings') },
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const [newCode, setNewCode] = useState(false);
+    const [template, setTemplate] = useState<Template | 'new' | null>(null);
+    const [doc, setDoc] = useState<Legal | null>(null);
 
     return (
         <>
             <Head title={t('Sign-ups')} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Sign-ups')}
                     description={t(
                         'Hotels that signed up, how they can sign up, and the defaults they start with.',
                     )}
+                    actions={
+                        tab === 'codes' ? (
+                            <Button onClick={() => setNewCode(true)}>
+                                <Plus /> {t('New code')}
+                            </Button>
+                        ) : tab === 'countries' ? (
+                            <Button onClick={() => setTemplate('new')}>
+                                <Plus /> {t('Add country')}
+                            </Button>
+                        ) : null
+                    }
                 />
-                <SettingsForm settings={settings} />
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
 
-                <section className="flex flex-col gap-2 text-sm">
-                    <Heading variant="small" title={t('Funnel')} />
-                    <div className="flex flex-wrap gap-2">
-                        {funnel.map((f) => (
-                            <div
-                                key={f.key}
-                                className="min-w-28 rounded-lg border px-3 py-2"
-                            >
-                                <div className="text-lg font-semibold">
-                                    {f.count}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                    {f.label}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
+                {tab === 'hotels' && (
+                    <>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
+                            {funnel.map((f) => (
+                                <StatTile
+                                    key={f.key}
+                                    label={f.label}
+                                    value={f.count}
+                                />
+                            ))}
+                        </div>
+                        <Section
+                            flush
+                            title={t('New hotels')}
+                            description={t(
+                                'Hotels that signed up on the website, newest first.',
+                            )}
+                        >
+                            <DataTable
+                                rows={signups}
+                                rowKey={(s) => s.id}
+                                empty={t('No sign-ups yet.')}
+                                columns={[
+                                    {
+                                        key: 'hotel',
+                                        header: t('Hotel'),
+                                        cell: (s) => (
+                                            <div>
+                                                <div className="font-medium">
+                                                    {s.hotel}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {s.city}, {s.country} ·{' '}
+                                                    {t(':rooms rooms', {
+                                                        rooms: s.rooms,
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'owner',
+                                        header: t('Owner'),
+                                        cell: (s) => (
+                                            <div>
+                                                <div>{s.owner}</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {s.email}
+                                                    {!s.verified &&
+                                                        ` · ${t('Email not confirmed')}`}
+                                                </div>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'status',
+                                        header: t('Status'),
+                                        cell: (s) => (
+                                            <div className="flex flex-wrap gap-1">
+                                                {s.status && (
+                                                    <Badge
+                                                        variant={
+                                                            s.status ===
+                                                            'suspended'
+                                                                ? 'destructive'
+                                                                : 'outline'
+                                                        }
+                                                    >
+                                                        {s.status}
+                                                    </Badge>
+                                                )}
+                                                {s.golive?.decision ===
+                                                    'approved' && (
+                                                    <Badge>{t('Live')}</Badge>
+                                                )}
+                                                {s.golive?.requested_at &&
+                                                    s.golive.decision ===
+                                                        null && (
+                                                        <Badge variant="destructive">
+                                                            {t(
+                                                                'Asks to go live',
+                                                            )}
+                                                        </Badge>
+                                                    )}
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'setup',
+                                        header: t('Setup'),
+                                        cell: (s) =>
+                                            s.setup
+                                                ? `${s.setup.done}/${s.setup.total}`
+                                                : '—',
+                                    },
+                                    {
+                                        key: 'trial',
+                                        header: t('Trial until'),
+                                        cell: (s) => s.trial_ends ?? '—',
+                                    },
+                                    {
+                                        key: 'actions',
+                                        header: '',
+                                        align: 'right',
+                                        cell: (s) => <SignupActions s={s} />,
+                                    },
+                                ]}
+                            />
+                        </Section>
+                    </>
+                )}
 
-                <section className="flex flex-col gap-2 text-sm">
-                    <Heading variant="small" title={t('New hotels')} />
-                    <ul className="divide-y rounded-xl border">
-                        {signups.length === 0 && (
-                            <li className="px-3 py-2 text-muted-foreground">
-                                {t('No sign-ups yet.')}
-                            </li>
+                {tab === 'codes' && (
+                    <Section
+                        flush
+                        title={t('Invitation codes')}
+                        description={t(
+                            'Needed to sign up while access is set to "Invitation code only".',
                         )}
-                        {signups.map((s) => (
-                            <li
-                                key={s.id}
-                                className="flex flex-wrap items-center gap-3 px-3 py-2"
-                            >
-                                <span className="font-medium">{s.hotel}</span>
-                                <span className="text-muted-foreground">
-                                    {s.city}, {s.country} ·{' '}
-                                    {t(':rooms rooms', { rooms: s.rooms })}
-                                </span>
-                                <span>
-                                    {s.owner} · {s.email}
-                                </span>
-                                {!s.verified && (
-                                    <Badge variant="outline">
-                                        {t('Email not confirmed')}
-                                    </Badge>
-                                )}
-                                {s.status && (
-                                    <Badge
-                                        variant={
-                                            s.status === 'suspended'
-                                                ? 'destructive'
-                                                : 'secondary'
-                                        }
-                                    >
-                                        {s.status}
-                                    </Badge>
-                                )}
-                                {s.trial_ends && (
-                                    <span className="text-muted-foreground">
-                                        {t('Trial until :date', {
-                                            date: s.trial_ends,
-                                        })}
-                                    </span>
-                                )}
-                                {s.setup && (
-                                    <span className="text-muted-foreground">
-                                        {t('Setup :done/:total', {
-                                            done: s.setup.done,
-                                            total: s.setup.total,
-                                        })}
-                                    </span>
-                                )}
-                                {s.golive?.decision === 'approved' && (
-                                    <Badge>{t('Live')}</Badge>
-                                )}
-                                {s.hotel_id &&
-                                    s.golive?.requested_at &&
-                                    s.golive.decision === null && (
-                                        <span className="flex gap-1">
-                                            <Badge variant="destructive">
-                                                {t('Asks to go live')}
-                                            </Badge>
+                    >
+                        <DataTable
+                            rows={codes}
+                            rowKey={(c) => c.id}
+                            empty={t('No invitation codes yet.')}
+                            columns={[
+                                {
+                                    key: 'code',
+                                    header: t('Code'),
+                                    cell: (c) => (
+                                        <span className="font-mono font-medium">
+                                            {c.code}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'note',
+                                    header: t('Note'),
+                                    cell: (c) => (
+                                        <span className="text-muted-foreground">
+                                            {c.note ?? '—'}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'uses',
+                                    header: t('Uses'),
+                                    align: 'right',
+                                    cell: (c) =>
+                                        c.max_uses
+                                            ? `${c.uses} / ${c.max_uses}`
+                                            : c.uses,
+                                },
+                                {
+                                    key: 'expires',
+                                    header: t('Expires on'),
+                                    cell: (c) => c.expires_at ?? '—',
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (c) => (
+                                        <Badge
+                                            variant={
+                                                c.usable ? 'default' : 'outline'
+                                            }
+                                        >
+                                            {c.usable
+                                                ? t('Active')
+                                                : c.revoked
+                                                  ? t('Revoked')
+                                                  : t('Used up or expired')}
+                                        </Badge>
+                                    ),
+                                },
+                                {
+                                    key: 'actions',
+                                    header: '',
+                                    align: 'right',
+                                    cell: (c) =>
+                                        !c.revoked && (
                                             <Button
                                                 size="sm"
+                                                variant="ghost"
+                                                className="text-destructive"
                                                 onClick={() =>
                                                     router.post(
-                                                        PlatformSignupController.decideGoLive.url(
-                                                            s.hotel_id as string,
+                                                        PlatformSignupController.revokeCode.url(
+                                                            c.id,
                                                         ),
-                                                        { approve: true },
+                                                        {},
                                                         {
                                                             preserveScroll: true,
                                                         },
                                                     )
                                                 }
                                             >
-                                                {t('Approve')}
+                                                {t('Revoke')}
                                             </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    const reason =
-                                                        window.prompt(
-                                                            t(
-                                                                'What should the hotel change?',
-                                                            ),
-                                                        );
-                                                    if (reason) {
-                                                        router.post(
-                                                            PlatformSignupController.decideGoLive.url(
-                                                                s.hotel_id as string,
-                                                            ),
-                                                            {
-                                                                approve: false,
-                                                                reason,
-                                                            },
-                                                            {
-                                                                preserveScroll: true,
-                                                            },
-                                                        );
-                                                    }
-                                                }}
-                                            >
-                                                {t('Refuse')}
-                                            </Button>
-                                        </span>
-                                    )}
-                                {s.hotel_id && (
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="ml-auto"
-                                        onClick={() => {
-                                            const suspend =
-                                                s.status !== 'suspended';
-                                            const reason = suspend
-                                                ? window.prompt(
-                                                      t(
-                                                          'Reason for suspending',
-                                                      ),
-                                                  )
-                                                : '';
-                                            if (!suspend || reason) {
-                                                router.post(
-                                                    PlatformSignupController.suspend.url(
-                                                        s.hotel_id as string,
-                                                    ),
-                                                    { suspend, reason },
-                                                    { preserveScroll: true },
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        {s.status === 'suspended'
-                                            ? t('Reactivate')
-                                            : t('Suspend')}
-                                    </Button>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-
-                <Codes codes={codes} />
-
-                <section className="flex flex-col gap-2 text-sm">
-                    <div className="flex items-center justify-between">
-                        <Heading
-                            variant="small"
-                            title={t('Country templates')}
-                            description={t(
-                                'Tax rates are starting values: check them with a local accountant.',
-                            )}
+                                        ),
+                                },
+                            ]}
                         />
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setAddingCountry(!addingCountry)}
-                        >
-                            {addingCountry ? t('Close') : t('Add country')}
-                        </Button>
-                    </div>
-                    {addingCountry && (
-                        <div className="rounded-xl border">
-                            <TemplateForm
-                                onDone={() => setAddingCountry(false)}
-                            />
-                        </div>
-                    )}
-                    {templates.map((tpl) => (
-                        <details key={tpl.id} className="rounded-xl border p-2">
-                            <summary className="cursor-pointer">
-                                {tpl.country_code} · {tpl.name} · {tpl.currency}{' '}
-                                ·{' '}
-                                {tpl.taxes
-                                    .map((x) => `${x.name} ${x.rate}%`)
-                                    .join(', ')}{' '}
-                                {!tpl.active && (
-                                    <Badge variant="outline">{t('Off')}</Badge>
-                                )}
-                            </summary>
-                            <TemplateForm template={tpl} />
-                        </details>
-                    ))}
-                </section>
+                    </Section>
+                )}
 
-                <section className="flex flex-col gap-2 text-sm">
-                    <Heading
-                        variant="small"
+                {tab === 'countries' && (
+                    <Section
+                        flush
+                        title={t('Country templates')}
+                        description={t(
+                            'Currency, time zone, taxes and room categories a new hotel starts with. Click a country to edit it.',
+                        )}
+                    >
+                        <DataTable
+                            rows={templates}
+                            rowKey={(tpl) => tpl.id}
+                            empty={t('No country yet.')}
+                            onRowClick={setTemplate}
+                            columns={[
+                                {
+                                    key: 'country',
+                                    header: t('Country'),
+                                    cell: (tpl) => (
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-7 font-mono text-xs text-muted-foreground">
+                                                {tpl.country_code}
+                                            </span>
+                                            <span className="font-medium">
+                                                {tpl.name}
+                                            </span>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'currency',
+                                    header: t('Currency'),
+                                    cell: (tpl) => tpl.currency,
+                                },
+                                {
+                                    key: 'taxes',
+                                    header: t('Taxes'),
+                                    cell: (tpl) =>
+                                        tpl.taxes
+                                            .map((x) => `${x.name} ${x.rate}%`)
+                                            .join(', ') || '—',
+                                },
+                                {
+                                    key: 'locale',
+                                    header: t('Language'),
+                                    cell: (tpl) => tpl.locale.toUpperCase(),
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (tpl) => (
+                                        <Badge
+                                            variant={
+                                                tpl.active
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                        >
+                                            {tpl.active
+                                                ? t('Offered')
+                                                : t('Off')}
+                                        </Badge>
+                                    ),
+                                },
+                                {
+                                    key: 'edit',
+                                    header: '',
+                                    align: 'right',
+                                    cell: () => (
+                                        <span className="text-xs text-brand">
+                                            {t('Edit')}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+
+                {tab === 'legal' && (
+                    <Section
+                        flush
                         title={t('Legal texts')}
                         description={t(
-                            'Markdown. Each change is published as a new version.',
+                            'Hotels accept them at sign-up. Publishing a new version asks owners to accept it again.',
                         )}
-                    />
-                    {legal.map((doc) => (
-                        <LegalEditor key={doc.kind} doc={doc} />
-                    ))}
-                </section>
-            </div>
+                    >
+                        <DataTable
+                            rows={legal}
+                            rowKey={(d) => d.kind}
+                            empty="—"
+                            onRowClick={setDoc}
+                            columns={[
+                                {
+                                    key: 'label',
+                                    header: t('Document'),
+                                    cell: (d) => (
+                                        <span className="font-medium">
+                                            {d.label}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'version',
+                                    header: t('Version'),
+                                    cell: (d) => d.version ?? '—',
+                                },
+                                {
+                                    key: 'edit',
+                                    header: '',
+                                    align: 'right',
+                                    cell: () => (
+                                        <span className="text-xs text-brand">
+                                            {t('Edit')}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+
+                {tab === 'settings' && <SettingsTab settings={settings} />}
+            </PageBody>
+
+            <CodeEditor open={newCode} onClose={() => setNewCode(false)} />
+            <TemplateEditor
+                template={template}
+                onClose={() => setTemplate(null)}
+            />
+            <LegalEditor doc={doc} onClose={() => setDoc(null)} />
         </>
     );
 }
+
+PlatformSignups.layout = {
+    breadcrumbs: [
+        { title: 'Sign-ups', href: PlatformSignupController.index() },
+    ],
+};

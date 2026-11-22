@@ -247,7 +247,7 @@ export default function Launch({ score, version, items, watch }: Props) {
                         variant="small"
                         title={t('Launch-week watch (last 7 days, by hour)')}
                     />
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                         {Object.entries(watch.series).map(([key, values]) => (
                             <div
                                 key={key}

@@ -373,7 +373,7 @@ export default function Today(props: Props) {
 
                 <ShiftChecklistsCard lists={props.checklists} big={simple} />
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     {props.freeTonight.map((category) => (
                         <div
                             key={category.name}

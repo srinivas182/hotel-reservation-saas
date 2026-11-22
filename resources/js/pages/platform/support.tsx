@@ -1,10 +1,24 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
 import PlatformSupportController from '@/actions/App/Domains/Support/Http/Controllers/PlatformSupportController';
-import Heading from '@/components/heading';
+import {
+    DataTable,
+    Field,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    StatTile,
+    Switch,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 type Ticket = {
     id: number;
@@ -35,9 +49,6 @@ type Props = {
     hotels: { id: string; name: string }[];
     savedReplies: Reply[];
 };
-
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
 
 function SettingsForm({
     settings,
@@ -74,80 +85,97 @@ function SettingsForm({
                     preserveScroll: true,
                 });
             }}
-            className="grid gap-2 rounded-xl border p-3 sm:grid-cols-2"
+            className="flex flex-col gap-6"
         >
-            <label className="grid gap-0.5 text-xs">
-                {t(
-                    'First answer within (hours) by plan, e.g. default=24, pro=8',
+            <Section
+                aside
+                title={t('Answer times')}
+                description={t(
+                    'How fast hotels get a first answer, by plan. Requests past this are marked late.',
                 )}
-                <Input
-                    value={form.data.response_hours}
-                    onChange={(e) =>
-                        form.setData('response_hours', e.target.value)
-                    }
-                />
-            </label>
-            <label className="flex items-center gap-2">
-                <input
-                    type="checkbox"
-                    checked={form.data.ai_drafts}
-                    onChange={(e) =>
-                        form.setData('ai_drafts', e.target.checked)
-                    }
-                />
-                {t(
-                    'AI drafts for replies (paid by the platform; always reviewed)',
-                )}
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t(
-                    'WhatsApp number for support notices (an account connected like a hotel’s)',
-                )}
-                <select
-                    className={selectClass}
-                    value={form.data.whatsapp_hotel_id}
-                    onChange={(e) =>
-                        form.setData('whatsapp_hotel_id', e.target.value)
-                    }
-                >
-                    <option value="">{t('Not set: email only')}</option>
-                    {hotels.map((h) => (
-                        <option key={h.id} value={h.id}>
-                            {h.name}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t('Approved template name')}
-                <Input
-                    value={form.data.whatsapp_template}
-                    onChange={(e) =>
-                        form.setData('whatsapp_template', e.target.value)
-                    }
-                />
-            </label>
-            <p className="text-xs text-muted-foreground sm:col-span-2">
-                {settings.whatsapp_ready
-                    ? t('WhatsApp notices are ready.')
-                    : t(
-                          'WhatsApp notices are off until the number and an approved template are set.',
-                      )}
-            </p>
-            <div>
-                <Button size="sm" disabled={form.processing}>
-                    {t('Save')}
-                </Button>
+            >
+                <div className="grid gap-4">
+                    <Field
+                        label={t('First answer within (hours), by plan')}
+                        hint={t('e.g. default=24, pro=8')}
+                    >
+                        <Input
+                            value={form.data.response_hours}
+                            onChange={(e) =>
+                                form.setData('response_hours', e.target.value)
+                            }
+                        />
+                    </Field>
+                    <Switch
+                        checked={form.data.ai_drafts}
+                        onChange={(v) => form.setData('ai_drafts', v)}
+                        label={t('AI drafts for replies')}
+                        hint={t(
+                            'Paid by the platform; an agent always reviews the draft.',
+                        )}
+                    />
+                </div>
+            </Section>
+            <Section
+                aside
+                title={t('WhatsApp notices')}
+                description={
+                    settings.whatsapp_ready
+                        ? t('WhatsApp notices are ready.')
+                        : t(
+                              'WhatsApp notices are off until the number and an approved template are set.',
+                          )
+                }
+            >
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                        label={t('WhatsApp number for support notices')}
+                        hint={t('An account connected like a hotel’s.')}
+                    >
+                        <select
+                            className="h-9"
+                            value={form.data.whatsapp_hotel_id}
+                            onChange={(e) =>
+                                form.setData(
+                                    'whatsapp_hotel_id',
+                                    e.target.value,
+                                )
+                            }
+                        >
+                            <option value="">{t('Not set: email only')}</option>
+                            {hotels.map((h) => (
+                                <option key={h.id} value={h.id}>
+                                    {h.name}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field label={t('Approved template name')}>
+                        <Input
+                            value={form.data.whatsapp_template}
+                            onChange={(e) =>
+                                form.setData(
+                                    'whatsapp_template',
+                                    e.target.value,
+                                )
+                            }
+                        />
+                    </Field>
+                </div>
+            </Section>
+            <div className="flex justify-end">
+                <Button disabled={form.processing}>{t('Save settings')}</Button>
             </div>
         </form>
     );
 }
 
-function ReplyForm({ reply }: { reply?: Reply }) {
+function ReplyForm({ reply, onDone }: { reply?: Reply; onDone: () => void }) {
     const form = useForm({
         title: reply?.title ?? '',
         body: reply?.body ?? { fr: '', en: '' },
     });
+    const errors = form.errors as Record<string, string | undefined>;
 
     return (
         <form
@@ -156,60 +184,67 @@ function ReplyForm({ reply }: { reply?: Reply }) {
                 if (reply) {
                     form.put(
                         PlatformSupportController.updateReply.url(reply.id),
-                        { preserveScroll: true },
+                        { preserveScroll: true, onSuccess: onDone },
                     );
                 } else {
                     form.post(PlatformSupportController.storeReply.url(), {
                         preserveScroll: true,
-                        onSuccess: () => form.reset(),
+                        onSuccess: onDone,
                     });
                 }
             }}
-            className="grid gap-2 p-2 sm:grid-cols-2"
+            className="grid gap-4"
         >
-            <Input
-                aria-label={t('Title')}
-                placeholder={t('Title')}
-                className="sm:col-span-2"
-                value={form.data.title}
-                onChange={(e) => form.setData('title', e.target.value)}
-            />
-            {(['fr', 'en'] as const).map((l) => (
-                <textarea
-                    key={l}
-                    aria-label={`${t('Text')} ${l}`}
-                    placeholder={`${t('Text')} (${l}) — {name}, {hotel}, {agent}`}
-                    className="min-h-28 rounded-md border border-input bg-transparent p-2 text-xs"
-                    value={form.data.body[l]}
-                    onChange={(e) =>
-                        form.setData('body', {
-                            ...form.data.body,
-                            [l]: e.target.value,
-                        })
-                    }
+            <Field label={t('Title')} error={errors.title}>
+                <Input
+                    value={form.data.title}
+                    onChange={(e) => form.setData('title', e.target.value)}
                 />
+            </Field>
+            {(['fr', 'en'] as const).map((l) => (
+                <Field
+                    key={l}
+                    label={
+                        l === 'fr' ? t('Text (French)') : t('Text (English)')
+                    }
+                    hint={t('You can use {name}, {hotel} and {agent}.')}
+                    error={errors[`body.${l}`]}
+                >
+                    <textarea
+                        className="min-h-32"
+                        value={form.data.body[l]}
+                        onChange={(e) =>
+                            form.setData('body', {
+                                ...form.data.body,
+                                [l]: e.target.value,
+                            })
+                        }
+                    />
+                </Field>
             ))}
-            <div className="flex gap-2">
-                <Button size="sm" disabled={form.processing}>
-                    {reply ? t('Save') : t('Add saved reply')}
-                </Button>
-                {reply && (
+            <div className="flex items-center justify-between gap-2 border-t pt-4">
+                {reply ? (
                     <Button
                         type="button"
-                        size="sm"
                         variant="ghost"
+                        className="text-destructive"
                         onClick={() =>
                             router.delete(
                                 PlatformSupportController.destroyReply.url(
                                     reply.id,
                                 ),
-                                { preserveScroll: true },
+                                { preserveScroll: true, onSuccess: onDone },
                             )
                         }
                     >
                         {t('Delete')}
                     </Button>
+                ) : (
+                    <span />
                 )}
+                <Button disabled={form.processing}>
+                    {reply ? t('Save') : t('Add saved reply')}
+                </Button>
             </div>
         </form>
     );
@@ -225,111 +260,273 @@ export default function PlatformSupport({
     savedReplies,
 }: Props) {
     const total = satisfaction.good + satisfaction.bad;
+    const tabs = [
+        { key: 'requests', label: t('Requests'), count: counts.open },
+        {
+            key: 'replies',
+            label: t('Saved replies'),
+            count: savedReplies.length,
+        },
+        { key: 'settings', label: t('Settings') },
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const [reply, setReply] = useState<Reply | 'new' | null>(null);
+    const editing = reply === 'new' || reply === null ? undefined : reply;
+    const filters = [
+        ['open', t('In progress')],
+        ['late', t('Late')],
+        ['mine', t('Mine')],
+        ['solved', t('Solved')],
+    ] as const;
 
     return (
         <>
             <Head title={t('Support requests')} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Support requests')}
                     description={t(
                         'Requests from hotels, first-answer targets, satisfaction, saved replies.',
                     )}
+                    actions={
+                        tab === 'replies' && (
+                            <Button onClick={() => setReply('new')}>
+                                <Plus /> {t('New saved reply')}
+                            </Button>
+                        )
+                    }
                 />
-                <div className="flex flex-wrap items-center gap-2">
-                    {(
-                        [
-                            ['open', t('In progress'), counts.open],
-                            ['late', t('Late'), counts.late],
-                            ['mine', t('Mine'), counts.mine],
-                            ['solved', t('Solved'), null],
-                        ] as const
-                    ).map(([key, label, n]) => (
-                        <Button
-                            key={key}
-                            size="sm"
-                            variant={filter === key ? 'default' : 'outline'}
-                            onClick={() =>
-                                router.get(
-                                    PlatformSupportController.index.url({
-                                        query: { filter: key },
-                                    }),
-                                )
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+
+                {tab === 'requests' && (
+                    <>
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                            <StatTile
+                                label={t('In progress')}
+                                value={counts.open}
+                            />
+                            <StatTile
+                                label={t('Late')}
+                                value={
+                                    <span
+                                        className={
+                                            counts.late > 0
+                                                ? 'text-destructive'
+                                                : ''
+                                        }
+                                    >
+                                        {counts.late}
+                                    </span>
+                                }
+                            />
+                            <StatTile
+                                label={t('Assigned to me')}
+                                value={counts.mine}
+                            />
+                            <StatTile
+                                label={t('Satisfaction (90 days)')}
+                                value={
+                                    total > 0
+                                        ? `${Math.round((100 * satisfaction.good) / total)} %`
+                                        : '—'
+                                }
+                                hint={
+                                    total > 0
+                                        ? t(':count ratings', { count: total })
+                                        : t('No ratings yet.')
+                                }
+                            />
+                        </div>
+                        <Section
+                            flush
+                            title={t('Requests')}
+                            actions={
+                                <div
+                                    role="group"
+                                    aria-label={t('Show')}
+                                    className="inline-flex rounded-lg border bg-muted/40 p-0.5"
+                                >
+                                    {filters.map(([key, label]) => (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            aria-pressed={filter === key}
+                                            onClick={() =>
+                                                router.get(
+                                                    PlatformSupportController.index.url(
+                                                        {
+                                                            query: {
+                                                                filter: key,
+                                                            },
+                                                        },
+                                                    ),
+                                                )
+                                            }
+                                            className={cn(
+                                                'rounded-md px-3 py-1 text-xs transition-colors',
+                                                filter === key
+                                                    ? 'bg-card font-medium shadow-sm'
+                                                    : 'text-muted-foreground hover:text-foreground',
+                                            )}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
                             }
                         >
-                            {label} {n !== null ? `(${n})` : ''}
-                        </Button>
-                    ))}
-                    <span className="ml-auto text-muted-foreground">
-                        {total > 0
-                            ? t('Satisfaction (90 days): :pct% (:n ratings)', {
-                                  pct: Math.round(
-                                      (100 * satisfaction.good) / total,
-                                  ),
-                                  n: total,
-                              })
-                            : t('No ratings yet.')}
-                    </span>
-                </div>
-                <ul className="divide-y rounded-xl border">
-                    {tickets.length === 0 && (
-                        <li className="px-3 py-2 text-muted-foreground">
-                            {t('No requests here.')}
-                        </li>
-                    )}
-                    {tickets.map((tk) => (
-                        <li
-                            key={tk.id}
-                            className="flex flex-wrap items-center gap-2 px-3 py-2"
-                        >
-                            <Link
-                                href={PlatformSupportController.show.url(tk.id)}
-                                className="font-medium underline"
-                            >
-                                #{tk.id} {tk.subject}
-                            </Link>
-                            <span className="text-muted-foreground">
-                                {tk.hotel} · {tk.category}
-                            </span>
-                            {tk.priority !== 'normal' && (
-                                <Badge variant="destructive">
-                                    {tk.priority}
-                                </Badge>
-                            )}
-                            {tk.late && (
-                                <Badge variant="destructive">{t('Late')}</Badge>
-                            )}
-                            {tk.rating && (
-                                <span aria-label={tk.rating}>
-                                    {tk.rating === 'good' ? '👍' : '👎'}
-                                </span>
-                            )}
-                            <span className="ml-auto text-xs text-muted-foreground">
-                                {tk.assignee ?? t('Nobody')} ·{' '}
-                                {t('due :date', { date: tk.due ?? '—' })}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Settings')} />
+                            <DataTable
+                                rows={tickets}
+                                rowKey={(tk) => tk.id}
+                                empty={t('No requests here.')}
+                                onRowClick={(tk) =>
+                                    router.visit(
+                                        PlatformSupportController.show.url(
+                                            tk.id,
+                                        ),
+                                    )
+                                }
+                                columns={[
+                                    {
+                                        key: 'subject',
+                                        header: t('Request'),
+                                        cell: (tk) => (
+                                            <div>
+                                                <Link
+                                                    href={PlatformSupportController.show.url(
+                                                        tk.id,
+                                                    )}
+                                                    className="font-medium hover:underline"
+                                                >
+                                                    {tk.subject}
+                                                </Link>
+                                                <div className="text-xs text-muted-foreground">
+                                                    #{tk.id} · {tk.category}
+                                                </div>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'hotel',
+                                        header: t('Hotel'),
+                                        cell: (tk) => tk.hotel ?? '—',
+                                    },
+                                    {
+                                        key: 'flags',
+                                        header: t('Status'),
+                                        cell: (tk) => (
+                                            <div className="flex flex-wrap items-center gap-1">
+                                                <Badge variant="outline">
+                                                    {tk.status}
+                                                </Badge>
+                                                {tk.priority !== 'normal' && (
+                                                    <Badge variant="destructive">
+                                                        {tk.priority}
+                                                    </Badge>
+                                                )}
+                                                {tk.late && (
+                                                    <Badge variant="destructive">
+                                                        {t('Late')}
+                                                    </Badge>
+                                                )}
+                                                {tk.rating && (
+                                                    <span
+                                                        aria-label={tk.rating}
+                                                    >
+                                                        {tk.rating === 'good'
+                                                            ? '👍'
+                                                            : '👎'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'assignee',
+                                        header: t('Assigned to'),
+                                        cell: (tk) =>
+                                            tk.assignee ?? (
+                                                <span className="text-muted-foreground">
+                                                    {t('Nobody')}
+                                                </span>
+                                            ),
+                                    },
+                                    {
+                                        key: 'due',
+                                        header: t('Answer due'),
+                                        cell: (tk) => (
+                                            <span
+                                                className={
+                                                    tk.late
+                                                        ? 'text-destructive'
+                                                        : 'text-muted-foreground'
+                                                }
+                                            >
+                                                {tk.due ?? '—'}
+                                            </span>
+                                        ),
+                                    },
+                                ]}
+                            />
+                        </Section>
+                    </>
+                )}
+
+                {tab === 'replies' && (
+                    <Section
+                        flush
+                        title={t('Saved replies')}
+                        description={t(
+                            'Ready-made answers agents insert in a reply. Click one to edit it.',
+                        )}
+                    >
+                        <DataTable
+                            rows={savedReplies}
+                            rowKey={(r) => r.id}
+                            empty={t('No saved replies yet.')}
+                            onRowClick={setReply}
+                            columns={[
+                                {
+                                    key: 'title',
+                                    header: t('Title'),
+                                    cell: (r) => (
+                                        <span className="font-medium">
+                                            {r.title}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'text',
+                                    header: t('Text'),
+                                    cell: (r) => (
+                                        <span className="line-clamp-1 text-muted-foreground">
+                                            {r.body.fr}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+
+                {tab === 'settings' && (
                     <SettingsForm settings={settings} hotels={hotels} />
-                </section>
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Saved replies')} />
-                    {savedReplies.map((r) => (
-                        <details key={r.id} className="rounded-xl border p-2">
-                            <summary className="cursor-pointer">
-                                {r.title}
-                            </summary>
-                            <ReplyForm reply={r} />
-                        </details>
-                    ))}
-                    <div className="rounded-xl border">
-                        <ReplyForm />
-                    </div>
-                </section>
-            </div>
+                )}
+            </PageBody>
+
+            <SidePanel
+                open={reply !== null}
+                onClose={() => setReply(null)}
+                title={editing ? editing.title : t('New saved reply')}
+            >
+                {reply !== null && (
+                    <ReplyForm
+                        key={editing?.id ?? 'new'}
+                        reply={editing}
+                        onDone={() => setReply(null)}
+                    />
+                )}
+            </SidePanel>
         </>
     );
 }

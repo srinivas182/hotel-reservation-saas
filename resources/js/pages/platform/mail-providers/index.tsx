@@ -1,9 +1,19 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { Plus, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import MailProviderController from '@/actions/App/Domains/Platform/Http/Controllers/MailProviderController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import {
+    DataTable,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    Switch,
+} from '@/components/page';
+import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,8 +49,40 @@ type Props = {
     fallbackMailer: string;
 };
 
-const selectClass =
-    'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none';
+const selectClass = 'h-9 w-full';
+
+/** A key field: secrets get the show/hide button. */
+function InputFor({
+    id,
+    secret,
+    value,
+    placeholder,
+    onChange,
+}: {
+    id: string;
+    secret: boolean;
+    value: string;
+    placeholder: string;
+    onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+}) {
+    return secret ? (
+        <PasswordInput
+            id={id}
+            autoComplete="off"
+            value={value}
+            placeholder={placeholder}
+            onChange={onChange}
+        />
+    ) : (
+        <Input
+            id={id}
+            autoComplete="off"
+            value={value}
+            placeholder={placeholder}
+            onChange={onChange}
+        />
+    );
+}
 
 function ProviderForm({
     drivers,
@@ -79,121 +121,135 @@ function ProviderForm({
     };
 
     return (
-        <form
-            onSubmit={submit}
-            className="flex flex-col gap-4 rounded-xl border p-4"
-        >
-            <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                    <Label htmlFor="provider-name">
-                        {t('Label (only you see this)')}
-                    </Label>
-                    <Input
-                        id="provider-name"
-                        value={form.data.name}
-                        onChange={(e) => form.setData('name', e.target.value)}
-                        required
-                    />
-                    <InputError message={errors.name} />
+        <form onSubmit={submit} className="grid gap-6">
+            <FieldGroup title={t('Provider')}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                        <Label htmlFor="provider-name">
+                            {t('Label (only you see this)')}
+                        </Label>
+                        <Input
+                            id="provider-name"
+                            value={form.data.name}
+                            onChange={(e) =>
+                                form.setData('name', e.target.value)
+                            }
+                            required
+                        />
+                        <InputError message={errors.name} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="provider-driver">{t('Provider')}</Label>
+                        <select
+                            id="provider-driver"
+                            className={selectClass}
+                            value={form.data.driver}
+                            onChange={(e) =>
+                                form.setData('driver', e.target.value)
+                            }
+                        >
+                            {drivers.map((d) => (
+                                <option key={d.value} value={d.value}>
+                                    {d.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="provider-from">
+                            {t('Sending address (verified domain)')}
+                        </Label>
+                        <Input
+                            id="provider-from"
+                            type="email"
+                            value={form.data.from_address}
+                            placeholder="bookings@example.com"
+                            onChange={(e) =>
+                                form.setData('from_address', e.target.value)
+                            }
+                            required
+                        />
+                        <InputError message={errors.from_address} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="provider-priority">
+                            {t('Order (1 is tried first)')}
+                        </Label>
+                        <Input
+                            id="provider-priority"
+                            type="number"
+                            min={1}
+                            max={999}
+                            value={form.data.priority}
+                            onChange={(e) =>
+                                form.setData('priority', Number(e.target.value))
+                            }
+                        />
+                        <InputError message={errors.priority} />
+                    </div>
                 </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="provider-driver">{t('Provider')}</Label>
-                    <select
-                        id="provider-driver"
-                        className={selectClass}
-                        value={form.data.driver}
-                        onChange={(e) => form.setData('driver', e.target.value)}
-                    >
-                        {drivers.map((d) => (
-                            <option key={d.value} value={d.value}>
-                                {d.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="provider-from">
-                        {t('Sending address (verified domain)')}
-                    </Label>
-                    <Input
-                        id="provider-from"
-                        type="email"
-                        value={form.data.from_address}
-                        placeholder="bookings@example.com"
-                        onChange={(e) =>
-                            form.setData('from_address', e.target.value)
-                        }
-                        required
-                    />
-                    <InputError message={errors.from_address} />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="provider-priority">
-                        {t('Order (1 is tried first)')}
-                    </Label>
-                    <Input
-                        id="provider-priority"
-                        type="number"
-                        min={1}
-                        max={999}
-                        value={form.data.priority}
-                        onChange={(e) =>
-                            form.setData('priority', Number(e.target.value))
-                        }
-                    />
-                    <InputError message={errors.priority} />
-                </div>
-                {driver?.fields.map((field) => {
-                    const saved = provider?.saved[field.key];
-                    const hasSecret =
-                        saved?.secret === true &&
-                        saved.present &&
-                        provider?.driver === form.data.driver;
+            </FieldGroup>
+            <FieldGroup
+                title={t('Keys')}
+                description={t(
+                    'Stored encrypted and never shown again. Leave a saved key empty to keep it.',
+                )}
+            >
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {driver?.fields.map((field) => {
+                        const saved = provider?.saved[field.key];
+                        const hasSecret =
+                            saved?.secret === true &&
+                            saved.present &&
+                            provider?.driver === form.data.driver;
 
-                    return (
-                        <div key={field.key} className="grid gap-2">
-                            <Label htmlFor={`credential-${field.key}`}>
-                                {field.label}
-                            </Label>
-                            <Input
-                                id={`credential-${field.key}`}
-                                type={field.secret ? 'password' : 'text'}
-                                autoComplete="off"
-                                value={form.data.credentials[field.key] ?? ''}
-                                placeholder={
-                                    hasSecret
-                                        ? t('••• saved – leave blank to keep')
-                                        : ''
-                                }
-                                onChange={(e) =>
-                                    form.setData('credentials', {
-                                        ...form.data.credentials,
-                                        [field.key]: e.target.value,
-                                    })
-                                }
-                            />
-                            <InputError
-                                message={errors[`credentials.${field.key}`]}
-                            />
-                        </div>
-                    );
-                })}
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-                <input
-                    type="checkbox"
-                    className="size-4"
+                        return (
+                            <div key={field.key} className="grid gap-2">
+                                <Label htmlFor={`credential-${field.key}`}>
+                                    {field.label}
+                                </Label>
+                                <InputFor
+                                    id={`credential-${field.key}`}
+                                    secret={field.secret}
+                                    value={
+                                        form.data.credentials[field.key] ?? ''
+                                    }
+                                    placeholder={
+                                        hasSecret
+                                            ? t(
+                                                  '••• saved – leave blank to keep',
+                                              )
+                                            : ''
+                                    }
+                                    onChange={(e) =>
+                                        form.setData('credentials', {
+                                            ...form.data.credentials,
+                                            [field.key]: e.target.value,
+                                        })
+                                    }
+                                />
+                                <InputError
+                                    message={errors[`credentials.${field.key}`]}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
+            </FieldGroup>
+            <FieldGroup title={t('Availability')}>
+                <Switch
                     checked={form.data.enabled}
-                    onChange={(e) => form.setData('enabled', e.target.checked)}
+                    onChange={(v) => form.setData('enabled', v)}
+                    label={t('Enabled')}
+                    hint={t('Emails go through enabled providers in order.')}
                 />
-                {t('Enabled')}
-            </label>
-            <div className="flex gap-2">
-                <Button disabled={form.processing}>
-                    {provider ? t('Save provider') : t('Add provider')}
-                </Button>
+            </FieldGroup>
+            <div className="flex justify-end gap-2 border-t pt-4">
                 <Button type="button" variant="ghost" onClick={onDone}>
                     {t('Cancel')}
+                </Button>
+                <Button disabled={form.processing}>
+                    {provider ? t('Save provider') : t('Add provider')}
                 </Button>
             </div>
         </form>
@@ -209,239 +265,268 @@ export default function MailProviders({
     const [editing, setEditing] = useState<number | 'new' | null>(null);
     const [testTo, setTestTo] = useState('');
     const [testing, setTesting] = useState<number | null>(null);
+    const current = providers.find((p) => p.id === editing);
 
     return (
         <>
             <Head title={t('Email providers')} />
-            <div className="flex max-w-4xl flex-col gap-8 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <Heading
-                        title={t('Email providers')}
-                        description={t(
-                            'Emails go through enabled providers in order. If one fails, the next is used.',
-                        )}
-                    />
-                    {editing === null && (
-                        <Button onClick={() => setEditing('new')}>
-                            {t('Add provider')}
-                        </Button>
+            <PageBody>
+                <PageHeader
+                    title={t('Email providers')}
+                    description={t(
+                        'Emails go through enabled providers in order. If one fails, the next is used.',
                     )}
-                </div>
+                    actions={
+                        <Button onClick={() => setEditing('new')}>
+                            <Plus /> {t('Add provider')}
+                        </Button>
+                    }
+                />
 
                 {providers.every((p) => !p.enabled) && (
-                    <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                    <div
+                        role="status"
+                        className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+                    >
+                        <TriangleAlert className="size-4 shrink-0" />
                         {t(
                             'No provider is enabled. Emails use the server mailer (:mailer).',
                             { mailer: fallbackMailer },
                         )}
-                    </p>
+                    </div>
                 )}
 
-                {editing === 'new' && (
+                <Section
+                    flush
+                    title={t('Providers')}
+                    description={t(
+                        'Then press “Send test” on a provider. The sender must be verified with the provider (for Brevo: Senders, domains and dedicated IPs).',
+                    )}
+                    actions={
+                        <div className="w-full sm:w-72">
+                            <Input
+                                type="email"
+                                aria-label={t('Send test emails to')}
+                                value={testTo}
+                                onChange={(e) => setTestTo(e.target.value)}
+                                placeholder={t('Send test emails to…')}
+                            />
+                        </div>
+                    }
+                >
+                    <DataTable
+                        rows={providers}
+                        rowKey={(p) => p.id}
+                        empty={t('No provider yet.')}
+                        columns={[
+                            {
+                                key: 'order',
+                                header: '#',
+                                cell: (p) => (
+                                    <span className="text-muted-foreground tabular-nums">
+                                        {p.priority}
+                                    </span>
+                                ),
+                            },
+                            {
+                                key: 'name',
+                                header: t('Provider'),
+                                cell: (p) => (
+                                    <div>
+                                        <div className="font-medium">
+                                            {p.name}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {p.driver_label} · {p.from_address}
+                                        </div>
+                                        {p.last_test_ok === false &&
+                                            p.last_test_error && (
+                                                <div className="mt-1 text-xs text-destructive">
+                                                    {p.last_test_error}
+                                                </div>
+                                            )}
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'sent',
+                                header: t('Sent (30 days)'),
+                                align: 'right',
+                                cell: (p) => p.sent_30_days,
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (p) => (
+                                    <div className="flex flex-wrap gap-1">
+                                        <Badge
+                                            variant={
+                                                p.enabled
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                        >
+                                            {p.enabled
+                                                ? t('Enabled')
+                                                : t('Disabled')}
+                                        </Badge>
+                                        {p.last_test_ok !== null && (
+                                            <Badge
+                                                variant={
+                                                    p.last_test_ok
+                                                        ? 'outline'
+                                                        : 'destructive'
+                                                }
+                                            >
+                                                {p.last_test_ok
+                                                    ? t('Test passed')
+                                                    : t('Test failed')}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'actions',
+                                header: '',
+                                align: 'right',
+                                cell: (p) => (
+                                    <div className="flex justify-end gap-1">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={
+                                                testTo === '' ||
+                                                testing !== null
+                                            }
+                                            title={
+                                                testTo === ''
+                                                    ? t(
+                                                          'Enter the address for test emails first.',
+                                                      )
+                                                    : undefined
+                                            }
+                                            onClick={() =>
+                                                router.post(
+                                                    MailProviderController.test.url(
+                                                        p.id,
+                                                    ),
+                                                    { to: testTo },
+                                                    {
+                                                        preserveScroll: true,
+                                                        onStart: () =>
+                                                            setTesting(p.id),
+                                                        onFinish: () =>
+                                                            setTesting(null),
+                                                    },
+                                                )
+                                            }
+                                        >
+                                            {testing === p.id
+                                                ? t('Sending…')
+                                                : t('Send test')}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setEditing(p.id)}
+                                        >
+                                            {t('Edit')}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-destructive"
+                                            onClick={() => {
+                                                if (
+                                                    window.confirm(
+                                                        t('Remove :name?', {
+                                                            name: p.name,
+                                                        }),
+                                                    )
+                                                ) {
+                                                    router.delete(
+                                                        MailProviderController.destroy.url(
+                                                            p.id,
+                                                        ),
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            {t('Remove')}
+                                        </Button>
+                                    </div>
+                                ),
+                            },
+                        ]}
+                    />
+                </Section>
+
+                <Section
+                    flush
+                    title={t('All hotels, last 30 days')}
+                    description={t('Emails by type, across every hotel.')}
+                >
+                    <DataTable
+                        rows={totals}
+                        rowKey={(r) => r.label}
+                        empty="—"
+                        columns={[
+                            {
+                                key: 'type',
+                                header: t('Type'),
+                                cell: (r) => r.label,
+                            },
+                            {
+                                key: 'sent',
+                                header: t('Sent'),
+                                align: 'right',
+                                cell: (r) => r.sent,
+                            },
+                            {
+                                key: 'failed',
+                                header: t('Failed'),
+                                align: 'right',
+                                cell: (r) => (
+                                    <span
+                                        className={
+                                            r.failed > 0
+                                                ? 'text-destructive'
+                                                : ''
+                                        }
+                                    >
+                                        {r.failed}
+                                    </span>
+                                ),
+                            },
+                            {
+                                key: 'blocked',
+                                header: t('Blocked'),
+                                align: 'right',
+                                cell: (r) => r.blocked,
+                            },
+                        ]}
+                    />
+                </Section>
+            </PageBody>
+
+            <SidePanel
+                open={editing !== null}
+                onClose={() => setEditing(null)}
+                title={current ? current.name : t('Add provider')}
+            >
+                {editing !== null && (
                     <ProviderForm
+                        key={editing}
                         drivers={drivers}
+                        provider={current}
                         onDone={() => setEditing(null)}
                     />
                 )}
-
-                <div className="grid gap-2 sm:max-w-sm">
-                    <Label htmlFor="test-to">{t('Send test emails to')}</Label>
-                    <Input
-                        id="test-to"
-                        type="email"
-                        value={testTo}
-                        onChange={(e) => setTestTo(e.target.value)}
-                        placeholder="you@example.com"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        {t(
-                            'Then press “Send test” on a provider. The sender must be verified with the provider (for Brevo: Senders, domains and dedicated IPs).',
-                        )}
-                    </p>
-                </div>
-
-                <ul className="flex flex-col gap-3">
-                    {providers.map((provider) =>
-                        editing === provider.id ? (
-                            <li key={provider.id}>
-                                <ProviderForm
-                                    drivers={drivers}
-                                    provider={provider}
-                                    onDone={() => setEditing(null)}
-                                />
-                            </li>
-                        ) : (
-                            <li
-                                key={provider.id}
-                                className="flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm"
-                            >
-                                <span className="w-6 text-center text-muted-foreground">
-                                    {provider.priority}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <div className="font-medium">
-                                        {provider.name}{' '}
-                                        <span className="text-muted-foreground">
-                                            · {provider.driver_label}
-                                        </span>
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                        {provider.from_address} ·{' '}
-                                        {t(':count sent in 30 days', {
-                                            count: provider.sent_30_days,
-                                        })}
-                                    </div>
-                                    {provider.last_test_ok === false &&
-                                        provider.last_test_error && (
-                                            <div className="text-destructive">
-                                                {provider.last_test_error}
-                                            </div>
-                                        )}
-                                </div>
-                                <Badge
-                                    variant={
-                                        provider.enabled
-                                            ? 'default'
-                                            : 'secondary'
-                                    }
-                                >
-                                    {provider.enabled
-                                        ? t('Enabled')
-                                        : t('Disabled')}
-                                </Badge>
-                                {provider.last_test_ok !== null && (
-                                    <Badge
-                                        variant={
-                                            provider.last_test_ok
-                                                ? 'outline'
-                                                : 'destructive'
-                                        }
-                                    >
-                                        {provider.last_test_ok
-                                            ? t('Test passed')
-                                            : t('Test failed')}
-                                    </Badge>
-                                )}
-                                <div className="flex gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        disabled={
-                                            testTo === '' || testing !== null
-                                        }
-                                        title={
-                                            testTo === ''
-                                                ? t(
-                                                      'Enter the address for test emails first.',
-                                                  )
-                                                : undefined
-                                        }
-                                        onClick={() =>
-                                            router.post(
-                                                MailProviderController.test.url(
-                                                    provider.id,
-                                                ),
-                                                { to: testTo },
-                                                {
-                                                    preserveScroll: true,
-                                                    onStart: () =>
-                                                        setTesting(provider.id),
-                                                    onFinish: () =>
-                                                        setTesting(null),
-                                                },
-                                            )
-                                        }
-                                    >
-                                        {testing === provider.id
-                                            ? t('Sending…')
-                                            : t('Send test')}
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setEditing(provider.id)}
-                                    >
-                                        {t('Edit')}
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive"
-                                        onClick={() => {
-                                            if (
-                                                window.confirm(
-                                                    t('Remove :name?', {
-                                                        name: provider.name,
-                                                    }),
-                                                )
-                                            ) {
-                                                router.delete(
-                                                    MailProviderController.destroy.url(
-                                                        provider.id,
-                                                    ),
-                                                    {
-                                                        preserveScroll: true,
-                                                    },
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        {t('Remove')}
-                                    </Button>
-                                </div>
-                            </li>
-                        ),
-                    )}
-                </ul>
-
-                <section className="flex flex-col gap-3">
-                    <Heading
-                        variant="small"
-                        title={t('All hotels, last 30 days')}
-                    />
-                    <div
-                        tabIndex={0}
-                        className="overflow-x-auto rounded-xl border"
-                    >
-                        <table className="w-full text-sm">
-                            <thead className="bg-muted/50 text-left text-muted-foreground">
-                                <tr>
-                                    <th className="px-4 py-3 font-medium">
-                                        {t('Type')}
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        {t('Sent')}
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        {t('Failed')}
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        {t('Blocked')}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {totals.map((row) => (
-                                    <tr key={row.label} className="border-t">
-                                        <td className="px-4 py-3">
-                                            {row.label}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            {row.sent}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            {row.failed}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            {row.blocked}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
+            </SidePanel>
         </>
     );
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Ai\AiTask;
 use App\Domains\Ai\Models\AiRun;
+use App\Domains\Messaging\Email\Models\MailProvider;
 use App\Domains\Operations\BackupRun;
 use App\Domains\Operations\Mail\OpsAlertMail;
 use App\Domains\Operations\OpsCheck;
@@ -86,4 +87,22 @@ it('notices missing, failed and unverified backups when backups are enabled', fu
 
     $this->artisan('backup:record', ['status' => 'failure', '--error' => 'disk full']);
     expect(($this->check)())->toHaveKey('backup_failed');
+});
+
+it('flags emails that cannot reach people outside local and tests', function (): void {
+    app()->instance('env', 'staging');
+    $check = app(OpsCheck::class);
+
+    config(['mail.default' => 'log']);
+    expect($check->email())->toHaveKey('email_not_delivered');
+
+    config(['mail.default' => 'platform', 'mail.platform_fallback' => 'log']);
+    expect($check->email()['email_not_delivered'])->toContain('No email provider is enabled');
+
+    MailProvider::query()->create(['name' => 'Brevo', 'driver' => 'brevo', 'credentials' => ['password' => 'key'], 'from_address' => 'a@example.com', 'enabled' => true, 'priority' => 1]);
+    expect($check->email())->toBe([]);
+
+    app()->instance('env', 'testing');
+    config(['mail.default' => 'log']);
+    expect($check->email())->toBe([]);
 });

@@ -5,10 +5,13 @@
  * Fields, DataTables and StatTiles. Records are edited in a SidePanel
  * instead of open forms stacked down the page.
  */
+import { router } from '@inertiajs/react';
+import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Input } from '@/components/ui/input';
 import {
     Sheet,
     SheetContent,
@@ -233,57 +236,104 @@ export function DataTable<T>({
         return <EmptyState text={empty} />;
     }
 
+    const [first, ...rest] = columns;
+    const labelled = rest.filter((c) => c.header !== '');
+    const trailing = rest.filter((c) => c.header === '');
+
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full min-w-[36rem] text-sm">
-                <thead>
-                    <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                        {columns.map((c) => (
-                            <th
+        <>
+            {/* Phones: one card per row, the first column as its title. */}
+            <ul className="divide-y text-sm sm:hidden">
+                {rows.map((row) => (
+                    <li
+                        key={rowKey(row)}
+                        onClick={onRowClick ? () => onRowClick(row) : undefined}
+                        className={cn(
+                            'grid gap-2 px-4 py-3',
+                            onRowClick && 'cursor-pointer active:bg-muted/40',
+                        )}
+                    >
+                        {first && (
+                            <div className="min-w-0">{first.cell(row)}</div>
+                        )}
+                        {labelled.length > 0 && (
+                            <dl className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-3 gap-y-1">
+                                {labelled.map((c) => (
+                                    <div key={c.key} className="contents">
+                                        <dt className="text-xs text-muted-foreground">
+                                            {c.header}
+                                        </dt>
+                                        <dd className="min-w-0 text-right [&>*]:justify-end">
+                                            {c.cell(row)}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        )}
+                        {trailing.map((c) => (
+                            <div
                                 key={c.key}
-                                scope="col"
-                                className={cn(
-                                    'px-5 py-2.5 font-medium whitespace-nowrap',
-                                    c.align === 'right' && 'text-right',
-                                    c.className,
-                                )}
+                                className="flex justify-end empty:hidden [&_svg.ml-auto]:hidden"
                             >
-                                {c.header}
-                            </th>
+                                {c.cell(row)}
+                            </div>
                         ))}
-                    </tr>
-                </thead>
-                <tbody className="divide-y">
-                    {rows.map((row) => (
-                        <tr
-                            key={rowKey(row)}
-                            onClick={
-                                onRowClick ? () => onRowClick(row) : undefined
-                            }
-                            className={cn(
-                                'transition-colors',
-                                onRowClick &&
-                                    'cursor-pointer hover:bg-muted/40',
-                            )}
-                        >
+                    </li>
+                ))}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full min-w-[36rem] text-sm">
+                    <thead>
+                        <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                             {columns.map((c) => (
-                                <td
+                                <th
                                     key={c.key}
+                                    scope="col"
                                     className={cn(
-                                        'px-5 py-3 align-middle',
-                                        c.align === 'right' &&
-                                            'text-right tabular-nums',
+                                        'px-5 py-2.5 font-medium whitespace-nowrap',
+                                        c.align === 'right' && 'text-right',
                                         c.className,
                                     )}
                                 >
-                                    {c.cell(row)}
-                                </td>
+                                    {c.header}
+                                </th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody className="divide-y">
+                        {rows.map((row) => (
+                            <tr
+                                key={rowKey(row)}
+                                onClick={
+                                    onRowClick
+                                        ? () => onRowClick(row)
+                                        : undefined
+                                }
+                                className={cn(
+                                    'transition-colors',
+                                    onRowClick &&
+                                        'cursor-pointer hover:bg-muted/40',
+                                )}
+                            >
+                                {columns.map((c) => (
+                                    <td
+                                        key={c.key}
+                                        className={cn(
+                                            'px-5 py-3 align-middle',
+                                            c.align === 'right' &&
+                                                'text-right tabular-nums',
+                                            c.className,
+                                        )}
+                                    >
+                                        {c.cell(row)}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 }
 
@@ -492,4 +542,177 @@ export function formatMoney(minor: number, currency: string, locale?: string) {
     } catch {
         return `${minor / minorFactor(currency)} ${currency}`;
     }
+}
+
+/** Several choices as pills that toggle on and off (instead of a multi-select box). */
+export function ChipSelect({
+    options,
+    value,
+    onChange,
+    label,
+}: {
+    options: { value: string; label: string }[];
+    value: string[];
+    onChange: (value: string[]) => void;
+    label: string;
+}) {
+    return (
+        <div role="group" aria-label={label} className="flex flex-wrap gap-2">
+            {options.map((o) => {
+                const on = value.includes(o.value);
+
+                return (
+                    <button
+                        key={o.value}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() =>
+                            onChange(
+                                on
+                                    ? value.filter((x) => x !== o.value)
+                                    : [...value, o.value],
+                            )
+                        }
+                        className={cn(
+                            'rounded-full border px-3 py-1 text-xs transition-colors',
+                            on
+                                ? 'border-brand bg-brand text-white'
+                                : 'hover:bg-muted',
+                        )}
+                    >
+                        {o.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/** One choice out of a few, as cards with a line of help each. */
+export function ChoiceCards({
+    options,
+    value,
+    onChange,
+    label,
+}: {
+    options: { value: string; label: string; hint?: string }[];
+    value: string;
+    onChange: (value: string) => void;
+    label: string;
+}) {
+    return (
+        <div role="radiogroup" aria-label={label} className="grid gap-2">
+            {options.map((o) => (
+                <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={value === o.value}
+                    onClick={() => onChange(o.value)}
+                    className={cn(
+                        'flex items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+                        value === o.value
+                            ? 'border-brand bg-brand/5 ring-1 ring-brand'
+                            : 'hover:bg-muted/50',
+                    )}
+                >
+                    <span
+                        className={cn(
+                            'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border',
+                            value === o.value && 'border-brand',
+                        )}
+                    >
+                        {value === o.value && (
+                            <span className="size-2 rounded-full bg-brand" />
+                        )}
+                    </span>
+                    <span className="grid gap-0.5">
+                        <span className="text-sm font-medium">{o.label}</span>
+                        {o.hint && (
+                            <span className="text-xs text-muted-foreground">
+                                {o.hint}
+                            </span>
+                        )}
+                    </span>
+                </button>
+            ))}
+        </div>
+    );
+}
+
+export type PageLink = { url: string | null; label: string; active: boolean };
+
+/** Page numbers under a table (Laravel paginator links). */
+export function Pagination({
+    links,
+    label,
+}: {
+    links: PageLink[];
+    label: string;
+}) {
+    if (links.length <= 3) {
+        return null;
+    }
+
+    return (
+        <nav
+            aria-label={label}
+            className="flex flex-wrap justify-end gap-1 border-t px-5 py-3"
+        >
+            {links.map((link, index) => (
+                <button
+                    key={index}
+                    type="button"
+                    disabled={link.url === null}
+                    aria-current={link.active ? 'page' : undefined}
+                    onClick={() =>
+                        link.url &&
+                        router.get(link.url, {}, { preserveState: true })
+                    }
+                    className={cn(
+                        'min-w-8 rounded-md border px-2.5 py-1 text-xs transition-colors disabled:opacity-40',
+                        link.active
+                            ? 'border-brand bg-brand text-white'
+                            : 'bg-card hover:bg-muted',
+                    )}
+                    dangerouslySetInnerHTML={{ __html: link.label }}
+                />
+            ))}
+        </nav>
+    );
+}
+
+/** A search field with its icon; submits on Enter. */
+export function SearchBox({
+    value,
+    onChange,
+    onSubmit,
+    placeholder,
+    label,
+}: {
+    value: string;
+    onChange: (value: string) => void;
+    onSubmit: () => void;
+    placeholder: string;
+    label: string;
+}) {
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit();
+            }}
+            className="relative w-full sm:w-72"
+        >
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+                type="search"
+                className="pl-9"
+                placeholder={placeholder}
+                aria-label={label}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+            />
+        </form>
+    );
 }

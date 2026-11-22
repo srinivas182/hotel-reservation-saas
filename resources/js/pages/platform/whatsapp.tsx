@@ -1,6 +1,13 @@
 import { Head } from '@inertiajs/react';
+import { CircleAlert, CircleCheck } from 'lucide-react';
 import WhatsAppPlatformController from '@/actions/App/Domains/Platform/Http/Controllers/WhatsAppPlatformController';
-import Heading from '@/components/heading';
+import {
+    DataTable,
+    PageBody,
+    PageHeader,
+    Section,
+    StatTile,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { t } from '@/lib/i18n';
 
@@ -37,15 +44,26 @@ function Check({
     value?: string | null;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4 py-1">
-            <span>{label}</span>
+        <li className="flex items-center justify-between gap-4 px-5 py-3">
             <span className="flex items-center gap-2">
-                {value && <code className="text-xs">{value}</code>}
-                <Badge variant={ok ? 'default' : 'destructive'}>
+                {ok ? (
+                    <CircleCheck className="size-4 text-emerald-600" />
+                ) : (
+                    <CircleAlert className="size-4 text-destructive" />
+                )}
+                {label}
+            </span>
+            <span className="flex min-w-0 items-center gap-2">
+                {value && (
+                    <code className="truncate text-xs text-muted-foreground">
+                        {value}
+                    </code>
+                )}
+                <Badge variant={ok ? 'outline' : 'destructive'}>
                     {ok ? t('Set') : t('Missing')}
                 </Badge>
             </span>
-        </div>
+        </li>
     );
 }
 
@@ -55,20 +73,142 @@ export default function PlatformWhatsApp({
     failedEvents,
     accounts,
 }: Props) {
+    const connected = accounts.filter((a) => a.status === 'connected').length;
+    const ready =
+        Boolean(config.app_id) &&
+        config.app_secret_set &&
+        Boolean(config.config_id) &&
+        config.verify_token_set;
+
     return (
         <>
             <Head title="WhatsApp" />
-            <div className="flex max-w-4xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title="WhatsApp"
                     description={t(
                         'Meta app setup and every connected number.',
                     )}
                 />
 
-                <section className="rounded-xl border p-4 text-sm">
-                    <Heading variant="small" title={t('Meta setup')} />
-                    <div className="mt-2 divide-y">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile
+                        label={t('Meta setup')}
+                        value={
+                            <span
+                                className={
+                                    ready
+                                        ? 'text-emerald-600'
+                                        : 'text-destructive'
+                                }
+                            >
+                                {ready ? t('Complete') : t('Incomplete')}
+                            </span>
+                        }
+                    />
+                    <StatTile
+                        label={t('Connected numbers')}
+                        value={connected}
+                        hint={t(':count in total', { count: accounts.length })}
+                    />
+                    <StatTile
+                        label={t('Last webhook received')}
+                        value={
+                            <span className="text-base">
+                                {lastWebhookAt ?? t('never')}
+                            </span>
+                        }
+                    />
+                    <StatTile
+                        label={t('Failed webhook events')}
+                        value={
+                            <span
+                                className={
+                                    failedEvents > 0 ? 'text-destructive' : ''
+                                }
+                            >
+                                {failedEvents}
+                            </span>
+                        }
+                    />
+                </div>
+
+                <Section
+                    flush
+                    title={t('Connected numbers')}
+                    description={t(
+                        'Every hotel number linked to the Meta app.',
+                    )}
+                >
+                    <DataTable
+                        rows={accounts}
+                        rowKey={(a) => `${a.hotel}-${a.display_phone ?? ''}`}
+                        empty={t('No hotel has connected WhatsApp yet.')}
+                        columns={[
+                            {
+                                key: 'hotel',
+                                header: t('Hotel'),
+                                cell: (a) => (
+                                    <span className="font-medium">
+                                        {a.hotel}
+                                    </span>
+                                ),
+                            },
+                            {
+                                key: 'number',
+                                header: t('Number'),
+                                cell: (a) => (
+                                    <div>
+                                        <div className="tabular-nums">
+                                            {a.display_phone ?? '—'}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {a.verified_name}
+                                            {a.coexistence &&
+                                                ` · ${t('also in the Business app')}`}
+                                        </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (a) => (
+                                    <div>
+                                        <Badge
+                                            variant={
+                                                a.status === 'connected'
+                                                    ? 'default'
+                                                    : 'destructive'
+                                            }
+                                        >
+                                            {a.status_label}
+                                        </Badge>
+                                        {a.last_error && (
+                                            <div className="mt-1 text-xs text-destructive">
+                                                {a.last_error}
+                                            </div>
+                                        )}
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'quality',
+                                header: t('Quality rating'),
+                                cell: (a) => a.quality_rating ?? '—',
+                            },
+                        ]}
+                    />
+                </Section>
+
+                <Section
+                    flush
+                    title={t('Meta setup')}
+                    description={t(
+                        'Set in the server settings. Every line must be set before hotels can connect.',
+                    )}
+                >
+                    <ul className="divide-y">
                         <Check
                             ok={Boolean(config.app_id)}
                             label={t('App ID')}
@@ -87,95 +227,23 @@ export default function PlatformWhatsApp({
                             ok={config.verify_token_set}
                             label={t('Webhook verify token')}
                         />
-                    </div>
-                    <p className="mt-3">
-                        {t('Webhook address for Meta:')}{' '}
-                        <code className="text-xs">{config.webhook_url}</code>
-                    </p>
-                    <p className="text-muted-foreground">
-                        {t('Graph API version:')} {config.graph_version} ·{' '}
-                        {t('Last webhook received:')}{' '}
-                        {lastWebhookAt ?? t('never')}
-                    </p>
-                    {failedEvents > 0 && (
-                        <p className="text-destructive">
-                            {t(
-                                ':count webhook event(s) failed after retries.',
-                                { count: failedEvents },
-                            )}
-                        </p>
-                    )}
-                </section>
-
-                <div tabIndex={0} className="overflow-x-auto rounded-xl border">
-                    <table className="w-full text-sm">
-                        <thead className="bg-muted/50 text-left text-muted-foreground">
-                            <tr>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Hotel')}
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Number')}
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Status')}
-                                </th>
-                                <th className="px-4 py-3 font-medium">
-                                    {t('Quality rating')}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {accounts.length === 0 && (
-                                <tr>
-                                    <td
-                                        colSpan={4}
-                                        className="px-4 py-8 text-center text-muted-foreground"
-                                    >
-                                        {t(
-                                            'No hotel has connected WhatsApp yet.',
-                                        )}
-                                    </td>
-                                </tr>
-                            )}
-                            {accounts.map((account, index) => (
-                                <tr key={index} className="border-t">
-                                    <td className="px-4 py-3">
-                                        {account.hotel}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {account.display_phone}
-                                        <div className="text-xs text-muted-foreground">
-                                            {account.verified_name}
-                                            {account.coexistence &&
-                                                ` · ${t('also in the Business app')}`}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Badge
-                                            variant={
-                                                account.status === 'connected'
-                                                    ? 'default'
-                                                    : 'destructive'
-                                            }
-                                        >
-                                            {account.status_label}
-                                        </Badge>
-                                        {account.last_error && (
-                                            <div className="text-xs text-destructive">
-                                                {account.last_error}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {account.quality_rating ?? '—'}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                    </ul>
+                    <dl className="grid gap-3 border-t bg-muted/30 px-5 py-4 text-sm sm:grid-cols-[12rem_1fr]">
+                        <dt className="text-muted-foreground">
+                            {t('Webhook address for Meta:')}
+                        </dt>
+                        <dd>
+                            <code className="text-xs break-all">
+                                {config.webhook_url}
+                            </code>
+                        </dd>
+                        <dt className="text-muted-foreground">
+                            {t('Graph API version:')}
+                        </dt>
+                        <dd>{config.graph_version}</dd>
+                    </dl>
+                </Section>
+            </PageBody>
         </>
     );
 }

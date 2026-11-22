@@ -1,16 +1,25 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Copy } from 'lucide-react';
 import { useState } from 'react';
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
 import PlatformDemoController from '@/actions/App/Domains/Demo/Http/Controllers/PlatformDemoController';
 import { ProposalForm } from '@/components/sales/proposal-form';
 import type { Plan, RoiInputs } from '@/components/sales/proposal-form';
 import PlatformSiteController from '@/actions/App/Domains/Site/Http/Controllers/PlatformSiteController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import {
+    DataTable,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 type Lead = {
     id: number;
@@ -56,8 +65,6 @@ type Props = {
     roiDefaults: RoiInputs;
 };
 
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
 const statusLabel = (s: string) =>
     ({
         new: t('New'),
@@ -100,61 +107,66 @@ function LeadEditor({
                     preserveScroll: true,
                 });
             }}
-            className="grid gap-2 border-t pt-2 sm:grid-cols-4"
+            className="grid gap-4"
         >
-            <select
-                aria-label={t('Status')}
-                className={selectClass}
-                value={form.data.status}
-                onChange={(e) => form.setData('status', e.target.value)}
-            >
-                {statuses.map((s) => (
-                    <option key={s} value={s}>
-                        {statusLabel(s)}
-                    </option>
-                ))}
-            </select>
-            <select
-                aria-label={t('Sales contact')}
-                className={selectClass}
-                value={form.data.owner_id}
-                onChange={(e) => form.setData('owner_id', e.target.value)}
-            >
-                <option value="">{t('Nobody')}</option>
-                {owners.map((o) => (
-                    <option key={o.id} value={o.id}>
-                        {o.name}
-                    </option>
-                ))}
-            </select>
-            <Input
-                aria-label={t('Follow up on')}
-                type="date"
-                value={form.data.follow_up_on}
-                onChange={(e) => form.setData('follow_up_on', e.target.value)}
-            />
+            <div className="grid gap-4 sm:grid-cols-3">
+                <Field label={t('Status')}>
+                    <select
+                        className="h-9"
+                        value={form.data.status}
+                        onChange={(e) => form.setData('status', e.target.value)}
+                    >
+                        {statuses.map((s) => (
+                            <option key={s} value={s}>
+                                {statusLabel(s)}
+                            </option>
+                        ))}
+                    </select>
+                </Field>
+                <Field label={t('Sales contact')}>
+                    <select
+                        className="h-9"
+                        value={form.data.owner_id}
+                        onChange={(e) =>
+                            form.setData('owner_id', e.target.value)
+                        }
+                    >
+                        <option value="">{t('Nobody')}</option>
+                        {owners.map((o) => (
+                            <option key={o.id} value={o.id}>
+                                {o.name}
+                            </option>
+                        ))}
+                    </select>
+                </Field>
+                <Field label={t('Follow up on')}>
+                    <Input
+                        type="date"
+                        value={form.data.follow_up_on}
+                        onChange={(e) =>
+                            form.setData('follow_up_on', e.target.value)
+                        }
+                    />
+                </Field>
+            </div>
             {form.data.status === 'lost' && (
-                <Input
-                    aria-label={t('Why lost')}
-                    placeholder={t('Why lost')}
-                    value={form.data.lost_reason}
-                    onChange={(e) =>
-                        form.setData('lost_reason', e.target.value)
-                    }
-                />
+                <Field label={t('Why lost')} error={errors.lost_reason}>
+                    <Input
+                        value={form.data.lost_reason}
+                        onChange={(e) =>
+                            form.setData('lost_reason', e.target.value)
+                        }
+                    />
+                </Field>
             )}
-            <textarea
-                aria-label={t('Notes')}
-                placeholder={t('Notes')}
-                className="min-h-14 rounded-md border border-input bg-transparent px-3 py-2 sm:col-span-4"
-                value={form.data.notes}
-                onChange={(e) => form.setData('notes', e.target.value)}
-            />
-            <InputError message={errors.lost_reason} />
-            <div className="flex gap-2 sm:col-span-4">
-                <Button size="sm" disabled={form.processing}>
-                    {t('Save')}
-                </Button>
+            <Field label={t('Notes')}>
+                <textarea
+                    className="min-h-20"
+                    value={form.data.notes}
+                    onChange={(e) => form.setData('notes', e.target.value)}
+                />
+            </Field>
+            <div className="flex flex-wrap justify-end gap-2">
                 {!lead.code && (
                     <Button
                         type="button"
@@ -187,8 +199,164 @@ function LeadEditor({
                         ? t('Send a new demo link')
                         : t('Send a demo link')}
                 </Button>
+                <Button size="sm" disabled={form.processing}>
+                    {t('Save')}
+                </Button>
             </div>
         </form>
+    );
+}
+
+function LinkCallout({ text, link }: { text: string; link: string }) {
+    return (
+        <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3 text-sm"
+        >
+            <span className="font-medium">{text}</span>
+            <code className="min-w-0 flex-1 text-xs break-all">{link}</code>
+            <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void navigator.clipboard?.writeText(link)}
+            >
+                <Copy /> {t('Copy')}
+            </Button>
+        </div>
+    );
+}
+
+function LeadPanel({
+    lead,
+    statuses,
+    owners,
+    plans,
+    roiDefaults,
+    onClose,
+}: {
+    lead: Lead | undefined;
+    statuses: string[];
+    owners: Props['owners'];
+    plans: Plan[];
+    roiDefaults: RoiInputs;
+    onClose: () => void;
+}) {
+    return (
+        <SidePanel
+            open={lead !== undefined}
+            onClose={onClose}
+            title={lead?.hotel_name ?? ''}
+            description={
+                lead
+                    ? [
+                          [lead.city, lead.country].filter(Boolean).join(', '),
+                          lead.rooms
+                              ? t(':rooms rooms', { rooms: lead.rooms })
+                              : null,
+                      ]
+                          .filter(Boolean)
+                          .join(' · ')
+                    : undefined
+            }
+        >
+            {lead && (
+                <div className="grid gap-6">
+                    <FieldGroup title={t('Contact')}>
+                        <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-2 text-sm">
+                            <dt className="text-muted-foreground">
+                                {t('Name')}
+                            </dt>
+                            <dd>{lead.name}</dd>
+                            <dt className="text-muted-foreground">WhatsApp</dt>
+                            <dd className="tabular-nums">{lead.whatsapp}</dd>
+                            <dt className="text-muted-foreground">
+                                {t('Email')}
+                            </dt>
+                            <dd>{lead.email ?? '—'}</dd>
+                            <dt className="text-muted-foreground">
+                                {t('Best time to call')}
+                            </dt>
+                            <dd>{lead.contact_time ?? '—'}</dd>
+                            <dt className="text-muted-foreground">
+                                {t('Language')}
+                            </dt>
+                            <dd>{lead.locale.toUpperCase()}</dd>
+                            {lead.hotel_id && (
+                                <>
+                                    <dt className="text-muted-foreground">
+                                        {t('Hotel')}
+                                    </dt>
+                                    <dd>
+                                        <Link
+                                            href={HotelOverviewController.show(
+                                                lead.hotel_id,
+                                            )}
+                                            className="text-brand hover:underline"
+                                        >
+                                            {t('Open the hotel')}
+                                        </Link>
+                                    </dd>
+                                </>
+                            )}
+                        </dl>
+                        {lead.message && (
+                            <p className="rounded-lg bg-muted/50 p-3 text-sm whitespace-pre-wrap">
+                                {lead.message}
+                            </p>
+                        )}
+                    </FieldGroup>
+                    <FieldGroup title={t('Follow-up')}>
+                        <LeadEditor
+                            key={lead.id}
+                            lead={lead}
+                            statuses={statuses}
+                            owners={owners}
+                        />
+                    </FieldGroup>
+                    <FieldGroup title={t('Return on investment and proposal')}>
+                        {lead.proposals.length > 0 && (
+                            <ul className="divide-y rounded-lg border text-sm">
+                                {lead.proposals.map((p) => (
+                                    <li
+                                        key={p.id}
+                                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                                    >
+                                        <a
+                                            href={p.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-brand hover:underline"
+                                        >
+                                            {t('Proposal of :date', {
+                                                date: p.created ?? '',
+                                            })}
+                                        </a>
+                                        <span className="text-xs text-muted-foreground">
+                                            {p.accepted
+                                                ? t('trial started :date', {
+                                                      date: p.accepted,
+                                                  })
+                                                : p.viewed
+                                                  ? t('viewed :date', {
+                                                        date: p.viewed,
+                                                    })
+                                                  : t('not viewed yet')}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        <ProposalForm
+                            leadId={lead.id}
+                            plans={plans}
+                            defaults={roiDefaults}
+                            hasEmail={lead.email !== null}
+                            rooms={lead.rooms}
+                        />
+                    </FieldGroup>
+                </div>
+            )}
+        </SidePanel>
     );
 }
 
@@ -204,222 +372,192 @@ export default function Leads({
     roiDefaults,
 }: Props) {
     const [open, setOpen] = useState<number | null>(null);
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const go = (status: string | null) =>
+        router.get(
+            PlatformSiteController.leads.url(
+                status ? { query: { status } } : undefined,
+            ),
+        );
 
     return (
         <>
             <Head title={t('Leads')} />
-            <div className="flex max-w-6xl flex-col gap-4 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Leads')}
                     description={t(
                         'Demo requests from the website, followed by the sales team.',
                     )}
                 />
-                <div className="flex flex-wrap gap-2">
-                    <Button
-                        size="sm"
-                        variant={filter === null ? 'default' : 'outline'}
-                        onClick={() =>
-                            router.get(PlatformSiteController.leads.url())
-                        }
-                    >
-                        {t('All')}
-                    </Button>
-                    {statuses.map((s) => (
-                        <Button
-                            key={s}
-                            size="sm"
-                            variant={filter === s ? 'default' : 'outline'}
-                            onClick={() =>
-                                router.get(
-                                    PlatformSiteController.leads.url({
-                                        query: { status: s },
-                                    }),
-                                )
-                            }
-                        >
-                            {statusLabel(s)} ({counts[s] ?? 0})
-                        </Button>
-                    ))}
+
+                <div
+                    role="group"
+                    aria-label={t('Pipeline')}
+                    className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7"
+                >
+                    {[null, ...statuses].map((s) => {
+                        const active = filter === s;
+
+                        return (
+                            <button
+                                key={s ?? 'all'}
+                                type="button"
+                                aria-pressed={active}
+                                onClick={() => go(s)}
+                                className={cn(
+                                    'rounded-xl border bg-card px-4 py-3 text-left transition-colors',
+                                    active
+                                        ? 'border-brand ring-1 ring-brand'
+                                        : 'hover:bg-muted/50',
+                                )}
+                            >
+                                <div className="text-xs text-muted-foreground">
+                                    {s === null ? t('All') : statusLabel(s)}
+                                </div>
+                                <div className="mt-1 font-display text-2xl font-extrabold tabular-nums">
+                                    {s === null ? total : (counts[s] ?? 0)}
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
+
                 {proposalLink && (
-                    <p
-                        role="status"
-                        className="rounded-lg border px-3 py-2 break-all"
-                    >
-                        {t('Proposal link (valid 30 days):')} {proposalLink}
-                    </p>
+                    <LinkCallout
+                        text={t('Proposal link (valid 30 days):')}
+                        link={proposalLink}
+                    />
                 )}
                 {demoLink && (
-                    <p
-                        role="status"
-                        className="rounded-lg border px-3 py-2 break-all"
-                    >
-                        {t(
+                    <LinkCallout
+                        text={t(
                             'Private demo link (48 h), also sent by email when we have one:',
-                        )}{' '}
-                        {demoLink}
-                    </p>
+                        )}
+                        link={demoLink}
+                    />
                 )}
-                {leads.length === 0 && (
-                    <p className="text-muted-foreground">
-                        {t('No leads yet.')}
-                    </p>
-                )}
-                <ul className="divide-y rounded-xl border">
-                    {leads.map((l) => (
-                        <li
-                            key={l.id}
-                            className="flex flex-col gap-2 px-3 py-2"
-                        >
-                            <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                    type="button"
-                                    className="font-medium underline"
-                                    onClick={() =>
-                                        setOpen(open === l.id ? null : l.id)
-                                    }
-                                    aria-expanded={open === l.id}
-                                >
-                                    {l.hotel_name}
-                                </button>
-                                <span className="text-muted-foreground">
-                                    {[l.city, l.country]
-                                        .filter(Boolean)
-                                        .join(', ')}{' '}
-                                    {l.rooms
-                                        ? `· ${t(':rooms rooms', { rooms: l.rooms })}`
-                                        : ''}
-                                </span>
-                                <span>
-                                    {l.name} · {l.whatsapp}
-                                </span>
-                                <Badge
-                                    variant={
-                                        l.status === 'won'
-                                            ? 'default'
-                                            : l.status === 'lost'
-                                              ? 'outline'
-                                              : 'secondary'
-                                    }
-                                >
-                                    {statusLabel(l.status)}
-                                </Badge>
-                                {l.overdue && (
-                                    <Badge variant="destructive">
-                                        {t('Follow-up due :date', {
-                                            date: l.follow_up_on ?? '',
-                                        })}
-                                    </Badge>
-                                )}
-                                {l.demo_sent && (
-                                    <Badge variant="outline">
-                                        {l.demo_opened
-                                            ? t('Demo opened :date', {
-                                                  date: l.demo_opened,
-                                              })
-                                            : t('Demo sent, not opened')}
-                                    </Badge>
-                                )}
-                                {l.code && (
-                                    <Badge variant="outline">
-                                        {t('Code :code', { code: l.code })}
-                                    </Badge>
-                                )}
-                                {l.hotel_id && (
-                                    <Link
-                                        href={HotelOverviewController.show(
-                                            l.hotel_id,
+
+                <Section
+                    flush
+                    title={
+                        filter === null ? t('All leads') : statusLabel(filter)
+                    }
+                    description={t('Click a lead to follow it up.')}
+                >
+                    <DataTable
+                        rows={leads}
+                        rowKey={(l) => l.id}
+                        empty={t('No leads yet.')}
+                        onRowClick={(l) => setOpen(l.id)}
+                        columns={[
+                            {
+                                key: 'hotel',
+                                header: t('Hotel'),
+                                cell: (l) => (
+                                    <div>
+                                        <div className="font-medium">
+                                            {l.hotel_name}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {[l.city, l.country]
+                                                .filter(Boolean)
+                                                .join(', ')}
+                                            {l.rooms
+                                                ? ` · ${t(':rooms rooms', { rooms: l.rooms })}`
+                                                : ''}
+                                        </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'contact',
+                                header: t('Contact'),
+                                cell: (l) => (
+                                    <div>
+                                        <div>{l.name}</div>
+                                        <div className="text-xs text-muted-foreground tabular-nums">
+                                            {l.whatsapp}
+                                        </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (l) => (
+                                    <div className="flex flex-wrap gap-1">
+                                        <Badge
+                                            variant={
+                                                l.status === 'won'
+                                                    ? 'default'
+                                                    : l.status === 'lost'
+                                                      ? 'outline'
+                                                      : 'secondary'
+                                            }
+                                        >
+                                            {statusLabel(l.status)}
+                                        </Badge>
+                                        {l.overdue && (
+                                            <Badge variant="destructive">
+                                                {t('Follow-up due :date', {
+                                                    date: l.follow_up_on ?? '',
+                                                })}
+                                            </Badge>
                                         )}
-                                        className="underline"
-                                    >
-                                        {t('Hotel')}
-                                    </Link>
-                                )}
-                                <span className="ml-auto text-xs text-muted-foreground">
-                                    {l.owner ?? t('Nobody')} · {l.created}
-                                </span>
-                            </div>
-                            {open === l.id && (
-                                <>
-                                    <p className="text-muted-foreground">
-                                        {[
-                                            l.email,
-                                            l.contact_time &&
-                                                t('Call: :time', {
-                                                    time: l.contact_time,
-                                                }),
-                                            l.locale.toUpperCase(),
-                                        ]
-                                            .filter(Boolean)
-                                            .join(' · ')}
-                                    </p>
-                                    {l.message && (
-                                        <p className="whitespace-pre-wrap">
-                                            {l.message}
-                                        </p>
-                                    )}
-                                    <LeadEditor
-                                        lead={l}
-                                        statuses={statuses}
-                                        owners={owners}
-                                    />
-                                    {l.proposals.length > 0 && (
-                                        <ul className="text-xs">
-                                            {l.proposals.map((p) => (
-                                                <li key={p.id}>
-                                                    <a
-                                                        href={p.url}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="underline"
-                                                    >
-                                                        {t(
-                                                            'Proposal of :date',
-                                                            {
-                                                                date:
-                                                                    p.created ??
-                                                                    '',
-                                                            },
-                                                        )}
-                                                    </a>{' '}
-                                                    ·{' '}
-                                                    {p.accepted
-                                                        ? t(
-                                                              'trial started :date',
-                                                              {
-                                                                  date: p.accepted,
-                                                              },
-                                                          )
-                                                        : p.viewed
-                                                          ? t('viewed :date', {
-                                                                date: p.viewed,
-                                                            })
-                                                          : t('not viewed yet')}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                    <details>
-                                        <summary className="cursor-pointer font-medium">
-                                            {t(
-                                                'Return on investment and proposal',
-                                            )}
-                                        </summary>
-                                        <ProposalForm
-                                            leadId={l.id}
-                                            plans={plans}
-                                            defaults={roiDefaults}
-                                            hasEmail={l.email !== null}
-                                            rooms={l.rooms}
-                                        />
-                                    </details>
-                                </>
-                            )}
-                        </li>
-                    ))}
-                </ul>
-            </div>
+                                        {l.demo_sent && (
+                                            <Badge variant="outline">
+                                                {l.demo_opened
+                                                    ? t('Demo opened :date', {
+                                                          date: l.demo_opened,
+                                                      })
+                                                    : t(
+                                                          'Demo sent, not opened',
+                                                      )}
+                                            </Badge>
+                                        )}
+                                        {l.code && (
+                                            <Badge variant="outline">
+                                                {t('Code :code', {
+                                                    code: l.code,
+                                                })}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'owner',
+                                header: t('Sales contact'),
+                                cell: (l) =>
+                                    l.owner ?? (
+                                        <span className="text-muted-foreground">
+                                            {t('Nobody')}
+                                        </span>
+                                    ),
+                            },
+                            {
+                                key: 'created',
+                                header: t('Received'),
+                                cell: (l) => (
+                                    <span className="text-muted-foreground">
+                                        {l.created}
+                                    </span>
+                                ),
+                            },
+                        ]}
+                    />
+                </Section>
+            </PageBody>
+
+            <LeadPanel
+                lead={leads.find((l) => l.id === open)}
+                statuses={statuses}
+                owners={owners}
+                plans={plans}
+                roiDefaults={roiDefaults}
+                onClose={() => setOpen(null)}
+            />
         </>
     );
 }
