@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### App frame polish (0.28.2)
+
+#### Fixed
+
+- The main panel now sits flush with the top, right and bottom of the window (no dark strip above it); only the edge next to the menu is rounded.
+- The side menu no longer shows the browser's bulky scrollbar with arrows: scrollbars are thin everywhere, and the menu's appears only on hover.
+- Page titles no longer leave a large empty gap above the first section (the heading's margin was added to the page's own spacing).
+- Platform → Email providers: the provider's name field is now "Label (only you see this)". The sender name recipients see is the Product name (platform e-mails) or the hotel's name (guest e-mails).
+
 ### Brevo over HTTPS, layout polish, sign-out fix (0.28.1)
 
 #### Fixed

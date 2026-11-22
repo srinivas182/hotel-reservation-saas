@@ -85,7 +85,9 @@ function ProviderForm({
         >
             <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
-                    <Label htmlFor="provider-name">{t('Name')}</Label>
+                    <Label htmlFor="provider-name">
+                        {t('Label (only you see this)')}
+                    </Label>
                     <Input
                         id="provider-name"
                         value={form.data.name}
