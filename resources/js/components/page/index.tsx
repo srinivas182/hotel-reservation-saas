@@ -444,7 +444,7 @@ export function FieldGroup({
     children: ReactNode;
 }) {
     return (
-        <fieldset className="grid gap-4 border-b pb-6 last:border-b-0 last:pb-0 [&+&]:pt-6">
+        <fieldset className="grid gap-4 border-b pb-6 last:border-b-0 last:pb-0">
             <div>
                 <legend className="text-sm font-medium">{title}</legend>
                 {description && (

@@ -2,12 +2,22 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import AiController from '@/actions/App/Domains/Platform/Http/Controllers/AiController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import PasswordInput from '@/components/password-input';
+import {
+    DataTable,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    StatTile,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Provider = {
@@ -105,10 +115,7 @@ function ProviderForm({
     };
 
     return (
-        <form
-            onSubmit={submit}
-            className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"
-        >
+        <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1">
                 <Label htmlFor="p-name">{t('Name')}</Label>
                 <Input
@@ -141,9 +148,8 @@ function ProviderForm({
                           })
                         : t('API key')}
                 </Label>
-                <Input
+                <PasswordInput
                     id="p-key"
-                    type="password"
                     autoComplete="off"
                     value={form.data.key}
                     onChange={(e) => form.setData('key', e.target.value)}
@@ -170,7 +176,7 @@ function ProviderForm({
                 />
                 {t('Active')}
             </label>
-            <div className="flex gap-2 sm:col-span-2">
+            <div className="flex justify-end gap-2 border-t pt-4 sm:col-span-2">
                 <Button disabled={form.processing}>{t('Save')}</Button>
                 <Button type="button" variant="ghost" onClick={onDone}>
                     {t('Cancel')}
@@ -276,10 +282,7 @@ function ModelForm({
         );
 
     return (
-        <form
-            onSubmit={submit}
-            className="grid gap-3 rounded-xl border p-4 sm:grid-cols-3"
-        >
+        <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1">
                 <Label htmlFor="m-provider">{t('Provider')}</Label>
                 <select
@@ -424,7 +427,7 @@ function ModelForm({
                     ))}
                 </select>
             </div>
-            <div className="flex items-end gap-2">
+            <div className="flex justify-end gap-2 border-t pt-4 sm:col-span-2">
                 <Button disabled={form.processing}>{t('Save')}</Button>
                 <Button type="button" variant="ghost" onClick={onDone}>
                     {t('Cancel')}
@@ -483,7 +486,7 @@ function SettingsForm({
                     preserveScroll: true,
                 });
             }}
-            className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"
+            className="grid gap-4 sm:grid-cols-2"
         >
             {select('assistant_model_id', t('Assistant: main model'), 'chat')}
             {select(
@@ -552,355 +555,502 @@ export default function PlatformAi({
     evalRuns,
 }: Props) {
     const [editingProvider, setEditingProvider] = useState<
-        number | 'new' | null
+        Provider | 'new' | null
     >(null);
-    const [editingModel, setEditingModel] = useState<number | 'new' | null>(
+    const [editingModel, setEditingModel] = useState<Model | 'new' | null>(
         null,
     );
+    const tabs = [
+        { key: 'settings', label: t('Models used') },
+        { key: 'providers', label: t('Providers'), count: providers.length },
+        { key: 'models', label: t('Model list'), count: models.length },
+        { key: 'runs', label: t('Test suite runs'), count: evalRuns.length },
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const approved = models.filter((m) => m.status === 'approved').length;
+    const missingKeys = providers.filter((p) => p.key_hint === null).length;
 
     return (
         <>
             <Head title="AI" />
-            <div className="flex max-w-5xl flex-col gap-8 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title="AI"
                     description={t(
-                        'AI cost across all hotels this month: US$ :cost',
-                        { cost: monthCost },
+                        'Which AI answers guests, with which keys, and what it costs.',
                     )}
+                    actions={
+                        tab === 'providers' ? (
+                            <Button onClick={() => setEditingProvider('new')}>
+                                {t('Add provider')}
+                            </Button>
+                        ) : tab === 'models' && providers.length > 0 ? (
+                            <Button onClick={() => setEditingModel('new')}>
+                                {t('Add model')}
+                            </Button>
+                        ) : null
+                    }
                 />
 
                 {settings.kill_switch && (
-                    <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                    <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
                         {t('AI is switched off for every hotel.')}
                     </p>
                 )}
 
-                <section className="flex flex-col gap-3">
-                    <Heading variant="small" title={t('Models used')} />
-                    <SettingsForm settings={settings} models={models} />
-                </section>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatTile
+                        label={t('AI cost this month')}
+                        value={`US$ ${monthCost}`}
+                        hint={t('All hotels')}
+                    />
+                    <StatTile
+                        label={t('Approved models')}
+                        value={`${approved} / ${models.length}`}
+                    />
+                    <StatTile
+                        label={t('Providers')}
+                        value={providers.length}
+                        hint={
+                            missingKeys > 0
+                                ? t(':count without a key', {
+                                      count: missingKeys,
+                                  })
+                                : undefined
+                        }
+                    />
+                    <StatTile
+                        label={t('Time limit per request')}
+                        value={`${settings.timeout_seconds} s`}
+                    />
+                </div>
 
-                <section className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                        <Heading variant="small" title={t('Providers')} />
-                        {editingProvider === null && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setEditingProvider('new')}
-                            >
-                                {t('Add provider')}
-                            </Button>
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+
+                {tab === 'settings' && (
+                    <Section
+                        aside
+                        title={t('Models used')}
+                        description={t(
+                            'The main model answers; the backup takes over when it fails or is too slow. Only models that passed the test suite should be main models.',
                         )}
-                    </div>
-                    {editingProvider === 'new' && (
-                        <ProviderForm
-                            drivers={drivers}
-                            onDone={() => setEditingProvider(null)}
-                        />
-                    )}
-                    <ul className="flex flex-col gap-2">
-                        {providers.map((provider) =>
-                            editingProvider === provider.id ? (
-                                <li key={provider.id}>
-                                    <ProviderForm
-                                        provider={provider}
-                                        drivers={drivers}
-                                        onDone={() => setEditingProvider(null)}
-                                    />
-                                </li>
-                            ) : (
-                                <li
-                                    key={provider.id}
-                                    className="flex flex-wrap items-center gap-2 rounded-xl border px-4 py-3 text-sm"
-                                >
-                                    <span className="font-medium">
-                                        {provider.name}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {provider.driver_label} ·{' '}
-                                        {t('key :hint', {
-                                            hint: provider.key_hint ?? '—',
-                                        })}
-                                    </span>
-                                    {!provider.active && (
-                                        <Badge variant="secondary">
-                                            {t('Inactive')}
-                                        </Badge>
-                                    )}
-                                    {provider.key_hint === null && (
-                                        <Badge variant="destructive">
-                                            {t(
-                                                'No key: edit and enter it again',
-                                            )}
-                                        </Badge>
-                                    )}
-                                    <div className="ml-auto flex gap-1">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                                setEditingProvider(provider.id)
-                                            }
-                                        >
-                                            {t('Edit')}
-                                        </Button>
+                    >
+                        <SettingsForm settings={settings} models={models} />
+                    </Section>
+                )}
+
+                {tab === 'providers' && (
+                    <Section
+                        flush
+                        title={t('Providers')}
+                        description={t(
+                            'AI accounts the platform pays for. Keys are encrypted and never shown again.',
+                        )}
+                    >
+                        <DataTable
+                            rows={providers}
+                            rowKey={(p) => p.id}
+                            empty={t('No provider yet.')}
+                            onRowClick={(p) => setEditingProvider(p)}
+                            columns={[
+                                {
+                                    key: 'name',
+                                    header: t('Name'),
+                                    cell: (p) => (
+                                        <span className="font-medium">
+                                            {p.name}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'driver',
+                                    header: t('Provider'),
+                                    cell: (p) => p.driver_label,
+                                },
+                                {
+                                    key: 'key',
+                                    header: t('Key'),
+                                    cell: (p) =>
+                                        p.key_hint === null ? (
+                                            <Badge variant="destructive">
+                                                {t(
+                                                    'No key: edit and enter it again',
+                                                )}
+                                            </Badge>
+                                        ) : (
+                                            <code className="text-xs text-muted-foreground">
+                                                {p.key_hint}
+                                            </code>
+                                        ),
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (p) =>
+                                        p.active ? (
+                                            <Badge>{t('Active')}</Badge>
+                                        ) : (
+                                            <Badge variant="outline">
+                                                {t('Inactive')}
+                                            </Badge>
+                                        ),
+                                },
+                                {
+                                    key: 'actions',
+                                    header: '',
+                                    align: 'right',
+                                    cell: (p) => (
                                         <Button
                                             size="sm"
                                             variant="ghost"
                                             className="text-destructive"
-                                            onClick={() =>
-                                                window.confirm(
-                                                    t('Delete :name?', {
-                                                        name: provider.name,
-                                                    }),
-                                                ) &&
-                                                router.delete(
-                                                    AiController.destroyProvider.url(
-                                                        provider.id,
-                                                    ),
-                                                    { preserveScroll: true },
-                                                )
-                                            }
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (
+                                                    window.confirm(
+                                                        t('Delete :name?', {
+                                                            name: p.name,
+                                                        }),
+                                                    )
+                                                ) {
+                                                    router.delete(
+                                                        AiController.destroyProvider.url(
+                                                            p.id,
+                                                        ),
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    );
+                                                }
+                                            }}
                                         >
                                             {t('Delete')}
                                         </Button>
-                                    </div>
-                                </li>
-                            ),
-                        )}
-                    </ul>
-                </section>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
 
-                <section className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                        <Heading
-                            variant="small"
-                            title={t('Approved model list')}
-                            description={t(
-                                'A model is approved only after it passes the test suite.',
+                {tab === 'models' && (
+                    <Section
+                        flush
+                        title={t('Model list')}
+                        description={t(
+                            'A model is approved only after it passes the test suite.',
+                        )}
+                    >
+                        <DataTable
+                            rows={models}
+                            rowKey={(m) => m.id}
+                            empty={t(
+                                'No model yet: add a provider, then a model.',
                             )}
+                            onRowClick={(m) => setEditingModel(m)}
+                            columns={[
+                                {
+                                    key: 'label',
+                                    header: t('Model'),
+                                    cell: (m) => (
+                                        <div>
+                                            <div className="font-medium">
+                                                {m.label}
+                                            </div>
+                                            <code className="text-xs text-muted-foreground">
+                                                {m.model}
+                                            </code>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'provider',
+                                    header: t('Provider'),
+                                    cell: (m) => m.provider ?? '—',
+                                },
+                                {
+                                    key: 'uses',
+                                    header: t('Can'),
+                                    cell: (m) => (
+                                        <div className="flex flex-wrap gap-1">
+                                            {m.capabilities.map((c) => (
+                                                <Badge
+                                                    key={c}
+                                                    variant="outline"
+                                                >
+                                                    {t(c)}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'cost',
+                                    header: t(
+                                        'US$ per million tokens (in / out)',
+                                    ),
+                                    align: 'right',
+                                    cell: (m) =>
+                                        `${m.input_cost} / ${m.output_cost}`,
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (m) => (
+                                        <Badge
+                                            variant={
+                                                m.status === 'approved'
+                                                    ? 'default'
+                                                    : 'secondary'
+                                            }
+                                        >
+                                            {m.status_label}
+                                        </Badge>
+                                    ),
+                                },
+                                {
+                                    key: 'actions',
+                                    header: '',
+                                    align: 'right',
+                                    cell: (m) => (
+                                        <div
+                                            className="flex justify-end gap-1"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    router.post(
+                                                        AiController.testModel.url(
+                                                            m.id,
+                                                        ),
+                                                        {},
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                            >
+                                                {t('Test')}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    window.confirm(
+                                                        t(
+                                                            'Run the full test suite against :name? It calls the real model about 65 times and costs money. Approve the model automatically if it passes?',
+                                                            { name: m.label },
+                                                        ),
+                                                    ) &&
+                                                    router.post(
+                                                        AiController.evaluate.url(
+                                                            m.id,
+                                                        ),
+                                                        { approve: true },
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                            >
+                                                {t('Run test suite')}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="text-destructive"
+                                                onClick={() =>
+                                                    window.confirm(
+                                                        t('Delete :name?', {
+                                                            name: m.label,
+                                                        }),
+                                                    ) &&
+                                                    router.delete(
+                                                        AiController.destroyModel.url(
+                                                            m.id,
+                                                        ),
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                            >
+                                                {t('Delete')}
+                                            </Button>
+                                        </div>
+                                    ),
+                                },
+                            ]}
                         />
-                        {editingModel === null && providers.length > 0 && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setEditingModel('new')}
-                            >
-                                {t('Add model')}
-                            </Button>
-                        )}
-                    </div>
-                    {editingModel === 'new' && (
-                        <ModelForm
-                            providers={providers}
-                            statuses={statuses}
-                            onDone={() => setEditingModel(null)}
-                        />
-                    )}
-                    <ul className="flex flex-col gap-2">
-                        {models.map((model) =>
-                            editingModel === model.id ? (
-                                <li key={model.id}>
-                                    <ModelForm
-                                        model={model}
-                                        providers={providers}
-                                        statuses={statuses}
-                                        onDone={() => setEditingModel(null)}
-                                    />
-                                </li>
-                            ) : (
-                                <li
-                                    key={model.id}
-                                    className="flex flex-wrap items-center gap-2 rounded-xl border px-4 py-3 text-sm"
-                                >
-                                    <span className="font-medium">
-                                        {model.label}
-                                    </span>
-                                    <code className="text-xs">
-                                        {model.model}
-                                    </code>
-                                    <span className="text-muted-foreground">
-                                        {model.provider}
-                                    </span>
-                                    <Badge
-                                        variant={
-                                            model.status === 'approved'
-                                                ? 'default'
-                                                : 'secondary'
-                                        }
-                                    >
-                                        {model.status_label}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                        {t(
-                                            'US$ :in / :out per million tokens',
-                                            {
-                                                in: model.input_cost,
-                                                out: model.output_cost,
-                                            },
-                                        )}
-                                    </span>
-                                    <div className="ml-auto flex gap-1">
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() =>
-                                                router.post(
-                                                    AiController.testModel.url(
-                                                        model.id,
-                                                    ),
-                                                    {},
-                                                    { preserveScroll: true },
-                                                )
-                                            }
-                                        >
-                                            {t('Test')}
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() =>
-                                                window.confirm(
-                                                    t(
-                                                        'Run the full test suite against :name? It calls the real model about 65 times and costs money. Approve the model automatically if it passes?',
-                                                        { name: model.label },
-                                                    ),
-                                                ) &&
-                                                router.post(
-                                                    AiController.evaluate.url(
-                                                        model.id,
-                                                    ),
-                                                    { approve: true },
-                                                    { preserveScroll: true },
-                                                )
-                                            }
-                                        >
-                                            {t('Run test suite')}
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                                setEditingModel(model.id)
-                                            }
-                                        >
-                                            {t('Edit')}
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-destructive"
-                                            onClick={() =>
-                                                window.confirm(
-                                                    t('Delete :name?', {
-                                                        name: model.label,
-                                                    }),
-                                                ) &&
-                                                router.delete(
-                                                    AiController.destroyModel.url(
-                                                        model.id,
-                                                    ),
-                                                    { preserveScroll: true },
-                                                )
-                                            }
-                                        >
-                                            {t('Delete')}
-                                        </Button>
-                                    </div>
-                                </li>
-                            ),
-                        )}
-                    </ul>
-                </section>
+                    </Section>
+                )}
 
-                <section className="flex flex-col gap-3">
-                    <Heading
-                        variant="small"
+                {tab === 'runs' && (
+                    <Section
+                        flush
                         title={t('Test suite runs')}
                         description={t(
                             'Approval needs at least 95% of all cases and every safety case.',
                         )}
-                    />
-                    {evalRuns.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                            {t('No runs yet.')}
-                        </p>
+                    >
+                        <DataTable
+                            rows={evalRuns}
+                            rowKey={(r) => r.id}
+                            empty={t('No runs yet.')}
+                            columns={[
+                                {
+                                    key: 'model',
+                                    header: t('Model'),
+                                    cell: (r) => (
+                                        <span className="font-medium">
+                                            {r.model}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'at',
+                                    header: t('Started'),
+                                    cell: (r) => r.started_at,
+                                },
+                                {
+                                    key: 'passed',
+                                    header: t('Passed'),
+                                    align: 'right',
+                                    cell: (r) =>
+                                        r.finished
+                                            ? `${r.passed} / ${r.total}`
+                                            : t('Running…'),
+                                },
+                                {
+                                    key: 'safety',
+                                    header: t('Safety'),
+                                    align: 'right',
+                                    cell: (r) =>
+                                        `${r.safety_passed} / ${r.safety_total}`,
+                                },
+                                {
+                                    key: 'cost',
+                                    header: 'US$',
+                                    align: 'right',
+                                    cell: (r) => r.cost,
+                                },
+                                {
+                                    key: 'result',
+                                    header: t('Result'),
+                                    cell: (r) => (
+                                        <div>
+                                            <Badge
+                                                variant={
+                                                    r.meets_threshold
+                                                        ? 'default'
+                                                        : 'destructive'
+                                                }
+                                            >
+                                                {r.meets_threshold
+                                                    ? t('Meets the threshold')
+                                                    : t('Below the threshold')}
+                                            </Badge>
+                                            {r.failures.length > 0 && (
+                                                <details className="mt-2 text-xs">
+                                                    <summary className="cursor-pointer text-muted-foreground">
+                                                        {t(
+                                                            ':count failed case(s)',
+                                                            {
+                                                                count: r
+                                                                    .failures
+                                                                    .length,
+                                                            },
+                                                        )}
+                                                    </summary>
+                                                    <ul className="mt-1 grid gap-1.5">
+                                                        {r.failures.map((f) => (
+                                                            <li key={f.id}>
+                                                                <code>
+                                                                    {f.id}
+                                                                </code>
+                                                                {f.safety && (
+                                                                    <Badge
+                                                                        variant="destructive"
+                                                                        className="ml-1"
+                                                                    >
+                                                                        {t(
+                                                                            'safety',
+                                                                        )}
+                                                                    </Badge>
+                                                                )}{' '}
+                                                                {f.failures.join(
+                                                                    ' ',
+                                                                )}
+                                                                {f.reply && (
+                                                                    <div className="text-muted-foreground">
+                                                                        {
+                                                                            f.reply
+                                                                        }
+                                                                    </div>
+                                                                )}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </details>
+                                            )}
+                                        </div>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+            </PageBody>
+
+            {editingProvider !== null && (
+                <SidePanel
+                    open
+                    onClose={() => setEditingProvider(null)}
+                    title={
+                        editingProvider === 'new'
+                            ? t('Add provider')
+                            : editingProvider.name
+                    }
+                    description={t(
+                        'An AI account the platform pays for. The key is encrypted and never shown again.',
                     )}
-                    <ul className="flex flex-col gap-2">
-                        {evalRuns.map((run) => (
-                            <li
-                                key={run.id}
-                                className="rounded-xl border px-4 py-3 text-sm"
-                            >
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-medium">
-                                        {run.model}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {run.started_at}
-                                    </span>
-                                    <span>
-                                        {t(
-                                            ':passed/:total passed · safety :safety_passed/:safety_total · US$ :cost',
-                                            {
-                                                passed: run.passed,
-                                                total: run.total,
-                                                safety_passed:
-                                                    run.safety_passed,
-                                                safety_total: run.safety_total,
-                                                cost: run.cost,
-                                            },
-                                        )}
-                                    </span>
-                                    <Badge
-                                        variant={
-                                            run.meets_threshold
-                                                ? 'default'
-                                                : 'destructive'
-                                        }
-                                    >
-                                        {run.meets_threshold
-                                            ? t('Meets the threshold')
-                                            : t('Below the threshold')}
-                                    </Badge>
-                                </div>
-                                {run.failures.length > 0 && (
-                                    <details className="mt-2">
-                                        <summary>
-                                            {t(':count failed case(s)', {
-                                                count: run.failures.length,
-                                            })}
-                                        </summary>
-                                        <ul className="mt-1 flex flex-col gap-1">
-                                            {run.failures.map((failure) => (
-                                                <li key={failure.id}>
-                                                    <code className="text-xs">
-                                                        {failure.id}
-                                                    </code>
-                                                    {failure.safety && (
-                                                        <Badge
-                                                            variant="destructive"
-                                                            className="ml-1"
-                                                        >
-                                                            {t('safety')}
-                                                        </Badge>
-                                                    )}{' '}
-                                                    {failure.failures.join(' ')}
-                                                    {failure.reply && (
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {failure.reply}
-                                                        </div>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </details>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            </div>
+                >
+                    <ProviderForm
+                        provider={
+                            editingProvider === 'new'
+                                ? undefined
+                                : editingProvider
+                        }
+                        drivers={drivers}
+                        onDone={() => setEditingProvider(null)}
+                    />
+                </SidePanel>
+            )}
+            {editingModel !== null && (
+                <SidePanel
+                    open
+                    onClose={() => setEditingModel(null)}
+                    title={
+                        editingModel === 'new'
+                            ? t('Add model')
+                            : editingModel.label
+                    }
+                    description={t(
+                        "Prices are used to work out each hotel's AI cost.",
+                    )}
+                >
+                    <ModelForm
+                        model={
+                            editingModel === 'new' ? undefined : editingModel
+                        }
+                        providers={providers}
+                        statuses={statuses}
+                        onDone={() => setEditingModel(null)}
+                    />
+                </SidePanel>
+            )}
         </>
     );
 }
