@@ -1,12 +1,27 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
-import { Gateways } from '@/components/billing/gateways';
-import type { Driver, Gateway } from '@/components/billing/gateways';
-import { Entities } from '@/components/billing/entities';
+import { EntitiesTab } from '@/components/billing/entities';
 import type { Entity, Report } from '@/components/billing/entities';
-import Heading from '@/components/heading';
+import { GatewaysTab } from '@/components/billing/gateways';
+import type { Driver, Gateway } from '@/components/billing/gateways';
 import InputError from '@/components/input-error';
+import {
+    DataTable,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    StatTile,
+    Switch,
+    Tabs,
+    formatMoney,
+    minorFactor,
+    useTabs,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,16 +71,94 @@ type Props = {
     }[];
 };
 
-function PlanForm({
+const label = (name: Record<string, string>, code: string) =>
+    name.en || name.fr || code;
+
+/** An amount typed in normal units (25000, 39.00), stored in minor units. */
+function MoneyInput({
+    currency,
+    minor,
+    onChange,
+    ariaLabel,
+}: {
+    currency: string;
+    minor: number | undefined;
+    onChange: (minor: number | undefined) => void;
+    ariaLabel: string;
+}) {
+    const factor = minorFactor(currency);
+
+    return (
+        <Input
+            inputMode="decimal"
+            aria-label={ariaLabel}
+            className="text-right tabular-nums"
+            value={minor === undefined ? '' : String(minor / factor)}
+            onChange={(e) => {
+                const raw = e.target.value
+                    .replace(',', '.')
+                    .replace(/[^\d.]/g, '');
+                onChange(
+                    raw === '' ? undefined : Math.round(Number(raw) * factor),
+                );
+            }}
+        />
+    );
+}
+
+function NameFields({
+    value,
+    onChange,
+    code,
+    onCode,
+    errors,
+}: {
+    value: Record<string, string>;
+    onChange: (v: Record<string, string>) => void;
+    code: string;
+    onCode: (v: string) => void;
+    errors: Record<string, string | undefined>;
+}) {
+    return (
+        <div className="grid gap-4 sm:grid-cols-3">
+            <Field
+                label={t('Code')}
+                hint={t('Short and unique, e.g. pro')}
+                error={errors.code}
+            >
+                <Input
+                    value={code}
+                    className="font-mono"
+                    onChange={(e) => onCode(e.target.value)}
+                />
+            </Field>
+            <Field label={t('Name (French)')}>
+                <Input
+                    value={value.fr ?? ''}
+                    onChange={(e) => onChange({ ...value, fr: e.target.value })}
+                />
+            </Field>
+            <Field label={t('Name (English)')}>
+                <Input
+                    value={value.en ?? ''}
+                    onChange={(e) => onChange({ ...value, en: e.target.value })}
+                />
+            </Field>
+        </div>
+    );
+}
+
+function PlanEditor({
     plan,
     modules,
-    onDone,
+    open,
+    onClose,
 }: {
-    plan?: PlanRow;
+    plan: PlanRow | null;
     modules: Props['modules'];
-    onDone?: () => void;
+    open: boolean;
+    onClose: () => void;
 }) {
-    const currencies = Object.keys(plan?.prices ?? { XOF: {} });
     const form = useForm({
         code: plan?.code ?? '',
         name: plan?.name ?? { fr: '', en: '' },
@@ -73,255 +166,305 @@ function PlanForm({
         staff_limit: plan?.staff_limit ?? null,
         ai_credits: plan?.ai_credits ?? 1000,
         email_credits: plan?.email_credits ?? 500,
-        prices: plan?.prices ?? { XOF: { monthly: 0, yearly: 0 } },
+        prices: plan?.prices ?? { XOF: {} },
         trial_days: plan?.trial_days ?? 14,
         is_default: plan?.is_default ?? false,
         active: plan?.active ?? true,
     });
     const [currency, setCurrency] = useState('');
     const errors = form.errors as Record<string, string | undefined>;
+    const setPrice = (
+        c: string,
+        period: 'monthly' | 'yearly',
+        minor?: number,
+    ) =>
+        form.setData('prices', {
+            ...form.data.prices,
+            [c]: { ...form.data.prices[c], [period]: minor },
+        });
+
+    const save = () => {
+        const options = { preserveScroll: true, onSuccess: onClose };
+        if (plan) {
+            form.put(
+                PlatformBillingController.updatePlan.url(plan.id),
+                options,
+            );
+        } else {
+            form.post(PlatformBillingController.storePlan.url(), options);
+        }
+    };
 
     return (
-        <form
-            onSubmit={(e) => {
-                e.preventDefault();
-                if (plan) {
-                    form.put(
-                        PlatformBillingController.updatePlan.url(plan.id),
-                        { preserveScroll: true },
-                    );
-                } else {
-                    form.post(PlatformBillingController.storePlan.url(), {
-                        preserveScroll: true,
-                        onSuccess: () => onDone?.(),
-                    });
-                }
-            }}
-            className="flex flex-col gap-2 rounded-xl border p-3 text-sm"
+        <SidePanel
+            open={open}
+            onClose={onClose}
+            title={
+                plan
+                    ? t('Edit plan :name', {
+                          name: label(plan.name, plan.code),
+                      })
+                    : t('New plan')
+            }
+            description={
+                plan
+                    ? t(
+                          ':count hotel(s) on this plan. Price changes apply at their next renewal.',
+                          { count: plan.hotels },
+                      )
+                    : t('What hotels get and what they pay, per currency.')
+            }
+            footer={
+                <>
+                    <Button variant="ghost" onClick={onClose}>
+                        {t('Cancel')}
+                    </Button>
+                    <Button disabled={form.processing} onClick={save}>
+                        {plan ? t('Save plan') : t('Create plan')}
+                    </Button>
+                </>
+            }
         >
-            <div className="flex flex-wrap items-end gap-2">
-                <Input
-                    aria-label={t('Code')}
-                    placeholder={t('Code')}
-                    className="w-28"
-                    value={form.data.code}
-                    onChange={(e) => form.setData('code', e.target.value)}
-                />
-                <Input
-                    aria-label="FR"
-                    placeholder="Nom (FR)"
-                    className="w-36"
-                    value={form.data.name.fr ?? ''}
-                    onChange={(e) =>
-                        form.setData('name', {
-                            ...form.data.name,
-                            fr: e.target.value,
-                        })
-                    }
-                />
-                <Input
-                    aria-label="EN"
-                    placeholder="Name (EN)"
-                    className="w-36"
-                    value={form.data.name.en ?? ''}
-                    onChange={(e) =>
-                        form.setData('name', {
-                            ...form.data.name,
-                            en: e.target.value,
-                        })
-                    }
-                />
-                <label className="grid gap-0.5 text-xs">
-                    {t('AI credits / month')}
-                    <Input
-                        type="number"
-                        min={0}
-                        className="w-24"
-                        value={form.data.ai_credits}
-                        onChange={(e) =>
-                            form.setData('ai_credits', Number(e.target.value))
-                        }
+            <div className="grid gap-6">
+                <FieldGroup title={t('Name')}>
+                    <NameFields
+                        value={form.data.name}
+                        onChange={(v) => form.setData('name', v)}
+                        code={form.data.code}
+                        onCode={(v) => form.setData('code', v)}
+                        errors={errors}
                     />
-                </label>
-                <label className="grid gap-0.5 text-xs">
-                    {t('Email credits / month')}
-                    <Input
-                        type="number"
-                        min={0}
-                        className="w-24"
-                        value={form.data.email_credits}
-                        onChange={(e) =>
-                            form.setData(
-                                'email_credits',
-                                Number(e.target.value),
-                            )
-                        }
-                    />
-                </label>
-                <label className="grid gap-0.5 text-xs">
-                    {t('Staff limit')}
-                    <Input
-                        type="number"
-                        min={1}
-                        className="w-20"
-                        value={form.data.staff_limit ?? ''}
-                        onChange={(e) =>
-                            form.setData(
-                                'staff_limit',
-                                e.target.value === ''
-                                    ? null
-                                    : Number(e.target.value),
-                            )
-                        }
-                    />
-                </label>
-                <label className="grid gap-0.5 text-xs">
-                    {t('Trial days')}
-                    <Input
-                        type="number"
-                        min={0}
-                        className="w-20"
-                        value={form.data.trial_days}
-                        onChange={(e) =>
-                            form.setData('trial_days', Number(e.target.value))
-                        }
-                    />
-                </label>
-            </div>
-            <div className="flex flex-wrap gap-3">
-                {modules.map((m) => (
-                    <label
-                        key={m.value}
-                        className="flex items-center gap-1 text-xs"
-                    >
-                        <input
-                            type="checkbox"
-                            checked={form.data.modules.includes(m.value)}
-                            onChange={() =>
-                                form.setData(
-                                    'modules',
-                                    form.data.modules.includes(m.value)
-                                        ? form.data.modules.filter(
-                                              (x) => x !== m.value,
-                                          )
-                                        : [...form.data.modules, m.value],
-                                )
-                            }
-                        />
-                        {m.label}
-                    </label>
-                ))}
-                <label className="flex items-center gap-1 text-xs">
-                    <input
-                        type="checkbox"
-                        checked={form.data.is_default}
-                        onChange={(e) =>
-                            form.setData('is_default', e.target.checked)
-                        }
-                    />
-                    {t('Default plan for new hotels (trial)')}
-                </label>
-                <label className="flex items-center gap-1 text-xs">
-                    <input
-                        type="checkbox"
-                        checked={form.data.active}
-                        onChange={(e) =>
-                            form.setData('active', e.target.checked)
-                        }
-                    />
-                    {t('Active')}
-                </label>
-            </div>
-            <div className="flex flex-wrap items-end gap-2">
-                <span className="text-xs text-muted-foreground">
-                    {t(
-                        'Prices in minor units (FCFA has none; EUR/USD in cents)',
-                    )}
-                </span>
-                {Object.keys(form.data.prices)
-                    .concat(currencies.filter((c) => !(c in form.data.prices)))
-                    .map((c) => (
-                        <span
-                            key={c}
-                            className="flex items-center gap-1 text-xs"
-                        >
-                            <b>{c}</b>
-                            <Input
-                                type="number"
-                                min={0}
-                                aria-label={`${c} ${t('Monthly')}`}
-                                className="w-24"
-                                value={form.data.prices[c]?.monthly ?? ''}
-                                onChange={(e) =>
-                                    form.setData('prices', {
-                                        ...form.data.prices,
-                                        [c]: {
-                                            ...form.data.prices[c],
-                                            monthly: Number(e.target.value),
-                                        },
-                                    })
-                                }
-                            />
-                            <Input
-                                type="number"
-                                min={0}
-                                aria-label={`${c} ${t('Yearly')}`}
-                                className="w-28"
-                                value={form.data.prices[c]?.yearly ?? ''}
-                                onChange={(e) =>
-                                    form.setData('prices', {
-                                        ...form.data.prices,
-                                        [c]: {
-                                            ...form.data.prices[c],
-                                            yearly: Number(e.target.value),
-                                        },
-                                    })
-                                }
-                            />
-                        </span>
-                    ))}
-                <Input
-                    aria-label={t('Add a currency')}
-                    placeholder="EUR"
-                    className="w-16"
-                    value={currency}
-                    onChange={(e) =>
-                        setCurrency(e.target.value.toUpperCase().slice(0, 3))
-                    }
-                />
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                        if (currency.length === 3) {
-                            form.setData('prices', {
-                                ...form.data.prices,
-                                [currency]: { monthly: 0, yearly: 0 },
-                            });
-                            setCurrency('');
-                        }
-                    }}
+                </FieldGroup>
+
+                <FieldGroup
+                    title={t('What is included')}
+                    description={t('Credits renew each month.')}
                 >
-                    {t('Add a currency')}
-                </Button>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label={t('AI credits / month')}>
+                            <Input
+                                type="number"
+                                min={0}
+                                value={form.data.ai_credits}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'ai_credits',
+                                        Number(e.target.value),
+                                    )
+                                }
+                            />
+                        </Field>
+                        <Field label={t('Email credits / month')}>
+                            <Input
+                                type="number"
+                                min={0}
+                                value={form.data.email_credits}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'email_credits',
+                                        Number(e.target.value),
+                                    )
+                                }
+                            />
+                        </Field>
+                        <Field
+                            label={t('Staff limit')}
+                            hint={t('Empty: no limit')}
+                        >
+                            <Input
+                                type="number"
+                                min={1}
+                                value={form.data.staff_limit ?? ''}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'staff_limit',
+                                        e.target.value === ''
+                                            ? null
+                                            : Number(e.target.value),
+                                    )
+                                }
+                            />
+                        </Field>
+                        <Field label={t('Trial days')}>
+                            <Input
+                                type="number"
+                                min={0}
+                                value={form.data.trial_days}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'trial_days',
+                                        Number(e.target.value),
+                                    )
+                                }
+                            />
+                        </Field>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        {modules.map((m) => (
+                            <Switch
+                                key={m.value}
+                                label={m.label}
+                                checked={form.data.modules.includes(m.value)}
+                                onChange={(on) =>
+                                    form.setData(
+                                        'modules',
+                                        on
+                                            ? [...form.data.modules, m.value]
+                                            : form.data.modules.filter(
+                                                  (x) => x !== m.value,
+                                              ),
+                                    )
+                                }
+                            />
+                        ))}
+                    </div>
+                </FieldGroup>
+
+                <FieldGroup
+                    title={t('Prices')}
+                    description={t(
+                        'In normal amounts: 25000 for 25 000 F CFA, 39 for €39.00. Leave yearly empty to offer monthly only.',
+                    )}
+                >
+                    <div className="overflow-hidden rounded-lg border">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-muted/40 text-xs text-muted-foreground">
+                                    <th className="px-3 py-2 text-left font-medium">
+                                        {t('Currency')}
+                                    </th>
+                                    <th className="px-3 py-2 text-right font-medium">
+                                        {t('Monthly')}
+                                    </th>
+                                    <th className="px-3 py-2 text-right font-medium">
+                                        {t('Yearly')}
+                                    </th>
+                                    <th className="w-10" />
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {Object.keys(form.data.prices).map((c) => (
+                                    <tr key={c}>
+                                        <td className="px-3 py-2 font-mono text-xs font-semibold">
+                                            {c}
+                                        </td>
+                                        <td className="px-3 py-1.5">
+                                            <MoneyInput
+                                                currency={c}
+                                                ariaLabel={`${c} ${t('Monthly')}`}
+                                                minor={
+                                                    form.data.prices[c]?.monthly
+                                                }
+                                                onChange={(v) =>
+                                                    setPrice(c, 'monthly', v)
+                                                }
+                                            />
+                                        </td>
+                                        <td className="px-3 py-1.5">
+                                            <MoneyInput
+                                                currency={c}
+                                                ariaLabel={`${c} ${t('Yearly')}`}
+                                                minor={
+                                                    form.data.prices[c]?.yearly
+                                                }
+                                                onChange={(v) =>
+                                                    setPrice(c, 'yearly', v)
+                                                }
+                                            />
+                                        </td>
+                                        <td className="pr-2 text-right">
+                                            <button
+                                                type="button"
+                                                className="text-xs text-muted-foreground hover:text-destructive"
+                                                aria-label={t(
+                                                    'Remove :currency',
+                                                    { currency: c },
+                                                )}
+                                                onClick={() => {
+                                                    const next = {
+                                                        ...form.data.prices,
+                                                    };
+                                                    delete next[c];
+                                                    form.setData(
+                                                        'prices',
+                                                        next,
+                                                    );
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <div className="flex items-center gap-2 border-t bg-muted/20 px-3 py-2">
+                            <Input
+                                aria-label={t('Add a currency')}
+                                placeholder="EUR"
+                                className="h-8 w-20 font-mono uppercase"
+                                value={currency}
+                                onChange={(e) =>
+                                    setCurrency(
+                                        e.target.value
+                                            .toUpperCase()
+                                            .replace(/[^A-Z]/g, '')
+                                            .slice(0, 3),
+                                    )
+                                }
+                            />
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={
+                                    currency.length !== 3 ||
+                                    currency in form.data.prices
+                                }
+                                onClick={() => {
+                                    form.setData('prices', {
+                                        ...form.data.prices,
+                                        [currency]: {},
+                                    });
+                                    setCurrency('');
+                                }}
+                            >
+                                <Plus /> {t('Add a currency')}
+                            </Button>
+                        </div>
+                    </div>
+                    <InputError message={errors.prices} />
+                </FieldGroup>
+
+                <FieldGroup title={t('Availability')}>
+                    <Switch
+                        label={t('Offered to hotels')}
+                        hint={t(
+                            'Switched off: existing hotels keep it, new ones cannot choose it.',
+                        )}
+                        checked={form.data.active}
+                        onChange={(v) => form.setData('active', v)}
+                    />
+                    <Switch
+                        label={t('Default plan for new hotels (trial)')}
+                        checked={form.data.is_default}
+                        onChange={(v) => form.setData('is_default', v)}
+                    />
+                </FieldGroup>
             </div>
-            <InputError message={errors.code ?? errors.prices} />
-            <div className="flex items-center gap-2">
-                <Button size="sm" disabled={form.processing}>
-                    {plan ? t('Save') : t('Add plan')}
-                </Button>
-                {plan && (
-                    <span className="text-xs text-muted-foreground">
-                        {t(':count hotel(s)', { count: plan.hotels })}
-                    </span>
-                )}
-            </div>
-        </form>
+        </SidePanel>
     );
 }
 
-function PackForm({ pack }: { pack?: PackRow }) {
+function PackEditor({
+    pack,
+    open,
+    onClose,
+}: {
+    pack: PackRow | null;
+    open: boolean;
+    onClose: () => void;
+}) {
     const form = useForm({
         code: pack?.code ?? '',
         name: pack?.name ?? { fr: '', en: '' },
@@ -331,137 +474,245 @@ function PackForm({ pack }: { pack?: PackRow }) {
         valid_months: pack?.valid_months ?? 12,
         active: pack?.active ?? true,
     });
+    const [currency, setCurrency] = useState('');
+    const errors = form.errors as Record<string, string | undefined>;
+
+    const save = () => {
+        const options = { preserveScroll: true, onSuccess: onClose };
+        if (pack) {
+            form.put(
+                PlatformBillingController.updatePack.url(pack.id),
+                options,
+            );
+        } else {
+            form.post(PlatformBillingController.storePack.url(), options);
+        }
+    };
 
     return (
-        <form
-            onSubmit={(e) => {
-                e.preventDefault();
-                if (pack) {
-                    form.put(
-                        PlatformBillingController.updatePack.url(pack.id),
-                        { preserveScroll: true },
-                    );
-                } else {
-                    form.post(PlatformBillingController.storePack.url(), {
-                        preserveScroll: true,
-                        onSuccess: () => form.reset(),
-                    });
-                }
-            }}
-            className="flex flex-wrap items-end gap-2 text-sm"
+        <SidePanel
+            open={open}
+            onClose={onClose}
+            title={
+                pack
+                    ? t('Edit pack :name', {
+                          name: label(pack.name, pack.code),
+                      })
+                    : t('New credit pack')
+            }
+            description={t(
+                'Extra credits hotels can buy when the monthly ones run out.',
+            )}
+            footer={
+                <>
+                    <Button variant="ghost" onClick={onClose}>
+                        {t('Cancel')}
+                    </Button>
+                    <Button disabled={form.processing} onClick={save}>
+                        {pack ? t('Save pack') : t('Create pack')}
+                    </Button>
+                </>
+            }
         >
-            <Input
-                aria-label={t('Code')}
-                placeholder={t('Code')}
-                className="w-28"
-                value={form.data.code}
-                onChange={(e) => form.setData('code', e.target.value)}
-            />
-            <Input
-                aria-label="FR"
-                placeholder="Nom (FR)"
-                className="w-40"
-                value={form.data.name.fr ?? ''}
-                onChange={(e) =>
-                    form.setData('name', {
-                        ...form.data.name,
-                        fr: e.target.value,
-                    })
-                }
-            />
-            <select
-                aria-label={t('Kind')}
-                className="flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-                value={form.data.kind}
-                onChange={(e) => form.setData('kind', e.target.value)}
-            >
-                <option value="ai">{t('AI credits')}</option>
-                <option value="email">{t('Email credits')}</option>
-            </select>
-            <Input
-                type="number"
-                min={1}
-                aria-label={t('Credits')}
-                className="w-24"
-                value={form.data.credits}
-                onChange={(e) =>
-                    form.setData('credits', Number(e.target.value))
-                }
-            />
-            {Object.keys(form.data.prices).map((c) => (
-                <span key={c} className="flex items-center gap-1 text-xs">
-                    <b>{c}</b>
-                    <Input
-                        type="number"
-                        min={0}
-                        aria-label={`${c}`}
-                        className="w-24"
-                        value={form.data.prices[c]}
-                        onChange={(e) =>
-                            form.setData('prices', {
-                                ...form.data.prices,
-                                [c]: Number(e.target.value),
-                            })
-                        }
+            <div className="grid gap-6">
+                <FieldGroup title={t('Name')}>
+                    <NameFields
+                        value={form.data.name}
+                        onChange={(v) => form.setData('name', v)}
+                        code={form.data.code}
+                        onCode={(v) => form.setData('code', v)}
+                        errors={errors}
                     />
-                </span>
-            ))}
-            <Button size="sm" variant="outline" disabled={form.processing}>
-                {pack ? t('Save') : t('Add pack')}
-            </Button>
-        </form>
+                </FieldGroup>
+                <FieldGroup title={t('Credits')}>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <Field label={t('Kind')}>
+                            <select
+                                className="h-9 w-full"
+                                value={form.data.kind}
+                                onChange={(e) =>
+                                    form.setData('kind', e.target.value)
+                                }
+                            >
+                                <option value="ai">{t('AI credits')}</option>
+                                <option value="email">
+                                    {t('Email credits')}
+                                </option>
+                            </select>
+                        </Field>
+                        <Field label={t('Credits')} error={errors.credits}>
+                            <Input
+                                type="number"
+                                min={1}
+                                value={form.data.credits}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'credits',
+                                        Number(e.target.value),
+                                    )
+                                }
+                            />
+                        </Field>
+                        <Field label={t('Valid for (months)')}>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={36}
+                                value={form.data.valid_months}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'valid_months',
+                                        Number(e.target.value),
+                                    )
+                                }
+                            />
+                        </Field>
+                    </div>
+                </FieldGroup>
+                <FieldGroup
+                    title={t('Prices')}
+                    description={t('In normal amounts, per currency.')}
+                >
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        {Object.keys(form.data.prices).map((c) => (
+                            <Field key={c} label={c}>
+                                <MoneyInput
+                                    currency={c}
+                                    ariaLabel={c}
+                                    minor={form.data.prices[c]}
+                                    onChange={(v) =>
+                                        form.setData('prices', {
+                                            ...form.data.prices,
+                                            [c]: v ?? 0,
+                                        })
+                                    }
+                                />
+                            </Field>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            aria-label={t('Add a currency')}
+                            placeholder="EUR"
+                            className="h-8 w-20 font-mono uppercase"
+                            value={currency}
+                            onChange={(e) =>
+                                setCurrency(
+                                    e.target.value
+                                        .toUpperCase()
+                                        .replace(/[^A-Z]/g, '')
+                                        .slice(0, 3),
+                                )
+                            }
+                        />
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={
+                                currency.length !== 3 ||
+                                currency in form.data.prices
+                            }
+                            onClick={() => {
+                                form.setData('prices', {
+                                    ...form.data.prices,
+                                    [currency]: 0,
+                                });
+                                setCurrency('');
+                            }}
+                        >
+                            <Plus /> {t('Add a currency')}
+                        </Button>
+                    </div>
+                    <InputError message={errors.prices} />
+                </FieldGroup>
+                <FieldGroup title={t('Availability')}>
+                    <Switch
+                        label={t('On sale')}
+                        checked={form.data.active}
+                        onChange={(v) => form.setData('active', v)}
+                    />
+                </FieldGroup>
+            </div>
+        </SidePanel>
     );
 }
 
-function Settings({ settings }: { settings: Props['settings'] }) {
+function CreditRules({ settings }: { settings: Props['settings'] }) {
     const form = useForm(settings);
 
     return (
-        <form
-            onSubmit={(e) => {
-                e.preventDefault();
-                form.put(PlatformBillingController.settings.url(), {
-                    preserveScroll: true,
-                });
-            }}
-            className="flex flex-wrap items-end gap-2 text-sm"
+        <Section
+            aside
+            title={t('How credits are counted')}
+            description={t(
+                '100 = one credit. An assistant reply or a voice note costs 1 credit by default, a translation 0.5.',
+            )}
         >
-            {Object.keys(form.data.ai_weights).map((task) => (
-                <label key={task} className="grid gap-0.5 text-xs">
-                    {t('Credits per :task (× 100)', { task })}
-                    <Input
-                        type="number"
-                        min={0}
-                        className="w-24"
-                        value={form.data.ai_weights[task]}
-                        onChange={(e) =>
-                            form.setData('ai_weights', {
-                                ...form.data.ai_weights,
-                                [task]: Number(e.target.value),
-                            })
-                        }
-                    />
-                </label>
-            ))}
-            <label className="grid gap-0.5 text-xs">
-                {t('Buffer after credits run out (%)')}
-                <Input
-                    type="number"
-                    min={0}
-                    max={50}
-                    className="w-20"
-                    value={form.data.buffer_percent}
-                    onChange={(e) =>
-                        form.setData('buffer_percent', Number(e.target.value))
-                    }
-                />
-            </label>
-            <Button size="sm" variant="outline">
-                {t('Save')}
-            </Button>
-        </form>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    form.put(PlatformBillingController.settings.url(), {
+                        preserveScroll: true,
+                    });
+                }}
+                className="grid gap-4"
+            >
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {Object.keys(form.data.ai_weights).map((task) => (
+                        <Field
+                            key={task}
+                            label={t('Credits per :task (× 100)', { task })}
+                        >
+                            <Input
+                                type="number"
+                                min={0}
+                                value={form.data.ai_weights[task]}
+                                onChange={(e) =>
+                                    form.setData('ai_weights', {
+                                        ...form.data.ai_weights,
+                                        [task]: Number(e.target.value),
+                                    })
+                                }
+                            />
+                        </Field>
+                    ))}
+                    <Field
+                        label={t('Buffer after credits run out (%)')}
+                        hint={t(
+                            'Replies keep going this much longer, so guests are never cut off mid-conversation.',
+                        )}
+                    >
+                        <Input
+                            type="number"
+                            min={0}
+                            max={50}
+                            value={form.data.buffer_percent}
+                            onChange={(e) =>
+                                form.setData(
+                                    'buffer_percent',
+                                    Number(e.target.value),
+                                )
+                            }
+                        />
+                    </Field>
+                </div>
+                <div>
+                    <Button size="sm" disabled={form.processing}>
+                        {t('Save')}
+                    </Button>
+                </div>
+            </form>
+        </Section>
     );
 }
+
+const statusVariant = (status: string) =>
+    status === 'active'
+        ? 'default'
+        : status === 'past_due'
+          ? 'destructive'
+          : 'outline';
 
 export default function PlatformBilling({
     plans,
@@ -474,85 +725,388 @@ export default function PlatformBilling({
     gateways,
     drivers,
 }: Props) {
-    const [adding, setAdding] = useState(false);
+    const tabs = [
+        { key: 'overview', label: t('Overview') },
+        { key: 'plans', label: t('Plans'), count: plans.length },
+        { key: 'packs', label: t('Credit packs'), count: packs.length },
+        {
+            key: 'companies',
+            label: t('Issuing companies'),
+            count: entities.length,
+        },
+        {
+            key: 'payments',
+            label: t('Payment providers'),
+            count: gateways.length,
+        },
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const [plan, setPlan] = useState<PlanRow | 'new' | null>(null);
+    const [pack, setPack] = useState<PackRow | 'new' | null>(null);
+    const moduleLabel = (v: string) =>
+        modules.find((m) => m.value === v)?.label ?? v;
+    const firstPrice = (p: PlanRow) => {
+        const c = Object.keys(p.prices)[0];
+
+        return c && p.prices[c]?.monthly !== undefined
+            ? formatMoney(p.prices[c].monthly as number, c)
+            : '—';
+    };
+    const trialing = subscriptions.filter(
+        (s) => s.status === 'trialing',
+    ).length;
+    const active = subscriptions.filter((s) => s.status === 'active').length;
 
     return (
         <>
             <Head title={t('Billing')} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4">
-                <div className="flex items-start justify-between">
-                    <Heading
-                        title={t('Billing')}
-                        description={t(
-                            'Plans, credit packs and how AI credits are counted.',
-                        )}
-                    />
-                    <Button
-                        variant="outline"
-                        onClick={() => setAdding(!adding)}
-                    >
-                        {adding ? t('Close') : t('Add plan')}
-                    </Button>
-                </div>
-                {adding && (
-                    <PlanForm
-                        modules={modules}
-                        onDone={() => setAdding(false)}
-                    />
+            <PageBody>
+                <PageHeader
+                    title={t('Billing')}
+                    description={t(
+                        'Plans and prices, credit packs, invoices and how hotels pay.',
+                    )}
+                    actions={
+                        tab === 'plans' ? (
+                            <Button onClick={() => setPlan('new')}>
+                                <Plus /> {t('New plan')}
+                            </Button>
+                        ) : tab === 'packs' ? (
+                            <Button onClick={() => setPack('new')}>
+                                <Plus /> {t('New credit pack')}
+                            </Button>
+                        ) : null
+                    }
+                />
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+
+                {tab === 'overview' && (
+                    <>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {Object.entries(report.mrr).length === 0 && (
+                                <StatTile
+                                    label={t('Monthly revenue')}
+                                    value="—"
+                                />
+                            )}
+                            {Object.entries(report.mrr).map(([c, v]) => (
+                                <StatTile
+                                    key={c}
+                                    label={t('Monthly revenue (:currency)', {
+                                        currency: c,
+                                    })}
+                                    value={v}
+                                />
+                            ))}
+                            <StatTile
+                                label={t('Paying hotels')}
+                                value={active}
+                            />
+                            <StatTile label={t('On trial')} value={trialing} />
+                            {Object.entries(report.overdue).map(([c, v]) => (
+                                <StatTile
+                                    key={`o-${c}`}
+                                    label={t('Overdue (:currency)', {
+                                        currency: c,
+                                    })}
+                                    value={
+                                        <span className="text-destructive">
+                                            {v}
+                                        </span>
+                                    }
+                                />
+                            ))}
+                        </div>
+                        <Section
+                            flush
+                            title={t('Hotels')}
+                            description={t(
+                                'Plan, monthly revenue and AI cost per hotel this month.',
+                            )}
+                        >
+                            <DataTable
+                                rows={report.hotels}
+                                rowKey={(h) => h.hotel_id}
+                                empty={t('No subscriptions yet.')}
+                                columns={[
+                                    {
+                                        key: 'hotel',
+                                        header: t('Hotel'),
+                                        cell: (h) => (
+                                            <Link
+                                                href={PlatformBillingController.hotel(
+                                                    h.hotel_id,
+                                                )}
+                                                className="font-medium hover:underline"
+                                            >
+                                                {h.hotel}
+                                            </Link>
+                                        ),
+                                    },
+                                    {
+                                        key: 'plan',
+                                        header: t('Plan'),
+                                        cell: (h) => h.plan ?? '—',
+                                    },
+                                    {
+                                        key: 'status',
+                                        header: t('Status'),
+                                        cell: (h) => (
+                                            <Badge
+                                                variant={statusVariant(
+                                                    h.status,
+                                                )}
+                                            >
+                                                {h.status}
+                                            </Badge>
+                                        ),
+                                    },
+                                    {
+                                        key: 'mrr',
+                                        header: t('Monthly'),
+                                        align: 'right',
+                                        cell: (h) => h.mrr,
+                                    },
+                                    {
+                                        key: 'ai',
+                                        header: t('AI cost (US$)'),
+                                        align: 'right',
+                                        cell: (h) => h.ai_cost_usd,
+                                    },
+                                    {
+                                        key: 'overdue',
+                                        header: t('Overdue'),
+                                        align: 'right',
+                                        cell: (h) =>
+                                            h.overdue ? (
+                                                <span className="text-destructive">
+                                                    {h.overdue}
+                                                </span>
+                                            ) : (
+                                                '—'
+                                            ),
+                                    },
+                                ]}
+                            />
+                        </Section>
+                    </>
                 )}
-                {plans.map((p) => (
-                    <PlanForm key={p.id} plan={p} modules={modules} />
-                ))}
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Credit packs')} />
-                    {packs.map((p) => (
-                        <PackForm key={p.id} pack={p} />
-                    ))}
-                    <PackForm />
-                </section>
-                <section className="flex flex-col gap-2">
-                    <Heading
-                        variant="small"
-                        title={t('How credits are counted')}
+
+                {tab === 'plans' && (
+                    <Section
+                        flush
+                        title={t('Plans')}
                         description={t(
-                            '100 = one credit. An assistant reply or a voice note costs 1 credit by default, a translation 0.5.',
+                            'What hotels get and what they pay. Click a plan to edit it.',
                         )}
-                    />
-                    <Settings settings={settings} />
-                </section>
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Subscriptions')} />
-                    <ul className="divide-y rounded-xl border text-sm">
-                        {subscriptions.map((s) => (
-                            <li
-                                key={s.hotel_id}
-                                className="flex flex-wrap items-center gap-3 px-3 py-2"
-                            >
-                                <Link
-                                    href={PlatformBillingController.hotel(
-                                        s.hotel_id,
-                                    )}
-                                    className="font-medium underline"
-                                >
-                                    {s.hotel}
-                                </Link>
-                                <span>{s.plan}</span>
-                                <Badge variant="outline">{s.status}</Badge>
-                                <span className="text-muted-foreground">
-                                    {t('until :date', { date: s.period_end })}
-                                </span>
-                            </li>
-                        ))}
-                        {subscriptions.length === 0 && (
-                            <li className="px-3 py-2 text-muted-foreground">
-                                {t('No subscriptions yet.')}
-                            </li>
-                        )}
-                    </ul>
-                </section>
-                <Entities entities={entities} report={report} />
-                <Gateways gateways={gateways} drivers={drivers} />
-            </div>
+                    >
+                        <DataTable
+                            rows={plans}
+                            rowKey={(p) => p.id}
+                            empty={t('No plans yet.')}
+                            onRowClick={(p) => setPlan(p)}
+                            columns={[
+                                {
+                                    key: 'name',
+                                    header: t('Plan'),
+                                    cell: (p) => (
+                                        <div>
+                                            <div className="flex items-center gap-2 font-medium">
+                                                {label(p.name, p.code)}
+                                                {p.is_default && (
+                                                    <Badge variant="secondary">
+                                                        {t('Default')}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <div className="font-mono text-xs text-muted-foreground">
+                                                {p.code}
+                                            </div>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'price',
+                                    header: t('From / month'),
+                                    align: 'right',
+                                    cell: firstPrice,
+                                },
+                                {
+                                    key: 'credits',
+                                    header: t('AI · e-mail credits'),
+                                    align: 'right',
+                                    cell: (p) =>
+                                        `${p.ai_credits.toLocaleString()} · ${p.email_credits.toLocaleString()}`,
+                                },
+                                {
+                                    key: 'modules',
+                                    header: t('Modules'),
+                                    cell: (p) => (
+                                        <div className="flex flex-wrap gap-1">
+                                            {p.modules.length === 0 ? (
+                                                <span className="text-muted-foreground">
+                                                    {t('Rooms only')}
+                                                </span>
+                                            ) : (
+                                                p.modules.map((m) => (
+                                                    <Badge
+                                                        key={m}
+                                                        variant="outline"
+                                                    >
+                                                        {moduleLabel(m)}
+                                                    </Badge>
+                                                ))
+                                            )}
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'hotels',
+                                    header: t('Hotels'),
+                                    align: 'right',
+                                    cell: (p) => p.hotels,
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (p) =>
+                                        p.active ? (
+                                            <Badge>{t('Active')}</Badge>
+                                        ) : (
+                                            <Badge variant="outline">
+                                                {t('Off')}
+                                            </Badge>
+                                        ),
+                                },
+                                {
+                                    key: 'edit',
+                                    header: '',
+                                    align: 'right',
+                                    cell: () => (
+                                        <span className="text-xs text-brand-ink">
+                                            {t('Edit')}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+
+                {tab === 'packs' && (
+                    <>
+                        <Section
+                            flush
+                            title={t('Credit packs')}
+                            description={t(
+                                'Extra credits hotels can buy. Click a pack to edit it.',
+                            )}
+                        >
+                            <DataTable
+                                rows={packs}
+                                rowKey={(p) => p.id}
+                                empty={t('No credit packs yet.')}
+                                onRowClick={(p) => setPack(p)}
+                                columns={[
+                                    {
+                                        key: 'name',
+                                        header: t('Pack'),
+                                        cell: (p) => (
+                                            <div>
+                                                <div className="font-medium">
+                                                    {label(p.name, p.code)}
+                                                </div>
+                                                <div className="font-mono text-xs text-muted-foreground">
+                                                    {p.code}
+                                                </div>
+                                            </div>
+                                        ),
+                                    },
+                                    {
+                                        key: 'kind',
+                                        header: t('Kind'),
+                                        cell: (p) => (
+                                            <Badge variant="outline">
+                                                {p.kind === 'ai'
+                                                    ? t('AI credits')
+                                                    : t('Email credits')}
+                                            </Badge>
+                                        ),
+                                    },
+                                    {
+                                        key: 'credits',
+                                        header: t('Credits'),
+                                        align: 'right',
+                                        cell: (p) => p.credits.toLocaleString(),
+                                    },
+                                    {
+                                        key: 'prices',
+                                        header: t('Prices'),
+                                        align: 'right',
+                                        cell: (p) =>
+                                            Object.entries(p.prices)
+                                                .map(([c, v]) =>
+                                                    formatMoney(v, c),
+                                                )
+                                                .join(' · '),
+                                    },
+                                    {
+                                        key: 'valid',
+                                        header: t('Valid'),
+                                        align: 'right',
+                                        cell: (p) =>
+                                            t(':count months', {
+                                                count: p.valid_months,
+                                            }),
+                                    },
+                                    {
+                                        key: 'status',
+                                        header: t('Status'),
+                                        cell: (p) =>
+                                            p.active ? (
+                                                <Badge>{t('On sale')}</Badge>
+                                            ) : (
+                                                <Badge variant="outline">
+                                                    {t('Off')}
+                                                </Badge>
+                                            ),
+                                    },
+                                ]}
+                            />
+                        </Section>
+                        <CreditRules settings={settings} />
+                    </>
+                )}
+
+                {tab === 'companies' && <EntitiesTab entities={entities} />}
+                {tab === 'payments' && (
+                    <GatewaysTab gateways={gateways} drivers={drivers} />
+                )}
+            </PageBody>
+
+            {plan !== null && (
+                <PlanEditor
+                    key={plan === 'new' ? 'new' : plan.id}
+                    plan={plan === 'new' ? null : plan}
+                    modules={modules}
+                    open
+                    onClose={() => setPlan(null)}
+                />
+            )}
+            {pack !== null && (
+                <PackEditor
+                    key={pack === 'new' ? 'new' : pack.id}
+                    pack={pack === 'new' ? null : pack}
+                    open
+                    onClose={() => setPack(null)}
+                />
+            )}
         </>
     );
 }
+
+PlatformBilling.layout = {
+    breadcrumbs: [
+        { title: 'Billing', href: PlatformBillingController.index() },
+    ],
+};

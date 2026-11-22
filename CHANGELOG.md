@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Professional page layout: Billing and AI (0.32.0)
+
+#### Added
+
+- Shared page building blocks (`resources/js/components/page`): page header, tabs kept in the address (#tab), sections, fields, on/off switches, data tables with empty states, number tiles and a side panel for editing one record. The next releases move every admin and hotel page onto them.
+
+#### Changed
+
+- Platform → Billing is now organised in tabs: Overview (revenue, paying hotels, hotels on trial and the per-hotel table), Plans, Credit packs, Issuing companies and Payment providers. Each list is a clean table; a click opens the record in a side panel, grouped (name, what is included, prices per currency, availability). Prices are typed in normal amounts (25000 for 25 000 F CFA, 39 for €39.00) and the price grid shows monthly and yearly side by side.
+- Platform → AI is organised in tabs: Models used, Providers, Model list and Test suite runs, with cost, approved models, providers and time limit at the top. Providers and models are edited in side panels; API keys have the show/hide button.
+
 ### Hotel page fix (0.31.5)
 
 #### Fixed
