@@ -1,11 +1,11 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import TemplateController from '@/actions/App/Domains/WhatsApp/Http/Controllers/TemplateController';
 import WhatsAppConnectionController from '@/actions/App/Domains/WhatsApp/Http/Controllers/WhatsAppConnectionController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Template = {
@@ -47,8 +47,8 @@ export default function WhatsAppTemplates({
     return (
         <>
             <Head title={t('WhatsApp templates')} />
-            <div className="flex max-w-4xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('WhatsApp templates')}
                     description={t(
                         'Pre-approved messages Meta allows the hotel to send more than 24 hours after a guest’s last message.',
@@ -62,7 +62,7 @@ export default function WhatsAppTemplates({
                             preserveScroll: true,
                         });
                     }}
-                    className="flex flex-wrap items-end gap-3 rounded-xl border p-4"
+                    className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4"
                 >
                     <div className="grid gap-1">
                         <Label htmlFor="starter">{t('Template')}</Label>
@@ -182,7 +182,7 @@ export default function WhatsAppTemplates({
                         </li>
                     ))}
                 </ul>
-            </div>
+            </PageBody>
         </>
     );
 }

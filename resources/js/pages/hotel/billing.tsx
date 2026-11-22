@@ -5,7 +5,7 @@ import type { Overview } from '@/components/billing/usage';
 import { PayOnline } from '@/components/billing/pay-online';
 import { Invoices } from '@/components/billing/invoices';
 import type { InvoiceRow } from '@/components/billing/invoices';
-import Heading from '@/components/heading';
+import { PageBody, PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Props = Overview & {
@@ -36,8 +36,8 @@ export default function Billing(props: Props) {
     return (
         <>
             <Head title={t('Plan and credits')} />
-            <div className="flex max-w-5xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Plan and credits')}
                     description={t(
                         'When AI credits run out, the assistant passes guests to your team until you add credits. Security emails are always sent.',
@@ -46,14 +46,12 @@ export default function Billing(props: Props) {
                 <PlanSummary overview={props} />
                 <CreditBars overview={props} />
 
-                <section className="flex flex-col gap-2">
-                    <Heading
-                        variant="small"
-                        title={t('Plans')}
-                        description={t(
-                            'To change plan or buy credits, contact us (online payment is coming).',
-                        )}
-                    />
+                <Section
+                    title={t('Plans')}
+                    description={t(
+                        'To change plan or buy credits, contact us (online payment is coming).',
+                    )}
+                >
                     <div className="grid gap-3 sm:grid-cols-3">
                         {props.plans.map((p) => (
                             <div
@@ -99,14 +97,10 @@ export default function Billing(props: Props) {
                             </div>
                         ))}
                     </div>
-                </section>
+                </Section>
 
                 {props.packsForSale.length > 0 && (
-                    <section className="flex flex-col gap-2">
-                        <Heading
-                            variant="small"
-                            title={t('Credit packs (valid 12 months)')}
-                        />
+                    <Section title={t('Credit packs (valid 12 months)')}>
                         <ul className="divide-y rounded-xl border text-sm">
                             {props.packsForSale.map((p) => (
                                 <li
@@ -118,7 +112,7 @@ export default function Billing(props: Props) {
                                 </li>
                             ))}
                         </ul>
-                    </section>
+                    </Section>
                 )}
                 {props.canManage && props.subscription && (
                     <PayOnline
@@ -130,7 +124,7 @@ export default function Billing(props: Props) {
                     />
                 )}
                 <Invoices invoices={props.invoices} />
-            </div>
+            </PageBody>
         </>
     );
 }

@@ -1,10 +1,10 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Eye, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Role = { id: number; name: string; owner: boolean };
@@ -155,15 +155,15 @@ export default function WorkspaceSettings({
     return (
         <>
             <Head title={t('Simple mode and checklists')} />
-            <div className="flex max-w-3xl flex-col gap-8 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Simple mode and checklists')}
                     description={t(
                         'Make the dashboard simpler for the roles that only need the day to day, and set the tasks of each shift.',
                     )}
                 />
 
-                <section className="flex flex-col gap-3">
+                <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
                     <h2 className="font-medium">{t('Simple dashboard')}</h2>
                     <p className="text-sm text-muted-foreground">
                         {t(
@@ -243,7 +243,7 @@ export default function WorkspaceSettings({
                     </form>
                 </section>
 
-                <section className="flex flex-col gap-3">
+                <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
                     <h2 className="font-medium">{t('Shift checklists')}</h2>
                     <p className="text-sm text-muted-foreground">
                         {t(
@@ -308,7 +308,7 @@ export default function WorkspaceSettings({
                     )}
                     <ChecklistForm />
                 </section>
-            </div>
+            </PageBody>
         </>
     );
 }

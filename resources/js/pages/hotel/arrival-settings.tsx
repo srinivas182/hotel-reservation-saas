@@ -1,9 +1,9 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ImagePlus, MapPin, Trash2 } from 'lucide-react';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Texts = Record<string, string>;
@@ -85,15 +85,15 @@ export default function ArrivalSettings(props: Props) {
     return (
         <>
             <Head title={t('Arrival card')} />
-            <div className="flex max-w-3xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Arrival card')}
                     description={t(
                         'The day before arrival, each confirmed guest gets a card on WhatsApp: their booking, what is left to pay, buttons to confirm, the arrival time, then the map pin.',
                     )}
                 />
 
-                <section className="flex flex-col gap-1 rounded-xl border p-4">
+                <section className="flex flex-col gap-1 rounded-xl border bg-card p-5">
                     <p>
                         {props.reminder.enabled
                             ? t('Sent every day at :time.', {
@@ -120,7 +120,7 @@ export default function ArrivalSettings(props: Props) {
                 </section>
 
                 <form
-                    className="flex flex-col gap-5"
+                    className="flex flex-col gap-5 rounded-xl border bg-card p-5"
                     onSubmit={(e) => {
                         e.preventDefault();
                         form.transform((data) => ({
@@ -289,7 +289,7 @@ export default function ArrivalSettings(props: Props) {
                     </Button>
                 </form>
 
-                <section className="flex flex-col gap-2 rounded-xl border p-4">
+                <section className="flex flex-col gap-2 rounded-xl border bg-card p-5">
                     <h2 className="font-medium">
                         {t('Photo of the entrance')}
                     </h2>
@@ -356,7 +356,7 @@ export default function ArrivalSettings(props: Props) {
                     </form>
                     <InputError message={photo.errors.photo} />
                 </section>
-            </div>
+            </PageBody>
         </>
     );
 }

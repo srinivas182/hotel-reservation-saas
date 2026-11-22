@@ -54,7 +54,7 @@ export default function SupportTicket({ ticket }: Props) {
                                     { preserveScroll: true },
                                 );
                             }}
-                            className="flex flex-col gap-2 rounded-xl border p-3"
+                            className="flex flex-col gap-2 rounded-xl border bg-card p-4"
                         >
                             <p className="font-medium">{t('Did we help?')}</p>
                             <div className="flex gap-2">

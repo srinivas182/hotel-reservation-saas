@@ -119,6 +119,7 @@ export function PayOnline({
                 <div className="flex flex-wrap items-center gap-2 border-t pt-3">
                     <span>{t('Change plan')}</span>
                     <select
+                        aria-label={t('Change plan')}
                         className={selectClass}
                         value={plan}
                         onChange={(e) => setPlan(e.target.value)}

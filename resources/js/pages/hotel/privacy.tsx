@@ -1,9 +1,9 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import GuestDataController from '@/actions/App/Domains/Privacy/Http/Controllers/GuestDataController';
-import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Props = {
@@ -22,8 +22,8 @@ export default function Privacy({ q, guests }: Props) {
     return (
         <>
             <Head title={t('Guest data requests')} />
-            <div className="flex max-w-4xl flex-col gap-4 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Guest data requests')}
                     description={t(
                         'When a guest asks to see or delete their data: find them, then download their data or anonymise them. Bookings and amounts stay for your accounts.',
@@ -100,7 +100,7 @@ export default function Privacy({ q, guests }: Props) {
                         </li>
                     ))}
                 </ul>
-            </div>
+            </PageBody>
         </>
     );
 }

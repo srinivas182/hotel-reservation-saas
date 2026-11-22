@@ -10,11 +10,11 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Source = {
@@ -261,8 +261,8 @@ export default function WhatsAppKit(props: Props) {
     return (
         <>
             <Head title={t('WhatsApp kit')} />
-            <div className="flex max-w-4xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('WhatsApp kit')}
                     description={t(
                         'Bring guests to your WhatsApp assistant: posters with a QR code, a button for your website, links for Google and your social pages. Each one tells you how many chats and bookings it brought.',
@@ -283,7 +283,10 @@ export default function WhatsAppKit(props: Props) {
                     </p>
                 )}
 
-                <section aria-labelledby="sources-heading">
+                <section
+                    aria-labelledby="sources-heading"
+                    className="flex flex-col gap-3 rounded-xl border bg-card p-5"
+                >
                     <h2 id="sources-heading" className="font-medium">
                         {t('Posters and links')} ·{' '}
                         <span className="font-normal text-muted-foreground">
@@ -303,7 +306,7 @@ export default function WhatsAppKit(props: Props) {
                         ))}
                     </ul>
                     <form
-                        className="mt-2 flex flex-wrap items-end gap-2 rounded-xl border p-3"
+                        className="mt-2 flex flex-wrap items-end gap-2 rounded-xl border bg-card p-4"
                         onSubmit={(e) => {
                             e.preventDefault();
                             add.post('/hotel/whatsapp-kit/sources', {
@@ -368,7 +371,7 @@ export default function WhatsAppKit(props: Props) {
 
                 <section
                     aria-labelledby="button-heading"
-                    className="flex flex-col gap-3 rounded-xl border p-4"
+                    className="flex flex-col gap-3 rounded-xl border bg-card p-5"
                 >
                     <h2 id="button-heading" className="font-medium">
                         {t('Button for your website')}
@@ -478,7 +481,7 @@ export default function WhatsAppKit(props: Props) {
 
                 <section
                     aria-labelledby="logo-heading"
-                    className="flex flex-col gap-2 rounded-xl border p-4"
+                    className="flex flex-col gap-2 rounded-xl border bg-card p-5"
                 >
                     <h2 id="logo-heading" className="font-medium">
                         {t('Logo on the posters')}
@@ -543,7 +546,7 @@ export default function WhatsAppKit(props: Props) {
 
                 <section
                     aria-labelledby="social-heading"
-                    className="flex flex-col gap-3 rounded-xl border p-4"
+                    className="flex flex-col gap-3 rounded-xl border bg-card p-5"
                 >
                     <h2 id="social-heading" className="font-medium">
                         {t('Google and social pages')}
@@ -594,7 +597,7 @@ export default function WhatsAppKit(props: Props) {
                         )}
                     </p>
                 </section>
-            </div>
+            </PageBody>
         </>
     );
 }

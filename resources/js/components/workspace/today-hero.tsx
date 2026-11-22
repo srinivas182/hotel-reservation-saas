@@ -106,7 +106,7 @@ export function TodayHero({
                                 style={{ width: `${occupancy}%` }}
                             />
                         </div>
-                        <p className="mt-2 text-xs font-semibold text-sidebar-primary">
+                        <p className="mt-2 text-xs font-semibold text-white/90">
                             {occupancy}%
                         </p>
                     </div>

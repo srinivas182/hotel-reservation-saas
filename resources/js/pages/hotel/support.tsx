@@ -1,13 +1,13 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import HotelSupportController from '@/actions/App/Domains/Support/Http/Controllers/HotelSupportController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { ScreenshotAnnotator } from '@/components/support/screenshot-annotator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getJson } from '@/lib/http';
+import { PageBody, PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Ticket = {
@@ -97,8 +97,8 @@ export default function Support({
     return (
         <>
             <Head title={t('Support')} />
-            <div className="flex max-w-4xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Support')}
                     description={t(
                         'Ask our team for help. We answer here and by email.',
@@ -131,7 +131,7 @@ export default function Support({
                                 forceFormData: true,
                             });
                         }}
-                        className="grid gap-3 rounded-xl border p-4"
+                        className="grid gap-3 rounded-xl border bg-card p-4"
                     >
                         <label className="grid gap-1">
                             <span className="font-medium">{t('Subject')}</span>
@@ -284,8 +284,7 @@ export default function Support({
                     </form>
                 )}
 
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Your requests')} />
+                <Section title={t('Your requests')}>
                     <ul className="divide-y rounded-xl border">
                         {tickets.length === 0 && (
                             <li className="px-3 py-2 text-muted-foreground">
@@ -325,8 +324,8 @@ export default function Support({
                             </li>
                         ))}
                     </ul>
-                </section>
-            </div>
+                </Section>
+            </PageBody>
         </>
     );
 }

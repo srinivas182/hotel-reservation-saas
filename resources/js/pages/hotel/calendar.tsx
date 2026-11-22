@@ -138,7 +138,7 @@ function RangeActions({ props }: { props: Props }) {
     return (
         <form
             onSubmit={submit}
-            className="flex flex-col gap-3 rounded-xl border p-4"
+            className="flex flex-col gap-3 rounded-xl border bg-card p-4"
         >
             <Heading variant="small" title={t('Change a range of nights')} />
             <div className="flex flex-wrap gap-3 text-sm">

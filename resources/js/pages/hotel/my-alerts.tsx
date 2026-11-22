@@ -3,11 +3,11 @@ import type { FormEvent } from 'react';
 import AlertSettingsController from '@/actions/App/Domains/StaffAlerts/Http/Controllers/AlertSettingsController';
 import { PushSettings } from '@/components/app/push-settings';
 import type { Device } from '@/components/app/push-settings';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageBody, PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
 
 type Props = {
@@ -69,8 +69,8 @@ export default function MyAlerts({
     return (
         <>
             <Head title={t('My alerts')} />
-            <div className="flex max-w-3xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('My alerts')}
                     description={t(
                         'Get WhatsApp alerts on your own phone, sent from the hotel’s number. Meta charges the hotel for each alert outside a conversation.',
@@ -79,7 +79,7 @@ export default function MyAlerts({
 
                 <form
                     onSubmit={submit}
-                    className="flex flex-col gap-4 rounded-xl border p-4"
+                    className="flex flex-col gap-4 rounded-xl border bg-card p-4"
                 >
                     <div className="grid max-w-sm gap-1">
                         <Label htmlFor="alert_phone">
@@ -337,11 +337,7 @@ export default function MyAlerts({
                 </form>
 
                 {recent.length > 0 && (
-                    <section className="flex flex-col gap-2 text-sm">
-                        <Heading
-                            variant="small"
-                            title={t('My recent alerts')}
-                        />
+                    <Section title={t('My recent alerts')}>
                         <ul className="divide-y rounded-xl border">
                             {recent.map((alert, index) => (
                                 <li
@@ -363,12 +359,11 @@ export default function MyAlerts({
                                 </li>
                             ))}
                         </ul>
-                    </section>
+                    </Section>
                 )}
 
                 {isOwner && team.length > 0 && (
-                    <section className="flex flex-col gap-2 text-sm">
-                        <Heading variant="small" title={t('Team alerts')} />
+                    <Section title={t('Team alerts')}>
                         <ul className="divide-y rounded-xl border">
                             {team.map((member, index) => (
                                 <li key={index} className="px-4 py-2">
@@ -384,9 +379,9 @@ export default function MyAlerts({
                                 </li>
                             ))}
                         </ul>
-                    </section>
+                    </Section>
                 )}
-            </div>
+            </PageBody>
         </>
     );
 }
