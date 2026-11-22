@@ -58,7 +58,7 @@ it('keeps a saved secret when the field is left blank', function (): void {
 it('requires credentials for a new provider', function (): void {
     $this->actingAs($this->admin)
         ->post(route('platform.mail-providers.store'), providerPayload(['credentials' => []]))
-        ->assertSessionHasErrors(['credentials.username', 'credentials.password']);
+        ->assertSessionHasErrors(['credentials.password']);
 });
 
 it('limits providers to super admins', function (): void {

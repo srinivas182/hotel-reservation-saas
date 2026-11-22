@@ -34,6 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.1']);
 
         $middleware->web(append: [
+            // Outside the app (website, help, status): a full page load, never a pop-up.
+            App\Http\Middleware\LeaveAppForPlainPages::class,
             SecurityHeaders::class,
             HandleAppearance::class,
             ResolveCurrentHotel::class,
