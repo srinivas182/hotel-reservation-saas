@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Ai\Models;
 
 use App\Domains\Ai\AiDriver;
+use App\Support\Casts\RecoverableEncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -31,7 +32,7 @@ class AiProvider extends Model
     {
         return [
             'driver' => AiDriver::class,
-            'credentials' => 'encrypted:array',
+            'credentials' => RecoverableEncryptedArray::class,
             'active' => 'boolean',
         ];
     }

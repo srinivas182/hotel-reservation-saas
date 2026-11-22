@@ -9,6 +9,7 @@ use App\Domains\Billing\Payments\PaymentCredentials;
 use App\Domains\Billing\Payments\PaymentDriver;
 use App\Domains\Deposits\Drivers\SimulatedDeposits;
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
+use App\Support\Casts\RecoverableEncryptedArray;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -45,7 +46,7 @@ class MerchantAccount extends Model implements PaymentCredentials
      */
     protected function casts(): array
     {
-        return ['credentials' => 'encrypted:array', 'active' => 'boolean', 'checked_at' => 'immutable_datetime'];
+        return ['credentials' => RecoverableEncryptedArray::class, 'active' => 'boolean', 'checked_at' => 'immutable_datetime'];
     }
 
     public static function current(): ?self
