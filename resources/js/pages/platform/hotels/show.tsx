@@ -6,7 +6,10 @@ import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/Hot
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
 import SupportSessionController from '@/actions/App/Domains/Platform/Http/Controllers/SupportSessionController';
+import ManualWhatsAppController from '@/actions/App/Domains/Platform/Http/Controllers/ManualWhatsAppController';
 import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
@@ -93,8 +96,78 @@ type Props = {
         billing: boolean;
         audit: boolean;
         lifecycle: boolean;
+        manualWhatsApp: boolean;
     };
 };
+
+/**
+ * Super admins: connect a number with a Meta system-user token (Meta's test
+ * number or the platform's own numbers), without Embedded Signup.
+ */
+function ManualWhatsApp({ hotelId }: { hotelId: string }) {
+    const form = useForm({ phone_number_id: '', waba_id: '', token: '' });
+
+    return (
+        <details className="rounded-xl border bg-card px-4 py-3 text-sm">
+            <summary className="cursor-pointer font-medium">
+                {t('Connect a WhatsApp number manually (testing)')}
+            </summary>
+            <p className="mt-2 text-xs text-muted-foreground">
+                {t(
+                    'For Meta’s test number or a number in your own WhatsApp Business account. In Meta: WhatsApp → API Setup shows the Phone Number ID and the WhatsApp Business account ID; the token comes from Business settings → System users (permissions whatsapp_business_messaging and whatsapp_business_management, never expires). Hotels normally connect their own number from Hotel → WhatsApp.',
+                )}
+            </p>
+            <form
+                className="mt-3 grid gap-3 sm:grid-cols-2"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    form.post(ManualWhatsAppController.store.url(hotelId), {
+                        preserveScroll: true,
+                        onSuccess: () => form.reset('token'),
+                    });
+                }}
+            >
+                <label className="grid gap-1.5 text-xs font-medium">
+                    {t('Phone Number ID')}
+                    <Input
+                        inputMode="numeric"
+                        value={form.data.phone_number_id}
+                        onChange={(e) =>
+                            form.setData('phone_number_id', e.target.value)
+                        }
+                    />
+                    <InputError message={form.errors.phone_number_id} />
+                </label>
+                <label className="grid gap-1.5 text-xs font-medium">
+                    {t('WhatsApp Business account ID')}
+                    <Input
+                        inputMode="numeric"
+                        value={form.data.waba_id}
+                        onChange={(e) =>
+                            form.setData('waba_id', e.target.value)
+                        }
+                    />
+                    <InputError message={form.errors.waba_id} />
+                </label>
+                <label className="grid gap-1.5 text-xs font-medium sm:col-span-2">
+                    {t('System user access token')}
+                    <Input
+                        type="password"
+                        autoComplete="off"
+                        value={form.data.token}
+                        onChange={(e) => form.setData('token', e.target.value)}
+                    />
+                    <InputError message={form.errors.token} />
+                </label>
+                <div className="sm:col-span-2">
+                    <Button size="sm" disabled={form.processing}>
+                        {form.processing ? t('Connecting…') : t('Connect')}
+                    </Button>
+                </div>
+            </form>
+        </details>
+    );
+}
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
     return (
@@ -362,6 +435,8 @@ export default function HotelShow({
                         />
                     </section>
                 </div>
+
+                {can.manualWhatsApp && <ManualWhatsApp hotelId={hotel.id} />}
 
                 {closure && (
                     <p className="rounded-lg border border-destructive px-3 py-2 text-sm text-destructive">

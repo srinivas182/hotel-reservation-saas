@@ -167,9 +167,30 @@ class GraphClient
         return str_starts_with($phoneNumberIdOrWaba, 'DEMO-');
     }
 
+    /**
+     * Simulated numbers, accounts, media and templates ("SIM-…", "sim-…").
+     * Real Meta IDs are numeric, so the two never collide.
+     */
+    public static function isSimulated(string $id): bool
+    {
+        return stripos($id, 'sim-') === 0;
+    }
+
+    /**
+     * Address for a Graph path. With simulation on, only simulated IDs go
+     * to the simulator; real numbers on the same server still reach Meta.
+     */
     public function url(string $path): string
     {
-        return rtrim((string) config('whatsapp.graph_url'), '/').'/'.config('whatsapp.graph_version').'/'.ltrim($path, '/');
+        $path = ltrim($path, '/');
+        $base = (string) config('whatsapp.graph_url');
+        $simulator = config('whatsapp.simulation_graph_url');
+
+        if (config('simulation.enabled') && is_string($simulator) && $simulator !== '' && self::isSimulated((string) strtok($path, '/?'))) {
+            $base = $simulator;
+        }
+
+        return rtrim($base, '/').'/'.config('whatsapp.graph_version').'/'.$path;
     }
 
     private function http(?string $token = null, bool $retry = true): PendingRequest

@@ -12,6 +12,10 @@ return [
 
     'enabled' => (bool) env('SIMULATION_MODE', false),
 
+    // Simulated AI answers for every hotel. Set to false once a real AI
+    // provider is added (Platform → AI) to test real answers on a real number.
+    'fake_ai' => (bool) env('SIMULATION_FAKE_AI', true),
+
     'meta' => [
         // Share of sends answered with a 503 (0 to 1).
         'failure_rate' => (float) env('SIMULATION_META_FAILURE_RATE', 0),

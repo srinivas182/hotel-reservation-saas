@@ -28,9 +28,13 @@ final class SimulationServiceProvider extends ServiceProvider
         }
 
         self::guard($this->app->isProduction());
-        config(['whatsapp.graph_url' => rtrim((string) config('app.url'), '/').'/simulation/graph']);
+        // Only simulated numbers ("SIM-…") use the simulator; real numbers reach Meta.
+        config(['whatsapp.simulation_graph_url' => rtrim((string) config('app.url'), '/').'/simulation/graph']);
         self::routes();
-        self::fakeAi();
+
+        if (config('simulation.fake_ai')) {
+            self::fakeAi();
+        }
     }
 
     public static function guard(bool $production): void
