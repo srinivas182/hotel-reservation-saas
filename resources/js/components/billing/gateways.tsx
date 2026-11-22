@@ -1,8 +1,15 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import PaymentGatewayController from '@/actions/App/Domains/Billing/Http/Controllers/PaymentGatewayController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import {
+    DataTable,
+    Field,
+    FieldGroup,
+    Section,
+    SidePanel,
+    Switch,
+} from '@/components/page';
+import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,8 +31,6 @@ export type Driver = {
     webhook: string;
 };
 
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
 const fieldLabel = (f: string) =>
     ({
         secret_key: t('Secret key'),
@@ -38,14 +43,14 @@ const fieldLabel = (f: string) =>
         token: t('Token'),
     })[f] ?? f;
 
-function GatewayForm({
+function GatewayEditor({
     gateway,
     drivers,
-    onDone,
+    onClose,
 }: {
-    gateway?: Gateway;
+    gateway: Gateway | null;
     drivers: Driver[];
-    onDone?: () => void;
+    onClose: () => void;
 }) {
     const form = useForm({
         driver: gateway?.driver ?? drivers[0]?.value ?? 'paystack',
@@ -58,198 +63,276 @@ function GatewayForm({
     const errors = form.errors as Record<string, string | undefined>;
     const driver = drivers.find((d) => d.value === form.data.driver);
 
+    const save = () => {
+        form.transform((d) => ({
+            ...d,
+            driver: gateway ? undefined : d.driver,
+            currencies: d.currencies
+                .split(',')
+                .map((c) => c.trim().toUpperCase())
+                .filter((c) => c.length === 3),
+        }));
+        const options = { preserveScroll: true, onSuccess: onClose };
+        if (gateway) {
+            form.put(PaymentGatewayController.update.url(gateway.id), options);
+        } else {
+            form.post(PaymentGatewayController.store.url(), options);
+        }
+    };
+
     return (
-        <form
-            onSubmit={(e) => {
-                e.preventDefault();
-                form.transform((d) => ({
-                    ...d,
-                    driver: gateway ? undefined : d.driver,
-                    currencies: d.currencies
-                        .split(',')
-                        .map((c) => c.trim().toUpperCase())
-                        .filter((c) => c.length === 3),
-                }));
-                const options = {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        form.setData('credentials', {});
-                        onDone?.();
-                    },
-                };
-                if (gateway) {
-                    form.put(
-                        PaymentGatewayController.update.url(gateway.id),
-                        options,
-                    );
-                } else {
-                    form.post(PaymentGatewayController.store.url(), options);
-                }
-            }}
-            className="grid gap-2 rounded-xl border p-3 text-sm sm:grid-cols-3"
-        >
-            <label className="grid gap-0.5 text-xs">
-                {t('Provider')}
-                <select
-                    className={selectClass}
-                    value={form.data.driver}
-                    disabled={!!gateway}
-                    onChange={(e) =>
-                        form.setData((d) => ({
-                            ...d,
-                            driver: e.target.value,
-                            name:
-                                drivers.find((x) => x.value === e.target.value)
-                                    ?.label ?? d.name,
-                        }))
-                    }
-                >
-                    {drivers.map((d) => (
-                        <option key={d.value} value={d.value}>
-                            {d.label}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t('Name shown to hotels')}
-                <Input
-                    value={form.data.name}
-                    onChange={(e) => form.setData('name', e.target.value)}
-                />
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t('Mode')}
-                <select
-                    className={selectClass}
-                    value={form.data.mode}
-                    onChange={(e) => form.setData('mode', e.target.value)}
-                >
-                    <option value="test">{t('Test')}</option>
-                    <option value="live">{t('Live')}</option>
-                </select>
-            </label>
-            {driver?.fields.map((f) => (
-                <label key={f} className="grid gap-0.5 text-xs">
-                    {fieldLabel(f)}
-                    <Input
-                        type="password"
-                        autoComplete="off"
-                        placeholder={
-                            gateway?.configured[f]
-                                ? t('Saved — leave empty to keep')
-                                : ''
-                        }
-                        value={form.data.credentials[f] ?? ''}
-                        onChange={(e) =>
-                            form.setData('credentials', {
-                                ...form.data.credentials,
-                                [f]: e.target.value,
-                            })
-                        }
-                    />
-                </label>
-            ))}
-            <label className="grid gap-0.5 text-xs">
-                {t('Currencies (comma separated)')}
-                <Input
-                    value={form.data.currencies}
-                    onChange={(e) => form.setData('currencies', e.target.value)}
-                />
-                <InputError message={errors.currencies} />
-            </label>
-            <label className="flex items-center gap-1 text-xs">
-                <input
-                    type="checkbox"
-                    checked={form.data.active}
-                    onChange={(e) => form.setData('active', e.target.checked)}
-                />
-                {t('Offered to hotels')}
-            </label>
-            {driver && (
-                <p className="text-xs text-muted-foreground sm:col-span-3">
-                    {t(
-                        'Notification (webhook) URL to set in the provider dashboard: :url',
-                        { url: driver.webhook },
-                    )}
-                    {driver.value === 'stripe' && (
-                        <span className="block">
-                            {t(
-                                'Stripe: Developers → Webhooks → Add endpoint with this URL and the events checkout.session.completed, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed and checkout.session.expired; then copy its signing secret here. Use an sk_test_ key in Test mode.',
-                            )}
-                        </span>
-                    )}
-                </p>
+        <SidePanel
+            open
+            onClose={onClose}
+            title={gateway ? gateway.name : t('New payment provider')}
+            description={t(
+                'Hotels pay invoices and buy credits with active providers in their currency.',
             )}
-            <div>
-                <Button size="sm" disabled={form.processing}>
-                    {gateway ? t('Save') : t('Add provider')}
-                </Button>
+            footer={
+                <>
+                    <Button variant="ghost" onClick={onClose}>
+                        {t('Cancel')}
+                    </Button>
+                    <Button disabled={form.processing} onClick={save}>
+                        {gateway ? t('Save') : t('Add provider')}
+                    </Button>
+                </>
+            }
+        >
+            <div className="grid gap-6">
+                <FieldGroup title={t('Provider')}>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label={t('Provider')}>
+                            <select
+                                className="h-9 w-full"
+                                value={form.data.driver}
+                                disabled={!!gateway}
+                                onChange={(e) =>
+                                    form.setData((d) => ({
+                                        ...d,
+                                        driver: e.target.value,
+                                        name:
+                                            drivers.find(
+                                                (x) =>
+                                                    x.value === e.target.value,
+                                            )?.label ?? d.name,
+                                    }))
+                                }
+                            >
+                                {drivers.map((d) => (
+                                    <option key={d.value} value={d.value}>
+                                        {d.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label={t('Name shown to hotels')}>
+                            <Input
+                                value={form.data.name}
+                                onChange={(e) =>
+                                    form.setData('name', e.target.value)
+                                }
+                            />
+                        </Field>
+                        <Field
+                            label={t('Mode')}
+                            hint={t('Test: no real money moves.')}
+                        >
+                            <select
+                                className="h-9 w-full"
+                                value={form.data.mode}
+                                onChange={(e) =>
+                                    form.setData('mode', e.target.value)
+                                }
+                            >
+                                <option value="test">{t('Test')}</option>
+                                <option value="live">{t('Live')}</option>
+                            </select>
+                        </Field>
+                        <Field
+                            label={t('Currencies (comma separated)')}
+                            error={errors.currencies}
+                        >
+                            <Input
+                                value={form.data.currencies}
+                                onChange={(e) =>
+                                    form.setData('currencies', e.target.value)
+                                }
+                            />
+                        </Field>
+                    </div>
+                </FieldGroup>
+                {driver && driver.fields.length > 0 && (
+                    <FieldGroup
+                        title={t('Keys')}
+                        description={t(
+                            'Stored encrypted and never shown again. Leave a saved key empty to keep it.',
+                        )}
+                    >
+                        <div className="grid gap-4">
+                            {driver.fields.map((f) => (
+                                <Field
+                                    key={f}
+                                    label={fieldLabel(f)}
+                                    error={errors[`credentials.${f}`]}
+                                >
+                                    <PasswordInput
+                                        autoComplete="off"
+                                        placeholder={
+                                            gateway?.configured[f]
+                                                ? t(
+                                                      'Saved — leave empty to keep',
+                                                  )
+                                                : ''
+                                        }
+                                        value={form.data.credentials[f] ?? ''}
+                                        onChange={(e) =>
+                                            form.setData('credentials', {
+                                                ...form.data.credentials,
+                                                [f]: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </Field>
+                            ))}
+                        </div>
+                    </FieldGroup>
+                )}
+                {driver && (
+                    <FieldGroup title={t('Notifications (webhook)')}>
+                        <p className="text-xs text-muted-foreground">
+                            {t('Address to set in the provider dashboard:')}
+                        </p>
+                        <code className="rounded-md border bg-muted/40 px-3 py-2 text-xs break-all">
+                            {driver.webhook}
+                        </code>
+                        {driver.value === 'stripe' && (
+                            <p className="text-xs text-muted-foreground">
+                                {t(
+                                    'Stripe: Developers → Webhooks → Add endpoint with this URL and the events checkout.session.completed, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed and checkout.session.expired; then copy its signing secret here. Use an sk_test_ key in Test mode.',
+                                )}
+                            </p>
+                        )}
+                    </FieldGroup>
+                )}
+                <FieldGroup title={t('Availability')}>
+                    <Switch
+                        label={t('Offered to hotels')}
+                        checked={form.data.active}
+                        onChange={(v) => form.setData('active', v)}
+                    />
+                </FieldGroup>
             </div>
-        </form>
+        </SidePanel>
     );
 }
 
-export function Gateways({
+export function GatewaysTab({
     gateways,
     drivers,
 }: {
     gateways: Gateway[];
     drivers: Driver[];
 }) {
-    const [adding, setAdding] = useState(false);
+    const [editing, setEditing] = useState<Gateway | 'new' | null>(null);
 
     return (
-        <section className="flex flex-col gap-2 text-sm">
-            <div className="flex items-center justify-between">
-                <Heading
-                    variant="small"
-                    title={t('Online payment providers')}
-                    description={t(
-                        'Hotels can pay invoices and buy credits with any active provider in their currency.',
-                    )}
-                />
-                <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setAdding(!adding)}
-                >
-                    {adding ? t('Close') : t('Add provider')}
-                </Button>
-            </div>
-            {adding && (
-                <GatewayForm
-                    drivers={drivers}
-                    onDone={() => setAdding(false)}
-                />
-            )}
-            {gateways.map((g) => (
-                <details key={g.id} className="rounded-xl border p-2">
-                    <summary className="flex cursor-pointer flex-wrap items-center gap-2">
-                        {g.name} ·{' '}
-                        {drivers.find((d) => d.value === g.driver)?.label} ·{' '}
-                        {g.currencies.join(', ')}
-                        <Badge
-                            variant={g.mode === 'live' ? 'default' : 'outline'}
-                        >
-                            {g.mode === 'live' ? t('Live') : t('Test')}
-                        </Badge>
-                        {g.active ? (
-                            <Badge variant="secondary">{t('Active')}</Badge>
-                        ) : (
-                            <Badge variant="outline">{t('Off')}</Badge>
-                        )}
-                    </summary>
-                    <GatewayForm gateway={g} drivers={drivers} />
-                </details>
-            ))}
-            {gateways.length === 0 && !adding && (
-                <p className="text-muted-foreground">
-                    {t(
+        <>
+            <Section
+                flush
+                title={t('Payment providers')}
+                description={t(
+                    'Hotels can pay invoices and buy credits with any active provider in their currency.',
+                )}
+                actions={
+                    <Button size="sm" onClick={() => setEditing('new')}>
+                        {t('Add provider')}
+                    </Button>
+                }
+            >
+                <DataTable
+                    rows={gateways}
+                    rowKey={(g) => g.id}
+                    empty={t(
                         'No provider yet: hotels pay by transfer or mobile money, recorded by you.',
                     )}
-                </p>
+                    onRowClick={(g) => setEditing(g)}
+                    columns={[
+                        {
+                            key: 'name',
+                            header: t('Provider'),
+                            cell: (g) => (
+                                <div>
+                                    <div className="font-medium">{g.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {
+                                            drivers.find(
+                                                (d) => d.value === g.driver,
+                                            )?.label
+                                        }
+                                    </div>
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'currencies',
+                            header: t('Currencies'),
+                            cell: (g) => (
+                                <span className="font-mono text-xs">
+                                    {g.currencies.join(', ')}
+                                </span>
+                            ),
+                        },
+                        {
+                            key: 'mode',
+                            header: t('Mode'),
+                            cell: (g) => (
+                                <Badge
+                                    variant={
+                                        g.mode === 'live'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                >
+                                    {g.mode === 'live' ? t('Live') : t('Test')}
+                                </Badge>
+                            ),
+                        },
+                        {
+                            key: 'keys',
+                            header: t('Keys'),
+                            cell: (g) =>
+                                Object.values(g.configured).every(Boolean) ? (
+                                    <span className="text-xs text-muted-foreground">
+                                        {t('Saved')}
+                                    </span>
+                                ) : (
+                                    <Badge variant="destructive">
+                                        {t('Missing')}
+                                    </Badge>
+                                ),
+                        },
+                        {
+                            key: 'status',
+                            header: t('Status'),
+                            cell: (g) =>
+                                g.active ? (
+                                    <Badge>{t('Active')}</Badge>
+                                ) : (
+                                    <Badge variant="outline">{t('Off')}</Badge>
+                                ),
+                        },
+                    ]}
+                />
+            </Section>
+            {editing !== null && (
+                <GatewayEditor
+                    key={editing === 'new' ? 'new' : editing.id}
+                    gateway={editing === 'new' ? null : editing}
+                    drivers={drivers}
+                    onClose={() => setEditing(null)}
+                />
             )}
-        </section>
+        </>
     );
 }
