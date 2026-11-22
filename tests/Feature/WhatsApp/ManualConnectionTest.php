@@ -95,7 +95,7 @@ it('opens the hotel page when its history has several entries by people', functi
     foreach (['first', 'second'] as $note) {
         App\Domains\Audit\Audit::record('test.'.$note, 'Test entry', subject: $this->hotel, causer: $this->admin);
     }
-    App\Domains\Audit\Models\AuditLog::query()->update(['hotel_id' => $this->hotel->id]);
+    AuditLog::query()->update(['hotel_id' => $this->hotel->id]);
 
     $this->actingAs($this->admin)->get(route('platform.hotels.show', $this->hotel))
         ->assertOk()
