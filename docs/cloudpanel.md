@@ -110,12 +110,13 @@ Check: `supervisorctl status`, and `https://<domain>/up` answers "OK". Errors ar
 
 ## 6. Common problems
 
-| Problem                                       | Fix                                                                                             |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Blank page or "Vite manifest not found"       | The screens were not built: run the update script (or `PHP_BIN=php8.4 npm run build`)           |
-| 500 error after an update                     | `tail -50 storage/logs/laravel.log`; often a missing `.env` setting or the wrong PHP version    |
-| "Permission denied" on storage                | You ran a command as root: `chown -R <site-user>:<site-user> storage bootstrap/cache` (as root) |
-| No e-mails arrive                             | Platform → Email providers, or the `MAIL_*` settings in `.env`                                  |
-| The assistant never answers                   | Queue workers not running: `supervisorctl status` (section 5)                                   |
-| Reminders, undo, morning summary never happen | The scheduler cron job is missing (section 5)                                                   |
-| `wayfinder:generate` fails during the build   | The build used an older PHP: `PHP_BIN=php8.4 npm run build` (the script does this)              |
+| Problem                                           | Fix                                                                                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blank page or "Vite manifest not found"           | The screens were not built: run the update script (or `PHP_BIN=php8.4 npm run build`)                                                       |
+| 500 error after an update                         | `tail -50 storage/logs/laravel.log`; often a missing `.env` setting or the wrong PHP version                                                |
+| "Permission denied" on storage                    | You ran a command as root: `chown -R <site-user>:<site-user> storage bootstrap/cache` (as root)                                             |
+| No e-mails arrive                                 | Platform → Email providers, or the `MAIL_*` settings in `.env`                                                                              |
+| "Connection could not be established" on port 587 | DigitalOcean blocks outgoing SMTP on new servers: use Brevo with an **API key** (sent over HTTPS), or ask DigitalOcean support to open SMTP |
+| The assistant never answers                       | Queue workers not running: `supervisorctl status` (section 5)                                                                               |
+| Reminders, undo, morning summary never happen     | The scheduler cron job is missing (section 5)                                                                                               |
+| `wayfinder:generate` fails during the build       | The build used an older PHP: `PHP_BIN=php8.4 npm run build` (the script does this)                                                          |

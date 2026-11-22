@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domains\Messaging\Email;
 
 /**
- * Supported email providers. All are connected over authenticated SMTP,
- * which every one of them offers, so no provider-specific SDK is needed.
- * API transports (for bounce and complaint webhooks) can be added later.
+ * Supported email providers. Brevo is sent through its HTTPS API with an
+ * API key (cloud hosts often block outgoing SMTP ports); the others are
+ * connected over authenticated SMTP, which every one of them offers.
  */
 enum MailDriver: string
 {
@@ -64,8 +64,19 @@ enum MailDriver: string
                 $username,
                 $password,
             ],
-            self::Brevo => [$username, $password],
+            self::Brevo => [
+                ['key' => 'password', 'label' => __('API key (starts with xkeysib-)'), 'secret' => true, 'required' => true],
+            ],
         };
+    }
+
+    /**
+     * Whether this provider is sent through its HTTPS API rather than SMTP.
+     * Brevo's SMTP relay can still be used as an "Other SMTP server".
+     */
+    public function usesApi(): bool
+    {
+        return $this === self::Brevo;
     }
 
     /**

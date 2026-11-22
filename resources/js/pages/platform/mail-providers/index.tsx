@@ -206,6 +206,7 @@ export default function MailProviders({
 }: Props) {
     const [editing, setEditing] = useState<number | 'new' | null>(null);
     const [testTo, setTestTo] = useState('');
+    const [testing, setTesting] = useState<number | null>(null);
 
     return (
         <>
@@ -248,7 +249,13 @@ export default function MailProviders({
                         type="email"
                         value={testTo}
                         onChange={(e) => setTestTo(e.target.value)}
+                        placeholder="you@example.com"
                     />
+                    <p className="text-xs text-muted-foreground">
+                        {t(
+                            'Then press “Send test” on a provider. The sender must be verified with the provider (for Brevo: Senders, domains and dedicated IPs).',
+                        )}
+                    </p>
                 </div>
 
                 <ul className="flex flex-col gap-3">
@@ -317,18 +324,35 @@ export default function MailProviders({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        disabled={testTo === ''}
+                                        disabled={
+                                            testTo === '' || testing !== null
+                                        }
+                                        title={
+                                            testTo === ''
+                                                ? t(
+                                                      'Enter the address for test emails first.',
+                                                  )
+                                                : undefined
+                                        }
                                         onClick={() =>
                                             router.post(
                                                 MailProviderController.test.url(
                                                     provider.id,
                                                 ),
                                                 { to: testTo },
-                                                { preserveScroll: true },
+                                                {
+                                                    preserveScroll: true,
+                                                    onStart: () =>
+                                                        setTesting(provider.id),
+                                                    onFinish: () =>
+                                                        setTesting(null),
+                                                },
                                             )
                                         }
                                     >
-                                        {t('Send test')}
+                                        {testing === provider.id
+                                            ? t('Sending…')
+                                            : t('Send test')}
                                     </Button>
                                     <Button
                                         variant="ghost"

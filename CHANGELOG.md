@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Brevo over HTTPS, layout polish, sign-out fix (0.28.1)
+
+#### Fixed
+
+- **Brevo e-mails now go through the Brevo HTTPS API** (port 443) with an API key (`xkeysib-…`) and a verified sender, instead of SMTP on port 587. DigitalOcean and other cloud hosts block outgoing SMTP ports on new servers, so the test e-mail timed out ("Connection could not be established with host smtp-relay.brevo.com:587"). A Brevo SMTP key (`xsmtpsib-…`) is refused with a clear message. Other SMTP connections now give up after 15 seconds instead of hanging.
+- **Send test** shows "Sending…" while it works, explains why it is disabled until a test address is entered, and says the sender must be verified with the provider.
+- **Signing out** no longer shows the public website inside a pop-up over the app: pages outside the app (website, help, status) always load as a full page.
+- **Platform → Website → Brand**: the Default language box overlapped the next field. The brand form is now grouped (Identity, Support, Analytics, Images) with labels, hints and errors aligned, a colour swatch with its code, and previews for the logo and sign-in photo. Page editors have visible field labels per language.
+- **Forms everywhere**: drop-down lists, text boxes and labels can no longer grow wider than their column (a long option pushed fields into each other or off the screen on phones). Drop-down lists and file pickers share the look of the other fields. Fixed on phones: Deposits provider, WhatsApp kit message, Rooms buttons, Workspace "View as" buttons.
+
 ### Default language setting (0.28.0)
 
 #### Added

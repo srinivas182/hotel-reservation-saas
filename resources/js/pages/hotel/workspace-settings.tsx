@@ -183,9 +183,9 @@ export default function WorkspaceSettings({
                             {roles.map((role) => (
                                 <li
                                     key={role.id}
-                                    className="flex items-center gap-3 px-3 py-2 text-sm"
+                                    className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm"
                                 >
-                                    <label className="flex flex-1 items-center gap-2">
+                                    <label className="flex min-w-40 flex-1 items-center gap-2">
                                         <input
                                             type="checkbox"
                                             className="size-4"

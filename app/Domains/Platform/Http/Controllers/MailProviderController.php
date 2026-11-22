@@ -176,7 +176,14 @@ final class MailProviderController extends Controller
             ];
         }
 
-        $validated = $request->validate($rules);
+        // A Brevo SMTP key ("xsmtpsib-") does not work with the API: say so plainly.
+        if ($driver === MailDriver::Brevo) {
+            $rules['credentials.password'][] = 'not_regex:/^xsmtpsib-/';
+        }
+
+        $validated = $request->validate($rules, [
+            'credentials.password.not_regex' => __('This is a Brevo SMTP key. Use an API key instead: Brevo → SMTP & API → API keys (it starts with xkeysib-).'),
+        ]);
         $driver = MailDriver::from((string) $validated['driver']);
 
         $credentials = [];

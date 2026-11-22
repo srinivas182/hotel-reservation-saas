@@ -387,7 +387,7 @@ export default function Rooms({
 
                 {canManage && categories.length > 0 && (
                     <section className="flex flex-col gap-3 rounded-xl border p-4">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                             <Button
                                 variant={
                                     adding === 'room' ? 'default' : 'outline'
