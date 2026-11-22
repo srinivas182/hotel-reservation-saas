@@ -11,6 +11,7 @@ use App\Domains\Deposits\Deposits;
 use App\Domains\Deposits\Drivers\SimulatedDeposits;
 use App\Domains\Deposits\Models\DepositAttempt;
 use App\Domains\Deposits\Models\DepositLink;
+use App\Domains\Deposits\Models\MerchantAccount;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Folio\Folio;
 use App\Domains\Folio\RestaurantSettings;
@@ -61,6 +62,10 @@ final class PublicDepositController extends Controller
                     default => 'closed',
                 },
                 'balance' => $balance,
+                // 0.31: paying everything now gets the hotel's pay-now discount.
+                'saving' => $open && $deposits->prepayTotal($booking) !== null ? $deposits->prepayPercent() : null,
+                // 0.30: hotels taking cards through Stripe.
+                'cards' => MerchantAccount::current()?->driver === 'stripe',
                 'pending' => $pending && $link->status !== 'paid',
                 'deposit' => $money($link->deposit_minor),
                 'full' => $full !== null && $full > $link->deposit_minor ? $money($full) : null,

@@ -182,6 +182,64 @@ it('lets the guest pay the whole stay instead', function (): void {
         ->and(($this->in)(fn () => app(Folio::class)->balance($booking->refresh())))->toBeLessThanOrEqual(0);
 });
 
+it('offers the whole stay at the pay-now price, and applies the discount once it is paid', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['prepay_discount_percent' => 10]));
+    $booking = depositBooking($this);
+    $total = $booking->total_minor;
+    $prepay = Deposits::payable((int) ceil($total * 0.9), 'XOF');
+
+    expect(implode("\n", depositGuestTexts($this)))->toContain('économisez 10 %');
+
+    depositPayByLink($this, choice: 'full');
+
+    $booking->refresh();
+    expect(depositLink($this)->paid_minor)->toBe($prepay)
+        ->and($booking->status)->toBe(BookingStatus::Confirmed)
+        ->and($booking->prepaid_at)->not->toBeNull()
+        ->and($booking->prepay_discount_minor)->toBe($total - $prepay)
+        ->and($booking->total_minor)->toBe($prepay)
+        ->and(($this->in)(fn () => app(Folio::class)->balance($booking)))->toBe(0);
+});
+
+it('gives no pay-now discount on a deposit, only on the whole stay', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['prepay_discount_percent' => 10]));
+    $booking = depositBooking($this);
+    $total = $booking->total_minor;
+
+    depositPayByLink($this);
+
+    $booking->refresh();
+    expect($booking->prepaid_at)->toBeNull()
+        ->and($booking->total_minor)->toBe($total)
+        ->and(($this->in)(fn () => app(Deposits::class)->prepayTotal($booking)))->toBeNull();
+});
+
+it('confirms pay-at-the-hotel bookings with the pay-now offer and the time the room is kept', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['deposit_required' => false, 'prepay_discount_percent' => 10, 'pay_at_hotel_hold_until' => '18:00']));
+    $booking = depositBooking($this);
+    $prepay = Deposits::payable((int) ceil($booking->total_minor * 0.9), 'XOF');
+
+    $text = implode("\n", depositGuestTexts($this));
+    expect($booking->status)->toBe(BookingStatus::Confirmed)
+        ->and($text)->toContain($booking->reference)
+        ->and($text)->toContain('économisez 10 %')
+        ->and($text)->toContain('gardée jusqu’à 18:00')
+        ->and(depositLink($this)->purpose)->toBe('balance')
+        ->and(depositLink($this)->deposit_minor)->toBe($prepay);
+
+    depositPayByLink($this);
+
+    expect($booking->refresh()->prepaid_at)->not->toBeNull()
+        ->and($booking->total_minor)->toBe($prepay);
+});
+
+it('says only the hold time when there is no pay-now offer', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['deposit_required' => false, 'pay_at_hotel_hold_until' => '17:00']));
+    depositBooking($this);
+
+    expect(implode("\n", depositGuestTexts($this)))->toContain('17:00')->not->toContain('économisez');
+});
+
 it('does nothing when the provider refuses the payment', function (): void {
     $booking = depositBooking($this);
 

@@ -45,6 +45,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $inventory_hold_id
  * @property string|null $created_by
  * @property CarbonImmutable|null $whatsapp_consent_at
+ * @property string|null $coupon_code
+ * @property int $coupon_discount_minor
+ * @property int $prepay_discount_minor 0.31: taken off the stay when it was paid in full online before arrival
+ * @property CarbonImmutable|null $prepaid_at
  * @property-read \App\Domains\Arrivals\Models\ArrivalCheck|null $arrivalCheck
  */
 class Booking extends Model
@@ -69,6 +73,9 @@ class Booking extends Model
             'extra_bed' => 'boolean',
             'price_snapshot' => 'array',
             'total_minor' => 'integer',
+            'coupon_discount_minor' => 'integer',
+            'prepay_discount_minor' => 'integer',
+            'prepaid_at' => 'immutable_datetime',
             'price_overridden' => 'boolean',
             'tentative_until' => 'immutable_datetime',
             'confirmed_at' => 'immutable_datetime',

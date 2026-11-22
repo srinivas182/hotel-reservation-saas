@@ -26,6 +26,7 @@ export type PendingRequest = {
     extra_bed: boolean;
     quoted_total: string;
     current_total: string;
+    coupon?: { code: string; discount: string } | null;
     price_changed: boolean;
     problems: string[];
     received_at: string | null;
@@ -108,6 +109,14 @@ export function RequestCard({
                 {t('Quoted to the guest: :total', {
                     total: request.quoted_total,
                 })}
+                {request.coupon && (
+                    <span className="ml-2 rounded bg-brand-soft px-1.5 py-0.5 font-mono text-xs text-brand-ink">
+                        {t('code :code, −:discount', {
+                            code: request.coupon.code,
+                            discount: request.coupon.discount,
+                        })}
+                    </span>
+                )}
                 {request.price_changed && (
                     <span className="ml-2 text-destructive">
                         {t('Price now: :total', {

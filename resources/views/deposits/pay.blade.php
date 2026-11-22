@@ -72,16 +72,21 @@
             <h2>{{ $balance ? __('Pay before you arrive') : __('Pay to confirm') }}</h2>
             <label class="choice">
                 <input type="radio" name="choice" value="deposit" checked>
-                <span><span class="amount">{{ $deposit }}</span><br><span class="muted">{{ $balance ? __('What is left of your stay: no queue on arrival') : __('The deposit, to confirm the booking') }}</span></span>
+                <span><span class="amount">{{ $deposit }}</span><br><span class="muted">{{ $balance ? ($saving ? __('The whole stay, paid now: you save :percent%', ['percent' => $saving]) : __('What is left of your stay: no queue on arrival')) : __('The deposit, to confirm the booking') }}</span></span>
             </label>
             @if ($full)
                 <label class="choice">
                     <input type="radio" name="choice" value="full">
-                    <span><span class="amount">{{ $full }}</span><br><span class="muted">{{ __('The whole stay, nothing to pay on arrival') }}</span></span>
+                    <span><span class="amount">{{ $full }}</span><br><span class="muted">{{ $saving ? __('The whole stay, paid now: you save :percent%', ['percent' => $saving]) : __('The whole stay, nothing to pay on arrival') }}</span></span>
                 </label>
             @endif
-            <div class="methods" aria-label="{{ __('Accepted') }}"><span>Wave</span><span>Orange Money</span><span>MTN MoMo</span><span>Moov Money</span></div>
-            <button type="submit">{{ __('Pay by mobile money') }}</button>
+            @if ($cards)
+                <div class="methods" aria-label="{{ __('Accepted') }}"><span>Visa</span><span>Mastercard</span><span>American Express</span></div>
+                <button type="submit">{{ __('Pay by card') }}</button>
+            @else
+                <div class="methods" aria-label="{{ __('Accepted') }}"><span>Wave</span><span>Orange Money</span><span>MTN MoMo</span><span>Moov Money</span></div>
+                <button type="submit">{{ __('Pay by mobile money') }}</button>
+            @endif
             <small class="muted">{{ __('You pay :hotel directly, through its payment provider.', ['hotel' => $hotel->name]) }}</small>
         </form>
 

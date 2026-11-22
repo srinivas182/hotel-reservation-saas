@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Assistant\Engine\Tools;
 
+use App\Domains\Deposits\Deposits;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Finance\Taxes\TaxBreakdown;
 use App\Domains\Finance\Taxes\TaxLine;
+use App\Domains\Rates\Coupons\CouponNotValid;
+use App\Domains\Rates\Coupons\Coupons;
 use App\Domains\Rates\Quote\QuoteIssue;
 use App\Domains\Rates\Quote\QuoteService;
 use App\Domains\Rates\Quote\StayRequest;
@@ -44,6 +47,7 @@ final class GetQuote extends AssistantTool
             'rooms' => $schema->integer()->description('Number of rooms, default 1'),
             'breakfast' => $schema->boolean()->description('Whether breakfast is wanted'),
             'extra_bed' => $schema->boolean()->description('Whether an extra bed is wanted'),
+            'coupon_code' => $schema->string()->description('A discount code the guest gave, if any'),
         ];
     }
 
@@ -90,6 +94,22 @@ final class GetQuote extends AssistantTool
             'included_in_price' => $line->inclusive,
         ], $b->lines);
 
+        // 0.31: a coupon the guest gave, and the two ways to pay.
+        $total = $quote->total;
+        $coupon = null;
+        if (trim((string) ($arguments['coupon_code'] ?? '')) !== '') {
+            try {
+                $found = app(Coupons::class)->check((string) $arguments['coupon_code'], (int) round($checkIn->diffInDays($checkOut)));
+                $off = app(Coupons::class)->discount($found, $total);
+                $total = $total->minus($off);
+                $coupon = ['code' => $found->code, 'valid' => true, 'discount' => $format($off)];
+            } catch (CouponNotValid $e) {
+                $coupon = ['code' => (string) $arguments['coupon_code'], 'valid' => false, 'reason' => $e->getMessage()];
+            }
+        }
+        $deposits = app(Deposits::class);
+        $prepay = $deposits->prepayPrice($total->getMinorAmount()->toInt(), $total->getCurrency()->getCurrencyCode());
+
         return [
             'category' => $category->localizedName($this->context->locale, $hotel->default_locale),
             'check_in' => $checkIn->toDateString(),
@@ -100,7 +120,14 @@ final class GetQuote extends AssistantTool
             'lines' => array_map(fn (array $l): array => ['item' => $l['label'], 'quantity' => $l['quantity'], 'amount' => $format($l['amount'])], $quote->lines),
             'subtotal' => $format($quote->subtotal),
             'taxes' => [...$taxes($quote->roomTaxes), ...$taxes($quote->breakfastTaxes)],
-            'total_to_pay' => $format($quote->total),
+            'total_to_pay' => $format($total),
+            'coupon' => $coupon,
+            'payment_options' => $prepay === null ? null : [
+                'pay_now_online' => $format(Money::ofMinor($prepay, $total->getCurrency())),
+                'pay_now_discount_percent' => $deposits->prepayPercent(),
+                'pay_at_hotel' => $format($total),
+                'note' => 'The guest chooses after reception approves the booking: paying the whole stay online now costs pay_now_online; paying at the hotel costs pay_at_hotel.',
+            ],
         ];
     }
 }

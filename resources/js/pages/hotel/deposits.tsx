@@ -33,6 +33,8 @@ type Props = {
         deposit_online: boolean;
         deposit_allow_full: boolean;
         deposit_refund_days: number | null;
+        prepay_discount_percent: number;
+        pay_at_hotel_hold_until: string | null;
     };
     totals: {
         count: number;
@@ -281,6 +283,8 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
         deposit_allow_full: settings.deposit_allow_full,
         refund: settings.deposit_refund_days === null ? 'never' : 'days',
         deposit_refund_days: String(settings.deposit_refund_days ?? 2),
+        prepay_discount_percent: String(settings.prepay_discount_percent ?? 0),
+        pay_at_hotel_hold_until: settings.pay_at_hotel_hold_until ?? '',
     });
 
     return (
@@ -295,6 +299,12 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
                         data.refund === 'never'
                             ? null
                             : Number(data.deposit_refund_days) || 0,
+                    prepay_discount_percent:
+                        Number(data.prepay_discount_percent) || 0,
+                    pay_at_hotel_hold_until:
+                        data.pay_at_hotel_hold_until === ''
+                            ? null
+                            : data.pay_at_hotel_hold_until,
                 }));
                 form.put('/hotel/deposits/settings', { preserveScroll: true });
             }}
@@ -374,6 +384,51 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
                 )}
             </fieldset>
             <InputError message={form.errors.deposit_refund_days} />
+            <fieldset className="grid gap-3 border-t pt-3 sm:grid-cols-2">
+                <legend className="mb-1 font-medium">
+                    {t('Pay now or pay at the hotel')}
+                </legend>
+                <label className="grid gap-1.5 text-xs font-medium">
+                    {t('Discount for paying the whole stay now (%)')}
+                    <Input
+                        inputMode="numeric"
+                        className="w-24"
+                        value={form.data.prepay_discount_percent}
+                        onChange={(e) =>
+                            form.setData(
+                                'prepay_discount_percent',
+                                e.target.value.replace(/\D/g, '').slice(0, 2),
+                            )
+                        }
+                    />
+                    <span className="font-normal text-muted-foreground">
+                        {t(
+                            '0 = no pay-now offer. With a discount, the confirmation offers both: pay now online at the lower price, or pay the full price at the hotel. Needs online payments (above).',
+                        )}
+                    </span>
+                    <InputError message={form.errors.prepay_discount_percent} />
+                </label>
+                <label className="grid gap-1.5 text-xs font-medium">
+                    {t('Pay-at-the-hotel rooms kept until (arrival day)')}
+                    <Input
+                        type="time"
+                        className="w-32"
+                        value={form.data.pay_at_hotel_hold_until}
+                        onChange={(e) =>
+                            form.setData(
+                                'pay_at_hotel_hold_until',
+                                e.target.value,
+                            )
+                        }
+                    />
+                    <span className="font-normal text-muted-foreground">
+                        {t(
+                            'Told to the guest in the confirmation. Leave empty to say nothing.',
+                        )}
+                    </span>
+                    <InputError message={form.errors.pay_at_hotel_hold_until} />
+                </label>
+            </fieldset>
             <Button
                 type="submit"
                 size="sm"

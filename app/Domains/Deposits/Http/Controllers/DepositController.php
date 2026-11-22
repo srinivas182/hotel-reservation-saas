@@ -74,6 +74,8 @@ final class DepositController extends Controller
                 'deposit_online' => $settings->deposit_online,
                 'deposit_allow_full' => $settings->deposit_allow_full,
                 'deposit_refund_days' => $settings->deposit_refund_days,
+                'prepay_discount_percent' => $settings->prepay_discount_percent,
+                'pay_at_hotel_hold_until' => $settings->pay_at_hotel_hold_until,
             ],
             'totals' => $reconciliation->month($month),
             'refunds' => DepositLink::query()->with($with)->where('refund_status', 'due')->oldest('updated_at')->get()->map(fn (DepositLink $l): array => DepositPresenter::row($l))->values(),
@@ -143,6 +145,8 @@ final class DepositController extends Controller
             'deposit_online' => ['required', 'boolean'],
             'deposit_allow_full' => ['required', 'boolean'],
             'deposit_refund_days' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'prepay_discount_percent' => ['required', 'integer', 'min:0', 'max:50'],
+            'pay_at_hotel_hold_until' => ['nullable', 'date_format:H:i'],
         ]);
 
         $settings = HotelAssistantSettings::current();
