@@ -2,6 +2,7 @@ import { Form } from '@inertiajs/react';
 import type { RouteFormDefinition } from '@/wayfinder';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import PasswordInput from '@/components/password-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
@@ -220,10 +221,9 @@ export function HotelForm({
                             <Label htmlFor="owner_password">
                                 {t('Password (new account)')}
                             </Label>
-                            <Input
+                            <PasswordInput
                                 id="owner_password"
                                 name="owner_password"
-                                type="password"
                                 autoComplete="new-password"
                             />
                             <InputError message={errors.owner_password} />
