@@ -49,11 +49,13 @@ final class HeartbeatCheck implements HealthCheck
             return ['ok' => false, 'detail' => 'Heartbeat could not be read.'];
         }
 
-        if (! is_int($timestamp)) {
+        // Redis gives numbers back as strings ("1795329702"), the array and
+        // database stores as integers: accept both (found on the CloudPanel server).
+        if (! is_int($timestamp) && ! (is_string($timestamp) && ctype_digit($timestamp))) {
             return ['ok' => false, 'detail' => 'No heartbeat recorded yet.'];
         }
 
-        $age = Carbon::now()->getTimestamp() - $timestamp;
+        $age = Carbon::now()->getTimestamp() - (int) $timestamp;
 
         return $age <= self::MAX_AGE_SECONDS
             ? ['ok' => true]

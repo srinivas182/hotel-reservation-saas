@@ -75,3 +75,14 @@ it('schedules both heartbeats every minute', function (): void {
 
     expect($names)->toContain('health:scheduler-heartbeat', 'health:queue-heartbeat');
 });
+
+it('reads heartbeats that the cache store gives back as text, as Redis does', function (): void {
+    Cache::put(HeartbeatCheck::scheduler()->cacheKey(), (string) now()->getTimestamp(), 600);
+    expect(HeartbeatCheck::scheduler()->run())->toBe(['ok' => true]);
+
+    Cache::put(HeartbeatCheck::scheduler()->cacheKey(), (string) now()->subMinutes(10)->getTimestamp(), 600);
+    expect(HeartbeatCheck::scheduler()->run()['ok'])->toBeFalse();
+
+    Cache::put(HeartbeatCheck::scheduler()->cacheKey(), 'not-a-time', 600);
+    expect(HeartbeatCheck::scheduler()->run())->toBe(['ok' => false, 'detail' => 'No heartbeat recorded yet.']);
+});
