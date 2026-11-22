@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { CreditCard, History, Pencil } from 'lucide-react';
 import AccountHotelsController from '@/actions/App/Domains/Platform/Http/Controllers/AccountHotelsController';
 import PlatformLifecycleController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformLifecycleController';
 import AuditLogController from '@/actions/App/Domains/Platform/Http/Controllers/AuditLogController';
@@ -7,12 +8,21 @@ import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Control
 import PlatformBillingController from '@/actions/App/Domains/Billing/Http/Controllers/PlatformBillingController';
 import SupportSessionController from '@/actions/App/Domains/Platform/Http/Controllers/SupportSessionController';
 import ManualWhatsAppController from '@/actions/App/Domains/Platform/Http/Controllers/ManualWhatsAppController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import {
+    DataTable,
+    Field,
+    PageBody,
+    Section,
+    StatTile,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 type Credit = { granted: number; used: number; left: number } | null;
 type Props = {
@@ -171,10 +181,25 @@ function ManualWhatsApp({ hotelId }: { hotelId: string }) {
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
     return (
-        <div className="flex justify-between gap-3 border-b py-1 last:border-0">
-            <span className="text-muted-foreground">{label}</span>
-            <span className="text-right">{value ?? '—'}</span>
+        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 py-2">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="min-w-0 text-right break-words">{value ?? '—'}</dd>
         </div>
+    );
+}
+
+function Card({
+    title,
+    children,
+}: {
+    title: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <section className="rounded-xl border bg-card px-5 py-4">
+            <h2 className="mb-1 font-medium">{title}</h2>
+            <dl className="divide-y text-sm">{children}</dl>
+        </section>
     );
 }
 
@@ -191,41 +216,39 @@ function HelpThisHotel({
     const form = useForm({ reason: '', mode: 'read' });
 
     return (
-        <section className="flex flex-col gap-2 text-sm">
-            <Heading
-                variant="small"
-                title={t('Help this hotel')}
-                description={t(
-                    'Open the hotel’s screens for 30 minutes. The owner is told, and everything you do is recorded in the hotel’s history.',
-                )}
-            />
+        <Section
+            title={t('Help this hotel')}
+            description={t(
+                'Open the hotel’s screens for 30 minutes. The owner is told, and everything you do is recorded in the hotel’s history.',
+            )}
+        >
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
                     form.post(SupportSessionController.start.url(hotelId));
                 }}
-                className="flex flex-wrap items-end gap-2"
+                className="grid items-end gap-3 sm:grid-cols-[1fr_12rem_auto]"
             >
-                <input
-                    aria-label={t('Reason')}
-                    placeholder={t(
-                        'Reason (e.g. owner called: rates not showing)',
-                    )}
-                    className="h-9 min-w-72 flex-1 rounded-md border border-input bg-transparent px-3"
-                    value={form.data.reason}
-                    onChange={(e) => form.setData('reason', e.target.value)}
-                />
-                <select
-                    aria-label={t('Access')}
-                    className="flex h-9 rounded-md border border-input bg-transparent px-3"
-                    value={form.data.mode}
-                    onChange={(e) => form.setData('mode', e.target.value)}
-                >
-                    <option value="read">{t('Read-only')}</option>
-                    <option value="write">{t('Can make changes')}</option>
-                </select>
+                <Field label={t('Reason')}>
+                    <Input
+                        placeholder={t(
+                            'Reason (e.g. owner called: rates not showing)',
+                        )}
+                        value={form.data.reason}
+                        onChange={(e) => form.setData('reason', e.target.value)}
+                    />
+                </Field>
+                <Field label={t('Access')}>
+                    <select
+                        className="h-9"
+                        value={form.data.mode}
+                        onChange={(e) => form.setData('mode', e.target.value)}
+                    >
+                        <option value="read">{t('Read-only')}</option>
+                        <option value="write">{t('Can make changes')}</option>
+                    </select>
+                </Field>
                 <Button
-                    size="sm"
                     disabled={
                         form.processing || form.data.reason.trim().length < 5
                     }
@@ -234,41 +257,70 @@ function HelpThisHotel({
                 </Button>
             </form>
             {sessions.length > 0 && (
-                <ul className="divide-y rounded-xl border">
-                    {sessions.map((s) => (
-                        <li
-                            key={s.id}
-                            className="flex flex-wrap items-center gap-2 px-3 py-1.5"
-                        >
-                            <span className="text-xs text-muted-foreground">
-                                {s.at}
-                            </span>
-                            <span>{s.by}</span>
-                            <span className="flex-1">{s.reason}</span>
-                            <Badge variant="outline">{s.mode}</Badge>
-                            <Badge variant={s.live ? 'default' : 'secondary'}>
-                                {s.live ? t('In progress') : s.status}
-                            </Badge>
-                            {s.mine && s.live && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                        router.post(
-                                            SupportSessionController.enter.url(
-                                                s.id,
-                                            ),
-                                        )
-                                    }
-                                >
-                                    {t('Enter')}
-                                </Button>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                <div className="-mx-5 mt-5 -mb-5 border-t">
+                    <DataTable
+                        rows={sessions}
+                        rowKey={(s) => s.id}
+                        empty="—"
+                        columns={[
+                            {
+                                key: 'reason',
+                                header: t('Reason'),
+                                cell: (s) => (
+                                    <div>
+                                        <div>{s.reason}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {s.by} · {s.at}
+                                        </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'mode',
+                                header: t('Access'),
+                                cell: (s) => (
+                                    <Badge variant="outline">{s.mode}</Badge>
+                                ),
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (s) => (
+                                    <Badge
+                                        variant={
+                                            s.live ? 'default' : 'secondary'
+                                        }
+                                    >
+                                        {s.live ? t('In progress') : s.status}
+                                    </Badge>
+                                ),
+                            },
+                            {
+                                key: 'enter',
+                                header: '',
+                                align: 'right',
+                                cell: (s) =>
+                                    s.mine &&
+                                    s.live && (
+                                        <Button
+                                            size="sm"
+                                            onClick={() =>
+                                                router.post(
+                                                    SupportSessionController.enter.url(
+                                                        s.id,
+                                                    ),
+                                                )
+                                            }
+                                        >
+                                            {t('Enter')}
+                                        </Button>
+                                    ),
+                            },
+                        ]}
+                    />
+                </div>
             )}
-        </section>
+        </Section>
     );
 }
 
@@ -284,351 +336,507 @@ export default function HotelShow({
     can,
 }: Props) {
     const form = useForm({ body: '' });
+    const tabs = [
+        { key: 'overview', label: t('Overview') },
+        { key: 'staff', label: t('Staff'), count: staff.length },
+        { key: 'notes', label: t('Internal notes'), count: notes.length },
+        { key: 'history', label: t('Recent history') },
+        ...(can.support || can.lifecycle || can.manualWhatsApp
+            ? [{ key: 'support', label: t('Support and access') }]
+            : []),
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const wa = health.whatsapp;
 
     return (
         <>
             <Head title={hotel.name} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                    <Heading
-                        title={hotel.name}
-                        description={`${hotel.country} · ${hotel.currency} · ${hotel.timezone} · ${t('since :date', { date: hotel.created_at ?? '' })}`}
-                    />
-                    <Badge
-                        variant={
-                            health.status === 'suspended'
-                                ? 'destructive'
-                                : 'secondary'
-                        }
-                    >
-                        {health.status}
-                    </Badge>
-                    {issueLabels.map((l) => (
-                        <Badge key={l} variant="destructive">
-                            {l}
-                        </Badge>
-                    ))}
-                    <span className="ml-auto flex gap-3 text-sm">
-                        {can.manage && (
-                            <Link
-                                href={HotelController.edit(hotel.id)}
-                                className="underline"
-                            >
-                                {t('Edit')}
-                            </Link>
+            <PageBody>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-start gap-4">
+                        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-lg font-semibold text-brand">
+                            {hotel.name.charAt(0).toUpperCase()}
+                        </span>
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="font-display text-2xl font-extrabold tracking-tight">
+                                    {hotel.name}
+                                </h1>
+                                <Badge
+                                    variant={
+                                        health.status === 'suspended'
+                                            ? 'destructive'
+                                            : 'default'
+                                    }
+                                >
+                                    {health.status}
+                                </Badge>
+                            </div>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {hotel.country} · {hotel.currency} ·{' '}
+                                {hotel.timezone} ·{' '}
+                                {t('since :date', {
+                                    date: hotel.created_at ?? '',
+                                })}
+                            </p>
+                            {issueLabels.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                    {issueLabels.map((l) => (
+                                        <Badge key={l} variant="destructive">
+                                            {l}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {can.audit && (
+                            <Button variant="outline" asChild>
+                                <Link
+                                    href={AuditLogController.index({
+                                        query: { hotel: hotel.id },
+                                    })}
+                                >
+                                    <History /> {t('Full history')}
+                                </Link>
+                            </Button>
                         )}
                         {can.billing && (
-                            <Link
-                                href={PlatformBillingController.hotel(hotel.id)}
-                                className="underline"
-                            >
-                                {t('Billing')}
-                            </Link>
+                            <Button variant="outline" asChild>
+                                <Link
+                                    href={PlatformBillingController.hotel(
+                                        hotel.id,
+                                    )}
+                                >
+                                    <CreditCard /> {t('Billing')}
+                                </Link>
+                            </Button>
                         )}
-                        {can.audit && (
-                            <Link
-                                href={AuditLogController.index({
-                                    query: { hotel: hotel.id },
-                                })}
-                                className="underline"
-                            >
-                                {t('Full history')}
-                            </Link>
+                        {can.manage && (
+                            <Button asChild>
+                                <Link href={HotelController.edit(hotel.id)}>
+                                    <Pencil /> {t('Edit')}
+                                </Link>
+                            </Button>
                         )}
-                    </span>
+                    </div>
                 </div>
-
-                <div className="grid gap-4 text-sm md:grid-cols-3">
-                    <section className="rounded-xl border p-3">
-                        <Heading variant="small" title={t('Overview')} />
-                        <Row
-                            label={t('Owner')}
-                            value={
-                                hotel.owner
-                                    ? `${hotel.owner.name} · ${hotel.owner.email}`
-                                    : null
-                            }
-                        />
-                        <Row label={t('Phone')} value={hotel.owner?.phone} />
-                        <Row
-                            label={t('Signed up')}
-                            value={hotel.signup_source}
-                        />
-                        <Row
-                            label={t('Plan')}
-                            value={
-                                health.plan
-                                    ? `${health.plan} (${health.subscription_status})`
-                                    : null
-                            }
-                        />
-                        <Row
-                            label={t('Trial until')}
-                            value={health.trial_ends}
-                        />
-                        <Row label={t('Assistant')} value={health.mode} />
-                        <Row
-                            label={t('Setup')}
-                            value={`${health.setup.done}/${health.setup.total}`}
-                        />
-                    </section>
-                    <section className="rounded-xl border p-3">
-                        <Heading variant="small" title={t('Health')} />
-                        <Row
-                            label="WhatsApp"
-                            value={
-                                health.whatsapp
-                                    ? `${health.whatsapp.status} · ${health.whatsapp.phone ?? ''}`
-                                    : t('Not connected')
-                            }
-                        />
-                        <Row
-                            label={t('Quality / limit')}
-                            value={
-                                health.whatsapp
-                                    ? `${health.whatsapp.quality ?? '—'} / ${health.whatsapp.limit ?? '—'}`
-                                    : null
-                            }
-                        />
-                        <Row
-                            label={t('Last WhatsApp error')}
-                            value={health.whatsapp?.last_error}
-                        />
-                        <Row
-                            label={t('Last notification')}
-                            value={health.last_webhook}
-                        />
-                        <Row
-                            label={t('AI failures this month')}
-                            value={
-                                health.ai_failure_rate === null
-                                    ? null
-                                    : `${health.ai_failure_rate}%`
-                            }
-                        />
-                        <Row
-                            label={t('AI credits left')}
-                            value={credit(health.credits?.ai ?? null)}
-                        />
-                        <Row
-                            label={t('Email credits left')}
-                            value={credit(health.credits?.email ?? null)}
-                        />
-                    </section>
-                    <section className="rounded-xl border p-3">
-                        <Heading variant="small" title={t('This month')} />
-                        <Row
-                            label={t('Conversations')}
-                            value={health.usage.conversations_month}
-                        />
-                        <Row
-                            label={t('Messages')}
-                            value={health.usage.messages_month}
-                        />
-                        <Row
-                            label={t('Bookings')}
-                            value={health.usage.bookings_month}
-                        />
-                        <Row
-                            label={t('Passed to staff')}
-                            value={health.usage.handovers_month}
-                        />
-                    </section>
-                </div>
-
-                {can.manualWhatsApp && <ManualWhatsApp hotelId={hotel.id} />}
 
                 {closure && (
-                    <p className="rounded-lg border border-destructive px-3 py-2 text-sm text-destructive">
+                    <div
+                        role="alert"
+                        className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                    >
                         {t('Closed on :closed (:by). Data deleted on :date.', {
                             closed: closure.closed_at,
                             by: closure.by,
                             date: closure.delete_after,
                         })}{' '}
                         {closure.reason}
-                    </p>
-                )}
-                {can.lifecycle && (
-                    <div className="flex gap-2 text-sm">
-                        {closure ? (
-                            <>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                        router.post(
-                                            PlatformLifecycleController.reopen.url(
-                                                hotel.id,
-                                            ),
-                                            {},
-                                            { preserveScroll: true },
-                                        )
-                                    }
-                                >
-                                    {t('Reopen')}
-                                </Button>
-                                {closure.export && (
-                                    <a
-                                        href={AccountHotelsController.export.url(
-                                            hotel.id,
-                                        )}
-                                        className="self-center underline"
-                                    >
-                                        {t('Download all data')}
-                                    </a>
-                                )}
-                            </>
-                        ) : (
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                    const reason = window.prompt(
-                                        t('Close this hotel? Reason:'),
-                                    );
-                                    if (reason) {
-                                        router.post(
-                                            PlatformLifecycleController.close.url(
-                                                hotel.id,
-                                            ),
-                                            { reason },
-                                            { preserveScroll: true },
-                                        );
-                                    }
-                                }}
-                            >
-                                {t('Close hotel…')}
-                            </Button>
-                        )}
                     </div>
                 )}
-                {can.support && (
-                    <HelpThisHotel
-                        hotelId={hotel.id}
-                        sessions={supportSessions}
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile
+                        label={t('Setup')}
+                        value={`${health.setup.done}/${health.setup.total}`}
+                        hint={health.setup.complete ? t('Complete') : undefined}
                     />
+                    <StatTile
+                        label="WhatsApp"
+                        value={
+                            <span
+                                className={cn(
+                                    'text-base',
+                                    wa?.status === 'connected'
+                                        ? 'text-emerald-600'
+                                        : 'text-destructive',
+                                )}
+                            >
+                                {wa ? wa.status : t('Not connected')}
+                            </span>
+                        }
+                        hint={wa?.phone ?? undefined}
+                    />
+                    <StatTile
+                        label={t('Conversations this month')}
+                        value={health.usage.conversations_month}
+                        hint={t(':count bookings', {
+                            count: health.usage.bookings_month,
+                        })}
+                    />
+                    <StatTile
+                        label={t('AI credits left')}
+                        value={credit(health.credits?.ai ?? null)}
+                    />
+                </div>
+
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+
+                {tab === 'overview' && (
+                    <div className="grid gap-4 lg:grid-cols-3">
+                        <Card title={t('Account')}>
+                            <Row
+                                label={t('Owner')}
+                                value={
+                                    hotel.owner && (
+                                        <>
+                                            <div>{hotel.owner.name}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {hotel.owner.email}
+                                            </div>
+                                        </>
+                                    )
+                                }
+                            />
+                            <Row
+                                label={t('Phone')}
+                                value={hotel.owner?.phone}
+                            />
+                            <Row
+                                label={t('Signed up')}
+                                value={hotel.signup_source}
+                            />
+                            <Row
+                                label={t('Plan')}
+                                value={
+                                    health.plan
+                                        ? `${health.plan} (${health.subscription_status})`
+                                        : null
+                                }
+                            />
+                            <Row
+                                label={t('Trial until')}
+                                value={health.trial_ends}
+                            />
+                            <Row label={t('Assistant')} value={health.mode} />
+                        </Card>
+                        <Card title={t('Health')}>
+                            <Row
+                                label={t('Quality / limit')}
+                                value={
+                                    wa
+                                        ? `${wa.quality ?? '—'} / ${wa.limit ?? '—'}`
+                                        : null
+                                }
+                            />
+                            <Row
+                                label={t('Last WhatsApp error')}
+                                value={
+                                    wa?.last_error && (
+                                        <span className="text-destructive">
+                                            {wa.last_error}
+                                        </span>
+                                    )
+                                }
+                            />
+                            <Row
+                                label={t('Last notification')}
+                                value={health.last_webhook}
+                            />
+                            <Row
+                                label={t('AI failures this month')}
+                                value={
+                                    health.ai_failure_rate === null
+                                        ? null
+                                        : `${health.ai_failure_rate}%`
+                                }
+                            />
+                            <Row
+                                label={t('Email credits left')}
+                                value={credit(health.credits?.email ?? null)}
+                            />
+                        </Card>
+                        <Card title={t('This month')}>
+                            <Row
+                                label={t('Conversations')}
+                                value={health.usage.conversations_month}
+                            />
+                            <Row
+                                label={t('Messages')}
+                                value={health.usage.messages_month}
+                            />
+                            <Row
+                                label={t('Bookings')}
+                                value={health.usage.bookings_month}
+                            />
+                            <Row
+                                label={t('Passed to staff')}
+                                value={health.usage.handovers_month}
+                            />
+                        </Card>
+                    </div>
                 )}
 
-                <section className="flex flex-col gap-2 text-sm">
-                    <Heading
-                        variant="small"
+                {tab === 'staff' && (
+                    <Section flush title={t('Staff')}>
+                        <DataTable
+                            rows={staff}
+                            rowKey={(s) => s.email}
+                            empty={t('No staff yet.')}
+                            columns={[
+                                {
+                                    key: 'name',
+                                    header: t('Name'),
+                                    cell: (s) => (
+                                        <div>
+                                            <div className="font-medium">
+                                                {s.name}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {s.email}
+                                            </div>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (s) =>
+                                        s.status ? (
+                                            <Badge variant="outline">
+                                                {s.status}
+                                            </Badge>
+                                        ) : (
+                                            '—'
+                                        ),
+                                },
+                                {
+                                    key: 'login',
+                                    header: t('Last sign-in'),
+                                    cell: (s) => (
+                                        <span className="text-muted-foreground">
+                                            {s.last_login ?? t('Never')}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+
+                {tab === 'notes' && (
+                    <Section
                         title={t('Internal notes')}
                         description={t(
                             'Only the platform team sees these notes.',
                         )}
-                    />
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            form.post(
-                                HotelOverviewController.storeNote.url(hotel.id),
-                                {
-                                    preserveScroll: true,
-                                    onSuccess: () => form.reset(),
-                                },
-                            );
-                        }}
-                        className="flex gap-2"
                     >
-                        <textarea
-                            aria-label={t('Note')}
-                            className="min-h-14 flex-1 rounded-md border border-input bg-transparent px-3 py-2"
-                            value={form.data.body}
-                            onChange={(e) =>
-                                form.setData('body', e.target.value)
-                            }
-                        />
-                        <Button
-                            size="sm"
-                            disabled={
-                                form.processing || form.data.body.trim() === ''
-                            }
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                form.post(
+                                    HotelOverviewController.storeNote.url(
+                                        hotel.id,
+                                    ),
+                                    {
+                                        preserveScroll: true,
+                                        onSuccess: () => form.reset(),
+                                    },
+                                );
+                            }}
+                            className="grid gap-2"
                         >
-                            {t('Add note')}
-                        </Button>
-                    </form>
-                    <ul className="divide-y rounded-xl border">
-                        {notes.map((n) => (
-                            <li key={n.id} className="flex gap-2 px-3 py-2">
-                                <span className="flex-1 whitespace-pre-wrap">
-                                    {n.body}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {n.by} · {n.at}
-                                </span>
-                                {n.mine && (
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() =>
-                                            router.delete(
-                                                HotelOverviewController.destroyNote.url(
-                                                    {
-                                                        hotel: hotel.id,
-                                                        note: n.id,
-                                                    },
-                                                ),
-                                                { preserveScroll: true },
-                                            )
-                                        }
+                            <textarea
+                                aria-label={t('Note')}
+                                className="min-h-20"
+                                placeholder={t('Write a note for the team…')}
+                                value={form.data.body}
+                                onChange={(e) =>
+                                    form.setData('body', e.target.value)
+                                }
+                            />
+                            <div className="flex justify-end">
+                                <Button
+                                    size="sm"
+                                    disabled={
+                                        form.processing ||
+                                        form.data.body.trim() === ''
+                                    }
+                                >
+                                    {t('Add note')}
+                                </Button>
+                            </div>
+                        </form>
+                        {notes.length > 0 && (
+                            <ul className="mt-4 grid gap-3">
+                                {notes.map((n) => (
+                                    <li
+                                        key={n.id}
+                                        className="rounded-lg border bg-muted/30 px-4 py-3 text-sm"
                                     >
-                                        {t('Remove')}
-                                    </Button>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                </section>
+                                        <p className="whitespace-pre-wrap">
+                                            {n.body}
+                                        </p>
+                                        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                                            <span>
+                                                {n.by} · {n.at}
+                                            </span>
+                                            {n.mine && (
+                                                <button
+                                                    type="button"
+                                                    className="text-destructive hover:underline"
+                                                    onClick={() =>
+                                                        router.delete(
+                                                            HotelOverviewController.destroyNote.url(
+                                                                {
+                                                                    hotel: hotel.id,
+                                                                    note: n.id,
+                                                                },
+                                                            ),
+                                                            {
+                                                                preserveScroll: true,
+                                                            },
+                                                        )
+                                                    }
+                                                >
+                                                    {t('Remove')}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Section>
+                )}
 
-                <div className="grid gap-4 text-sm md:grid-cols-2">
-                    <section className="flex flex-col gap-2">
-                        <Heading variant="small" title={t('Staff')} />
-                        <ul className="divide-y rounded-xl border">
-                            {staff.map((s) => (
-                                <li
-                                    key={s.email}
-                                    className="flex flex-wrap gap-2 px-3 py-1.5"
+                {tab === 'history' && (
+                    <Section
+                        flush
+                        title={t('Recent history')}
+                        actions={
+                            can.audit && (
+                                <Link
+                                    href={AuditLogController.index({
+                                        query: { hotel: hotel.id },
+                                    })}
+                                    className="text-sm text-brand hover:underline"
                                 >
-                                    <span className="font-medium">
-                                        {s.name}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {s.email}
-                                    </span>
-                                    <span className="ml-auto text-xs text-muted-foreground">
-                                        {s.last_login
-                                            ? t('last login :date', {
-                                                  date: s.last_login,
-                                              })
-                                            : ''}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                    <section className="flex flex-col gap-2">
-                        <Heading variant="small" title={t('Recent history')} />
-                        <ul className="divide-y rounded-xl border">
-                            {history.map((h) => (
-                                <li
-                                    key={h.id}
-                                    className="flex flex-wrap gap-2 px-3 py-1.5"
-                                >
-                                    <span className="w-36 text-xs text-muted-foreground">
-                                        {h.at}
-                                    </span>
-                                    <span className="flex-1">
-                                        {h.description}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {h.by}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                </div>
-            </div>
+                                    {t('Full history')}
+                                </Link>
+                            )
+                        }
+                    >
+                        <DataTable
+                            rows={history}
+                            rowKey={(h) => h.id}
+                            empty={t('Nothing yet.')}
+                            columns={[
+                                {
+                                    key: 'what',
+                                    header: t('What'),
+                                    cell: (h) => h.description,
+                                },
+                                {
+                                    key: 'by',
+                                    header: t('By'),
+                                    cell: (h) => h.by ?? '—',
+                                },
+                                {
+                                    key: 'at',
+                                    header: t('When'),
+                                    cell: (h) => (
+                                        <span className="text-xs whitespace-nowrap text-muted-foreground">
+                                            {h.at}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+
+                {tab === 'support' && (
+                    <>
+                        {can.support && (
+                            <HelpThisHotel
+                                hotelId={hotel.id}
+                                sessions={supportSessions}
+                            />
+                        )}
+                        {can.manualWhatsApp && (
+                            <ManualWhatsApp hotelId={hotel.id} />
+                        )}
+                        {can.lifecycle && (
+                            <section className="rounded-xl border border-destructive/30 bg-card px-5 py-4">
+                                <h2 className="font-medium text-destructive">
+                                    {closure
+                                        ? t('Closed hotel')
+                                        : t('Close the hotel')}
+                                </h2>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {closure
+                                        ? t(
+                                              'Reopen it before the deletion date to keep its data.',
+                                          )
+                                        : t(
+                                              'Staff lose access at once; the data is kept for a while, then deleted.',
+                                          )}
+                                </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {closure ? (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    router.post(
+                                                        PlatformLifecycleController.reopen.url(
+                                                            hotel.id,
+                                                        ),
+                                                        {},
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                            >
+                                                {t('Reopen')}
+                                            </Button>
+                                            {closure.export && (
+                                                <Button variant="ghost" asChild>
+                                                    <a
+                                                        href={AccountHotelsController.export.url(
+                                                            hotel.id,
+                                                        )}
+                                                    >
+                                                        {t('Download all data')}
+                                                    </a>
+                                                </Button>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <Button
+                                            variant="destructive"
+                                            onClick={() => {
+                                                const reason = window.prompt(
+                                                    t(
+                                                        'Close this hotel? Reason:',
+                                                    ),
+                                                );
+                                                if (reason) {
+                                                    router.post(
+                                                        PlatformLifecycleController.close.url(
+                                                            hotel.id,
+                                                        ),
+                                                        { reason },
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            {t('Close hotel…')}
+                                        </Button>
+                                    )}
+                                </div>
+                            </section>
+                        )}
+                    </>
+                )}
+            </PageBody>
         </>
     );
 }

@@ -106,7 +106,13 @@ then `apt install -y supervisor redis-server` (if missing) and `supervisorctl re
 
 Check: `supervisorctl status`, and `https://<domain>/up` answers "OK". Errors are in `storage/logs/laravel.log`.
 
-Supervisor is required, not optional: `update.sh` stops Horizon at the end of every update (`horizon:terminate`) so it loads the new code, and only supervisor starts it again. Horizon started by hand (`nohup`, a terminal) stays stopped after the next update, logout or crash, and jobs pile up ("background jobs are waiting"). Do not also start Horizon from a cron line.
+Supervisor is required, not optional: `update.sh` stops Horizon at the end of every update (`horizon:terminate`) so it loads the new code, and only supervisor starts it again. Horizon started by hand (`nohup`, a terminal) stays stopped after the next update, logout or crash, and jobs pile up ("background jobs are waiting"). Use supervisor or the cron job below, never both.
+
+Without root (no supervisor): open the DigitalOcean Droplet Console (it logs in as root), or, as the site user, add this CloudPanel cron job every minute instead; `flock` keeps it to one Horizon and restarts it within a minute after an update or a crash:
+
+```
+cd /home/<site-user>/htdocs/<domain> && /usr/bin/flock -n /tmp/hotel-horizon.lock /usr/bin/php8.4 artisan horizon >> /home/<site-user>/logs/horizon.log 2>&1
+```
 
 **Email.** `MAIL_MAILER=platform` in `.env` (then `php8.4 artisan config:cache`), and enable a provider in Platform → Email providers. With `MAIL_MAILER=log` nothing is sent, even though a provider's "Send test" button works (it talks to the provider directly). `update.sh` and Platform → Operations warn about both.
 

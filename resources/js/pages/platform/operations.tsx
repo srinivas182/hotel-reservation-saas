@@ -1,10 +1,18 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { CircleCheck, TriangleAlert } from 'lucide-react';
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
 import OperationsController from '@/actions/App/Domains/Platform/Http/Controllers/OperationsController';
-import Heading from '@/components/heading';
+import {
+    DataTable,
+    PageBody,
+    PageHeader,
+    Section,
+    StatTile,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 type Props = {
     problems: { key: string; detail: string }[];
@@ -42,6 +50,21 @@ type Props = {
     }[];
 };
 
+const problemTitle = (key: string) =>
+    ({
+        queue_backlog: t('Background jobs are backing up'),
+        scheduler_stopped: t('The scheduler has stopped'),
+        queue_stopped: t('Background workers have stopped'),
+        webhook_silence: t('No WhatsApp notifications are arriving'),
+        webhook_failures: t('WhatsApp notifications are failing to process'),
+        ai_failures: t('AI providers are failing'),
+        whatsapp_failures: t('WhatsApp messages are failing to send'),
+        backup_missing: t('No recent successful backup'),
+        backup_failed: t('The last backup failed'),
+        restore_drill: t('The restore drill failed or is overdue'),
+        email_not_delivered: t('Emails are not being delivered'),
+    })[key] ?? key;
+
 export default function Operations({
     problems,
     incidents,
@@ -51,247 +74,345 @@ export default function Operations({
     backups,
     whatsapp,
 }: Props) {
+    const lastBackup = backups.find((b) => b.kind !== 'restore_drill');
+
     return (
         <>
             <Head title={t('Operations')} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('Operations')}
                     description={t(
                         'Live checks, background jobs, backups and WhatsApp connections.',
                     )}
                 />
 
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Checks')} />
-                    {problems.length === 0 ? (
-                        <p className="text-emerald-700 dark:text-emerald-400">
-                            {t('All checks pass.')}
-                        </p>
-                    ) : (
-                        problems.map((p) => (
-                            <p
-                                key={p.key}
-                                className="rounded-lg border border-destructive px-3 py-2 text-destructive"
-                            >
-                                <span className="font-mono text-xs">
-                                    {p.key}
-                                </span>{' '}
-                                · {p.detail}
-                            </p>
-                        ))
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                        {heartbeats.map((h) => (
-                            <Badge
-                                key={h.name}
-                                variant={h.ok ? 'secondary' : 'destructive'}
-                            >
-                                {h.name}:{' '}
-                                {h.ok
-                                    ? t('running')
-                                    : (h.detail ?? t('stopped'))}
-                            </Badge>
-                        ))}
-                        <Badge variant="outline">
-                            {t(':count jobs waiting', { count: waiting })}
-                        </Badge>
+                {problems.length === 0 ? (
+                    <div
+                        role="status"
+                        className="flex items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100"
+                    >
+                        <CircleCheck className="size-4 shrink-0" />
+                        {t('All checks pass.')}
                     </div>
-                </section>
-
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Failed jobs')} />
-                    {failed.length === 0 && (
-                        <p className="text-muted-foreground">
-                            {t('No failed jobs.')}
-                        </p>
-                    )}
-                    <ul className="divide-y rounded-xl border">
-                        {failed.map((f) => (
-                            <li
-                                key={f.uuid}
-                                className="flex flex-wrap items-center gap-2 px-3 py-2"
-                            >
-                                <span className="font-mono text-xs">
-                                    {f.job}
-                                </span>
-                                <span className="text-muted-foreground">
-                                    {f.queue}
-                                </span>
-                                <span className="flex-1 text-xs">
-                                    {f.error}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {f.failed_at}
-                                </span>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                        router.post(
-                                            OperationsController.retry.url(
-                                                f.uuid,
-                                            ),
-                                            {},
-                                            { preserveScroll: true },
-                                        )
-                                    }
+                ) : (
+                    <section
+                        role="alert"
+                        className="overflow-hidden rounded-xl border border-destructive/40 bg-card"
+                    >
+                        <h2 className="flex items-center gap-2 border-b border-destructive/30 bg-destructive/5 px-5 py-3 font-medium text-destructive">
+                            <TriangleAlert className="size-4" />
+                            {t(':count problem(s) need attention', {
+                                count: problems.length,
+                            })}
+                        </h2>
+                        <ul className="divide-y">
+                            {problems.map((p) => (
+                                <li
+                                    key={p.key}
+                                    className="grid gap-0.5 px-5 py-3"
                                 >
-                                    {t('Retry')}
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                        window.confirm(
-                                            t('Discard this job?'),
-                                        ) &&
-                                        router.delete(
-                                            OperationsController.forget.url(
-                                                f.uuid,
-                                            ),
-                                            { preserveScroll: true },
-                                        )
-                                    }
-                                >
-                                    {t('Discard')}
-                                </Button>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                    <section className="flex flex-col gap-2">
-                        <Heading variant="small" title={t('Backups')} />
-                        <ul className="divide-y rounded-xl border">
-                            {backups.map((b, i) => (
-                                <li key={i} className="flex gap-2 px-3 py-1.5">
-                                    <span>
-                                        {b.kind === 'restore_drill'
-                                            ? t('Restore drill')
-                                            : t('Backup')}
+                                    <span className="font-medium">
+                                        {problemTitle(p.key)}
                                     </span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {p.detail}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    {heartbeats.map((h) => (
+                        <StatTile
+                            key={h.name}
+                            label={
+                                h.name === 'scheduler'
+                                    ? t('Scheduler')
+                                    : h.name === 'queue'
+                                      ? t('Background workers')
+                                      : h.name
+                            }
+                            value={
+                                <span
+                                    className={
+                                        h.ok
+                                            ? 'text-emerald-600'
+                                            : 'text-destructive'
+                                    }
+                                >
+                                    {h.ok ? t('Running') : t('Stopped')}
+                                </span>
+                            }
+                            hint={h.ok ? undefined : (h.detail ?? undefined)}
+                        />
+                    ))}
+                    <StatTile label={t('Jobs waiting')} value={waiting} />
+                    <StatTile
+                        label={t('Last backup')}
+                        value={
+                            <span
+                                className={cn(
+                                    'text-base',
+                                    lastBackup?.status !== 'success' &&
+                                        'text-destructive',
+                                )}
+                            >
+                                {lastBackup?.at ?? t('None')}
+                            </span>
+                        }
+                        hint={lastBackup?.status}
+                    />
+                </div>
+
+                <Section
+                    flush
+                    title={t('Failed jobs')}
+                    description={t(
+                        'Jobs that failed after their retries. Retry once the cause is fixed.',
+                    )}
+                >
+                    <DataTable
+                        rows={failed}
+                        rowKey={(f) => f.uuid}
+                        empty={t('No failed jobs.')}
+                        columns={[
+                            {
+                                key: 'job',
+                                header: t('Job'),
+                                cell: (f) => (
+                                    <div>
+                                        <div className="font-mono text-xs">
+                                            {f.job}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {f.queue} · {f.failed_at}
+                                        </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'error',
+                                header: t('Error'),
+                                cell: (f) => (
+                                    <span
+                                        className="line-clamp-2 text-xs"
+                                        title={f.error}
+                                    >
+                                        {f.error}
+                                    </span>
+                                ),
+                            },
+                            {
+                                key: 'actions',
+                                header: '',
+                                align: 'right',
+                                cell: (f) => (
+                                    <div className="flex justify-end gap-1">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                                router.post(
+                                                    OperationsController.retry.url(
+                                                        f.uuid,
+                                                    ),
+                                                    {},
+                                                    { preserveScroll: true },
+                                                )
+                                            }
+                                        >
+                                            {t('Retry')}
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="text-destructive"
+                                            onClick={() =>
+                                                window.confirm(
+                                                    t('Discard this job?'),
+                                                ) &&
+                                                router.delete(
+                                                    OperationsController.forget.url(
+                                                        f.uuid,
+                                                    ),
+                                                    { preserveScroll: true },
+                                                )
+                                            }
+                                        >
+                                            {t('Discard')}
+                                        </Button>
+                                    </div>
+                                ),
+                            },
+                        ]}
+                    />
+                </Section>
+
+                <Section
+                    flush
+                    title={t('WhatsApp connections')}
+                    description={t(
+                        'Token, quality and sending limit of every connected number.',
+                    )}
+                >
+                    <DataTable
+                        rows={whatsapp}
+                        rowKey={(w) => w.hotel_id + (w.phone ?? '')}
+                        empty={t('No hotel has connected WhatsApp yet.')}
+                        columns={[
+                            {
+                                key: 'hotel',
+                                header: t('Hotel'),
+                                cell: (w) => (
+                                    <div>
+                                        <Link
+                                            href={HotelOverviewController.show(
+                                                w.hotel_id,
+                                            )}
+                                            className="font-medium hover:underline"
+                                        >
+                                            {w.hotel}
+                                        </Link>
+                                        <div className="text-xs text-muted-foreground tabular-nums">
+                                            {w.phone}
+                                        </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (w) => (
                                     <Badge
                                         variant={
-                                            b.status === 'success'
-                                                ? 'secondary'
+                                            w.status === 'connected'
+                                                ? 'default'
                                                 : 'destructive'
                                         }
                                     >
-                                        {b.status}
+                                        {w.status}
                                     </Badge>
-                                    <span className="text-muted-foreground">
-                                        {b.at}
-                                    </span>
-                                    {b.off_site && (
-                                        <span className="text-xs text-muted-foreground">
-                                            {t('off-site')}
-                                        </span>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                    <section className="flex flex-col gap-2">
-                        <Heading
-                            variant="small"
-                            title={t('Recent incidents')}
-                        />
-                        <ul className="divide-y rounded-xl border">
-                            {incidents.map((i) => (
-                                <li
-                                    key={i.id}
-                                    className="flex gap-2 px-3 py-1.5"
-                                >
-                                    <span className="flex-1">{i.title}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {i.opened}
-                                    </span>
-                                    {i.resolved ? (
-                                        <Badge variant="secondary">
-                                            {t('Resolved')}
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="destructive">
-                                            {t('Open')}
-                                        </Badge>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                </div>
-
-                <section className="flex flex-col gap-2">
-                    <Heading
-                        variant="small"
-                        title={t('WhatsApp connections')}
-                    />
-                    <div
-                        tabIndex={0}
-                        className="overflow-x-auto rounded-xl border"
-                    >
-                        <table className="w-full min-w-max text-left">
-                            <thead className="text-xs text-muted-foreground">
-                                <tr>
-                                    <th className="p-2">{t('Hotel')}</th>
-                                    <th className="p-2">{t('Number')}</th>
-                                    <th className="p-2">{t('Status')}</th>
-                                    <th className="p-2">
-                                        {t('Quality / limit')}
-                                    </th>
-                                    <th className="p-2">{t('Last error')}</th>
-                                    <th className="p-2">
-                                        {t('Token checked')}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {whatsapp.map((w) => (
-                                    <tr
-                                        key={w.hotel_id + (w.phone ?? '')}
-                                        className="border-t"
+                                ),
+                            },
+                            {
+                                key: 'quality',
+                                header: t('Quality / limit'),
+                                cell: (w) =>
+                                    `${w.quality ?? '—'} / ${w.limit ?? '—'}`,
+                            },
+                            {
+                                key: 'error',
+                                header: t('Last error'),
+                                cell: (w) => (
+                                    <span
+                                        className="line-clamp-1 text-xs text-destructive"
+                                        title={w.error ?? undefined}
                                     >
-                                        <td className="p-2">
-                                            <Link
-                                                href={HotelOverviewController.show(
-                                                    w.hotel_id,
-                                                )}
-                                                className="underline"
-                                            >
-                                                {w.hotel}
-                                            </Link>
-                                        </td>
-                                        <td className="p-2">{w.phone}</td>
-                                        <td className="p-2">
-                                            <Badge
-                                                variant={
-                                                    w.status === 'connected'
-                                                        ? 'secondary'
-                                                        : 'destructive'
-                                                }
-                                            >
-                                                {w.status}
+                                        {w.error ?? (
+                                            <span className="text-muted-foreground">
+                                                —
+                                            </span>
+                                        )}
+                                    </span>
+                                ),
+                            },
+                            {
+                                key: 'checked',
+                                header: t('Token checked'),
+                                cell: (w) => (
+                                    <span className="text-xs text-muted-foreground">
+                                        {w.checked ?? '—'}
+                                    </span>
+                                ),
+                            },
+                        ]}
+                    />
+                </Section>
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Section flush title={t('Backups')}>
+                        <DataTable
+                            rows={backups}
+                            rowKey={(b) => `${b.kind}-${b.at ?? ''}`}
+                            empty={t('No backup yet.')}
+                            columns={[
+                                {
+                                    key: 'kind',
+                                    header: t('Kind'),
+                                    cell: (b) =>
+                                        b.kind === 'restore_drill'
+                                            ? t('Restore drill')
+                                            : t('Backup'),
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (b) => (
+                                        <Badge
+                                            variant={
+                                                b.status === 'success'
+                                                    ? 'outline'
+                                                    : 'destructive'
+                                            }
+                                        >
+                                            {b.status}
+                                        </Badge>
+                                    ),
+                                },
+                                {
+                                    key: 'at',
+                                    header: t('When'),
+                                    cell: (b) => (
+                                        <span className="text-xs text-muted-foreground">
+                                            {b.at}
+                                            {b.off_site &&
+                                                ` · ${t('off-site')}`}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                    <Section flush title={t('Recent incidents')}>
+                        <DataTable
+                            rows={incidents}
+                            rowKey={(i) => i.id}
+                            empty={t('No incidents.')}
+                            columns={[
+                                {
+                                    key: 'title',
+                                    header: t('Incident'),
+                                    cell: (i) => (
+                                        <div>
+                                            <div>{i.title}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {i.opened}
+                                            </div>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (i) =>
+                                        i.resolved ? (
+                                            <Badge variant="outline">
+                                                {t('Resolved')}
                                             </Badge>
-                                        </td>
-                                        <td className="p-2">
-                                            {w.quality ?? '—'} /{' '}
-                                            {w.limit ?? '—'}
-                                        </td>
-                                        <td className="max-w-80 truncate p-2 text-xs">
-                                            {w.error}
-                                        </td>
-                                        <td className="p-2 text-xs">
-                                            {w.checked}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
+                                        ) : (
+                                            <Badge variant="destructive">
+                                                {t('Open')}
+                                            </Badge>
+                                        ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                </div>
+            </PageBody>
         </>
     );
 }

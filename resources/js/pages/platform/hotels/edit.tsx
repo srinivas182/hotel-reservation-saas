@@ -1,8 +1,18 @@
-import { Form, Head, router } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { UserPlus } from 'lucide-react';
+import { useState } from 'react';
 import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/HotelController';
 import HotelMemberController from '@/actions/App/Domains/Platform/Http/Controllers/HotelMemberController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
+import {
+    DataTable,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+} from '@/components/page';
 import type { HotelFormValues } from '@/components/platform/hotel-form';
 import { HotelForm } from '@/components/platform/hotel-form';
 import { StatusBadge } from '@/components/platform/status-badge';
@@ -31,6 +41,108 @@ type Props = {
     memberRoles: { value: string; label: string }[];
 };
 
+function AddMember({
+    hotelId,
+    memberRoles,
+    onDone,
+}: {
+    hotelId: string;
+    memberRoles: Props['memberRoles'];
+    onDone: () => void;
+}) {
+    return (
+        <Form
+            {...HotelMemberController.store.form(hotelId)}
+            options={{ preserveScroll: true }}
+            resetOnSuccess
+            onSuccess={onDone}
+            className="grid gap-4"
+        >
+            {({ processing, errors }) => (
+                <>
+                    <Field
+                        label={t('E-mail')}
+                        htmlFor="member-email"
+                        error={errors.email}
+                    >
+                        <Input
+                            id="member-email"
+                            name="email"
+                            type="email"
+                            autoComplete="off"
+                            required
+                        />
+                    </Field>
+                    <Field label={t('Role')} htmlFor="member-role">
+                        <select
+                            id="member-role"
+                            name="role"
+                            defaultValue="reception"
+                            className="h-9"
+                        >
+                            {memberRoles.map((role) => (
+                                <option key={role.value} value={role.value}>
+                                    {role.label}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                    <FieldGroup
+                        title={t('New account')}
+                        description={t(
+                            'Only for an e-mail without an account: the account is created with this name and password, and they sign in with them.',
+                        )}
+                    >
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Field
+                                label={t('First name')}
+                                htmlFor="member-first"
+                                error={errors.first_name}
+                            >
+                                <Input
+                                    id="member-first"
+                                    name="first_name"
+                                    autoComplete="off"
+                                />
+                            </Field>
+                            <Field
+                                label={t('Last name')}
+                                htmlFor="member-last"
+                                error={errors.last_name}
+                            >
+                                <Input
+                                    id="member-last"
+                                    name="last_name"
+                                    autoComplete="off"
+                                />
+                            </Field>
+                        </div>
+                        <Field
+                            label={t('Password')}
+                            htmlFor="member-password"
+                            error={errors.password}
+                        >
+                            <PasswordInput
+                                id="member-password"
+                                name="password"
+                                autoComplete="new-password"
+                            />
+                        </Field>
+                    </FieldGroup>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button type="button" variant="ghost" onClick={onDone}>
+                            {t('Cancel')}
+                        </Button>
+                        <Button disabled={processing}>
+                            {t('Add to hotel')}
+                        </Button>
+                    </div>
+                </>
+            )}
+        </Form>
+    );
+}
+
 export default function HotelsEdit({
     hotel,
     members,
@@ -41,191 +153,144 @@ export default function HotelsEdit({
     canManageMembers,
     memberRoles,
 }: Props) {
+    const [adding, setAdding] = useState(false);
+
     return (
         <>
             <Head title={hotel.name} />
-            <div className="flex max-w-3xl flex-col gap-10 p-4">
-                <section className="flex flex-col gap-6">
-                    <div className="flex items-start justify-between gap-4">
-                        <Heading
-                            title={hotel.name}
-                            description={t('Hotel details')}
-                        />
-                        <StatusBadge status={hotel.status} />
-                    </div>
-                    <HotelForm
-                        action={HotelController.update.form(hotel.id)}
-                        values={hotel}
-                        statuses={statuses}
-                        locales={locales}
-                        timezones={timezones}
-                        showStatus
-                        readOnly={!canUpdate}
-                        submitLabel={t('Save changes')}
-                    />
-                </section>
+            <PageBody>
+                <PageHeader
+                    title={hotel.name}
+                    description={t('Hotel details')}
+                    actions={
+                        <>
+                            <StatusBadge status={hotel.status} />
+                            <Button variant="outline" asChild>
+                                <Link
+                                    href={HotelOverviewController.show(
+                                        hotel.id,
+                                    )}
+                                >
+                                    {t('Hotel overview')}
+                                </Link>
+                            </Button>
+                        </>
+                    }
+                />
+                <HotelForm
+                    action={HotelController.update.form(hotel.id)}
+                    values={hotel}
+                    statuses={statuses}
+                    locales={locales}
+                    timezones={timezones}
+                    showStatus
+                    readOnly={!canUpdate}
+                    submitLabel={t('Save changes')}
+                />
 
-                <section className="flex flex-col gap-4">
-                    <Heading
-                        variant="small"
-                        title={t('Staff')}
-                        description={t('People who can work in this hotel.')}
-                    />
-
-                    <ul className="divide-y rounded-xl border">
-                        {members.length === 0 && (
-                            <li className="px-4 py-6 text-center text-sm text-muted-foreground">
-                                {t('No staff yet.')}
-                            </li>
-                        )}
-                        {members.map((member) => (
-                            <li
-                                key={member.id}
-                                className="flex items-center gap-3 px-4 py-3 text-sm"
-                            >
-                                <div className="min-w-0 flex-1">
-                                    <div className="truncate font-medium">
-                                        {member.name}
+                <Section
+                    flush
+                    title={t('Staff')}
+                    description={t('People who can work in this hotel.')}
+                    actions={
+                        canManageMembers && (
+                            <Button size="sm" onClick={() => setAdding(true)}>
+                                <UserPlus /> {t('Add to hotel')}
+                            </Button>
+                        )
+                    }
+                >
+                    <DataTable
+                        rows={members}
+                        rowKey={(m) => m.id}
+                        empty={t('No staff yet.')}
+                        columns={[
+                            {
+                                key: 'name',
+                                header: t('Name'),
+                                cell: (m) => (
+                                    <div>
+                                        <div className="font-medium">
+                                            {m.name}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {m.email}
+                                        </div>
                                     </div>
-                                    <div className="truncate text-muted-foreground">
-                                        {member.email}
+                                ),
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (m) => (
+                                    <div className="flex flex-wrap gap-1">
+                                        {m.is_owner && (
+                                            <Badge>{t('Owner')}</Badge>
+                                        )}
+                                        <Badge variant="outline">
+                                            {m.status}
+                                        </Badge>
                                     </div>
-                                </div>
-                                {member.is_owner && (
-                                    <Badge variant="secondary">
-                                        {t('Owner')}
-                                    </Badge>
-                                )}
-                                {member.status !== 'active' && (
-                                    <Badge variant="outline">
-                                        {member.status}
-                                    </Badge>
-                                )}
-                                {canManageMembers && !member.is_owner && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            if (
-                                                window.confirm(
-                                                    t(
-                                                        'Remove :name from this hotel?',
-                                                        { name: member.name },
-                                                    ),
-                                                )
-                                            ) {
-                                                router.delete(
-                                                    HotelMemberController.destroy.url(
+                                ),
+                            },
+                            {
+                                key: 'actions',
+                                header: '',
+                                align: 'right',
+                                cell: (m) =>
+                                    canManageMembers &&
+                                    !m.is_owner && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-destructive"
+                                            onClick={() => {
+                                                if (
+                                                    window.confirm(
+                                                        t(
+                                                            'Remove :name from this hotel?',
+                                                            { name: m.name },
+                                                        ),
+                                                    )
+                                                ) {
+                                                    router.delete(
+                                                        HotelMemberController.destroy.url(
+                                                            {
+                                                                hotel: hotel.id,
+                                                                user: m.id,
+                                                            },
+                                                        ),
                                                         {
-                                                            hotel: hotel.id,
-                                                            user: member.id,
+                                                            preserveScroll: true,
                                                         },
-                                                    ),
-                                                    { preserveScroll: true },
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        {t('Remove')}
-                                    </Button>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-
-                    {canManageMembers && (
-                        <Form
-                            {...HotelMemberController.store.form(hotel.id)}
-                            options={{ preserveScroll: true }}
-                            resetOnSuccess
-                            className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"
-                        >
-                            {({ processing, errors }) => (
-                                <>
-                                    <p className="text-xs text-muted-foreground sm:col-span-2">
-                                        {t(
-                                            'Add someone by e-mail. For a new e-mail, also enter the name and a password: the account is created and they sign in with them.',
-                                        )}
-                                    </p>
-                                    <div className="grid content-start gap-1.5">
-                                        <Input
-                                            name="email"
-                                            type="email"
-                                            autoComplete="off"
-                                            placeholder={t('E-mail')}
-                                            aria-label={t(
-                                                'Email of the user to add',
-                                            )}
-                                            required
-                                        />
-                                        <InputError message={errors.email} />
-                                    </div>
-                                    <PasswordInput
-                                        name="password"
-                                        autoComplete="new-password"
-                                        placeholder={t(
-                                            'Password (new account)',
-                                        )}
-                                        aria-label={t('Password (new account)')}
-                                    />
-                                    <div className="grid content-start gap-1.5">
-                                        <Input
-                                            name="first_name"
-                                            autoComplete="off"
-                                            placeholder={t(
-                                                'First name (new account)',
-                                            )}
-                                            aria-label={t(
-                                                'First name (new account)',
-                                            )}
-                                        />
-                                        <InputError
-                                            message={errors.first_name}
-                                        />
-                                    </div>
-                                    <div className="grid content-start gap-1.5">
-                                        <Input
-                                            name="last_name"
-                                            autoComplete="off"
-                                            placeholder={t(
-                                                'Last name (new account)',
-                                            )}
-                                            aria-label={t(
-                                                'Last name (new account)',
-                                            )}
-                                        />
-                                        <InputError
-                                            message={errors.last_name}
-                                        />
-                                    </div>
-                                    <InputError
-                                        className="sm:col-span-2"
-                                        message={errors.password}
-                                    />
-                                    <select
-                                        name="role"
-                                        aria-label={t('Role')}
-                                        defaultValue="reception"
-                                        className="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-xs"
-                                    >
-                                        {memberRoles.map((role) => (
-                                            <option
-                                                key={role.value}
-                                                value={role.value}
-                                            >
-                                                {role.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <Button disabled={processing}>
-                                        {t('Add to hotel')}
-                                    </Button>
-                                </>
-                            )}
-                        </Form>
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            {t('Remove')}
+                                        </Button>
+                                    ),
+                            },
+                        ]}
+                    />
+                </Section>
+            </PageBody>
+            {canManageMembers && (
+                <SidePanel
+                    open={adding}
+                    onClose={() => setAdding(false)}
+                    title={t('Add to hotel')}
+                    description={t(
+                        'Add someone by e-mail. For a new e-mail, also enter the name and a password: the account is created and they sign in with them.',
                     )}
-                </section>
-            </div>
+                >
+                    <AddMember
+                        hotelId={hotel.id}
+                        memberRoles={memberRoles}
+                        onDone={() => setAdding(false)}
+                    />
+                </SidePanel>
+            )}
         </>
     );
 }

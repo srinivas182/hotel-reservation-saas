@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import HotelController from '@/actions/App/Domains/Platform/Http/Controllers/HotelController';
-import Heading from '@/components/heading';
+import { PageBody, PageHeader } from '@/components/page';
 import { HotelForm } from '@/components/platform/hotel-form';
 import { t } from '@/lib/i18n';
 
@@ -20,8 +20,8 @@ export default function HotelsCreate({
     return (
         <>
             <Head title={t('New hotel')} />
-            <div className="flex max-w-3xl flex-col gap-6 p-4">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('New hotel')}
                     description={t(
                         'Hotels start on a trial. You can change the status after creating it.',
@@ -41,7 +41,7 @@ export default function HotelsCreate({
                     showStatus={false}
                     submitLabel={t('Create hotel')}
                 />
-            </div>
+            </PageBody>
         </>
     );
 }
