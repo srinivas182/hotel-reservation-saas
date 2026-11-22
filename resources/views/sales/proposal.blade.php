@@ -56,7 +56,7 @@
     @if ($p->discount_percent > 0)
         <p class="muted">{{ __(':percent% off the list price of :price.', ['percent' => $p->discount_percent, 'price' => $base]) }}</p>
     @endif
-    <p class="muted">{{ $includesTax ? __('Prices include VAT.') : __('Prices exclude VAT.') }} {{ __('WhatsApp messaging fees are billed by Meta directly to the hotel.') }}</p>
+    <p class="muted">{{ $includesTax ? __('Prices include VAT.') : __('Prices exclude VAT.') }} {{ __('WhatsApp messages you start are billed by Meta to your own account; replies to guests are free.') }}</p>
     <ul>@foreach ($features as $f)<li>{{ $f }}</li>@endforeach</ul>
 
     <h2>{{ __('Next step') }}</h2>

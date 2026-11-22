@@ -82,6 +82,19 @@ export default function WhatsAppConnection({ account, signup, errors }: Props) {
                     )}
                 />
 
+                <p className="rounded-xl border bg-card px-4 py-3 text-sm">
+                    <span className="font-medium">
+                        {t(
+                            'WhatsApp messages you start are billed by Meta to your own account; replies to guests are free.',
+                        )}
+                    </span>{' '}
+                    <span className="text-muted-foreground">
+                        {t(
+                            'Replies within 24 hours of a guest’s message cost nothing. Messages you start later (a confirmation the next day, reminders) use approved templates, paid with the card in your Meta account (WhatsApp Manager → Payment settings).',
+                        )}
+                    </span>
+                </p>
+
                 {connected && account && (
                     <section className="flex flex-col gap-3 rounded-xl border p-4 text-sm">
                         <div className="flex flex-wrap items-center gap-2">
