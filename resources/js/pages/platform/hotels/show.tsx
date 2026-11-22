@@ -450,7 +450,7 @@ export default function HotelShow({
                                 className={cn(
                                     'text-base',
                                     wa?.status === 'connected'
-                                        ? 'text-emerald-600'
+                                        ? 'text-emerald-700 dark:text-emerald-400'
                                         : 'text-destructive',
                                 )}
                             >

@@ -8,7 +8,13 @@
 import { router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import {
+    cloneElement,
+    isValidElement,
+    useEffect,
+    useId,
+    useState,
+} from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
@@ -124,7 +130,12 @@ export function Section({
     );
 }
 
-/** A label, its control, an optional hint and the error, always in that order. */
+/**
+ * A label, its control, an optional hint and the error, always in that
+ * order. The label is tied to the control: by `htmlFor`, or, when the child
+ * is a single element without an id, by an id given to it here (so screen
+ * readers and a click on the label reach the field).
+ */
 export function Field({
     label,
     hint,
@@ -140,6 +151,40 @@ export function Field({
     htmlFor?: string;
     children: ReactNode;
 }) {
+    const generated = useId();
+    const hintId = `${generated}-hint`;
+    let control = children;
+    let target = htmlFor;
+
+    if (
+        target === undefined &&
+        isValidElement<{ id?: string; 'aria-describedby'?: string }>(
+            children,
+        ) &&
+        typeof children.type === 'string' &&
+        ['input', 'select', 'textarea'].includes(children.type)
+    ) {
+        target = children.props.id ?? generated;
+        control = cloneElement(children, {
+            id: target,
+            'aria-describedby': hint ? hintId : undefined,
+        });
+    } else if (
+        target === undefined &&
+        isValidElement<{ id?: string; 'aria-describedby'?: string }>(
+            children,
+        ) &&
+        typeof children.type !== 'string' &&
+        children.props.id === undefined
+    ) {
+        // Components such as Input and PasswordInput pass the id on.
+        target = generated;
+        control = cloneElement(children, {
+            id: target,
+            'aria-describedby': hint ? hintId : undefined,
+        });
+    }
+
     return (
         <div
             className={cn(
@@ -147,12 +192,15 @@ export function Field({
                 className,
             )}
         >
-            <label htmlFor={htmlFor} className="text-xs font-medium">
+            <label htmlFor={target} className="text-xs font-medium">
                 {label}
             </label>
-            {children}
+            {control}
             {hint && (
-                <span className="text-xs leading-snug text-muted-foreground">
+                <span
+                    id={hintId}
+                    className="text-xs leading-snug text-muted-foreground"
+                >
                     {hint}
                 </span>
             )}

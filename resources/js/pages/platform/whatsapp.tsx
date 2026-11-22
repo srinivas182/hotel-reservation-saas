@@ -47,7 +47,7 @@ function Check({
         <li className="flex items-center justify-between gap-4 px-5 py-3">
             <span className="flex items-center gap-2">
                 {ok ? (
-                    <CircleCheck className="size-4 text-emerald-600" />
+                    <CircleCheck className="size-4 text-emerald-700 dark:text-emerald-400" />
                 ) : (
                     <CircleAlert className="size-4 text-destructive" />
                 )}
@@ -98,7 +98,7 @@ export default function PlatformWhatsApp({
                             <span
                                 className={
                                     ready
-                                        ? 'text-emerald-600'
+                                        ? 'text-emerald-700 dark:text-emerald-400'
                                         : 'text-destructive'
                                 }
                             >

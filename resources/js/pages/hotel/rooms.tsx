@@ -601,9 +601,6 @@ export default function Rooms({
                                                 onClick={() =>
                                                     setRoomId(room.id)
                                                 }
-                                                aria-label={t('Room :number', {
-                                                    number: room.number,
-                                                })}
                                                 className="flex w-full flex-col items-start gap-1 rounded-lg border bg-background px-3 py-2 text-left transition-colors hover:border-brand/50 hover:bg-muted/40"
                                             >
                                                 <span className="flex w-full items-center justify-between gap-2">

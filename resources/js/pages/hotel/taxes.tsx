@@ -1,8 +1,15 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import TaxRateController from '@/actions/App/Domains/Finance/Http/Controllers/TaxRateController';
-import Heading from '@/components/heading';
+import {
+    DataTable,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+} from '@/components/page';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -120,10 +127,7 @@ function TaxForm({
     };
 
     return (
-        <form
-            onSubmit={submit}
-            className="flex flex-col gap-4 rounded-xl border p-4"
-        >
+        <form onSubmit={submit} className="flex flex-col gap-5">
             <div className="grid gap-4 sm:grid-cols-2">
                 {props.locales.map((locale) => (
                     <div key={locale} className="grid gap-2">
@@ -301,12 +305,12 @@ function TaxForm({
                 </label>
             </div>
 
-            <div className="flex gap-2">
-                <Button disabled={processing}>
-                    {rate ? t('Save tax') : t('Add tax')}
-                </Button>
+            <div className="flex justify-end gap-2 border-t pt-4">
                 <Button type="button" variant="ghost" onClick={onDone}>
                     {t('Cancel')}
+                </Button>
+                <Button disabled={processing}>
+                    {rate ? t('Save tax') : t('Add tax')}
                 </Button>
             </div>
         </form>
@@ -331,123 +335,143 @@ export default function Taxes(props: Props) {
     return (
         <>
             <Head title={t('Taxes')} />
-            <div className="flex max-w-4xl flex-col gap-8 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <Heading
-                        title={t('Taxes')}
-                        description={t(
-                            'VAT, tourist tax and service charges applied to your prices.',
-                        )}
+            <PageBody>
+                <PageHeader
+                    title={t('Taxes')}
+                    description={t(
+                        'VAT, tourist tax and service charges applied to your prices.',
+                    )}
+                    actions={
+                        canManage && (
+                            <Button onClick={() => setEditing('new')}>
+                                <Plus /> {t('Add tax')}
+                            </Button>
+                        )
+                    }
+                />
+
+                <Section
+                    flush
+                    title={t('Taxes')}
+                    description={
+                        canManage ? t('Click a tax to edit it.') : undefined
+                    }
+                >
+                    <DataTable
+                        rows={rates}
+                        rowKey={(r) => r.id}
+                        empty={t('No taxes yet.')}
+                        onRowClick={
+                            canManage ? (r) => setEditing(r.id) : undefined
+                        }
+                        columns={[
+                            {
+                                key: 'name',
+                                header: t('Tax'),
+                                cell: (r) => (
+                                    <div>
+                                        <div className="font-medium">
+                                            {r.display_name}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {r.type_label}
+                                        </div>
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'rate',
+                                header: t('Rate'),
+                                align: 'right',
+                                cell: (r) => (
+                                    <span className="font-semibold">
+                                        {r.percentage !== null
+                                            ? `${r.percentage}%`
+                                            : r.amount_display}
+                                    </span>
+                                ),
+                            },
+                            {
+                                key: 'scope',
+                                header: t('Applies to'),
+                                cell: (r) =>
+                                    r.applies_to
+                                        .map(
+                                            (x) =>
+                                                scopes.find(
+                                                    (o) => o.value === x,
+                                                )?.label ?? x,
+                                        )
+                                        .join(', '),
+                            },
+                            {
+                                key: 'status',
+                                header: t('Status'),
+                                cell: (r) => (
+                                    <div className="flex flex-wrap gap-1">
+                                        <Badge variant="outline">
+                                            {r.inclusive
+                                                ? t('Included')
+                                                : t('Added on top')}
+                                        </Badge>
+                                        {!r.active && (
+                                            <Badge variant="secondary">
+                                                {t('Inactive')}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                ),
+                            },
+                            ...(canManage
+                                ? [
+                                      {
+                                          key: 'delete',
+                                          header: '',
+                                          align: 'right' as const,
+                                          cell: (r: Rate) => (
+                                              <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-destructive"
+                                                  onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (
+                                                          window.confirm(
+                                                              t(
+                                                                  'Delete :name?',
+                                                                  {
+                                                                      name: r.display_name,
+                                                                  },
+                                                              ),
+                                                          )
+                                                      ) {
+                                                          router.delete(
+                                                              TaxRateController.destroy.url(
+                                                                  r.id,
+                                                              ),
+                                                              {
+                                                                  preserveScroll: true,
+                                                              },
+                                                          );
+                                                      }
+                                                  }}
+                                              >
+                                                  {t('Delete')}
+                                              </Button>
+                                          ),
+                                      },
+                                  ]
+                                : []),
+                        ]}
                     />
-                    {canManage && editing === null && (
-                        <Button onClick={() => setEditing('new')}>
-                            {t('Add tax')}
-                        </Button>
-                    )}
-                </div>
+                </Section>
 
-                {editing === 'new' && (
-                    <TaxForm props={props} onDone={() => setEditing(null)} />
-                )}
-
-                <ul className="flex flex-col gap-3">
-                    {rates.length === 0 && (
-                        <li className="rounded-xl border px-4 py-8 text-center text-sm text-muted-foreground">
-                            {t('No taxes yet.')}
-                        </li>
+                <Section
+                    title={t('Try it')}
+                    description={t(
+                        "See how today's active taxes apply to a price.",
                     )}
-                    {rates.map((rate) =>
-                        editing === rate.id ? (
-                            <li key={rate.id}>
-                                <TaxForm
-                                    props={props}
-                                    rate={rate}
-                                    onDone={() => setEditing(null)}
-                                />
-                            </li>
-                        ) : (
-                            <li
-                                key={rate.id}
-                                className="flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm"
-                            >
-                                <div className="min-w-0 flex-1">
-                                    <div className="font-medium">
-                                        {rate.display_name}
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                        {rate.percentage !== null
-                                            ? `${rate.percentage}%`
-                                            : rate.amount_display}{' '}
-                                        · {rate.type_label} ·{' '}
-                                        {rate.applies_to
-                                            .map(
-                                                (s) =>
-                                                    scopes.find(
-                                                        (o) => o.value === s,
-                                                    )?.label ?? s,
-                                            )
-                                            .join(', ')}
-                                    </div>
-                                </div>
-                                <Badge variant="outline">
-                                    {rate.inclusive
-                                        ? t('Included')
-                                        : t('Added on top')}
-                                </Badge>
-                                {!rate.active && (
-                                    <Badge variant="secondary">
-                                        {t('Inactive')}
-                                    </Badge>
-                                )}
-                                {canManage && (
-                                    <div className="flex gap-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setEditing(rate.id)}
-                                        >
-                                            {t('Edit')}
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-destructive"
-                                            onClick={() => {
-                                                if (
-                                                    window.confirm(
-                                                        t('Delete :name?', {
-                                                            name: rate.display_name,
-                                                        }),
-                                                    )
-                                                ) {
-                                                    router.delete(
-                                                        TaxRateController.destroy.url(
-                                                            rate.id,
-                                                        ),
-                                                        {
-                                                            preserveScroll: true,
-                                                        },
-                                                    );
-                                                }
-                                            }}
-                                        >
-                                            {t('Delete')}
-                                        </Button>
-                                    </div>
-                                )}
-                            </li>
-                        ),
-                    )}
-                </ul>
-
-                <section className="flex flex-col gap-4 rounded-xl border p-4">
-                    <Heading
-                        variant="small"
-                        title={t('Try it')}
-                        description={t(
-                            "See how today's active taxes apply to a price.",
-                        )}
-                    />
+                >
                     <form
                         onSubmit={runPreview}
                         className="grid gap-3 sm:grid-cols-5 sm:items-end"
@@ -561,8 +585,27 @@ export default function Taxes(props: Props) {
                             </div>
                         </dl>
                     )}
-                </section>
-            </div>
+                </Section>
+            </PageBody>
+            <SidePanel
+                open={editing !== null}
+                onClose={() => setEditing(null)}
+                title={
+                    editing === 'new'
+                        ? t('Add tax')
+                        : (rates.find((r) => r.id === editing)?.display_name ??
+                          '')
+                }
+            >
+                {editing !== null && (
+                    <TaxForm
+                        key={editing}
+                        props={props}
+                        rate={rates.find((r) => r.id === editing)}
+                        onDone={() => setEditing(null)}
+                    />
+                )}
+            </SidePanel>
         </>
     );
 }

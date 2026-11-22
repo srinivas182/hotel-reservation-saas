@@ -140,6 +140,7 @@ export default function BookingsIndex({
                                 <Input
                                     className="pl-9"
                                     type="search"
+                                    aria-label={t('Search bookings')}
                                     placeholder={t('Reference, name or phone')}
                                     value={form.search}
                                     onChange={(e) =>

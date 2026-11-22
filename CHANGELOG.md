@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-### Professional layout: hotel Bookings, Rates, Rooms, Discount codes; CloudPanel backups (0.34.0)
+### Professional layout: hotel Bookings, Rates, Rooms, Discount codes, Taxes, Settings, Deposits; CloudPanel backups (0.34.0)
 
 #### Changed
 
@@ -12,7 +12,14 @@ All notable changes to this project are documented here. The format follows [Kee
 - Rates: tabs Room rates, Date overrides and Pricing settings. Rates are a table (per night, extra adult and child, breakfast, minimum nights); a category opens in a side panel grouped into room price, extra people and breakfast. Overrides are a table with their rules as badges; weekdays are pills, Stop sale and No arrivals are switches with a line of help. "Try a stay" sits under the rates.
 - Rooms: number tiles (rooms, in service, sellable tonight, categories) and each category as a grid of room tiles with a status dot; a room opens in a side panel (status, category, closed dates, remove). Adding rooms and categories happens in side panels.
 - Discount codes: tiles (active codes, bookings with a code, discount given), a table and a side-panel editor.
+- Taxes: a table (rate, what it applies to, included or added) with a side-panel editor; "Try it" in its own card.
+- Hotel settings: grouped into cards (Hotel, Contact, Operations, Regional, appearance, sender e-mail) with a line of help each.
+- Deposits: tiles (received, waiting, refunds, by method), refunds to make in a highlighted card, tables for waiting and paid deposits; the month and the export sit in the header; the payment account and the rules move to an "Account and rules" tab.
 - Page headers keep their buttons on the right even with a long description.
+
+#### Fixed
+
+- Accessibility: every field label is now tied to its control (screen readers and a click on the label), the help line is announced with the field; the room tiles, the pilot table on phones and two green status words met the contrast and naming rules again.
 
 #### Added
 

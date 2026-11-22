@@ -178,7 +178,7 @@ export default function Pilot({
                                 className={
                                     incidents.length > 0
                                         ? 'text-destructive'
-                                        : 'text-emerald-600'
+                                        : 'text-emerald-700 dark:text-emerald-400'
                                 }
                             >
                                 {incidents.length}
@@ -238,7 +238,12 @@ export default function Pilot({
                     {hotels.length === 0 ? (
                         <EmptyState text={t('No hotels found.')} />
                     ) : (
-                        <div className="overflow-x-auto">
+                        <div
+                            tabIndex={0}
+                            role="region"
+                            aria-label={t('Pilot hotels side by side')}
+                            className="overflow-x-auto"
+                        >
                             <table className="w-full min-w-[36rem] text-sm">
                                 <thead>
                                     <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
