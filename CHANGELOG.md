@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### WhatsApp fees, said plainly (0.31.1)
+
+#### Changed
+
+- One sentence everywhere: "WhatsApp messages you start are billed by Meta to your own account; replies to guests are free."
+    - It appears on the website's pricing sections, on sales proposals and in the help article about billing.
+    - It also appears at the top of **Hotel → WhatsApp**, with a short note: replies within 24 hours cost nothing, and messages started later use templates paid with the card in the hotel's Meta account.
+
 ### Pay now or pay at the hotel, discount codes (0.31.0)
 
 #### Added
