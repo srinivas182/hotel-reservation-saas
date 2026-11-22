@@ -49,6 +49,7 @@ const FIELD_LABELS: Record<string, string> = {
     apikey: 'API key',
     site_id: 'Site ID',
     secret_key: 'Secret key',
+    webhook_secret: 'Webhook signing secret (whsec_…)',
 };
 
 const selectClass =
@@ -226,6 +227,13 @@ function AccountForm({
                 <p className="text-xs text-muted-foreground">
                     {t('Notification address to give your provider:')}{' '}
                     <code className="break-all">{account.notify_url}</code>
+                    {account.driver === 'stripe' && (
+                        <span className="block">
+                            {t(
+                                'Stripe: Developers → Webhooks → Add endpoint with this address and the events checkout.session.completed and checkout.session.expired; then paste its signing secret above.',
+                            )}
+                        </span>
+                    )}
                     {account.checked_at && (
                         <span className="block">
                             {account.last_error

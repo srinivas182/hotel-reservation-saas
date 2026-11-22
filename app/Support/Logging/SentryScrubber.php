@@ -20,7 +20,7 @@ final class SentryScrubber
         if ($request !== []) {
             unset($request['data'], $request['cookies']);
             if (isset($request['headers']) && is_array($request['headers'])) {
-                $request['headers'] = array_diff_key(array_change_key_case($request['headers']), array_flip(['cookie', 'authorization', 'x-xsrf-token', 'x-csrf-token', 'x-hub-signature-256', 'x-paystack-signature', 'verif-hash']));
+                $request['headers'] = array_diff_key(array_change_key_case($request['headers']), array_flip(['cookie', 'authorization', 'x-xsrf-token', 'x-csrf-token', 'x-hub-signature-256', 'x-paystack-signature', 'stripe-signature', 'verif-hash']));
             }
             if (isset($request['query_string']) && is_string($request['query_string'])) {
                 $request['query_string'] = RedactSensitiveData::redact($request['query_string']);

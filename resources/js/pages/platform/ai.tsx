@@ -180,6 +180,13 @@ function ProviderForm({
     );
 }
 
+type CatalogModel = {
+    id: string;
+    label: string;
+    capabilities: string[];
+    added: boolean;
+};
+
 function ModelForm({
     model,
     providers,
@@ -202,6 +209,52 @@ function ModelForm({
         audio_cost: model?.audio_cost ?? 0,
     });
     const errors = form.errors as Record<string, string | undefined>;
+    const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    const loadModels = async () => {
+        setLoading(true);
+        setLoadError(null);
+        try {
+            const response = await fetch(
+                AiController.providerModels.url(form.data.ai_provider_id),
+                {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                },
+            );
+            const body = (await response.json()) as {
+                models?: CatalogModel[];
+                message?: string;
+            };
+            if (!response.ok || !body.models) {
+                setLoadError(
+                    body.message ?? t('The models could not be loaded.'),
+                );
+                setCatalog(null);
+            } else {
+                setCatalog(body.models);
+            }
+        } catch {
+            setLoadError(t('The models could not be loaded.'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const pick = (id: string) => {
+        const found = catalog?.find((m) => m.id === id);
+        if (!found) {
+            return;
+        }
+        form.setData((data) => ({
+            ...data,
+            model: found.id,
+            label: data.label === '' ? found.label : data.label,
+            capabilities: found.capabilities,
+        }));
+    };
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -233,9 +286,10 @@ function ModelForm({
                     id="m-provider"
                     className={selectClass}
                     value={form.data.ai_provider_id}
-                    onChange={(e) =>
-                        form.setData('ai_provider_id', Number(e.target.value))
-                    }
+                    onChange={(e) => {
+                        form.setData('ai_provider_id', Number(e.target.value));
+                        setCatalog(null);
+                    }}
                 >
                     {providers.map((p) => (
                         <option key={p.id} value={p.id}>
@@ -246,12 +300,50 @@ function ModelForm({
             </div>
             <div className="grid gap-1">
                 <Label htmlFor="m-model">{t('Model ID')}</Label>
-                <Input
-                    id="m-model"
-                    value={form.data.model}
-                    onChange={(e) => form.setData('model', e.target.value)}
-                />
-                <InputError message={errors.model} />
+                {catalog && catalog.length > 0 ? (
+                    <select
+                        id="m-model"
+                        className={selectClass}
+                        value={form.data.model}
+                        onChange={(e) => pick(e.target.value)}
+                    >
+                        <option value="">{t('Choose a model…')}</option>
+                        {catalog.map((m) => (
+                            <option key={m.id} value={m.id}>
+                                {m.label === m.id
+                                    ? m.id
+                                    : `${m.label} (${m.id})`}
+                                {m.added ? ` · ${t('added')}` : ''}
+                            </option>
+                        ))}
+                    </select>
+                ) : (
+                    <Input
+                        id="m-model"
+                        value={form.data.model}
+                        onChange={(e) => form.setData('model', e.target.value)}
+                    />
+                )}
+                {!model && (
+                    <button
+                        type="button"
+                        className="w-fit text-xs text-brand-ink underline disabled:opacity-50"
+                        disabled={loading || !form.data.ai_provider_id}
+                        onClick={loadModels}
+                    >
+                        {loading
+                            ? t('Loading models…')
+                            : catalog
+                              ? t('Reload the list')
+                              : t('Load models from the provider')}
+                    </button>
+                )}
+                {catalog && catalog.length === 0 && (
+                    <span className="text-xs text-muted-foreground">
+                        {t('The provider returned no usable models.')}
+                    </span>
+                )}
+                <InputError message={loadError ?? errors.model} />
             </div>
             <div className="grid gap-1">
                 <Label htmlFor="m-label">{t('Label')}</Label>

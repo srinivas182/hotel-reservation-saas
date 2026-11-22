@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Deposits;
 
+use App\Domains\Billing\Payments\Drivers\Stripe;
 use App\Domains\Deposits\Models\MerchantAccount;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -24,6 +25,10 @@ final class MerchantCheck
     {
         if ($account->driver === 'simulation') {
             return null;
+        }
+
+        if ($account->driver === 'stripe') {
+            return (new Stripe($account))->check();
         }
 
         try {

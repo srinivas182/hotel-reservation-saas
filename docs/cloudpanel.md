@@ -118,6 +118,10 @@ Simulation and real WhatsApp work side by side: only the simulated demo numbers 
 4. Answers stay simulated while `SIMULATION_FAKE_AI=true` (the default). For real AI answers: add a provider in Platform → AI, set `SIMULATION_FAKE_AI=false`, `php8.4 artisan optimize`.
 5. A hotel's own number, later: `WHATSAPP_CONFIG_ID` (Facebook Login for Business → Configurations → WhatsApp Embedded Signup) and the hotel connects from Hotel → WhatsApp.
 
+**AI answers:** Platform → AI → Add provider (OpenAI recommended: one key covers chat and voice notes) → Add model → **Load models from the provider**: pick a chat model (chat + tools) and a speech model (`gpt-4o-transcribe` or `whisper-1`, transcription) → Run test suite → set them as main models. Then `SIMULATION_FAKE_AI=false` and `php8.4 artisan optimize`.
+
+**Card payments in test mode (Stripe):** Platform → Billing → Payment gateways → Add → Stripe, mode Test, the `sk_test_…` secret key, currencies `XOF`. In Stripe (test mode): Developers → Webhooks → Add endpoint, the URL shown under the form, events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`; paste its signing secret (`whsec_…`). Test card `4242 4242 4242 4242`, any future date, any CVC. A hotel can take card deposits the same way in Hotel → Deposits (its own Stripe account and webhook).
+
 Manual connection is for super admins only and is off in production unless `WHATSAPP_MANUAL_CONNECT=true`.
 
 ---

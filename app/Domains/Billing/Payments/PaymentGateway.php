@@ -8,6 +8,7 @@ use App\Domains\Billing\Payments\Drivers\CinetPay;
 use App\Domains\Billing\Payments\Drivers\Flutterwave;
 use App\Domains\Billing\Payments\Drivers\PayDunya;
 use App\Domains\Billing\Payments\Drivers\Paystack;
+use App\Domains\Billing\Payments\Drivers\Stripe;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -31,6 +32,7 @@ class PaymentGateway extends Model implements PaymentCredentials
         'flutterwave' => ['label' => 'Flutterwave', 'fields' => ['secret_key', 'webhook_hash']],
         'cinetpay' => ['label' => 'CinetPay', 'fields' => ['apikey', 'site_id', 'secret_key']],
         'paydunya' => ['label' => 'PayDunya', 'fields' => ['master_key', 'private_key', 'token']],
+        'stripe' => ['label' => 'Stripe (cards)', 'fields' => ['secret_key', 'webhook_secret']],
     ];
 
     protected $guarded = ['id'];
@@ -52,6 +54,7 @@ class PaymentGateway extends Model implements PaymentCredentials
             'flutterwave' => new Flutterwave($this),
             'cinetpay' => new CinetPay($this),
             'paydunya' => new PayDunya($this),
+            'stripe' => new Stripe($this),
             default => throw new \InvalidArgumentException("Unknown payment driver {$this->driver}."),
         };
     }
