@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Professional layout: platform admin pages (0.33.0)
+
+#### Changed
+
+- Platform home, Hotels, Users, Sign-ups, Leads, WhatsApp, Email providers, Audit log, Service status, Support requests, What's new and ideas, Feature switches and Announcements now share one layout: a page header with the main action, number tiles, tabs where a page is long, clean tables, and records created or edited in a side panel instead of forms stacked down the page.
+- Sign-ups is split into tabs (New hotels, Invitation codes, Country templates, Legal texts, Settings); Support into Requests, Saved replies and Settings; What's new into Release notes and Ideas.
+- Leads shows the sales pipeline as clickable tiles; a lead opens in a side panel with contact details, follow-up, proposals and the return-on-investment form. Demo and proposal links get a Copy button.
+- Audit log: filters in one bar, the details of an entry open in a side panel (readable JSON), page arrows.
+- On phones, every table becomes a list of cards (no more sideways scrolling).
+- New shared blocks: on/off pills (ChipSelect), choice cards, search box and pagination.
+
+#### Added
+
+- Operations check "Emails are not being delivered": raised outside local and tests when MAIL_MAILER is not `platform`, or when no email provider is enabled and the fallback only writes to the log. The provider's "Send test" button talks to the provider directly, so a passing test did not prove that invitations and password resets go out.
+- `update.sh` ends with warnings when `MAIL_MAILER` is not `platform` or Horizon is not running after the update; docs/cloudpanel.md explains why supervisor is required (the update stops Horizon and only supervisor starts it again).
+
 ### Professional page layout: Billing and AI (0.32.0)
 
 #### Added

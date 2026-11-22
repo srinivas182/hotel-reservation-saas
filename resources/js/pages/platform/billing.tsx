@@ -782,7 +782,7 @@ export default function PlatformBilling({
 
                 {tab === 'overview' && (
                     <>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                             {Object.entries(report.mrr).length === 0 && (
                                 <StatTile
                                     label={t('Monthly revenue')}

@@ -12,7 +12,10 @@ test.describe('platform', () => {
             page.getByRole('heading', { name: 'Accueil plateforme' }),
         ).toBeVisible();
         await expect(
-            page.getByText('Demande la mise en service').first(),
+            page
+                .getByText('Demande la mise en service')
+                .filter({ visible: true })
+                .first(),
         ).toBeVisible();
         await expectAccessible(page);
 

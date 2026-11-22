@@ -7,6 +7,7 @@ namespace App\Domains\Operations;
 use App\Domains\Ai\Models\AiRun;
 use App\Domains\Conversations\MessageStatus;
 use App\Domains\Conversations\Models\Message;
+use App\Domains\Messaging\Email\Models\MailProvider;
 use App\Domains\Operations\Mail\OpsAlertMail;
 use App\Domains\Platform\Health\HeartbeatCheck;
 use App\Domains\Tenancy\TenantContext;
@@ -49,6 +50,7 @@ final class OpsCheck
         $problems += $this->webhooks();
         $problems += $this->failureRates();
         $problems += $this->backups();
+        $problems += $this->email();
 
         return $problems;
     }
@@ -98,6 +100,7 @@ final class OpsCheck
             'backup_missing' => 'No recent successful backup',
             'backup_failed' => 'The last backup failed',
             'restore_drill' => 'The restore drill failed or is overdue',
+            'email_not_delivered' => 'Emails are not being delivered',
             default => $key,
         };
     }
@@ -179,6 +182,34 @@ final class OpsCheck
         }
 
         return $problems;
+    }
+
+    /**
+     * Emails (invitations, password resets, alerts) only reach people through
+     * the platform mailer and an enabled provider. The "Send test" button
+     * talks to the provider directly, so a passing test does not prove it.
+     *
+     * @return array<string, string>
+     */
+    public function email(): array
+    {
+        if (app()->environment('local', 'testing')) {
+            return [];
+        }
+
+        $mailer = (string) config('mail.default');
+
+        if ($mailer !== 'platform') {
+            return ['email_not_delivered' => "Emails use the \"{$mailer}\" mailer instead of the email providers: set MAIL_MAILER=platform in .env, then run php artisan config:cache."];
+        }
+
+        $fallback = (string) config('mail.platform_fallback');
+
+        if (in_array($fallback, ['log', 'array'], true) && ! MailProvider::query()->where('enabled', true)->exists()) {
+            return ['email_not_delivered' => 'No email provider is enabled, so emails are only written to the log: enable one in Platform → Email providers.'];
+        }
+
+        return [];
     }
 
     public function queueSize(): int

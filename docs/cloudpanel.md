@@ -106,6 +106,10 @@ then `apt install -y supervisor redis-server` (if missing) and `supervisorctl re
 
 Check: `supervisorctl status`, and `https://<domain>/up` answers "OK". Errors are in `storage/logs/laravel.log`.
 
+Supervisor is required, not optional: `update.sh` stops Horizon at the end of every update (`horizon:terminate`) so it loads the new code, and only supervisor starts it again. Horizon started by hand (`nohup`, a terminal) stays stopped after the next update, logout or crash, and jobs pile up ("background jobs are waiting"). Do not also start Horizon from a cron line.
+
+**Email.** `MAIL_MAILER=platform` in `.env` (then `php8.4 artisan config:cache`), and enable a provider in Platform → Email providers. With `MAIL_MAILER=log` nothing is sent, even though a provider's "Send test" button works (it talks to the provider directly). `update.sh` and Platform → Operations warn about both.
+
 ---
 
 ## 6. Real WhatsApp on a testing server

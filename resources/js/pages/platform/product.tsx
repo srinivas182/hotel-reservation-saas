@@ -1,7 +1,19 @@
 import { Head, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
 import PlatformProductController from '@/actions/App/Domains/Product/Http/Controllers/PlatformProductController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import {
+    DataTable,
+    Field,
+    FieldGroup,
+    PageBody,
+    PageHeader,
+    Section,
+    SidePanel,
+    Switch,
+    Tabs,
+    useTabs,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,10 +46,15 @@ type Props = {
     version: string;
 };
 
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
-
-function NoteForm({ note, version }: { note?: Note; version: string }) {
+function NoteForm({
+    note,
+    version,
+    onDone,
+}: {
+    note?: Note;
+    version: string;
+    onDone: () => void;
+}) {
     const form = useForm<{
         version: string;
         title: Lang;
@@ -67,78 +84,92 @@ function NoteForm({ note, version }: { note?: Note; version: string }) {
                     {
                         forceFormData: true,
                         preserveScroll: true,
-                        onSuccess: () => !note && form.reset(),
+                        onSuccess: onDone,
                     },
                 );
             }}
-            className="grid gap-2 sm:grid-cols-2"
+            className="grid gap-6"
         >
             {(['fr', 'en'] as const).map((l) => (
-                <div key={l} className="grid gap-2">
-                    <Input
-                        aria-label={`${t('Title')} ${l}`}
-                        placeholder={`${t('Title')} (${l})`}
-                        value={form.data.title[l]}
-                        onChange={(e) =>
-                            form.setData('title', {
-                                ...form.data.title,
-                                [l]: e.target.value,
-                            })
-                        }
-                    />
-                    <textarea
-                        aria-label={`${t('Text (Markdown)')} ${l}`}
-                        className="min-h-24 rounded-md border border-input bg-transparent p-2 text-xs"
-                        value={form.data.body[l]}
-                        onChange={(e) =>
-                            form.setData('body', {
-                                ...form.data.body,
-                                [l]: e.target.value,
-                            })
-                        }
-                    />
-                </div>
+                <FieldGroup
+                    key={l}
+                    title={l === 'fr' ? t('French') : t('English')}
+                >
+                    <Field label={t('Title')} error={errors[`title.${l}`]}>
+                        <Input
+                            value={form.data.title[l]}
+                            onChange={(e) =>
+                                form.setData('title', {
+                                    ...form.data.title,
+                                    [l]: e.target.value,
+                                })
+                            }
+                        />
+                    </Field>
+                    <Field
+                        label={t('Text (Markdown)')}
+                        error={errors[`body.${l}`]}
+                    >
+                        <textarea
+                            className="min-h-28"
+                            value={form.data.body[l]}
+                            onChange={(e) =>
+                                form.setData('body', {
+                                    ...form.data.body,
+                                    [l]: e.target.value,
+                                })
+                            }
+                        />
+                    </Field>
+                </FieldGroup>
             ))}
-            <label className="grid gap-0.5 text-xs">
-                {t('Version')}
-                <Input
-                    value={form.data.version}
-                    onChange={(e) => form.setData('version', e.target.value)}
-                />
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t('“Try it” opens (e.g. /hotel/demo)')}
-                <Input
-                    value={form.data.try_path}
-                    onChange={(e) => form.setData('try_path', e.target.value)}
-                />
-                <InputError message={errors.try_path} />
-            </label>
-            <label className="grid gap-0.5 text-xs">
-                {t('Picture or short animation (GIF)')}
-                <input
-                    type="file"
-                    accept=".png,.jpg,.jpeg,.gif,.webp"
-                    onChange={(e) =>
-                        form.setData('media', e.target.files?.[0] ?? null)
-                    }
-                />
-            </label>
-            {!note?.published_at && (
-                <label className="flex items-center gap-2 text-xs">
+            <FieldGroup title={t('Details')}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={t('Version')}>
+                        <Input
+                            value={form.data.version}
+                            onChange={(e) =>
+                                form.setData('version', e.target.value)
+                            }
+                        />
+                    </Field>
+                    <Field
+                        label={t('“Try it” opens (e.g. /hotel/demo)')}
+                        error={errors.try_path}
+                    >
+                        <Input
+                            value={form.data.try_path}
+                            onChange={(e) =>
+                                form.setData('try_path', e.target.value)
+                            }
+                        />
+                    </Field>
+                </div>
+                <Field label={t('Picture or short animation (GIF)')}>
                     <input
-                        type="checkbox"
-                        checked={form.data.publish}
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.gif,.webp"
                         onChange={(e) =>
-                            form.setData('publish', e.target.checked)
+                            form.setData('media', e.target.files?.[0] ?? null)
                         }
                     />
-                    {t('Publish now')}
-                </label>
-            )}
-            <InputError message={errors['title.fr'] ?? errors['body.fr']} />
-            <div>
-                <Button size="sm" disabled={form.processing}>
+                </Field>
+                {!note?.published_at && (
+                    <Switch
+                        checked={form.data.publish}
+                        onChange={(v) => form.setData('publish', v)}
+                        label={t('Publish now')}
+                        hint={t(
+                            'Hotels see it in the app at once and in the next monthly email.',
+                        )}
+                    />
+                )}
+            </FieldGroup>
+            <div className="flex justify-end gap-2 border-t pt-4">
+                <Button type="button" variant="ghost" onClick={onDone}>
+                    {t('Cancel')}
+                </Button>
+                <Button disabled={form.processing}>
                     {note ? t('Save') : t('Add the note')}
                 </Button>
             </div>
@@ -150,10 +181,12 @@ function IdeaForm({
     idea,
     statuses,
     ideas,
+    onDone,
 }: {
     idea: Idea;
     statuses: string[];
     ideas: Idea[];
+    onDone: () => void;
 }) {
     const form = useForm({
         status: idea.status,
@@ -171,47 +204,65 @@ function IdeaForm({
                 }));
                 form.put(PlatformProductController.decide.url(idea.id), {
                     preserveScroll: true,
+                    onSuccess: onDone,
                 });
             }}
-            className="mt-2 grid gap-2 sm:grid-cols-3"
+            className="grid gap-4"
         >
-            <select
-                aria-label={t('Status')}
-                className={selectClass}
-                value={form.data.status}
-                onChange={(e) => form.setData('status', e.target.value)}
-            >
-                {statuses.map((s) => (
-                    <option key={s} value={s}>
-                        {s}
-                    </option>
-                ))}
-            </select>
-            <select
-                aria-label={t('Merge into')}
-                className={selectClass}
-                value={form.data.merge_into}
-                onChange={(e) => form.setData('merge_into', e.target.value)}
-            >
-                <option value="">{t('Do not merge')}</option>
-                {ideas
-                    .filter((i) => i.id !== idea.id)
-                    .map((i) => (
-                        <option key={i.id} value={i.id}>
-                            {t('Merge into: :title', { title: i.title })}
-                        </option>
-                    ))}
-            </select>
-            <Button size="sm" disabled={form.processing}>
-                {t('Save')}
-            </Button>
-            <textarea
-                aria-label={t('Answer shown to everyone')}
-                placeholder={t('Answer shown to everyone (optional)')}
-                className="min-h-14 rounded-md border border-input bg-transparent px-3 py-2 sm:col-span-3"
-                value={form.data.reply}
-                onChange={(e) => form.setData('reply', e.target.value)}
-            />
+            {idea.body && (
+                <p className="rounded-lg bg-muted/50 p-3 text-sm">
+                    {idea.body}
+                </p>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={t('Status')}>
+                    <select
+                        className="h-9"
+                        value={form.data.status}
+                        onChange={(e) => form.setData('status', e.target.value)}
+                    >
+                        {statuses.map((s) => (
+                            <option key={s} value={s}>
+                                {s}
+                            </option>
+                        ))}
+                    </select>
+                </Field>
+                <Field
+                    label={t('Merge into')}
+                    hint={t('Votes move to the other idea.')}
+                >
+                    <select
+                        className="h-9"
+                        value={form.data.merge_into}
+                        onChange={(e) =>
+                            form.setData('merge_into', e.target.value)
+                        }
+                    >
+                        <option value="">{t('Do not merge')}</option>
+                        {ideas
+                            .filter((i) => i.id !== idea.id)
+                            .map((i) => (
+                                <option key={i.id} value={i.id}>
+                                    {i.title}
+                                </option>
+                            ))}
+                    </select>
+                </Field>
+            </div>
+            <Field label={t('Answer shown to everyone (optional)')}>
+                <textarea
+                    className="min-h-24"
+                    value={form.data.reply}
+                    onChange={(e) => form.setData('reply', e.target.value)}
+                />
+            </Field>
+            <div className="flex justify-end gap-2 border-t pt-4">
+                <Button type="button" variant="ghost" onClick={onDone}>
+                    {t('Cancel')}
+                </Button>
+                <Button disabled={form.processing}>{t('Save')}</Button>
+            </div>
         </form>
     );
 }
@@ -222,75 +273,185 @@ export default function PlatformProduct({
     statuses,
     version,
 }: Props) {
+    const tabs = [
+        { key: 'notes', label: t('Release notes'), count: notes.length },
+        { key: 'ideas', label: t('Ideas'), count: ideas.length },
+    ];
+    const [tab, setTab] = useTabs(tabs);
+    const [note, setNote] = useState<Note | 'new' | null>(null);
+    const [idea, setIdea] = useState<Idea | null>(null);
+    const editing = note === 'new' || note === null ? undefined : note;
+
     return (
         <>
             <Head title={t('What’s new and ideas')} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4 text-sm">
-                <Heading
+            <PageBody>
+                <PageHeader
                     title={t('What’s new and ideas')}
                     description={t(
                         'Release notes for hotels (shown in the app and in a monthly email), and the ideas they suggest and vote for.',
                     )}
+                    actions={
+                        tab === 'notes' && (
+                            <Button onClick={() => setNote('new')}>
+                                <Plus /> {t('New release note')}
+                            </Button>
+                        )
+                    }
                 />
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('New release note')} />
-                    <div className="rounded-xl border p-3">
-                        <NoteForm version={version} />
-                    </div>
-                    {notes.map((n) => (
-                        <details key={n.id} className="rounded-xl border p-2">
-                            <summary className="cursor-pointer">
-                                {n.title.fr} {n.version ? `· ${n.version}` : ''}{' '}
-                                {n.published_at
-                                    ? `· ${t('published :date', { date: n.published_at })}`
-                                    : `· ${t('draft')}`}
-                            </summary>
-                            <NoteForm note={n} version={version} />
-                        </details>
-                    ))}
-                </section>
-                <section className="flex flex-col gap-2">
-                    <Heading
-                        variant="small"
+                <Tabs tabs={tabs} active={tab} onSelect={setTab} />
+
+                {tab === 'notes' && (
+                    <Section
+                        flush
+                        title={t('Release notes')}
+                        description={t('Click a note to edit it.')}
+                    >
+                        <DataTable
+                            rows={notes}
+                            rowKey={(n) => n.id}
+                            empty={t('No release notes yet.')}
+                            onRowClick={setNote}
+                            columns={[
+                                {
+                                    key: 'title',
+                                    header: t('Title'),
+                                    cell: (n) => (
+                                        <span className="font-medium">
+                                            {n.title.fr}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'version',
+                                    header: t('Version'),
+                                    cell: (n) => n.version ?? '—',
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (n) =>
+                                        n.published_at ? (
+                                            <Badge>{t('Published')}</Badge>
+                                        ) : (
+                                            <Badge variant="outline">
+                                                {t('Draft')}
+                                            </Badge>
+                                        ),
+                                },
+                                {
+                                    key: 'date',
+                                    header: t('Published on'),
+                                    cell: (n) => n.published_at ?? '—',
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+
+                {tab === 'ideas' && (
+                    <Section
+                        flush
                         title={t('Ideas, most wanted first')}
-                    />
-                    <ul className="flex flex-col gap-2">
-                        {ideas.length === 0 && (
-                            <li className="text-muted-foreground">
-                                {t('No ideas yet.')}
-                            </li>
+                        description={t(
+                            'Suggested by hotels. Click an idea to answer it or change its status.',
                         )}
-                        {ideas.map((i) => (
-                            <li key={i.id} className="rounded-xl border p-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge>
-                                        {t(':count votes', { count: i.votes })}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                        {t(':count hotels', {
-                                            count: i.hotels,
-                                        })}
-                                    </span>
-                                    <span className="font-medium">
-                                        {i.title}
-                                    </span>
-                                    <Badge variant="outline">{i.status}</Badge>
-                                </div>
-                                {i.body && (
-                                    <p className="text-muted-foreground">
-                                        {i.body}
-                                    </p>
-                                )}
-                                <IdeaForm
-                                    idea={i}
-                                    statuses={statuses}
-                                    ideas={ideas}
-                                />
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            </div>
+                    >
+                        <DataTable
+                            rows={ideas}
+                            rowKey={(i) => i.id}
+                            empty={t('No ideas yet.')}
+                            onRowClick={setIdea}
+                            columns={[
+                                {
+                                    key: 'votes',
+                                    header: t('Votes'),
+                                    align: 'right',
+                                    cell: (i) => (
+                                        <span className="font-semibold">
+                                            {i.votes}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    key: 'title',
+                                    header: t('Idea'),
+                                    cell: (i) => (
+                                        <div>
+                                            <div className="font-medium">
+                                                {i.title}
+                                            </div>
+                                            {i.body && (
+                                                <div className="line-clamp-1 text-xs text-muted-foreground">
+                                                    {i.body}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'category',
+                                    header: t('Category'),
+                                    cell: (i) => i.category,
+                                },
+                                {
+                                    key: 'hotels',
+                                    header: t('Hotels'),
+                                    align: 'right',
+                                    cell: (i) => i.hotels,
+                                },
+                                {
+                                    key: 'status',
+                                    header: t('Status'),
+                                    cell: (i) => (
+                                        <Badge variant="outline">
+                                            {i.status}
+                                        </Badge>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Section>
+                )}
+            </PageBody>
+
+            <SidePanel
+                open={note !== null}
+                onClose={() => setNote(null)}
+                title={editing ? t('Edit the note') : t('New release note')}
+            >
+                {note !== null && (
+                    <NoteForm
+                        key={editing?.id ?? 'new'}
+                        note={editing}
+                        version={version}
+                        onDone={() => setNote(null)}
+                    />
+                )}
+            </SidePanel>
+            <SidePanel
+                open={idea !== null}
+                onClose={() => setIdea(null)}
+                title={idea?.title ?? ''}
+                description={
+                    idea
+                        ? t(':count votes from :hotels hotels', {
+                              count: idea.votes,
+                              hotels: idea.hotels,
+                          })
+                        : undefined
+                }
+            >
+                {idea && (
+                    <IdeaForm
+                        key={idea.id}
+                        idea={idea}
+                        statuses={statuses}
+                        ideas={ideas}
+                        onDone={() => setIdea(null)}
+                    />
+                )}
+            </SidePanel>
         </>
     );
 }

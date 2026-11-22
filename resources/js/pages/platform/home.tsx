@@ -1,7 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { ChevronRight, TriangleAlert } from 'lucide-react';
 import HotelOverviewController from '@/actions/App/Domains/Platform/Http/Controllers/HotelOverviewController';
 import PlatformHomeController from '@/actions/App/Domains/Platform/Http/Controllers/PlatformHomeController';
-import Heading from '@/components/heading';
+import {
+    DataTable,
+    PageBody,
+    PageHeader,
+    Section,
+    StatTile,
+} from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { t } from '@/lib/i18n';
 
@@ -33,18 +40,6 @@ type Props = {
     };
 };
 
-const selectClass =
-    'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
-
-function Tile({ label, value }: { label: string; value: string | number }) {
-    return (
-        <div className="min-w-32 rounded-xl border px-4 py-3">
-            <div className="text-xl font-semibold">{value}</div>
-            <div className="text-xs text-muted-foreground">{label}</div>
-        </div>
-    );
-}
-
 export default function PlatformHome({
     filters,
     countries,
@@ -66,147 +61,192 @@ export default function PlatformHome({
     return (
         <>
             <Head title={t('Platform home')} />
-            <div className="flex max-w-6xl flex-col gap-6 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <Heading
-                        title={t('Platform home')}
-                        description={t(
-                            'What needs attention, today, and the business.',
-                        )}
-                    />
-                    <div className="flex gap-2">
-                        <select
-                            aria-label={t('Country')}
-                            className={selectClass}
-                            value={filters.country ?? ''}
-                            onChange={(e) => filter('country', e.target.value)}
-                        >
-                            <option value="">{t('All countries')}</option>
-                            {countries.map((c) => (
-                                <option key={c} value={c}>
-                                    {c}
+            <PageBody>
+                <PageHeader
+                    title={t('Platform home')}
+                    description={t(
+                        'What needs attention, today, and the business.',
+                    )}
+                    actions={
+                        <>
+                            <select
+                                aria-label={t('Country')}
+                                className="h-9"
+                                value={filters.country ?? ''}
+                                onChange={(e) =>
+                                    filter('country', e.target.value)
+                                }
+                            >
+                                <option value="">{t('All countries')}</option>
+                                {countries.map((c) => (
+                                    <option key={c} value={c}>
+                                        {c}
+                                    </option>
+                                ))}
+                            </select>
+                            <select
+                                aria-label={t('Issuing company')}
+                                className="h-9"
+                                value={filters.entity ?? ''}
+                                onChange={(e) =>
+                                    filter('entity', e.target.value)
+                                }
+                            >
+                                <option value="">
+                                    {t('All issuing companies')}
                                 </option>
-                            ))}
-                        </select>
-                        <select
-                            aria-label={t('Issuing company')}
-                            className={selectClass}
-                            value={filters.entity ?? ''}
-                            onChange={(e) => filter('entity', e.target.value)}
-                        >
-                            <option value="">
-                                {t('All issuing companies')}
-                            </option>
-                            {entities.map((e) => (
-                                <option key={e.id} value={e.id}>
-                                    {e.name}
-                                </option>
-                            ))}
-                        </select>
+                                {entities.map((e) => (
+                                    <option key={e.id} value={e.id}>
+                                        {e.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </>
+                    }
+                />
+
+                {incidents.map((i) => (
+                    <div
+                        key={i.id}
+                        role="alert"
+                        className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                    >
+                        <TriangleAlert className="size-4 shrink-0" />
+                        <span className="font-medium">{i.title}</span>
+                        <span className="text-destructive/80">
+                            {t('since :date', { date: i.since })}
+                        </span>
                     </div>
+                ))}
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile
+                        label={t('Hotels')}
+                        value={business.hotels}
+                        hint={t(':count live', { count: business.live })}
+                    />
+                    <StatTile
+                        label={t('Sign-ups this week')}
+                        value={business.signups_week}
+                    />
+                    <StatTile
+                        label={t('Trials ending this week')}
+                        value={business.trials_ending}
+                    />
+                    {Object.entries(business.mrr).map(([c, v]) => (
+                        <StatTile
+                            key={c}
+                            label={t('Monthly revenue :currency', {
+                                currency: c,
+                            })}
+                            value={v}
+                        />
+                    ))}
+                    {Object.entries(business.overdue).map(([c, v]) => (
+                        <StatTile
+                            key={`o${c}`}
+                            label={t('Overdue :currency', { currency: c })}
+                            value={
+                                <span className="text-destructive">{v}</span>
+                            }
+                        />
+                    ))}
                 </div>
 
-                <section className="flex flex-col gap-2 text-sm">
-                    <Heading variant="small" title={t('Needs attention')} />
-                    {incidents.map((i) => (
-                        <p
-                            key={i.id}
-                            className="rounded-lg border border-destructive px-3 py-2 text-destructive"
-                        >
-                            {i.title} · {t('since :date', { date: i.since })}
-                        </p>
-                    ))}
-                    {attention.length === 0 && incidents.length === 0 && (
-                        <p className="text-muted-foreground">
-                            {t('Nothing needs attention.')}
-                        </p>
+                <Section
+                    flush
+                    title={t('Needs attention')}
+                    description={t(
+                        'Hotels with a problem or waiting for the platform team.',
                     )}
-                    <ul className="divide-y rounded-xl border">
-                        {attention.map((a) => (
-                            <li
-                                key={a.hotel_id}
-                                className="flex flex-wrap items-center gap-2 px-3 py-2"
-                            >
-                                <Link
-                                    href={HotelOverviewController.show(
-                                        a.hotel_id,
-                                    )}
-                                    className="font-medium underline"
-                                >
-                                    {a.hotel}
-                                </Link>
-                                <span className="text-muted-foreground">
-                                    {a.country}
-                                </span>
-                                {a.issues.map((i) => (
-                                    <Badge
-                                        key={i.key}
-                                        variant={
-                                            i.key === 'golive_request'
-                                                ? 'secondary'
-                                                : 'destructive'
-                                        }
+                >
+                    <DataTable
+                        rows={attention}
+                        rowKey={(a) => a.hotel_id}
+                        empty={t('Nothing needs attention.')}
+                        onRowClick={(a) =>
+                            router.visit(
+                                HotelOverviewController.show(a.hotel_id),
+                            )
+                        }
+                        columns={[
+                            {
+                                key: 'hotel',
+                                header: t('Hotel'),
+                                cell: (a) => (
+                                    <Link
+                                        href={HotelOverviewController.show(
+                                            a.hotel_id,
+                                        )}
+                                        className="font-medium hover:underline"
                                     >
-                                        {i.label}
-                                    </Badge>
-                                ))}
-                            </li>
-                        ))}
-                    </ul>
-                </section>
+                                        {a.hotel}
+                                    </Link>
+                                ),
+                            },
+                            {
+                                key: 'country',
+                                header: t('Country'),
+                                cell: (a) => a.country,
+                            },
+                            {
+                                key: 'issues',
+                                header: t('What is wrong'),
+                                cell: (a) => (
+                                    <div className="flex flex-wrap gap-1">
+                                        {a.issues.map((i) => (
+                                            <Badge
+                                                key={i.key}
+                                                variant={
+                                                    i.key === 'golive_request'
+                                                        ? 'secondary'
+                                                        : 'destructive'
+                                                }
+                                            >
+                                                {i.label}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'open',
+                                header: '',
+                                align: 'right',
+                                cell: () => (
+                                    <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                                ),
+                            },
+                        ]}
+                    />
+                </Section>
 
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Today')} />
-                    <div className="flex flex-wrap gap-2">
-                        <Tile
-                            label={t('Guest messages')}
-                            value={today.messages_in}
-                        />
-                        <Tile
-                            label={t('Messages sent')}
-                            value={today.messages_out}
-                        />
-                        <Tile label={t('Bookings')} value={today.bookings} />
-                        <Tile label={t('AI calls')} value={today.ai_runs} />
-                        <Tile
-                            label={t('AI cost (US$)')}
-                            value={today.ai_cost_usd}
-                        />
-                    </div>
-                </section>
-
-                <section className="flex flex-col gap-2">
-                    <Heading variant="small" title={t('Business')} />
-                    <div className="flex flex-wrap gap-2">
-                        <Tile label={t('Hotels')} value={business.hotels} />
-                        <Tile label={t('Live')} value={business.live} />
-                        <Tile
-                            label={t('Trials ending this week')}
-                            value={business.trials_ending}
-                        />
-                        <Tile
-                            label={t('Sign-ups this week')}
-                            value={business.signups_week}
-                        />
-                        {Object.entries(business.mrr).map(([c, v]) => (
-                            <Tile
-                                key={c}
-                                label={t('Monthly revenue :currency', {
-                                    currency: c,
-                                })}
-                                value={v}
-                            />
+                <Section
+                    title={t('Today')}
+                    description={t(
+                        'Activity across all hotels since midnight.',
+                    )}
+                >
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-5">
+                        {[
+                            [t('Guest messages'), today.messages_in],
+                            [t('Messages sent'), today.messages_out],
+                            [t('Bookings'), today.bookings],
+                            [t('AI calls'), today.ai_runs],
+                            [t('AI cost (US$)'), today.ai_cost_usd],
+                        ].map(([label, value]) => (
+                            <div key={String(label)}>
+                                <dt className="text-xs text-muted-foreground">
+                                    {label}
+                                </dt>
+                                <dd className="mt-1 text-xl font-semibold tabular-nums">
+                                    {value}
+                                </dd>
+                            </div>
                         ))}
-                        {Object.entries(business.overdue).map(([c, v]) => (
-                            <Tile
-                                key={`o${c}`}
-                                label={t('Overdue :currency', { currency: c })}
-                                value={v}
-                            />
-                        ))}
-                    </div>
-                </section>
-            </div>
+                    </dl>
+                </Section>
+            </PageBody>
         </>
     );
 }
