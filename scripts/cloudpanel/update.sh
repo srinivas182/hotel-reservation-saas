@@ -79,9 +79,22 @@ if [ "$MAILER" != "platform" ]; then
     echo "         Set MAIL_MAILER=platform in .env, then: $PHP artisan config:cache"
 fi
 if grep -qE '^QUEUE_CONNECTION=redis' .env; then
-    sleep 8
-    if ! "$PHP" artisan horizon:status 2>/dev/null | grep -qi running; then
-        echo "WARNING: Horizon is not running, so background jobs wait. Nothing restarts it after an update:"
-        echo "         run it under supervisor (docs/cloudpanel.md, \"Queue workers\")."
+    # Supervisor restarts Horizon within seconds, the CloudPanel cron job
+    # within a minute: wait up to 75 seconds before warning.
+    echo "Waiting for Horizon to start again (supervisor or the cron job)..."
+    started=no
+    for _ in $(seq 1 15); do
+        sleep 5
+        if "$PHP" artisan horizon:status 2>/dev/null | grep -qi running; then
+            started=yes
+            break
+        fi
+    done
+    if [ "$started" = yes ]; then
+        echo "Horizon is running."
+    else
+        echo "WARNING: Horizon did not start again within 75 seconds, so background jobs wait."
+        echo "         Add the Horizon cron job (every minute) or supervisor: docs/cloudpanel.md, \"Queue workers\"."
+        echo "         If the cron job exists, check its log: tail -n 30 ~/logs/horizon.log"
     fi
 fi

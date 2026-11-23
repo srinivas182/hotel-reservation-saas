@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### update.sh waits for Horizon to come back (0.36.2)
+
+#### Fixed
+
+- `scripts/cloudpanel/update.sh` warned "Horizon is not running" 8 seconds after stopping it, although the CloudPanel cron job restarts it within a minute. It now waits up to 75 seconds, says "Horizon is running" when it is back, and only then warns, pointing to the cron job and its log.
+
 ### Holding messages in the language the guest writes now (0.36.1)
 
 Live test: a guest who first wrote "Bonjour" and then wrote in English got the staff holding message in French ("La réception ouvre lundi 08:00", on that Monday morning).
