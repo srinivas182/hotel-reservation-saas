@@ -256,6 +256,7 @@ final class Deposits
         if (! $this->canPay($link)) {
             throw new DepositNotPossible(__('This payment link is no longer valid. Write to the hotel on WhatsApp.'));
         }
+        $this->refuseWhileTransferChecked($link);
 
         $accounts = MerchantAccount::usableAll();
         $account = $driver === null ? $accounts->first() : $accounts->firstWhere('driver', $driver);
@@ -367,6 +368,7 @@ final class Deposits
      */
     public function startTransfer(DepositLink $link, string $choice): DepositAttempt
     {
+        $this->refuseWhileTransferChecked($link);
         $deadline = $this->transferDeadline($link);
         if ($deadline === null) {
             throw new DepositNotPossible(__('A bank transfer is no longer possible for this booking: it would not arrive in time. Pay online or at the hotel.'));
@@ -478,6 +480,23 @@ final class Deposits
         }
 
         return $count;
+    }
+
+    /**
+     * 0.37.1: a bank transfer whose receipt the hotel is checking. Until
+     * staff approve or reject it, the guest cannot pay again, so the stay
+     * is never paid twice.
+     */
+    public function transferUnderReview(DepositLink $link): ?DepositAttempt
+    {
+        return DepositAttempt::query()->where('deposit_link_id', $link->id)->where('method', 'bank_transfer')->where('status', 'pending')->whereNotNull('proof_at')->latest()->first();
+    }
+
+    private function refuseWhileTransferChecked(DepositLink $link): void
+    {
+        if ($this->transferUnderReview($link) !== null) {
+            throw new DepositNotPossible(__('The hotel is checking your bank transfer receipt. If the transfer is not found, you can pay another way.'));
+        }
     }
 
     /**
@@ -597,6 +616,10 @@ final class Deposits
                     'provider_reference' => $providerReference,
                 ])->save();
                 $link->setRawAttributes($locked->getAttributes(), true);
+
+                // 0.37.1: paid another way: a transfer still waiting for its receipt ends quietly.
+                DepositAttempt::query()->where('deposit_link_id', $locked->id)->where('method', 'bank_transfer')->where('status', 'pending')->whereNull('proof_at')
+                    ->update(['status' => 'failed', 'failure' => 'Paid another way.', 'updated_at' => now()]);
 
                 return true;
             });

@@ -602,6 +602,48 @@ it('takes a bank transfer at the pay-now price once staff see the money', functi
     asStaffOf($other, staffMember($other, SystemRole::Owner))->get(route('hotel.deposits.transfers.proof', $attempt->id))->assertNotFound();
 });
 
+it('lets the guest pay no other way while the hotel checks a transfer receipt, and again once it is rejected', function (): void {
+    Storage::fake('local');
+    ($this->in)(fn () => MerchantAccount::query()->create(['driver' => 'stripe', 'mode' => 'test', 'credentials' => ['secret_key' => 'sk_test_x', 'webhook_secret' => 'whsec_x'], 'active' => true])); // gitleaks:allow
+    depositBank($this);
+    depositBooking($this);
+    $token = depositToken($this);
+
+    $this->post(route('deposits.pay', $token), ['choice' => 'full', 'method' => 'bank_transfer']);
+    // Before the receipt, the guest may still change their mind.
+    $this->get(route('deposits.show', $token))->assertOk()->assertSee('value="stripe"', false);
+
+    $this->post(route('deposits.proof', $token), ['receipt' => UploadedFile::fake()->image('recu.jpg')]);
+    $attempt = ($this->in)(fn () => DepositAttempt::query()->sole());
+
+    $this->get(route('deposits.show', $token))->assertOk()
+        ->assertDontSee('value="stripe"', false)
+        ->assertDontSee('value="simulation"', false)
+        ->assertSee($attempt->reference);
+    $this->post(route('deposits.pay', $token), ['choice' => 'full', 'method' => 'simulation'])
+        ->assertRedirect(route('deposits.show', $token))
+        ->assertSessionHas('deposit_error');
+    expect(($this->in)(fn () => DepositAttempt::query()->count()))->toBe(1);
+
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.transfers.reject', $attempt->id), ['reason' => 'not found'])->assertRedirect();
+
+    $this->get(route('deposits.show', $token))->assertOk()->assertSee('value="stripe"', false);
+});
+
+it('ends a transfer still waiting for its receipt when the guest pays another way', function (): void {
+    depositBank($this);
+    depositBooking($this);
+    $token = depositToken($this);
+
+    $this->post(route('deposits.pay', $token), ['choice' => 'deposit', 'method' => 'bank_transfer']);
+    Illuminate\Support\Facades\Exceptions::fake();
+    depositPayByLink($this);
+    Illuminate\Support\Facades\Exceptions::assertNothingReported();
+
+    expect(depositLink($this)->status)->toBe('paid')
+        ->and(($this->in)(fn () => DepositAttempt::query()->where('method', 'bank_transfer')->sole()->status))->toBe('failed');
+});
+
 it('tells the guest when a transfer is not found or arrives too late', function (): void {
     depositBank($this);
     depositBooking($this);

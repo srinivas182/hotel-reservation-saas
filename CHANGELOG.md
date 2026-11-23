@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### One payment at a time while a transfer is checked (0.37.1)
+
+#### Fixed
+
+- After a guest sent a bank transfer receipt, the payment page still offered card and mobile money, so the stay could be paid twice. While the hotel checks a receipt, the page shows only the transfer and its receipt, and the server refuses any other payment. If staff reject the transfer, every way to pay comes back.
+- A transfer chosen but never paid (no receipt) ends quietly when the guest pays another way. The guest is no longer told later that it "expired".
+- A guest coming back from the card or mobile-money page while another payment try was still open hit a lazy-loading error on staging. The payment was then only recorded by the provider's notification. The return page now loads what it needs.
+
 ### Pets, guest wishes and a check on "request sent" (0.37.0)
 
 #### Added

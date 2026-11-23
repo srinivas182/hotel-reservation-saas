@@ -71,6 +71,7 @@
             <div class="warn" role="status">{{ __('A payment is in progress. Once your provider confirms it, this page shows it. Reload in a minute.') }}</div>
         @endif
 
+        @if (! $review)
         <form method="post" action="{{ route('deposits.pay', $token) }}" class="card">
             @csrf
             <h2>{{ $balance ? __('Pay before you arrive') : __('Pay to confirm') }}</h2>
@@ -103,6 +104,7 @@
                 <p class="warn">{{ __('Online payment is not available. Write to the hotel on WhatsApp.') }}</p>
             @endif
         </form>
+        @endif
 
         @if ($transfer && $bank)
             <div class="card" aria-label="{{ __('Bank transfer') }}">
