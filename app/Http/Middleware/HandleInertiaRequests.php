@@ -120,14 +120,23 @@ class HandleInertiaRequests extends Middleware
             return ['deposits' => 0, 'requests' => 0];
         }
 
-        return [
-            'deposits' => $user->can('folio.payments')
-                ? \App\Domains\Deposits\Models\DepositAttempt::query()->where('method', 'bank_transfer')->where('status', 'pending')->whereNotNull('proof_at')->count()
-                : 0,
-            'requests' => $user->can('booking_requests.decide')
-                ? \App\Domains\BookingRequests\BookingRequest::query()->where('status', \App\Domains\BookingRequests\BookingRequestStatus::Pending->value)->count()
-                : 0,
-        ];
+        $deposits = $user->can('folio.payments');
+        $requests = $user->can('booking_requests.decide');
+        if (! $deposits && ! $requests) {
+            return ['deposits' => 0, 'requests' => 0];
+        }
+
+        // One query for both counts: this runs on every screen.
+        $query = \Illuminate\Support\Facades\DB::query();
+        if ($deposits) {
+            $query->selectSub(\App\Domains\Deposits\Models\DepositAttempt::query()->selectRaw('count(*)')->where('method', 'bank_transfer')->where('status', 'pending')->whereNotNull('proof_at'), 'deposits');
+        }
+        if ($requests) {
+            $query->selectSub(\App\Domains\BookingRequests\BookingRequest::query()->selectRaw('count(*)')->where('status', \App\Domains\BookingRequests\BookingRequestStatus::Pending->value), 'requests');
+        }
+        $row = (array) $query->first();
+
+        return ['deposits' => (int) ($row['deposits'] ?? 0), 'requests' => (int) ($row['requests'] ?? 0)];
     }
 
     /**

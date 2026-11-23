@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - **Deposits** shows a count of bank transfer receipts waiting to be checked, for staff who handle payments. The count is shown like the Inbox count.
 - **Today** shows a count of WhatsApp booking requests waiting for Accept or Decline, for staff who decide them, so a request is no longer left to expire unnoticed.
+- Both counts come from one query on every screen (the Today query budget goes from 60 to 61).
 
 ### One payment at a time while a transfer is checked (0.37.1)
 
