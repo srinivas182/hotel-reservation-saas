@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 use App\Domains\Ai\Models\AiRun;
 use App\Domains\Ai\Models\HotelAssistantSettings;
+use App\Domains\Assistant\Engine\AssistantEngine;
 use App\Domains\Assistant\Engine\AssistantTurn;
+use App\Domains\Assistant\Engine\Guardrails;
 use App\Domains\Assistant\Engine\HotelAssistantAgent;
+use App\Domains\Assistant\Engine\ToolContext;
 use App\Domains\Assistant\Knowledge\KnowledgeVersion;
 use App\Domains\Tenancy\TenantContext;
+use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Laravel\Ai\Responses\Data\ToolCall;
 
 require_once __DIR__.'/helpers.php';
@@ -91,6 +95,23 @@ it('blocks requests for card or passport numbers', function (): void {
     expect(ask($this->hotel, 'Comment payer ?')->handoverReason)->toBe('guardrail');
 });
 
+it('lets a reply refuse card or passport details but blocks every way of asking for them', function (string $reply, bool $blocked): void {
+    $checks = app(Guardrails::class)->check($reply, new ToolContext('fr', null), '');
+    $sensitive = collect($checks)->firstWhere('check', 'no_sensitive_request');
+
+    expect($sensitive['passed'])->toBe(! $blocked);
+})->with([
+    'refuses, French' => ['Pour votre sécurité, ne partagez jamais votre numéro de carte sur WhatsApp. Nous n\'en avons pas besoin.', false],
+    'refuses, English' => ['No, we never need your credit card number to hold the room.', false],
+    'refuses, without' => ['You can book without a credit card: reception confirms by WhatsApp.', false],
+    'mentions, no request' => ['Nous acceptons la carte bancaire, Orange Money et Wave.', false],
+    'asks, French' => ['Merci de nous envoyer votre numéro de carte bancaire.', true],
+    'asks politely, French' => ['N\'hésitez pas à nous transmettre votre numéro de carte.', true],
+    'asks, English' => ['Please send your card number and expiry date to hold the room.', true],
+    'asks politely, English' => ['Feel free to share your passport number here.', true],
+    'asks, second sentence' => ['We do not charge now. Could you give us your card number?', true],
+]);
+
 it('replies in the guest\'s language and hands over other languages', function (): void {
     HotelAssistantAgent::fake([
         aiReply('Hello! We have rooms from the 12th.', ['language' => 'en', 'intent' => 'greeting']),
@@ -161,4 +182,22 @@ it('gives the assistant the hotel facts and the published pack', function (): vo
     HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'Exécutive (code EXE)')
         && str_contains($prompt->agent->instructions(), 'Orange Money')
         && str_contains($prompt->agent->instructions(), 'Today is Sunday 1 November 2026'));
+});
+
+it('decides the guest\'s language before writing the reply, and keeps events and other guests in the rules', function (): void {
+    $agent = new HotelAssistantAgent('rules', [], new ToolContext('fr', null));
+    $fields = array_keys($agent->schema(new JsonSchemaTypeFactory));
+
+    expect(array_slice($fields, 0, 2))->toBe(['language', 'reply']);
+
+    app(TenantContext::class)->run($this->hotel, function (): void {
+        $engine = app(AssistantEngine::class);
+        $rules = $engine->instructions(HotelAssistantSettings::current(), ['fr', 'en'], null, '');
+
+        expect($rules)->toContain('language of the guest\'s latest message')
+            ->toContain('Events are not a reason to hand over')
+            ->toContain('asks about another guest')
+            ->toContain('first call get_quote')
+            ->not->toContain('an event or a special arrangement');
+    });
 });

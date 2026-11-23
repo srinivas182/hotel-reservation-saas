@@ -102,11 +102,17 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
         return $tools;
     }
 
+    /**
+     * The model writes these fields in this order, so `language` comes
+     * first: deciding the guest's language before writing the reply keeps
+     * the reply in that language even though the hotel information and the
+     * tool results are in the hotel's own language.
+     */
     public function schema(JsonSchema $schema): array
     {
         return [
-            'reply' => $schema->string()->description('The message to send to the guest, in the guest\'s language')->required(),
-            'language' => $schema->string()->description('ISO 639-1 code of the guest\'s language, e.g. fr or en')->required(),
+            'language' => $schema->string()->description('ISO 639-1 code of the language the guest\'s LATEST message is written in (fr, en, es, ar…), decided before writing the reply')->required(),
+            'reply' => $schema->string()->description('The message to send to the guest, written in that same language')->required(),
             'intent' => $schema->string()->enum(self::INTENTS)->required(),
             'handover' => $schema->boolean()->description('True when hotel staff must take over')->required(),
             'handover_reason' => $schema->string()->description('Why staff must take over (empty when handover is false)')->required(),
