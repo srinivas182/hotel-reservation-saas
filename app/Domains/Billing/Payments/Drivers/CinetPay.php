@@ -36,7 +36,7 @@ final class CinetPay implements PaymentDriver
             'notify_url' => $customer['notify_url'],
             'customer_name' => $customer['name'],
             // CinetPay asks for an address; without the payer's, the platform's sender address.
-            'customer_email' => trim((string) ($customer['email'] ?? '')) !== '' ? $customer['email'] : (string) config('mail.from.address'),
+            'customer_email' => trim($customer['email']) !== '' ? $customer['email'] : (string) config('mail.from.address'),
             'channels' => 'ALL',
             'lang' => 'fr',
         ]);

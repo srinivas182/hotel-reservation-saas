@@ -39,7 +39,7 @@ final class Stripe implements PaymentDriver
         $this->guardMode();
 
         // Without the payer's email, Stripe asks for it on its page (and sends its receipt there).
-        $email = trim((string) ($customer['email'] ?? ''));
+        $email = trim($customer['email']);
 
         $response = $this->http()->asForm()->post(self::BASE.'/checkout/sessions', [
             'mode' => 'payment',
