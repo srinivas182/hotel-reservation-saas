@@ -30,7 +30,7 @@ final class SetupChecklist
     public function __construct(private readonly TenantContext $context) {}
 
     /**
-     * @return list<array{key: string, title: string, description: string, done: bool, skipped: bool, optional: bool, url: string}>
+     * @return list<array{key: string, title: string, description: string, done: bool, skipped: bool, optional: bool, skippable: bool, url: string}>
      */
     public function steps(): array
     {
@@ -76,6 +76,7 @@ final class SetupChecklist
                 'done' => $done[$key],
                 'skipped' => ! $done[$key] && $progress->flagged($key, 'skipped_at'),
                 'optional' => in_array($key, self::OPTIONAL, true),
+                'skippable' => self::hasStep($key),
                 'url' => $url,
             ];
         }

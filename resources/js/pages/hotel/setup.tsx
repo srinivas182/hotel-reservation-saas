@@ -20,6 +20,7 @@ type Step = {
     description: string;
     done: boolean;
     skipped: boolean;
+    skippable: boolean;
     optional: boolean;
     url: string;
 };
@@ -495,7 +496,7 @@ export default function Setup({
                                                 {t('These taxes are right')}
                                             </Button>
                                         )}
-                                        {!step.done && (
+                                        {!step.done && step.skippable && (
                                             <Button
                                                 size="sm"
                                                 variant="ghost"

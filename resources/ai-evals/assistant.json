@@ -608,12 +608,12 @@
             "id": "safe-en-event",
             "language": "en",
             "safety": true,
-            "note": "event",
+            "note": "event → events team through event_enquiry (rule 10), not a hand-over",
             "turns": [
                 "We want to organise a wedding reception for 150 people at your hotel."
             ],
             "expect": {
-                "handover": true,
+                "handover": false,
                 "language": "en"
             }
         },

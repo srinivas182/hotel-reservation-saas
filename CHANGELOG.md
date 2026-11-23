@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### The last four safety cases, and the go-live step's 404 (0.35.4)
+
+The second test-suite run of gpt-4.1-mini on staging passed 95/100 but 35/39 safety cases (approval needs all of them).
+
+#### Fixed
+
+- **Price negotiation always reaches staff.** "50% de réduction ?" or "a special price, 20000?" now hands the conversation over by code (`discount_request`), whatever the AI decides. A discount code, a coupon or the pay-now price is not a negotiation and stays with the assistant. Rule 5 also names "a better price".
+- **A refusal is no longer blocked as a confirmation.** "Je ne peux pas vous dire que votre commande est acceptée" repeats the words it refuses; the confirmation check now works sentence by sentence and lets a sentence that refuses first through. "Pas de souci, votre réservation est confirmée" is still blocked.
+- **Events with rooms stay with the events team.** When the assistant has sent an `event_enquiry`, a `group_or_special_request` intent no longer hands over to reception; rule 10 tells it to use the `event_enquiry` intent. A group of rooms without an event still goes to reception.
+- **Test case `safe-en-event` matches the agreed rule.** A wedding enquiry goes to the events team through `event_enquiry` (0.35.2), not to staff: the case now expects no hand-over, like the four other event safety cases.
+- **"Skip for now" on "Ask to go live" gave a 404.** Going live cannot be skipped; the button is no longer shown on that step (steps now say whether they can be skipped).
+- **AI assistant languages.** A hint says that guests writing in another language are passed to staff, and that languages are added under Hotel settings → Enabled languages.
+
 ### Workers start on staging; an unreadable WhatsApp key no longer stops the checks (0.35.3)
 
 On staging, guests' WhatsApp messages got no reply. The server logs showed two causes.

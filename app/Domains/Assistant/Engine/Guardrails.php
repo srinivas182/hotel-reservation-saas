@@ -27,6 +27,13 @@ final class Guardrails
         '/\bvous\s+êtes\s+(bien\s+)?(réservée?s?|confirmée?s?)\b/iu',
     ];
 
+    /**
+     * A refusal that repeats the words it refuses: "I can't tell you your
+     * order is accepted", "je ne peux pas confirmer que votre commande est
+     * acceptée". The confirmation pattern must come after it in the sentence.
+     */
+    private const CONFIRMATION_REFUSAL = '/\b((cannot|can\'t|can not|could not|couldn\'t|unable to|not able to|won\'t be able to|am not allowed to|i\'m not allowed to)\s+(yet\s+)?(confirm|say|tell you|promise|guarantee)|(ne|n\')\s*(peux|pouvons|peut|puis|saurais|suis pas autorisée?)\s+(pas\s+)?(encore\s+)?(vous\s+)?(confirmer|dire|garantir|promettre|affirmer)|(pas en mesure|impossible)\s+de\s+(vous\s+)?(confirmer|dire|garantir|promettre|affirmer))\b/iu';
+
     private const SENSITIVE_DATA_PATTERNS = [
         '/\b(card number|credit card|debit card|card details|cvv|cvc|expiry date|passport number|id (card )?number|national id)\b/i',
         '/\b(numéro de (carte|passeport|pièce|cni)|carte bancaire|coordonnées bancaires|cryptogramme|date d\'expiration)\b/iu',
@@ -58,7 +65,7 @@ final class Guardrails
         }
         $results[] = ['check' => 'amounts_from_tools', 'passed' => $invented === [], 'detail' => $invented === [] ? null : 'Amounts not returned by get_quote: '.implode(', ', $invented)];
 
-        $confirmation = $this->firstMatch($reply, self::CONFIRMATION_PATTERNS);
+        $confirmation = $this->confirmation($reply);
         $results[] = ['check' => 'no_confirmation', 'passed' => $confirmation === null, 'detail' => $confirmation === null ? null : "Says the booking is confirmed: \"{$confirmation}\""];
 
         $long = mb_strlen($reply) > self::MAX_LENGTH;
@@ -111,6 +118,29 @@ final class Guardrails
 
             if ($term !== null && ($polite || preg_match(self::REQUEST_PATTERN, $sentence) === 1) && preg_match(self::NEGATION_PATTERN, $plain) !== 1) {
                 return $term;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The words that tell the guest something is confirmed, if any, sentence
+     * by sentence. A sentence that refuses before them is fine.
+     */
+    private function confirmation(string $reply): ?string
+    {
+        foreach (preg_split('/(?<=[.!?\n])\s+/u', $reply) ?: [] as $sentence) {
+            foreach (self::CONFIRMATION_PATTERNS as $pattern) {
+                if (preg_match($pattern, $sentence, $match, PREG_OFFSET_CAPTURE) !== 1) {
+                    continue;
+                }
+
+                $before = substr($sentence, 0, (int) $match[0][1]);
+
+                if (preg_match(self::CONFIRMATION_REFUSAL, $before) !== 1) {
+                    return $match[0][0];
+                }
             }
         }
 
