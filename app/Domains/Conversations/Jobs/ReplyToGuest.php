@@ -41,7 +41,10 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
     /** Seconds before a stuck attempt is stopped. */
     public int $timeout = 120;
 
-    public const DELAY_SECONDS = 8;
+    public const DELAY_SECONDS = 4;
+
+    /** Hand-over reasons where staff are alerted but the assistant keeps answering. */
+    public const FLAG_ONLY = ['discount_request'];
 
     public const MAX_REPLIES_PER_HOUR = 30;
 
@@ -150,7 +153,11 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return;
         }
 
-        if ($result->handover) {
+        // 0.36.5: some reasons only need staff to look; the assistant's reply
+        // goes out and it keeps the conversation, so the guest is never stuck.
+        if ($result->handover && in_array($result->handoverReason, self::FLAG_ONLY, true)) {
+            $handover->flag($conversation, (string) $result->handoverReason);
+        } elseif ($result->handover) {
             $this->handOver($conversation, $latest, (string) $result->handoverReason, $sender, $handover, $result->reply);
 
             return;

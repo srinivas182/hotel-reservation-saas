@@ -31,6 +31,23 @@ final class ConversationHandover
         }
     }
 
+    /**
+     * 0.36.5: staff should look, but the assistant keeps answering (e.g. a
+     * guest asking for a bigger discount: the assistant gives the hotel's
+     * offers, staff may decide to offer more). The conversation is flagged
+     * and staff alerted; nothing stops the guest from booking meanwhile.
+     */
+    public function flag(Conversation $conversation, string $reason): void
+    {
+        $conversation->forceFill([
+            'needs_attention' => true,
+            'handover_reason' => mb_substr($reason, 0, 250),
+        ])->save();
+
+        Audit::record('conversations.flagged_for_staff', 'Conversation flagged for staff; the assistant keeps answering', subject: $conversation, properties: ['reason' => $reason]);
+        ConversationNeedsStaff::dispatch($conversation->id, 'handover');
+    }
+
     public function assign(Conversation $conversation, ?User $assignee, User $by): void
     {
         $previous = $conversation->assigned_to;

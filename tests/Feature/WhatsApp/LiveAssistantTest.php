@@ -87,6 +87,30 @@ it('answers a guest message once, 8 seconds later', function (): void {
     expect(assistantMessages($this))->toHaveCount(1);
 });
 
+it('alerts staff about a discount question but keeps answering the guest', function (): void {
+    HotelAssistantAgent::fake([
+        aiReply('Le paiement immédiat donne déjà la meilleure remise. Souhaitez-vous réserver ?', ['intent' => 'price_question']),
+        aiReply('Avec plaisir. À quel nom dois-je faire la demande ?', ['intent' => 'booking_request']),
+    ]);
+
+    webhookPost($this, [inbound('wamid.IN1', message: ['text' => ['body' => 'Is 10% the maximum or can I get more discount?']])]);
+    runReplies($this);
+
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    expect($conversation->mode)->toBe(ConversationMode::Assistant)
+        ->and($conversation->needs_attention)->toBeTrue()
+        ->and($conversation->handover_reason)->toBe('discount_request')
+        ->and(assistantMessages($this))->toHaveCount(1);
+
+    // The guest goes on: the assistant answers, it is not stuck with staff.
+    $this->travel(1)->minutes();
+    webhookPost($this, [inbound('wamid.IN2', message: ['text' => ['body' => 'Ok, help me to book the room']])]);
+    runReplies($this);
+
+    expect(assistantMessages($this))->toHaveCount(2)
+        ->and(last(assistantMessages($this)))->toContain('À quel nom');
+});
+
 it('never answers or hands over a reaction, even right after a question', function (): void {
     HotelAssistantAgent::fake([aiReply('Avec plaisir, pour quelles dates ?', ['intent' => 'availability_question'])]);
 

@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### A discount question no longer stops the assistant; faster replies (0.36.5)
+
+Prospect demo: the guest asked "is 10% the maximum or can I get more discount?". The assistant answered well, but the discount rule (0.35.4) handed the conversation to staff, so "ok, help me to book room" and "I want to pay now" got no answer.
+
+#### Fixed
+
+- **Flag, don't take over, for discount questions.** `discount_request` now only flags the conversation and alerts staff (`ConversationHandover::flag`): the assistant's reply is sent and it keeps answering, so the guest can go on and book. Staff can still step in and offer more. Complaints, cancellations, other guests and the guest asking for a person still hand over fully.
+
+#### Changed
+
+- **Quicker first reply:** the assistant waits 4 seconds (was 8) for a guest's follow-up messages before answering them together.
+
 ### Messages laid out for WhatsApp (0.36.4)
 
 Assistant replies and booking messages read as one long paragraph on a phone.
