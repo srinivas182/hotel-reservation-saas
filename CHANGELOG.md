@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Pets, guest wishes and a check on "request sent" (0.37.0)
+
+#### Added
+
+- Information pack sections for **Pets**, **Children, cots and extra beds**, **Accessibility** and **Rooms, Wi-Fi and facilities**. Every section now shows a hint of what guests ask, as the text box placeholder.
+- The setup questionnaire asks about pets (fee, animals, places they cannot go) and accessibility, and files the answers in the new sections.
+- Booking requests carry what the guest asked for (a pet, a baby cot, a late arrival, an accessible room). Reception sees it on the request card and the WhatsApp alert, and it is copied into the booking's notes on approval.
+- Assistant rule 13: pets, children and accessibility are answered from the pack. When the pack is silent, the assistant never promises and reception confirms.
+
+#### Fixed
+
+- The assistant could tell a guest their booking request was sent without calling `request_booking`, so reception got nothing to approve. A new guardrail (`request_really_sent`) rejects such a reply unless a request was sent in that reply or one is already waiting. The assistant then sends the request or asks for what is missing.
+
+#### Database
+
+- `booking_requests.guest_notes` (string 500, nullable). Reversible.
+
 ### Rooms kept for reception (0.36.7)
 
 Hotels asked to sell only part of their rooms on WhatsApp, so reception keeps some for walk-ins, phone bookings and guests who extend their stay, without ever overbooking.

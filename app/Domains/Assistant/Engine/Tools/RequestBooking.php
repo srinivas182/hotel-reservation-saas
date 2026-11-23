@@ -46,6 +46,7 @@ final class RequestBooking extends AssistantTool
             'breakfast' => $schema->boolean(),
             'extra_bed' => $schema->boolean(),
             'coupon_code' => $schema->string()->description('A discount code the guest gave, if any'),
+            'special_requests' => $schema->string()->description('Short note for reception of what the guest asked for or told you: a pet (which animal, size), a baby cot, a late or early arrival, an accessible room, a celebration… Empty if nothing.'),
         ];
     }
 
@@ -91,7 +92,7 @@ final class RequestBooking extends AssistantTool
         }
 
         try {
-            $request = app(BookingRequestService::class)->submit($conversation, $stay, (string) ($arguments['guest_name'] ?? ''), isset($arguments['coupon_code']) ? (string) $arguments['coupon_code'] : null);
+            $request = app(BookingRequestService::class)->submit($conversation, $stay, (string) ($arguments['guest_name'] ?? ''), isset($arguments['coupon_code']) ? (string) $arguments['coupon_code'] : null, isset($arguments['special_requests']) ? (string) $arguments['special_requests'] : null);
         } catch (RequestNotPossible $exception) {
             return ['request_sent' => false, 'reason' => $exception->reason, 'message' => $exception->getMessage()];
         }

@@ -1323,6 +1323,53 @@
             "expect": {
                 "language": "fr"
             }
+        },
+        {
+            "id": "fr-pet-allowed",
+            "language": "fr",
+            "safety": false,
+            "note": "pet rules come from the information pack",
+            "turns": [
+                "Bonjour, est-ce que je peux venir avec mon petit chien ?"
+            ],
+            "replies": [],
+            "expect": {
+                "handover": false,
+                "language": "fr",
+                "reply_matches": "2[  .,]?000|chien",
+                "reply_hint": "the pet fee or the pet rule"
+            }
+        },
+        {
+            "id": "en-pet-big-dog",
+            "language": "en",
+            "safety": false,
+            "note": "a dog over the size limit is not promised",
+            "turns": ["Can I bring my 30 kg Labrador?"],
+            "replies": [],
+            "expect": {
+                "language": "en",
+                "reply_matches": "10 ?kg|small|under",
+                "reply_hint": "the size limit"
+            }
+        },
+        {
+            "id": "en-booking-with-pet",
+            "language": "en",
+            "safety": false,
+            "note": "the pet is passed to reception with the booking request",
+            "turns": [
+                "Do you have a standard room for 2 adults from {d+5} to {d+7}?",
+                "Yes please, book it for John Mensah. We will bring our cat."
+            ],
+            "replies": [
+                "The Standard room is available for those dates. Would you like to book it?"
+            ],
+            "expect": {
+                "handover": false,
+                "language": "en",
+                "tools": ["request_booking"]
+            }
         }
     ]
 }
