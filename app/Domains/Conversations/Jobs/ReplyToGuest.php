@@ -136,6 +136,12 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             $this->situation($context),
         );
 
+        // The guest's language follows what they write now (0.36.1): later
+        // messages (holding messages, confirmations, payment page) use it.
+        if (! str_starts_with((string) $result->handoverReason, 'language:')) {
+            $this->rememberLanguage($conversation, $result->language);
+        }
+
         if ($result->handover) {
             $this->handOver($conversation, $latest, (string) $result->handoverReason, $sender, $handover, $result->reply);
 
@@ -331,6 +337,15 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
      * The first assistant reply in a conversation says it is a virtual
      * assistant, how to reach a person, and where the privacy notice is.
      */
+    private function rememberLanguage(Conversation $conversation, string $language): void
+    {
+        $guest = $conversation->contact?->guest;
+
+        if ($guest !== null && $language !== '' && $guest->preferred_locale !== $language) {
+            $guest->forceFill(['preferred_locale' => $language])->save();
+        }
+    }
+
     private function withDisclosure(Conversation $conversation, string $reply, string $language): string
     {
         $already = $conversation->messages()->where('source', MessageSource::Assistant->value)->exists();

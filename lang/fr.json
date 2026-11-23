@@ -2487,6 +2487,8 @@
     "Reception hours set": "Horaires de la réception définis",
     "Reception keeps using the app; chat history is kept. Update the app first.": "La réception continue d'utiliser l'app ; l'historique est conservé. Mettez d'abord l'app à jour.",
     "Reception opens at :time.": "La réception ouvre :time.",
+    "Reception opens today at :time.": "La réception ouvre aujourd’hui à :time.",
+    "Reception opens tomorrow at :time.": "La réception ouvre demain à :time.",
     "Recommended": "Recommandé",
     "Recommended plan: :plan": "Formule recommandée : :plan",
     "Reconnect": "Reconnecter",

@@ -107,7 +107,21 @@ it('adds the opening time to the holding message when reception is closed', func
 
     $this->artisan('conversations:check-waiting');
 
-    expect(($this->in)(fn () => Message::query()->where('source', MessageSource::System->value)->sole()->body))->toContain('Reception opens at Friday 08:00.'); // The guest wrote in English.
+    // Thursday 10:20: reception opens tomorrow; the guest wrote in French.
+    expect(($this->in)(fn () => Message::query()->where('source', MessageSource::System->value)->sole()->body))->toContain('La réception ouvre demain à 08:00.');
+});
+
+it('answers the holding message in the language the guest writes now', function (): void {
+    ($this->in)(fn () => HotelSettings::current()->update(['enabled_locales' => ['fr', 'en'], 'staffed_hours' => ['thu' => [['from' => '11:00', 'to' => '20:00']]]]));
+    ($this->in)(fn () => $this->conversation->update(['mode' => ConversationMode::Staff]));
+    ($this->in)(fn () => $this->conversation->contact->guest->update(['preferred_locale' => 'fr']));
+    webhookPost($this, [inbound('wamid.IN3', message: ['text' => ['body' => 'Hello, can I book online now please?']])]);
+    $this->travel(20)->minutes();
+
+    $this->artisan('conversations:check-waiting');
+
+    expect(($this->in)(fn () => Message::query()->where('source', MessageSource::System->value)->sole()->body))->toContain('Reception opens today at 11:00.')
+        ->and(($this->in)(fn () => $this->conversation->contact->guest->fresh()->preferred_locale))->toBe('en');
 });
 
 it('translates a draft reply into the guest\'s language for staff to check', function (): void {
