@@ -61,6 +61,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'tenancy' => fn (): array => $this->tenancy($request),
             'inboxUnread' => fn (): int => $this->inboxUnread($request),
+            // 0.37.2: work waiting for staff, as red counts in the menu.
+            'actionCounts' => fn (): array => $this->actionCounts($request),
             'whatsNewUnread' => fn (): bool => $request->user() instanceof User && \App\Domains\Product\Models\ReleaseNote::query()->published()->when($request->user()->whats_new_seen_at !== null, fn ($q) => $q->where('published_at', '>', $request->user()->whats_new_seen_at))->exists(),
             'demoHotel' => fn (): bool => app(TenantContext::class)->has() && app(TenantContext::class)->hotel()->is_demo,
             'supportSession' => function (): ?array {
@@ -102,6 +104,39 @@ class HandleInertiaRequests extends Middleware
         }
 
         return \App\Domains\Conversations\Models\Conversation::query()->where('unread_count', '>', 0)->count();
+    }
+
+    /**
+     * Things staff must act on, counted for the menu: bank transfer
+     * receipts to check (Deposits) and booking requests to accept or
+     * decline (Today). Each only for those allowed to act on it.
+     *
+     * @return array{deposits: int, requests: int}
+     */
+    private function actionCounts(Request $request): array
+    {
+        $user = $request->user();
+        if (! $user instanceof User || ! app(TenantContext::class)->has()) {
+            return ['deposits' => 0, 'requests' => 0];
+        }
+
+        $deposits = $user->can('folio.payments');
+        $requests = $user->can('booking_requests.decide');
+        if (! $deposits && ! $requests) {
+            return ['deposits' => 0, 'requests' => 0];
+        }
+
+        // One query for both counts: this runs on every screen.
+        $query = \Illuminate\Support\Facades\DB::query();
+        if ($deposits) {
+            $query->selectSub(\App\Domains\Deposits\Models\DepositAttempt::query()->selectRaw('count(*)')->where('method', 'bank_transfer')->where('status', 'pending')->whereNotNull('proof_at'), 'deposits');
+        }
+        if ($requests) {
+            $query->selectSub(\App\Domains\BookingRequests\BookingRequest::query()->selectRaw('count(*)')->where('status', \App\Domains\BookingRequests\BookingRequestStatus::Pending->value), 'requests');
+        }
+        $row = (array) $query->first();
+
+        return ['deposits' => (int) ($row['deposits'] ?? 0), 'requests' => (int) ($row['requests'] ?? 0)];
     }
 
     /**

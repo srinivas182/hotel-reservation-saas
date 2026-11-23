@@ -261,7 +261,7 @@ const platformNavItems: (NavItem & { ability: string })[] = [
 ];
 
 export function AppSidebar() {
-    const { auth, inboxUnread, modules = [] } = usePage().props;
+    const { auth, inboxUnread, actionCounts, modules = [] } = usePage().props;
     const demoHotel =
         (usePage().props as { demoHotel?: boolean }).demoHotel === true;
     const whatsNewUnread =
@@ -287,7 +287,14 @@ export function AppSidebar() {
             ? [{ title: 'Rooms', href: RoomsController(), icon: BedDouble }]
             : []),
         ...(auth.permissions.includes('bookings.view')
-            ? [{ title: 'Today', href: TodayController.index(), icon: Sun }]
+            ? [
+                  {
+                      title: 'Today',
+                      href: TodayController.index(),
+                      icon: Sun,
+                      badge: actionCounts?.requests ?? 0,
+                  },
+              ]
             : []),
         ...(auth.permissions.includes('hotel.settings.manage')
             ? [
@@ -356,6 +363,7 @@ export function AppSidebar() {
                       title: 'Deposits',
                       href: '/hotel/deposits',
                       icon: WalletCards,
+                      badge: actionCounts?.deposits ?? 0,
                   },
               ]
             : []),

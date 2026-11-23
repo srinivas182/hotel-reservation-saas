@@ -81,7 +81,8 @@ it('keeps the busy hotel screens within their query budget, however much data th
     expect($many)->toBeLessThanOrEqual($few + 2, "{$route}: {$few} queries with 3 items, {$many} with 25")
         ->and($many)->toBeLessThanOrEqual($budget, "{$route}: {$many} queries, budget {$budget}");
 })->with([
-    'today' => ['hotel.today', 60],
+    // 0.37.2: +1 for the menu counts (one query on every screen).
+    'today' => ['hotel.today', 61],
     'inbox' => ['hotel.inbox', 60],
     'conversation' => ['hotel.inbox.show', 70],
     'bookings' => ['hotel.bookings.index', 50],

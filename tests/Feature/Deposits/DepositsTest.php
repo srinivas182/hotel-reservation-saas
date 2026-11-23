@@ -580,7 +580,9 @@ it('takes a bank transfer at the pay-now price once staff see the money', functi
     // Nothing is confirmed by the receipt alone.
     expect($booking->refresh()->status)->toBe(BookingStatus::Tentative);
 
-    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertInertia(fn ($page) => $page->has('transfers', 1)->where('transfers.0.reference', $attempt->reference));
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertInertia(fn ($page) => $page->has('transfers', 1)->where('transfers.0.reference', $attempt->reference)
+        // 0.37.2: the receipt to check shows as a count on Deposits in the menu.
+        ->where('actionCounts.deposits', 1));
     asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits.transfers.proof', $attempt->id))->assertOk();
 
     $this->sent = [];
@@ -596,6 +598,7 @@ it('takes a bank transfer at the pay-now price once staff see the money', functi
 
     // Approving twice does nothing.
     asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.transfers.approve', $attempt->id))->assertSessionHasErrors('transfer');
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertInertia(fn ($page) => $page->where('actionCounts.deposits', 0));
 
     // Another hotel never sees the receipt.
     $other = Hotel::factory()->create(['currency' => 'XOF', 'timezone' => 'Africa/Abidjan', 'default_locale' => 'fr']);

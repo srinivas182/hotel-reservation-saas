@@ -211,3 +211,12 @@ it('shows requests to reception and keeps them within the hotel', function (): v
     $other = Hotel::factory()->create();
     asStaffOf($other, staffMember($other, SystemRole::Owner))->post(route('hotel.booking-requests.decline', $request), ['reason' => 'full'])->assertNotFound();
 });
+
+it('counts the requests waiting for an answer on Today in the menu', function (): void {
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.inbox'))->assertInertia(fn ($page) => $page->where('actionCounts.requests', 0));
+    $request = submitRequest($this);
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.inbox'))->assertInertia(fn ($page) => $page->where('actionCounts.requests', 1));
+
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.booking-requests.decline', $request), ['reason' => 'full'])->assertSessionHasNoErrors();
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.inbox'))->assertInertia(fn ($page) => $page->where('actionCounts.requests', 0));
+});

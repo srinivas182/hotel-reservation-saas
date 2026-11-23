@@ -16,6 +16,7 @@ declare module '@inertiajs/core' {
             tenancy: Tenancy;
             sidebarOpen: boolean;
             inboxUnread?: number;
+            actionCounts?: { deposits: number; requests: number };
             modules?: string[];
             [key: string]: unknown;
         };
