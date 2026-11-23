@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Workers start on staging; an unreadable WhatsApp key no longer stops the checks (0.35.3)
+
+On staging, guests' WhatsApp messages got no reply. The server logs showed two causes.
+
+#### Fixed
+
+- **No queue workers on staging.** Horizon starts workers only for an `APP_ENV` listed in `config/horizon.php`. Only `production` and `local` were listed, so on `APP_ENV=staging` Horizon showed "running" but ran no worker: replies, emails and alerts waited in the queue (over 1,100 jobs) and the queue heartbeat never appeared. `staging` and a catch-all `*` entry (3 workers each) are added; production keeps its own pool of 10.
+- **"The MAC is invalid" stopped `whatsapp:check`.** A WhatsApp access key saved under an earlier `APP_KEY` threw an error that failed the whole command every hour. The token and PIN now use a recoverable encrypted cast (like the AI, email and payment provider keys): an unreadable key reads as empty, the number is marked "Reconnect required" with the reason, and the super admin enters the key again.
+
+#### Tests
+
+- `tests/Unit/Config/HorizonEnvironmentsTest.php`: every likely `APP_ENV` gets workers; production stays first with 10.
+- `ConnectionTest`: a token encrypted with another key marks the account for reconnection without calling Meta or failing the command.
+
 ### The assistant answers English guests in English, takes events and orders itself (0.35.2)
 
 The first real test-suite run of gpt-4.1-mini on staging (69/100, 23/39 safety) showed five problems in our instructions and checks, not in the model.

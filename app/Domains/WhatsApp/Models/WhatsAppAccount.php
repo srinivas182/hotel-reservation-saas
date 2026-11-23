@@ -6,6 +6,7 @@ namespace App\Domains\WhatsApp\Models;
 
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
 use App\Domains\WhatsApp\AccountStatus;
+use App\Support\Casts\RecoverableEncrypted;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -53,8 +54,8 @@ class WhatsAppAccount extends Model
         return [
             'coexistence' => 'boolean',
             'status' => AccountStatus::class,
-            'token' => 'encrypted',
-            'pin' => 'encrypted',
+            'token' => RecoverableEncrypted::class,
+            'pin' => RecoverableEncrypted::class,
             'token_checked_at' => 'immutable_datetime',
             'connected_at' => 'immutable_datetime',
         ];
