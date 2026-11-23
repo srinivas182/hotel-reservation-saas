@@ -1397,6 +1397,10 @@
     "Hello :name, we received :amount for booking :reference, but the rooms had already been released. The hotel will contact you to rebook or refund you.": "Hello :name, we received :amount for booking :reference, but the rooms had already been released. The hotel will contact you to rebook or refund you.",
     "Hello :name, your quote :reference from :hotel is ready. You can read it and accept it here: :link": "Hello :name, your quote :reference from :hotel is ready. You can read it and accept it here: :link",
     "Hello and welcome to :hotel:city! I am the hotel’s assistant: tell me your dates and I will check our rooms for you.": "Hello and welcome to :hotel:city! I am the hotel’s assistant: tell me your dates and I will check our rooms for you.",
+    "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it.": "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it.",
+    "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.": "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.",
+    "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!": "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!",
+    "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}": "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}",
     "Hello {name}, thank you for your request from {check_in} to {check_out}. Our reception will contact you very soon to finalise it.": "Hello {name}, thank you for your request from {check_in} to {check_out}. Our reception will contact you very soon to finalise it.",
     "Hello {name}, thank you for your table request for {date} at {time}. Our team will contact you very soon.": "Hello {name}, thank you for your table request for {date} at {time}. Our team will contact you very soon.",
     "Hello {name}, we are sorry: {hotel} cannot accept your request from {check_in} to {check_out}. Do not hesitate to write to us for other dates.": "Hello {name}, we are sorry: {hotel} cannot accept your request from {check_in} to {check_out}. Do not hesitate to write to us for other dates.",
@@ -1666,6 +1670,7 @@
     "Legal texts": "Legal texts",
     "Legal texts accepted": "Legal texts accepted",
     "Let guests pay the whole stay instead": "Let guests pay the whole stay instead",
+    "Let me check this point with our team: they will get back to you. Meanwhile I can still help you with prices, availability and your booking.": "Let me check this point with our team: they will get back to you. Meanwhile I can still help you with prices, availability and your booking.",
     "Level": "Level",
     "Limit per order (:currency, empty for none)": "Limit per order (:currency, empty for none)",
     "Limit per stay (:currency, empty for none)": "Limit per stay (:currency, empty for none)",
@@ -3806,9 +3811,5 @@
     "❌ Declining the request of :guest (:reference).": "❌ Declining the request of :guest (:reference).",
     "💰 :count guest still owes :total today.|💰 :count guests still owe :total today.": "💰 :count guest still owes :total today.|💰 :count guests still owe :total today.",
     "💳 Payment to check — :hotel": "💳 Payment to check — :hotel",
-    "🛎️ New booking request — :hotel": "🛎️ New booking request — :hotel",
-    "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!": "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!",
-    "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}": "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}",
-    "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.": "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.",
-    "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it.": "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it."
+    "🛎️ New booking request — :hotel": "🛎️ New booking request — :hotel"
 }

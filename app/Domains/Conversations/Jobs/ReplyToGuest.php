@@ -41,7 +41,15 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
     /** Seconds before a stuck attempt is stopped. */
     public int $timeout = 120;
 
-    public const DELAY_SECONDS = 8;
+    public const DELAY_SECONDS = 2;
+
+    /**
+     * 0.36.5: the only reasons that take the conversation away from the
+     * assistant: the guest asked for a person, or the daily reply limit
+     * (abuse). Every other reason flags the conversation and alerts staff,
+     * while the assistant keeps answering and guiding the guest to book.
+     */
+    public const TAKE_OVER = ['guest_asked_for_person', 'reply_limit'];
 
     public const MAX_REPLIES_PER_HOUR = 30;
 
@@ -151,7 +159,12 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         }
 
         if ($result->handover) {
-            $this->handOver($conversation, $latest, (string) $result->handoverReason, $sender, $handover, $result->reply);
+            // The guest asking for a person (the AI saw it) is a real take-over.
+            $reason = $result->intent === 'human_request' ? 'guest_asked_for_person' : (string) $result->handoverReason;
+            // The AI's own reply goes out; when the engine had no usable reply
+            // (blocked twice, no information pack, AI unavailable) a neutral one does.
+            $engineOnly = $reason === 'guardrail' || $reason === 'no_information_pack' || str_starts_with($reason, 'ai_unavailable');
+            $this->handOver($conversation, $latest, $reason, $sender, $handover, $engineOnly ? null : $result->reply);
 
             return;
         }
@@ -294,19 +307,26 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 
     private function handOver(Conversation $conversation, Message $latest, string $reason, MessageSender $sender, ConversationHandover $handover, ?string $message = null): void
     {
-        $handover->toStaff($conversation, $reason);
+        $takeOver = in_array($reason, self::TAKE_OVER, true);
+        $takeOver ? $handover->toStaff($conversation, $reason) : $handover->flag($conversation, $reason);
 
-        // In supervised mode nothing is sent to guests without staff approval.
+        // In supervised mode nothing is sent to guests without staff approval;
+        // a flagged reply waits as a draft like any other.
         if (HotelAssistantSettings::current()->effectiveMode() === AssistantMode::Supervised) {
+            if (! $takeOver && $message !== null) {
+                $sender->draft($conversation, $message);
+            }
             $this->markAnswered($conversation, $latest);
 
             return;
         }
 
-        $text = $message ?? app(AssistantEngine::class)->handoverMessage(
-            HotelAssistantSettings::current(),
-            $conversation->contact->guest->preferred_locale ?? app(TenantContext::class)->hotel()->default_locale,
-        );
+        $locale = $conversation->contact->guest->preferred_locale ?? app(TenantContext::class)->hotel()->default_locale;
+        // A language the hotel does not use: the hotel's own message, in its language.
+        $text = $message !== null && ! str_starts_with($reason, 'language:') ? $message : match (true) {
+            $takeOver || str_starts_with($reason, 'language:') => app(AssistantEngine::class)->handoverMessage(HotelAssistantSettings::current(), $locale),
+            default => __('Let me check this point with our team: they will get back to you. Meanwhile I can still help you with prices, availability and your booking.', locale: $locale),
+        };
 
         try {
             $sender->sendText($conversation, $text, null, MessageSource::Assistant);

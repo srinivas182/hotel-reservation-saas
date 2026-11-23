@@ -87,6 +87,30 @@ it('answers a guest message once, 8 seconds later', function (): void {
     expect(assistantMessages($this))->toHaveCount(1);
 });
 
+it('alerts staff about a discount question but keeps answering the guest', function (): void {
+    HotelAssistantAgent::fake([
+        aiReply('Le paiement immédiat donne déjà la meilleure remise. Souhaitez-vous réserver ?', ['intent' => 'price_question']),
+        aiReply('Avec plaisir. À quel nom dois-je faire la demande ?', ['intent' => 'booking_request']),
+    ]);
+
+    webhookPost($this, [inbound('wamid.IN1', message: ['text' => ['body' => 'Is 10% the maximum or can I get more discount?']])]);
+    runReplies($this);
+
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    expect($conversation->mode)->toBe(ConversationMode::Assistant)
+        ->and($conversation->needs_attention)->toBeTrue()
+        ->and($conversation->handover_reason)->toBe('discount_request')
+        ->and(assistantMessages($this))->toHaveCount(1);
+
+    // The guest goes on: the assistant answers, it is not stuck with staff.
+    $this->travel(1)->minutes();
+    webhookPost($this, [inbound('wamid.IN2', message: ['text' => ['body' => 'Ok, help me to book the room']])]);
+    runReplies($this);
+
+    expect(assistantMessages($this))->toHaveCount(2)
+        ->and(last(assistantMessages($this)))->toContain('À quel nom');
+});
+
 it('never answers or hands over a reaction, even right after a question', function (): void {
     HotelAssistantAgent::fake([aiReply('Avec plaisir, pour quelles dates ?', ['intent' => 'availability_question'])]);
 
@@ -159,9 +183,9 @@ it('treats replies sent from the WhatsApp Business app as staff replies', functi
     HotelAssistantAgent::assertNeverPrompted();
 });
 
-it('passes the conversation to staff with the hotel\'s message and hands it back', function (): void {
+it('flags a complaint for staff and keeps answering; only a request for a person takes over', function (): void {
     HotelAssistantAgent::fake([
-        aiReply('Je suis désolé. Je transmets à notre équipe.', ['intent' => 'complaint']),
+        aiReply('Je suis désolé. Un collègue s\'en occupe tout de suite.', ['intent' => 'complaint']),
         aiReply('Bien sûr, pour quelles dates ?', ['intent' => 'availability_question']),
     ]);
     ($this->in)(fn () => HotelAssistantSettings::current()->update(['handover_messages' => ['fr' => 'La réception vous répond tout de suite.']]));
@@ -170,21 +194,29 @@ it('passes the conversation to staff with the hotel\'s message and hands it back
     runReplies($this);
 
     $conversation = ($this->in)(fn () => Conversation::query()->sole());
-    expect($conversation->mode)->toBe(ConversationMode::Staff)
+    expect($conversation->mode)->toBe(ConversationMode::Assistant)
         ->and($conversation->needs_attention)->toBeTrue()
         ->and($conversation->handover_reason)->toBe('complaint')
-        ->and(assistantMessages($this))->toBe(['Je suis désolé. Je transmets à notre équipe.']);
+        ->and(assistantMessages($this))->toBe(['Je suis désolé. Un collègue s\'en occupe tout de suite.']);
 
     $reception = staffMember($this->hotel, SystemRole::Reception);
     asStaffOf($this->hotel, $reception)->get(route('hotel.inbox', ['filter' => 'attention']))->assertInertia(fn ($page) => $page->has('conversations', 1));
 
-    asStaffOf($this->hotel, $reception)->put(route('hotel.inbox.mode', $conversation), ['mode' => 'assistant'])->assertRedirect();
-    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Assistant);
-
-    // The complaint is not answered again; the next message is.
+    // The guest goes on: the assistant still answers.
+    $this->travel(1)->minutes();
     webhookPost($this, [inbound('wamid.IN2', message: ['text' => ['body' => 'Et une chambre pour demain ?']])]);
     runReplies($this);
     expect(assistantMessages($this))->toHaveCount(2);
+
+    // Asking for a person hands over, with the hotel's message.
+    $this->travel(1)->minutes();
+    webhookPost($this, [inbound('wamid.IN3', message: ['text' => ['body' => 'Je veux parler à la réception']])]);
+    runReplies($this);
+    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Staff)
+        ->and(last(assistantMessages($this)))->toBe('La réception vous répond tout de suite.');
+
+    asStaffOf($this->hotel, $reception)->put(route('hotel.inbox.mode', $conversation), ['mode' => 'assistant'])->assertRedirect();
+    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Assistant);
 });
 
 it('answers voice notes once transcribed and passes them to staff when they cannot be understood', function (): void {
