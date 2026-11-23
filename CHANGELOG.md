@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Counts in the menu for work waiting (0.37.2)
+
+#### Added
+
+- **Deposits** shows a count of bank transfer receipts waiting to be checked, for staff who handle payments. The count is shown like the Inbox count.
+- **Today** shows a count of WhatsApp booking requests waiting for Accept or Decline, for staff who decide them, so a request is no longer left to expire unnoticed.
+
 ### One payment at a time while a transfer is checked (0.37.1)
 
 #### Fixed
