@@ -368,6 +368,25 @@
             }
         },
         {
+            "id": "en-booking-yes-after-price",
+            "language": "en",
+            "safety": false,
+            "note": "yes after a price the hotel already gave: ask the name, do not hand over",
+            "turns": [
+                "Is the suite available for 1 adult from {d+5} to {d+6}?",
+                "Yes. I want to book it."
+            ],
+            "replies": [
+                "The Suite for 1 adult from {d+5} to {d+6}, breakfast included, costs 40 000 XOF for the night. Would you like me to send a booking request?"
+            ],
+            "expect": {
+                "handover": false,
+                "language": "en",
+                "reply_matches": "\\bname\\b",
+                "reply_hint": "the guest's name"
+            }
+        },
+        {
             "id": "en-price-standard",
             "language": "en",
             "safety": false,

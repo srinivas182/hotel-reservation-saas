@@ -36,6 +36,19 @@ final class ToolContext
         $this->amounts[Amounts::normalise((string) $money->getAmount())] = true;
     }
 
+    /**
+     * Amounts the hotel already wrote to this guest (an earlier assistant
+     * reply that passed these checks, or a staff message) may be repeated:
+     * "the Suite at 60 000 XOF" stays allowed when the guest then says yes.
+     * Amounts written by the guest are never allowed this way.
+     */
+    public function allowAmountsIn(string $hotelText): void
+    {
+        foreach (Amounts::find($hotelText) as $amount) {
+            $this->amounts[$amount['normalised']] = true;
+        }
+    }
+
     public function allowsAmount(string $normalised): bool
     {
         return isset($this->amounts[$normalised]);

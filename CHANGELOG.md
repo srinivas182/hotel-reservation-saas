@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### "Yes, I want to book it" no longer goes to staff (0.35.8)
+
+Live test on staging: the assistant quoted the Suite at 60 000 XOF; the guest answered "Yes. I want to book it" and got the hand-over message. The reply repeated the 60 000 XOF quoted in the previous turn, but the amount check only accepted amounts returned by tools in the current turn, so it was blocked twice.
+
+#### Fixed
+
+- Amounts the hotel already wrote in the conversation (an earlier assistant reply, which passed the same checks, or a staff message) may be repeated. Amounts the guest wrote are still never accepted.
+
+#### Test suite
+
+- `en-booking-yes-after-price` (105 cases): after a quoted price, "Yes. I want to book it" must ask for the name, not hand over.
+
 ### Payment providers explain their own set-up (0.35.7)
 
 A hotel owner choosing Stripe on Deposits → Account and rules could not see the webhook address until after a first save, and nothing said which keys or permissions to create.

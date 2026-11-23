@@ -57,6 +57,32 @@ it('blocks an amount the tools did not return, retries once, then hands over', f
     HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->prompt, 'Amounts not returned by get_quote: 45 000 FCFA'));
 });
 
+it('lets the assistant repeat a price the hotel already gave, but not one the guest wrote', function (): void {
+    HotelAssistantAgent::fake([aiReply('Très bien : la Suite à 60 000 XOF. À quel nom dois-je faire la demande ?', ['intent' => 'booking_request'])]);
+
+    $result = ask($this->hotel, [
+        AssistantTurn::guest('La suite pour le 31 décembre ?'),
+        AssistantTurn::hotel('La Suite pour 1 adulte coûte 60 000 XOF la nuit. Souhaitez-vous réserver ?'),
+        AssistantTurn::guest('Oui, je veux la réserver.'),
+    ]);
+
+    expect($result->handover)->toBeFalse()
+        ->and($result->reply)->toContain('60 000 XOF');
+
+    HotelAssistantAgent::fake([
+        aiReply('D\'accord, 30 000 XOF.', ['intent' => 'price_question']),
+        aiReply('D\'accord, 30 000 XOF, c\'est noté.', ['intent' => 'price_question']),
+    ]);
+
+    $guestPrice = ask($this->hotel, [
+        AssistantTurn::guest('La suite pour le 31 décembre ?'),
+        AssistantTurn::hotel('Souhaitez-vous réserver ?'),
+        AssistantTurn::guest('Je la prends à 30 000 XOF.'),
+    ]);
+
+    expect($guestPrice->handoverReason)->toBe('guardrail');
+});
+
 it('accepts a corrected reply on the second attempt', function (): void {
     HotelAssistantAgent::fake([
         aiReply('Comptez environ 40 000 FCFA.'),
