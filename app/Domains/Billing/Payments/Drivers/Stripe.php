@@ -38,10 +38,13 @@ final class Stripe implements PaymentDriver
     {
         $this->guardMode();
 
+        // Without the payer's email, Stripe asks for it on its page (and sends its receipt there).
+        $email = trim((string) ($customer['email'] ?? ''));
+
         $response = $this->http()->asForm()->post(self::BASE.'/checkout/sessions', [
             'mode' => 'payment',
             'client_reference_id' => $checkout->reference,
-            'customer_email' => $customer['email'],
+            ...($email !== '' ? ['customer_email' => $email] : []),
             'success_url' => $customer['return_url'],
             'cancel_url' => $customer['return_url'],
             'metadata' => ['reference' => $checkout->reference],

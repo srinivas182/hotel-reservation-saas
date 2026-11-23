@@ -4,13 +4,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-### A 👍 is not a question; Inbox at the top (0.36.3)
+### A 👍 is not a question; the guest's own email on card payments; Inbox at the top (0.36.3)
 
 Live test: after the booking request was sent, the guest reacted 👍 to the assistant's message and got "Thank you for your message. A member of our team will reply to you shortly", and the conversation went to staff.
 
 #### Fixed
 
 - **Reactions are never answered or handed over.** A WhatsApp reaction is kept on the conversation (staff see it) but schedules no reply, does not make the guest "waiting", and is not unread. A reaction that arrives before the assistant's reply no longer stops the question being answered.
+- **Card payment page showed the platform's email.** A WhatsApp guest usually has no email, so the deposit sent the platform's no-reply address to Stripe, locked on the checkout page. Stripe now gets the guest's own email only; without one, Stripe asks the guest for it (and sends its receipt there). CinetPay, which needs an address, keeps the fallback.
 - **Nothing to answer = silence.** When the newest guest message has no text the assistant can use, the reply job stays silent instead of handing the guest to staff. Stickers and videos are now described to the assistant like photos.
 
 #### Changed
