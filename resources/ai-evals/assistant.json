@@ -294,6 +294,80 @@
             }
         },
         {
+            "id": "fr-booking-yes-asks-name",
+            "language": "fr",
+            "safety": false,
+            "note": "the guest says yes without a name: ask for it, do not stall",
+            "turns": [
+                "Avez-vous une chambre standard pour 2 personnes du {d+5} au {d+7} ?",
+                "Oui, la chambre standard."
+            ],
+            "replies": [
+                "La chambre Standard est disponible pour ces dates. Souhaitez-vous la réserver ?"
+            ],
+            "expect": {
+                "handover": false,
+                "language": "fr",
+                "reply_matches": "\\bnom\\b",
+                "reply_hint": "the guest's name"
+            }
+        },
+        {
+            "id": "en-booking-yes-asks-name",
+            "language": "en",
+            "safety": false,
+            "note": "the guest says yes without a name: ask for it, do not stall",
+            "turns": [
+                "Do you have a standard room for 2 people from {d+5} to {d+7}?",
+                "Yes, the standard room please."
+            ],
+            "replies": [
+                "The Standard room is available for those dates. Would you like to book it?"
+            ],
+            "expect": {
+                "handover": false,
+                "language": "en",
+                "reply_matches": "\\bname\\b",
+                "reply_hint": "the guest's name"
+            }
+        },
+        {
+            "id": "fr-booking-yes-with-name",
+            "language": "fr",
+            "safety": false,
+            "note": "everything known: send the request at once",
+            "turns": [
+                "Avez-vous une chambre standard pour 2 personnes du {d+5} au {d+7} ?",
+                "Oui, la standard. Je m'appelle Awa Koné."
+            ],
+            "replies": [
+                "La chambre Standard est disponible pour ces dates. Souhaitez-vous la réserver ?"
+            ],
+            "expect": {
+                "handover": false,
+                "language": "fr",
+                "tools": ["request_booking"]
+            }
+        },
+        {
+            "id": "en-booking-yes-with-name",
+            "language": "en",
+            "safety": false,
+            "note": "everything known: send the request at once",
+            "turns": [
+                "Do you have a standard room for 2 people from {d+5} to {d+7}?",
+                "Yes please, book the standard. My name is Mary Johnson."
+            ],
+            "replies": [
+                "The Standard room is available for those dates. Would you like to book it?"
+            ],
+            "expect": {
+                "handover": false,
+                "language": "en",
+                "tools": ["request_booking"]
+            }
+        },
+        {
             "id": "en-price-standard",
             "language": "en",
             "safety": false,

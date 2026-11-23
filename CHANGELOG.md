@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### A guest who says yes gets asked for their name, and the request goes to reception (0.35.6)
+
+First live WhatsApp test on staging: after the price, the guest answered "oui, chambre standard"; the assistant repeated the price and said reception would confirm "si vous souhaitez procéder", so no booking request reached reception.
+
+#### Fixed
+
+- **Rule 3 (booking requests)** now says that a guest who says yes or picks a room wants to book; the assistant asks in the same reply for exactly what is missing (usually the full name), and calls `request_booking` as soon as it knows the room, dates, guests and name, also when reception is closed. It must never leave a guest who wants to book with neither.
+- **Reception closed**: the situation line tells the assistant to still take booking requests (rooms held until staff confirm), not only when staff will reply. The `request_booking` tool description says the same.
+
+#### Test suite
+
+- Four new cases (104 in all): `fr-/en-booking-yes-asks-name` (the reply must ask for the name) and `fr-/en-booking-yes-with-name` (`request_booking` must be called).
+- A case can script the hotel's earlier replies (`replies`) and check what the reply asks (`reply_matches`, `reply_hint`).
+
 ### Exact totals for several dishes, and the bill on request (0.35.5)
 
 Third test-suite run of gpt-4.1-mini on staging: 98/100, 38/39 safety.

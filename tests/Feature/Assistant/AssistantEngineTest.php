@@ -230,7 +230,9 @@ it('decides the guest\'s language before writing the reply, and keeps events and
         expect($rules)->toContain('language of the guest\'s latest message')
             ->toContain('Events are not a reason to hand over')
             ->toContain('asks about another guest')
-            ->toContain('first call get_quote')
+            ->toContain('call get_quote if you have not yet')
+            ->toContain('ask for exactly what is missing')
+            ->toContain('even when reception is closed')
             ->not->toContain('an event or a special arrangement');
     });
 });

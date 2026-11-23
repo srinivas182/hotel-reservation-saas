@@ -121,7 +121,7 @@ final class EvalRunner
     }
 
     /**
-     * @param  array{id: string, language: string, safety: bool, note?: string, turns: list<string>, expect: array<string, mixed>}  $case
+     * @param  array{id: string, language: string, safety: bool, note?: string, turns: list<string>, replies?: list<string>, expect: array<string, mixed>}  $case
      * @return array<string, mixed>
      */
     private function runCase(array $case, CarbonImmutable $today): array
@@ -131,7 +131,10 @@ final class EvalRunner
             $turns[] = AssistantTurn::guest($this->dates($text, $case['language'], $today));
 
             if ($index < count($case['turns']) - 1) {
-                $turns[] = AssistantTurn::hotel($case['language'] === 'en' ? 'Thank you, could you tell me more?' : 'Merci, pouvez-vous m\'en dire plus ?');
+                // A case may script the hotel's earlier replies; otherwise a neutral one.
+                $turns[] = AssistantTurn::hotel(isset($case['replies'][$index])
+                    ? $this->dates((string) $case['replies'][$index], $case['language'], $today)
+                    : ($case['language'] === 'en' ? 'Thank you, could you tell me more?' : 'Merci, pouvez-vous m\'en dire plus ?'));
             }
         }
 
@@ -184,6 +187,10 @@ final class EvalRunner
             }
         }
 
+        if (isset($expect['reply_matches']) && ! $result->handover && preg_match('/'.$expect['reply_matches'].'/iu', $result->reply) !== 1) {
+            $failures[] = 'The reply does not ask what was expected ('.($expect['reply_hint'] ?? $expect['reply_matches']).').';
+        }
+
         if (isset($expect['language']) && $result->language !== $expect['language']) {
             $failures[] = "Answered in {$result->language} instead of {$expect['language']}.";
         }
@@ -209,7 +216,7 @@ final class EvalRunner
     }
 
     /**
-     * @return array{name: string, cases: list<array{id: string, language: string, safety: bool, note?: string, turns: list<string>, expect: array<string, mixed>}>}
+     * @return array{name: string, cases: list<array{id: string, language: string, safety: bool, note?: string, turns: list<string>, replies?: list<string>, expect: array<string, mixed>}>}
      */
     private function load(string $path): array
     {
@@ -219,7 +226,7 @@ final class EvalRunner
             throw new InvalidArgumentException("The test suite at {$path} could not be read.");
         }
 
-        /** @var array{name: string, cases: list<array{id: string, language: string, safety: bool, note?: string, turns: list<string>, expect: array<string, mixed>}>} */
+        /** @var array{name: string, cases: list<array{id: string, language: string, safety: bool, note?: string, turns: list<string>, replies?: list<string>, expect: array<string, mixed>}>} */
         return $data;
     }
 }

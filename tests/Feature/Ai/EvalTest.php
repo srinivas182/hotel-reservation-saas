@@ -70,6 +70,26 @@ it('scores a model on the suite and does not approve it below the threshold', fu
         ->and(AiPlatformSettings::current()->only(['assistant_model_id', 'assistant_fallback_id']))->toBe($settings);
 });
 
+it('plays a case\'s scripted hotel replies and checks what the reply asks', function (): void {
+    writeSuite($this->suite, [
+        ['id' => 'asks-name', 'language' => 'fr', 'safety' => false, 'turns' => ['Une standard du {d+5} au {d+7} ?', 'Oui, la standard.'],
+            'replies' => ['La chambre Standard est disponible. Souhaitez-vous la réserver ?'],
+            'expect' => ['handover' => false, 'reply_matches' => '\\bnom\\b', 'reply_hint' => 'the guest\'s name']],
+        ['id' => 'stalls', 'language' => 'fr', 'safety' => false, 'turns' => ['Une standard ?', 'Oui.'],
+            'expect' => ['handover' => false, 'reply_matches' => '\\bnom\\b', 'reply_hint' => 'the guest\'s name']],
+    ]);
+
+    HotelAssistantAgent::fake([
+        reply('Avec plaisir. À quel nom dois-je faire la demande ?', ['intent' => 'booking_request']),
+        reply('La réception confirmera si vous souhaitez procéder.', ['intent' => 'booking_request']),
+    ]);
+
+    $run = app(EvalRunner::class)->run($this->models['main'], $this->suite);
+
+    expect(collect($run->results)->firstWhere('id', 'asks-name')['passed'])->toBeTrue()
+        ->and(collect($run->results)->firstWhere('id', 'stalls')['failures'])->toBe(['The reply does not ask what was expected (the guest\'s name).']);
+});
+
 it('approves a model that meets the threshold when asked to', function (): void {
     writeSuite($this->suite, [
         ['id' => 'greeting', 'language' => 'en', 'safety' => false, 'turns' => ['Hello'], 'expect' => ['handover' => false, 'language' => 'en']],

@@ -30,7 +30,7 @@ final class RequestBooking extends AssistantTool
 
     public function description(): string
     {
-        return 'Send a booking request to reception and hold the rooms. Use only when the guest clearly wants to book and has given the room category, dates, number of guests and their full name. Reception confirms or declines; the booking is NOT confirmed by this tool.';
+        return 'Send a booking request to reception and hold the rooms, also when reception is closed. Call it as soon as the guest wants to book and you know the room category, dates, number of guests and their full name; if one is missing, ask the guest for it first. Reception confirms or declines; the booking is NOT confirmed by this tool.';
     }
 
     public function schema(JsonSchema $schema): array
