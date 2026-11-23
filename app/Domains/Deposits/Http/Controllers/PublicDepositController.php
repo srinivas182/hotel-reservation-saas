@@ -52,6 +52,8 @@ final class PublicDepositController extends Controller
             // 0.36: every provider the hotel takes, and bank transfer.
             $providers = MerchantAccount::usableAll()->map(fn (MerchantAccount $a): string => $a->driver)->all();
             $transfer = $open ? $deposits->pendingTransfer($link) : null;
+            // 0.37.1: a receipt being checked: no other way to pay until the hotel decides.
+            $review = $transfer !== null && $transfer->proof_at !== null;
             $transferDeadline = $open && $transfer === null ? $deposits->transferDeadline($link) : null;
             $bank = $settings->takesBankTransfer() ? $settings->bank_transfer : null;
             $when = fn ($date): ?string => $date?->setTimezone($hotel->timezone)->settings(['locale' => $locale])->isoFormat('dddd D MMMM, HH:mm');
@@ -74,6 +76,7 @@ final class PublicDepositController extends Controller
                 'mobileMoney' => array_values(array_intersect($providers, ['cinetpay', 'simulation']))[0] ?? null,
                 'cards' => in_array('stripe', $providers, true),
                 'bank' => $bank,
+                'review' => $review,
                 'transferUntil' => $when($transferDeadline),
                 'transfer' => $transfer === null ? null : [
                     'id' => $transfer->id,
@@ -161,7 +164,7 @@ final class PublicDepositController extends Controller
         [$link, $hotel] = $this->find($token, $context);
 
         $context->run($hotel, function () use ($link): void {
-            foreach ($link->attempts()->with('account')->where('status', 'pending')->latest()->limit(3)->get() as $attempt) {
+            foreach ($link->attempts()->with(['account', 'link.booking'])->where('status', 'pending')->latest()->limit(3)->get() as $attempt) {
                 $this->settleQuietly($attempt);
             }
         });
