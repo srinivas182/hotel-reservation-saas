@@ -122,6 +122,12 @@ final class MessagesHandler implements WebhookHandler
             return;
         }
 
+        // 0.36.3: a reaction is not a message to answer: no reply, no hand-over,
+        // no "waiting" state, and it does not count as unread.
+        if ($type === 'reaction') {
+            return;
+        }
+
         DB::table('conversations')->where('id', $conversation->id)->update([
             'unread_count' => DB::raw('unread_count + 1'),
             'updated_at' => now(),
@@ -259,6 +265,8 @@ final class MessagesHandler implements WebhookHandler
             ]],
             $type === 'interactive' => ['interactive', (string) ($part['button_reply']['title'] ?? $part['list_reply']['title'] ?? ''), null],
             $type === 'button' => ['button', (string) ($part['text'] ?? ''), null],
+            // An emoji reaction (👍) on one of our messages: kept for staff, never answered.
+            $type === 'reaction' => ['reaction', (string) ($part['emoji'] ?? ''), ['reacted_to' => (string) ($part['message_id'] ?? '')]],
             default => [$type, null, null],
         };
     }

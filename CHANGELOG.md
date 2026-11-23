@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### A 👍 is not a question; Inbox at the top (0.36.3)
+
+Live test: after the booking request was sent, the guest reacted 👍 to the assistant's message and got "Thank you for your message. A member of our team will reply to you shortly", and the conversation went to staff.
+
+#### Fixed
+
+- **Reactions are never answered or handed over.** A WhatsApp reaction is kept on the conversation (staff see it) but schedules no reply, does not make the guest "waiting", and is not unread. A reaction that arrives before the assistant's reply no longer stops the question being answered.
+- **Nothing to answer = silence.** When the newest guest message has no text the assistant can use, the reply job stays silent instead of handing the guest to staff. Stickers and videos are now described to the assistant like photos.
+
+#### Changed
+
+- **Inbox** is second in the hotel menu, right after Dashboard.
+
 ### update.sh waits for Horizon to come back (0.36.2)
 
 #### Fixed

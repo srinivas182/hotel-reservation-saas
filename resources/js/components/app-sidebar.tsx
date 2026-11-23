@@ -271,6 +271,18 @@ export function AppSidebar() {
     const workspace = useWorkspace();
     const allHotelNavItems: NavItem[] = [
         ...mainNavItems,
+        // Guests' messages first: what staff open most.
+        ...(auth.permissions.includes('conversations.view')
+            ? [
+                  {
+                      title: 'Inbox',
+                      href: InboxController.index(),
+                      icon: Inbox,
+                      badge: inboxUnread ?? 0,
+                      tour: 'nav-inbox',
+                  },
+              ]
+            : []),
         ...(auth.permissions.includes('rooms.view')
             ? [{ title: 'Rooms', href: RoomsController(), icon: BedDouble }]
             : []),
@@ -326,17 +338,6 @@ export function AppSidebar() {
                       title: 'Contact support',
                       href: HotelSupportController.index(),
                       icon: Headset,
-                  },
-              ]
-            : []),
-        ...(auth.permissions.includes('conversations.view')
-            ? [
-                  {
-                      title: 'Inbox',
-                      href: InboxController.index(),
-                      icon: Inbox,
-                      badge: inboxUnread ?? 0,
-                      tour: 'nav-inbox',
                   },
               ]
             : []),
