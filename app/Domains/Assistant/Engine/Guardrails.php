@@ -27,10 +27,19 @@ final class Guardrails
         '/\bvous\s+êtes\s+(bien\s+)?(réservée?s?|confirmée?s?)\b/iu',
     ];
 
-    private const SENSITIVE_REQUEST_PATTERNS = [
-        '/\b(card number|credit card|debit card|cvv|cvc|expiry date|passport number|id (card )?number|national id)\b/i',
-        '/\b(numéro de (carte|passeport|pièce|cni)|carte bancaire|cryptogramme|date d\'expiration)\b/iu',
+    private const SENSITIVE_DATA_PATTERNS = [
+        '/\b(card number|credit card|debit card|card details|cvv|cvc|expiry date|passport number|id (card )?number|national id)\b/i',
+        '/\b(numéro de (carte|passeport|pièce|cni)|carte bancaire|coordonnées bancaires|cryptogramme|date d\'expiration)\b/iu',
     ];
+
+    /** Words that ask for something: a sentence must hold one to be a request. */
+    private const REQUEST_PATTERN = '/\b(send|give|share|provide|enter|type|need|require|requires|required|please|could you|can you|envoye[rz]|donne[rz]|communique[rz]|fourni(r|ssez)|indique[rz]|saisi(r|ssez)|transmet(tre|tez)|besoin|merci de|pourriez-vous|pouvez-vous)\b/iu';
+
+    /** Polite phrases that look negative but ask: "n'hésitez pas à envoyer…", "don't forget to send…". */
+    private const FALSE_NEGATIONS = '/\b(n\'hésitez pas|n\'oubliez pas|ne pas hésiter|ne pas oublier|don\'t hesitate|do not hesitate|don\'t forget|do not forget|feel free)\b/iu';
+
+    /** Words that refuse: "we never need your card number" is not a request. */
+    private const NEGATION_PATTERN = '/\b(not|never|no need|don\'t|do not|doesn\'t|does not|won\'t|will not|without|ne|n\'|pas|jamais|aucun|aucune|sans|surtout pas)\b|\bn\'/iu';
 
     /**
      * @return list<array{check: string, passed: bool, detail: string|null}>
@@ -55,7 +64,7 @@ final class Guardrails
         $long = mb_strlen($reply) > self::MAX_LENGTH;
         $results[] = ['check' => 'length', 'passed' => ! $long, 'detail' => $long ? 'Longer than '.self::MAX_LENGTH.' characters' : null];
 
-        $sensitive = $this->firstMatch($reply, self::SENSITIVE_REQUEST_PATTERNS);
+        $sensitive = $this->sensitiveRequest($reply);
         $results[] = ['check' => 'no_sensitive_request', 'passed' => $sensitive === null, 'detail' => $sensitive === null ? null : "Asks for sensitive data: \"{$sensitive}\""];
 
         $empty = trim($reply) === '';
@@ -84,6 +93,28 @@ final class Guardrails
     public static function redact(string $text): string
     {
         return (string) preg_replace('/\b(?:\d[ \-]?){13,19}\b/', '[card number removed]', $text);
+    }
+
+    /**
+     * The sentence that asks the guest for card, passport or ID details, if
+     * any. A sentence that only mentions them to refuse ("we never ask for
+     * your card number", "ne partagez pas votre carte bancaire") is fine:
+     * telling a guest not to send a card number is the right answer.
+     */
+    private function sensitiveRequest(string $reply): ?string
+    {
+        foreach (preg_split('/(?<=[.!?\n])\s+/u', $reply) ?: [] as $sentence) {
+            $term = $this->firstMatch($sentence, self::SENSITIVE_DATA_PATTERNS);
+
+            $polite = preg_match(self::FALSE_NEGATIONS, $sentence) === 1;
+            $plain = (string) preg_replace(self::FALSE_NEGATIONS, ' ', $sentence);
+
+            if ($term !== null && ($polite || preg_match(self::REQUEST_PATTERN, $sentence) === 1) && preg_match(self::NEGATION_PATTERN, $plain) !== 1) {
+                return $term;
+            }
+        }
+
+        return null;
     }
 
     /**

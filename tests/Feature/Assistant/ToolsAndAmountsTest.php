@@ -51,3 +51,21 @@ it('returns exact quotes and availability for the current hotel only', function 
         expect(collect($context->calls())->pluck('tool')->all())->toBe(['get_quote', 'get_quote', 'check_availability', 'check_availability']);
     });
 });
+
+it('gives the night price for all the rooms, so the reply never multiplies', function (): void {
+    $this->travelTo('2026-11-01 10:00:00');
+    ['hotel' => $hotel] = assistantHotel();
+
+    app(TenantContext::class)->run($hotel, function (): void {
+        $context = new ToolContext('fr');
+        $quote = json_decode((string) (new GetQuote($context))->handle(new Request(['category_code' => 'EXE', 'check_in' => '2026-11-12', 'check_out' => '2026-11-13', 'adults' => 4, 'rooms' => 2])), true);
+
+        expect($quote['rooms'])->toBe(2)
+            ->and($quote['nights'][0])->toHaveKeys(['price_per_room', 'price_all_rooms'])
+            ->and($context->allowsAmount('25000'))->toBeTrue()
+            ->and($context->allowsAmount('50000'))->toBeTrue();
+
+        $single = json_decode((string) (new GetQuote($context))->handle(new Request(['category_code' => 'EXE', 'check_in' => '2026-11-12', 'check_out' => '2026-11-13', 'adults' => 2])), true);
+        expect($single['nights'][0])->not->toHaveKey('price_all_rooms');
+    });
+});

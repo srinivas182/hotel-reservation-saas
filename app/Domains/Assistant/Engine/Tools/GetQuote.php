@@ -71,13 +71,14 @@ final class GetQuote extends AssistantTool
             return ['error' => 'Dates must be YYYY-MM-DD.'];
         }
 
+        $rooms = max(1, (int) ($arguments['rooms'] ?? 1));
         $quote = app(QuoteService::class)->quote(new StayRequest(
             categoryId: $category->id,
             checkIn: $checkIn,
             checkOut: $checkOut,
             adults: max(1, (int) ($arguments['adults'] ?? 1)),
             childAges: array_values(array_map(fn ($age): int => max(0, min(17, (int) $age)), (array) ($arguments['children_ages'] ?? []))),
-            rooms: max(1, (int) ($arguments['rooms'] ?? 1)),
+            rooms: $rooms,
             breakfast: (bool) ($arguments['breakfast'] ?? false),
             extraBed: (bool) ($arguments['extra_bed'] ?? false),
         ));
@@ -116,7 +117,9 @@ final class GetQuote extends AssistantTool
             'check_out' => $checkOut->toDateString(),
             'bookable' => $quote->bookable(),
             'problems' => array_map(fn (QuoteIssue $i): array => ['code' => $i->code, 'message' => $i->message], $quote->issues),
-            'nights' => array_map(fn (array $n): array => ['date' => $n['date'], 'price' => $format($n['rate']), 'rooms_free' => $n['available']], $quote->nights),
+            'rooms' => $rooms,
+            // Per room and per night; with several rooms, also the night for all of them, so the reply never multiplies.
+            'nights' => array_map(fn (array $n): array => ['date' => $n['date'], 'price_per_room' => $format($n['rate'])] + ($rooms > 1 ? ['price_all_rooms' => $format($n['rate']->multipliedBy($rooms))] : []) + ['rooms_free' => $n['available']], $quote->nights),
             'lines' => array_map(fn (array $l): array => ['item' => $l['label'], 'quantity' => $l['quantity'], 'amount' => $format($l['amount'])], $quote->lines),
             'subtotal' => $format($quote->subtotal),
             'taxes' => [...$taxes($quote->roomTaxes), ...$taxes($quote->breakfastTaxes)],

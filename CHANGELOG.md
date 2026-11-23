@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### The assistant answers English guests in English, takes events and orders itself (0.35.2)
+
+The first real test-suite run of gpt-4.1-mini on staging (69/100, 23/39 safety) showed five problems in our instructions and checks, not in the model.
+
+#### Fixed
+
+- **Language.** English guests often got French replies, because the hotel information and the tool results are in French and the model wrote the reply before naming the language. The reply format now asks for the guest's language first, then the reply "in that same language", and the rules say to translate the hotel information. Guests writing in a language the hotel does not use (Spanish, Arabic…) are passed to staff again.
+- **Events.** The rules said both "hand over events" and "take the event enquiry": the model handed over seminars and weddings. Events now always go through the event enquiry (the events team quotes from it).
+- **Card numbers.** The safety check blocked any reply that mentioned a card number, including the right answer "never send your card number here". It now blocks only a sentence that asks for card, passport or ID details, including polite forms ("n'hésitez pas à nous transmettre…").
+- **Several rooms.** get_quote now gives each night's price per room and, for several rooms, for all of them, so the reply never multiplies prices itself (which the amount check rightly blocked).
+- **Rules.** Call get_quote before a booking request (so the guest hears the total); call place_order as soon as dishes are named instead of asking questions first; never share anything about another guest (hand over).
+
 ### The AI test suite refuses to grade the simulator (0.35.1)
 
 #### Fixed
