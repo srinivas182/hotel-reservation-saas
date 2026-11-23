@@ -74,7 +74,7 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
 
         $hotel = $context->hotel();
         $settings = HotelAssistantSettings::current();
-        $locale = $request->guest->preferred_locale ?? $request->conversation->messages()->where('direction', 'in')->whereNotNull('language')->latest('sent_at')->value('language') ?? $hotel->default_locale;
+        $locale = $request->guest->preferred_locale ?? $request->conversation->messages()->where('direction', 'in')->whereNotNull('language')->orderByDesc('sent_at')->orderByDesc('id')->value('language') ?? $hotel->default_locale;
         // Sprint F: the deposit is paid through a link when the hotel takes mobile money online.
         $deposits = app(Deposits::class);
         $link = $kind === 'deposit' && $request->booking !== null && $deposits->online() ? $deposits->linkFor($request->booking) : null;
