@@ -88,3 +88,16 @@ it('offers the pay-now price by bank transfer alone, and says how the guest can 
             ->and($quote['payment_options']['pay_now_discount_percent'])->toBe(10);
     });
 });
+
+it('forgets an earlier price once the stay is priced again in the same reply', function (): void {
+    $context = new ToolContext('fr');
+    $context->allowAmountsIn('La Suite pour 2 adultes : 60 000 XOF la nuit.');
+    $sixty = Amounts::find('60 000 XOF')[0]['normalised'];
+
+    expect($context->allowsAmount($sixty))->toBeTrue();
+
+    // The guest now says 3 adults: get_quote runs again; only its figures count.
+    $context->log('get_quote', ['adults' => 3], '{"total":"75 000 XOF"}');
+
+    expect($context->allowsAmount($sixty))->toBeFalse();
+});
