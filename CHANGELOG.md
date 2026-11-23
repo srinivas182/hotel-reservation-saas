@@ -21,7 +21,7 @@ Hotels can now take mobile money (CinetPay) and cards (Stripe) at the same time,
 
 #### Database
 
-- `2026_12_30_000100_payment_methods_and_bank_transfer`: `merchant_accounts` unique (`hotel_id`, `driver`); `deposit_attempts` gets `method`, `expires_at`, `proof_path`, `proof_at`, `decided_by`, `decided_at` and a nullable `merchant_account_id`; `hotel_assistant_settings.bank_transfer`. Reversible.
+- `2026_12_30_000100_payment_methods_and_bank_transfer`: `merchant_accounts` unique (`hotel_id`, `driver`); `deposit_attempts` gets `method`, `expires_at`, `proof_path`, `proof_at`, `decided_by`, `decided_at` and a nullable `merchant_account_id`; `hotel_assistant_settings.bank_transfer`. Reversible without data loss: a rollback keeps every account of a hotel that already uses two providers (the one-account index returns only where it holds), and the migration can run again after it.
 
 #### Tests
 
