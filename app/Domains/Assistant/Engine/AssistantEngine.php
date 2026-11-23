@@ -73,6 +73,11 @@ final class AssistantEngine
 
         foreach ([1, 2] as $attempts) {
             $tools = new ToolContext($fallbackLanguage, $conversationId);
+            foreach ($history as $turn) {
+                if ($turn->role === 'hotel') {
+                    $tools->allowAmountsIn($turn->text);
+                }
+            }
             $agent = new HotelAssistantAgent($this->instructions($settings, $languages, $guestName, $knowledgeText, $situation), $history, $tools);
 
             try {
