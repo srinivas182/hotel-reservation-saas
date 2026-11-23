@@ -20,10 +20,11 @@ final class DecisionMessages
     public static function default(string $kind, string $locale): string
     {
         $text = match ($kind) {
-            'confirmed' => 'Hello {name}, your booking {reference} is confirmed: {room}, from {check_in} to {check_out}. Total: {total}. See you soon at {hotel}!',
-            'deposit' => 'Hello {name}, {hotel} has accepted your request ({room}, from {check_in} to {check_out}, total {total}). To confirm booking {reference}, please pay a deposit of {deposit} before {deposit_deadline}. How to pay: {payment_instructions}',
-            'declined' => 'Hello {name}, we are sorry: {hotel} cannot accept your request from {check_in} to {check_out}. Do not hesitate to write to us for other dates.',
-            default => 'Hello {name}, thank you for your request from {check_in} to {check_out}. Our reception will contact you very soon to finalise it.',
+            // 0.36.4: laid out for WhatsApp: short paragraphs, the stay on separate lines, key facts in bold.
+            'confirmed' => "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!",
+            'deposit' => "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}",
+            'declined' => "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.",
+            default => "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it.",
         };
 
         return __($text, locale: $locale);

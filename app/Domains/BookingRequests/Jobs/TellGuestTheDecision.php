@@ -145,7 +145,8 @@ final class TellGuestTheDecision implements RequiresHotelContext, ShouldQueue
             $parts[] = (string) __('Or pay at the hotel on arrival.', locale: $locale);
         }
 
-        return implode(' ', $parts);
+        // Each choice on its own paragraph.
+        return implode("\n\n", $parts);
     }
 
     private function template(string $kind, string $locale): ?MessageTemplate
