@@ -395,6 +395,25 @@ it('asks staff to check a screenshot and records the deposit when they tap Recei
         ->and(($this->in)(fn () => StaffAction::query()->sole()->status))->toBe('done');
 });
 
+it('records a card or mobile-money payment from the provider instead of asking staff when the guest sends its screenshot', function (): void {
+    $booking = depositBooking($this);
+    $token = depositToken($this);
+
+    // The guest pays but closes the page before coming back to the hotel.
+    $checkout = $this->post(route('deposits.pay', $token), ['choice' => 'deposit'])->assertRedirect()->headers->get('Location');
+    $reference = basename((string) parse_url((string) $checkout, PHP_URL_PATH));
+    $this->post(route('deposits.simulate.pay', $reference), ['outcome' => 'paid', 'method' => 'wave']);
+    expect(depositLink($this)->status)->toBe('open');
+
+    $this->sent = [];
+    webhookPost($this, [inbound('wamid.PROOF9', from: '2250700000001', message: ['type' => 'image', 'image' => ['id' => 'media-9', 'mime_type' => 'image/jpeg']], name: 'Awa Koné')]);
+
+    expect(depositLink($this)->status)->toBe('paid')
+        ->and(depositLink($this)->paid_via)->toBe('online')
+        ->and($booking->refresh()->status)->toBe(BookingStatus::Confirmed)
+        ->and(collect($this->sent)->first(fn (array $m): bool => ($m['to'] ?? null) === DEPOSIT_STAFF_PHONE && ($m['type'] ?? null) === 'interactive'))->toBeNull();
+});
+
 it('lets staff send the link and confirm a transfer from the booking page', function (): void {
     $booking = depositBooking($this);
     $this->sent = [];
