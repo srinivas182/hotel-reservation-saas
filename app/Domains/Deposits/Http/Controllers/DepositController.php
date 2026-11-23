@@ -62,8 +62,9 @@ final class DepositController extends Controller
                 'masked' => $account->maskedCredentials(),
                 'checked_at' => $account->checked_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
                 'last_error' => $account->last_error,
-                'notify_url' => route('webhooks.deposits', $account->id),
             ]) : null,
+            // Known before the first save, so the provider can be set up in one go.
+            'notifyUrl' => $manages ? route('webhooks.deposits.hotel', $hotel->id) : null,
             'drivers' => collect(MerchantAccount::DRIVERS)
                 ->filter(fn (array $d, string $key): bool => $key !== 'simulation' || (bool) config('simulation.enabled'))
                 ->map(fn (array $d, string $key): array => ['value' => $key, 'label' => $d['label'], 'fields' => $d['fields']])->values(),

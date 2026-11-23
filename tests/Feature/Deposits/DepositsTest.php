@@ -310,7 +310,8 @@ it('lets a hotel take deposits by card with its own Stripe account', function ()
     $this->call('POST', route('webhooks.deposits', $account->id), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $sign('whsec_other'), 'CONTENT_TYPE' => 'application/json'], $body)->assertStatus(401);
     expect($booking->refresh()->status)->not->toBe(BookingStatus::Confirmed);
 
-    $this->call('POST', route('webhooks.deposits', $account->id), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $sign('whsec_hotel'), 'CONTENT_TYPE' => 'application/json'], $body)->assertOk();
+    // 0.35.7: the hotel's address, shown before the first save, reaches the same account.
+    $this->call('POST', route('webhooks.deposits.hotel', $this->hotel->id), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $sign('whsec_hotel'), 'CONTENT_TYPE' => 'application/json'], $body)->assertOk();
 
     expect(depositLink($this)->method)->toBe('card')
         ->and($booking->refresh()->status)->toBe(BookingStatus::Confirmed);
@@ -503,4 +504,15 @@ it('never lets another hotel touch a deposit', function (): void {
 
     asStaffOf($other, $otherOwner)->post(route('hotel.deposits.refunded', $link), ['note' => 'x'])->assertNotFound();
     asStaffOf($other, $otherOwner)->get(route('hotel.deposits'))->assertOk()->assertInertia(fn ($page) => $page->has('refunds', 0)->has('paid', 0));
+});
+
+it('shows the hotel its notification address before any payment account is saved', function (): void {
+    ($this->in)(fn () => MerchantAccount::query()->delete());
+
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))
+        ->assertInertia(fn ($page) => $page->where('account', null)
+            ->where('notifyUrl', route('webhooks.deposits.hotel', $this->hotel->id)));
+
+    $this->postJson(route('webhooks.deposits.hotel', $this->hotel->id), [])->assertNotFound();
+    $this->postJson(route('webhooks.deposits.hotel', '01ZZZZZZZZZZZZZZZZZZZZZZZZ'), [])->assertNotFound();
 });

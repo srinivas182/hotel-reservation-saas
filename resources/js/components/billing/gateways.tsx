@@ -9,6 +9,7 @@ import {
     SidePanel,
     Switch,
 } from '@/components/page';
+import { ProviderGuide } from '@/components/billing/provider-guide';
 import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -199,20 +200,12 @@ function GatewayEditor({
                     </FieldGroup>
                 )}
                 {driver && (
-                    <FieldGroup title={t('Notifications (webhook)')}>
-                        <p className="text-xs text-muted-foreground">
-                            {t('Address to set in the provider dashboard:')}
-                        </p>
-                        <code className="rounded-md border bg-muted/40 px-3 py-2 text-xs break-all">
-                            {driver.webhook}
-                        </code>
-                        {driver.value === 'stripe' && (
-                            <p className="text-xs text-muted-foreground">
-                                {t(
-                                    'Stripe: Developers → Webhooks → Add endpoint with this URL and the events checkout.session.completed, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed and checkout.session.expired; then copy its signing secret here. Use an sk_test_ key in Test mode.',
-                                )}
-                            </p>
-                        )}
+                    <FieldGroup title={t('Set-up at the provider')}>
+                        <ProviderGuide
+                            driver={driver.value}
+                            mode={form.data.mode}
+                            notifyUrl={driver.webhook}
+                        />
                     </FieldGroup>
                 )}
                 <FieldGroup title={t('Availability')}>
