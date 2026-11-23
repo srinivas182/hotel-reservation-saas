@@ -250,8 +250,8 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         $opening = $hours->nextOpening();
 
         return $opening === null
-            ? 'Reception is not staffed now.'
-            : 'Reception is closed now. Staff will reply and confirm bookings from '.$opening->format('l H:i').' (hotel time). Tell the guest this when relevant.';
+            ? 'Reception is not staffed now. Still take booking requests (rule 3): the rooms are held until staff confirm.'
+            : 'Reception is closed now. Still take booking requests (rule 3): the rooms are held, and staff reply and confirm bookings from '.$opening->format('l H:i').' (hotel time). Tell the guest this when relevant.';
     }
 
     private function tooManyReplies(Conversation $conversation): bool

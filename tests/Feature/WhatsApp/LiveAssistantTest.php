@@ -221,7 +221,7 @@ it('tells the assistant when reception is closed', function (): void {
     webhookPost($this, [inbound('wamid.IN1')]);
     runReplies($this);
 
-    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'Reception is closed now. Staff will reply and confirm bookings from Friday 08:00'));
+    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'Reception is closed now. Still take booking requests (rule 3): the rooms are held, and staff reply and confirm bookings from Friday 08:00'));
 });
 
 it('works out when reception is open in the hotel\'s time zone', function (): void {
