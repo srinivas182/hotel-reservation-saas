@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### No staff check for money the gateway already took (0.37.3)
+
+#### Fixed
+
+- A guest who paid by card or mobile money, closed the page before coming back, then sent the payment screenshot on WhatsApp made staff get a "Payment to check: Received / Not received" card. The system now asks the payment provider first. If the provider confirms the payment, it is recorded automatically: the booking is confirmed, the guest gets the receipt, and staff get nothing to approve. Only bank transfers and payments the provider has not confirmed are left for staff to check.
+
 ### Counts in the menu for work waiting (0.37.2)
 
 #### Added
