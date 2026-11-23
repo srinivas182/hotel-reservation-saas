@@ -29,8 +29,28 @@ final class DepositWebhookController extends Controller
             return response('unknown', 404);
         }
 
-        $hotel = Hotel::query()->findOrFail($found->hotel_id);
+        return $this->handle($request, Hotel::query()->findOrFail($found->hotel_id), $found, $context);
+    }
 
+    /**
+     * The hotel's address (0.35.7): known before the account is first saved,
+     * so a hotel can create its Stripe webhook and paste the signing secret
+     * in one go. It always reaches the hotel's current account.
+     */
+    public function forHotel(Request $request, string $hotel, TenantContext $context): Response
+    {
+        $found = Hotel::query()->find($hotel);
+        $account = $found === null ? null : $context->run($found, fn (): ?MerchantAccount => MerchantAccount::current());
+
+        if ($found === null || $account === null) {
+            return response('unknown', 404);
+        }
+
+        return $this->handle($request, $found, $account, $context);
+    }
+
+    private function handle(Request $request, Hotel $hotel, MerchantAccount $found, TenantContext $context): Response
+    {
         return $context->run($hotel, function () use ($request, $found): Response {
             $notice = $found->driver()->notification($request);
 

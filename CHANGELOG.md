@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Payment providers explain their own set-up (0.35.7)
+
+A hotel owner choosing Stripe on Deposits → Account and rules could not see the webhook address until after a first save, and nothing said which keys or permissions to create.
+
+#### Added
+
+- **Set-up guide per provider** (`components/billing/provider-guide.tsx`), next to the key fields, for the hotel's own account and for the platform's providers (Platform → Billing): the steps in the provider's dashboard, the key to create and its permissions (Stripe restricted key: Checkout Sessions Write, Balance Read), the webhook events, a link to the dashboard, and a Copy button for the notification address. CinetPay and PayDunya say there is nothing to enter (the address is sent with each payment).
+- **Hotel notification address known before the first save:** `POST /webhooks/deposits/hotel/{hotel}` reaches the hotel's current payment account. The old `/webhooks/deposits/{account}` keeps working for existing set-ups.
+
+#### Changed
+
+- "Your mobile-money account" is now "Your payment account" (it also takes cards); key labels are translated.
+
 ### A guest who says yes gets asked for their name, and the request goes to reception (0.35.6)
 
 First live WhatsApp test on staging: after the price, the guest answered "oui, chambre standard"; the assistant repeated the price and said reception would confirm "si vous souhaitez procéder", so no booking request reached reception.

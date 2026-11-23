@@ -13,6 +13,7 @@ import {
     Tabs,
     useTabs,
 } from '@/components/page';
+import { ProviderGuide } from '@/components/billing/provider-guide';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,9 +33,9 @@ type Props = {
         masked: Record<string, string>;
         checked_at: string | null;
         last_error: string | null;
-        notify_url: string;
     } | null;
     drivers: Driver[];
+    notifyUrl: string | null;
     settings: {
         deposit_required: boolean;
         deposit_percent: number;
@@ -56,12 +57,13 @@ type Props = {
     paid: DepositRow[];
 };
 
-const FIELD_LABELS: Record<string, string> = {
-    apikey: 'API key',
-    site_id: 'Site ID',
-    secret_key: 'Secret key',
-    webhook_secret: 'Webhook signing secret (whsec_…)',
-};
+const fieldLabel = (field: string): string =>
+    ({
+        apikey: t('API key'),
+        site_id: t('Site ID'),
+        secret_key: t('Secret key'),
+        webhook_secret: t('Webhook signing secret (whsec_…)'),
+    })[field] ?? field;
 
 const selectClass =
     'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
@@ -130,9 +132,11 @@ function RefundRow({
 function AccountForm({
     account,
     drivers,
+    notifyUrl,
 }: {
     account: Props['account'];
     drivers: Driver[];
+    notifyUrl: string | null;
 }) {
     const form = useForm<{
         driver: string;
@@ -161,9 +165,9 @@ function AccountForm({
         >
             <Heading
                 variant="small"
-                title={t('Your mobile-money account')}
+                title={t('Your payment account')}
                 description={t(
-                    'Guests pay your hotel directly through your own provider account: the money never passes through us. Keys are stored encrypted and never shown again.',
+                    'Guests pay your hotel directly through your own provider account (mobile money or cards): the money never passes through us. Keys are stored encrypted and never shown again.',
                 )}
             />
             <div className="flex flex-wrap gap-3">
@@ -198,11 +202,14 @@ function AccountForm({
                     </select>
                 </label>
             </div>
+            <ProviderGuide
+                driver={form.data.driver}
+                mode={form.data.mode}
+                notifyUrl={notifyUrl}
+            />
             {driver?.fields.map((field) => (
                 <label key={field} className="grid gap-1">
-                    <span className="font-medium">
-                        {FIELD_LABELS[field] ?? field}
-                    </span>
+                    <span className="font-medium">{fieldLabel(field)}</span>
                     <Input
                         type="password"
                         autoComplete="off"
@@ -234,17 +241,8 @@ function AccountForm({
                 />
                 {t('Take payments with this account')}
             </label>
-            {account && (
+            {account && account.checked_at && (
                 <p className="text-xs text-muted-foreground">
-                    {t('Notification address to give your provider:')}{' '}
-                    <code className="break-all">{account.notify_url}</code>
-                    {account.driver === 'stripe' && (
-                        <span className="block">
-                            {t(
-                                'Stripe: Developers → Webhooks → Add endpoint with this address and the events checkout.session.completed and checkout.session.expired; then paste its signing secret above.',
-                            )}
-                        </span>
-                    )}
                     {account.checked_at && (
                         <span className="block">
                             {account.last_error
@@ -695,6 +693,7 @@ export default function Deposits(props: Props) {
                         <AccountForm
                             account={props.account}
                             drivers={props.drivers}
+                            notifyUrl={props.notifyUrl}
                         />
                         <RulesForm settings={props.settings} />
                     </>

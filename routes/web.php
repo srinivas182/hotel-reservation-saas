@@ -163,6 +163,11 @@ Route::post('webhooks/deposits/{account}', DepositWebhookController::class)
     ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:120,1')
     ->name('webhooks.deposits');
+Route::post('webhooks/deposits/hotel/{hotel}', [DepositWebhookController::class, 'forHotel'])
+    ->where('hotel', '[0-9A-Za-z]{26}')
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->middleware('throttle:120,1')
+    ->name('webhooks.deposits.hotel');
 
 Route::post('csp-report', CspReportController::class)
     ->middleware('throttle:60,1')
