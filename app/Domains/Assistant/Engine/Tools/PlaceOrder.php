@@ -37,7 +37,7 @@ final class PlaceOrder extends AssistantTool
 
     public function description(): string
     {
-        return 'Order food or drinks. Step 1: call with guest_agreed=false to get the exact dishes and total; repeat them to the guest and ask for a yes. Step 2: only after the guest agrees, call again with the same items and guest_agreed=true. The kitchen then accepts the order; never say it is accepted.';
+        return 'Order food or drinks, or price several dishes. Step 1: call with guest_agreed=false to get the exact dishes and total (also when the guest only asks how much several dishes cost); repeat them to the guest and ask for a yes. Step 2: only after the guest agrees, call again with the same items and guest_agreed=true. The kitchen then accepts the order; never say it is accepted.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -72,10 +72,6 @@ final class PlaceOrder extends AssistantTool
         $stay = $conversation === null ? null : app(Stays::class)->forPhone('+'.$conversation->contact?->wa_id);
         $settings = RestaurantSettings::current();
 
-        if ($stay === null && ! $settings->accept_outside_orders && ! $this->context->isPractice()) {
-            return ['ordered' => false, 'reason' => 'outside_guests', 'message' => 'Orders are only for guests staying at the hotel.'];
-        }
-
         // Match the dishes against what can be ordered now.
         $menu = app(MenuCatalog::class)->forGuests($outlet, $this->context->locale);
         $available = collect($menu['sections'])->flatMap(fn (array $s) => $s['items']);
@@ -109,11 +105,17 @@ final class PlaceOrder extends AssistantTool
         }
 
         $this->context->allowMoney($total);
+        $priced = ['dishes' => $summary, 'total' => MoneyFormatter::format($total, $this->context->locale)];
+
+        // The exact price is given to anyone who asks; only the order itself is for staying guests.
+        if ($stay === null && ! $settings->accept_outside_orders && ! $this->context->isPractice()) {
+            return ['ordered' => false, 'reason' => 'outside_guests', 'message' => 'Orders are only for guests staying at the hotel. You may still tell the guest these exact prices.', ...$priced];
+        }
         $delivery = (string) ($arguments['delivery'] ?? 'room') === 'outlet' ? OrderDelivery::Outlet : OrderDelivery::Room;
         $payment = (string) ($arguments['payment'] ?? 'on_delivery') === 'room_charge' ? OrderPayment::RoomCharge : OrderPayment::OnDelivery;
 
         if ($stay === null && ! $this->context->isPractice() && ($delivery === OrderDelivery::Room || $payment === OrderPayment::RoomCharge)) {
-            return ['ordered' => false, 'reason' => 'not_staying', 'message' => 'This number is not a guest staying at the hotel: offer delivery at the outlet, paid on delivery.'];
+            return ['ordered' => false, 'reason' => 'not_staying', 'message' => 'This number is not a guest staying at the hotel: offer delivery at the outlet, paid on delivery.', ...$priced];
         }
 
         $preview = [

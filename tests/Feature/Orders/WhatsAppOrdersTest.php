@@ -113,6 +113,22 @@ it('keeps room delivery and the room bill for guests staying, and respects the h
     expect(($this->ask)('Encore une', $outsider)->tools[0]['result'])->toContain('outside_guests');
 });
 
+it('gives anyone the exact total of several dishes, so the assistant never multiplies menu prices', function (): void {
+    webhookPost($this, [inbound('wamid.X2', from: '2250700000098', name: 'Awa')]);
+    $outsider = ($this->in)(fn () => Conversation::query()->whereHas('contact', fn ($q) => $q->where('wa_id', '2250700000098'))->sole());
+    ($this->in)(fn () => RestaurantSettings::current()->update(['accept_outside_orders' => false]));
+
+    HotelAssistantAgent::fake([
+        orderCall(false, 'outlet', 'on_delivery', [['dish' => 'Poulet braisé', 'quantity' => 3]]),
+        aiReply('Trois poulets braisés font 15 000 FCFA. Les commandes sont réservées aux clients de l\'hôtel.', ['intent' => 'menu_question']),
+    ]);
+    $result = ($this->ask)('Un total approximatif pour 3 poulets braisés ?', $outsider);
+
+    expect($result->tools[0]['result'])->toContain('outside_guests')->toContain('15')
+        ->and($result->handover)->toBeFalse()
+        ->and(($this->in)(fn () => Order::query()->count()))->toBe(0);
+});
+
 it('says when the room bill limit is reached so the guest can pay on delivery', function (): void {
     ($this->in)(fn () => RestaurantSettings::current()->update(['room_charge_order_limit_minor' => 5000]));
     HotelAssistantAgent::fake([orderCall(true), aiReply('Cette commande dépasse la limite de la note, vous pouvez payer à la livraison.', ['intent' => 'food_order'])]);
