@@ -56,7 +56,8 @@ Schedule::command('arrivals:flag-unconfirmed')
     ->everyFifteenMinutes()
     ->withoutOverlapping();
 
-// Sprint F: guests whose rooms are released within two hours get a deposit reminder.
+// Sprint F: guests whose rooms are released within two hours get a deposit reminder;
+// 0.36: bank transfers past their deadline without a receipt end.
 Schedule::command('deposits:remind')
     ->name('deposits:remind')
     ->everyFiveMinutes()

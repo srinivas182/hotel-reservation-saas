@@ -10,6 +10,7 @@ use App\Domains\Conversations\Exceptions\CannotSend;
 use App\Domains\Conversations\MessageSender;
 use App\Domains\Conversations\MessageSource;
 use App\Domains\Deposits\Deposits;
+use App\Domains\Deposits\Models\DepositAttempt;
 use App\Domains\Deposits\Models\DepositLink;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Folio\Folio;
@@ -28,7 +29,9 @@ use Illuminate\Foundation\Queue\Queueable;
  * - link: the payment link, sent (again) by staff;
  * - reminder: the rooms are released soon, with the link again;
  * - paid: the receipt, and what is left to pay at the hotel;
- * - late: the payment arrived after the rooms were released.
+ * - late: the payment arrived after the rooms were released;
+ * - transfer_rejected / transfer_expired (0.36): a bank transfer was not
+ *   found, or its deadline passed without a receipt.
  * Free text within 24 hours of the guest's last message, otherwise the
  * approved template; when neither is possible, staff are asked to call.
  */
@@ -46,9 +49,9 @@ final class TellGuestAboutDeposit implements RequiresHotelContext, ShouldQueue
     public const TEMPLATES = ['link' => 'deposit_reminder', 'reminder' => 'deposit_reminder', 'paid' => 'deposit_received'];
 
     /**
-     * @param  'link'|'reminder'|'paid'|'late'  $kind
+     * @param  'link'|'reminder'|'paid'|'late'|'transfer_rejected'|'transfer_expired'  $kind
      */
-    public function __construct(public readonly string $linkId, public readonly string $kind) {}
+    public function __construct(public readonly string $linkId, public readonly string $kind, public readonly ?string $attemptId = null) {}
 
     public function handle(MessageSender $sender, ConversationDirectory $directory, TenantContext $context, Deposits $deposits, Folio $folio): void
     {
@@ -80,7 +83,14 @@ final class TellGuestAboutDeposit implements RequiresHotelContext, ShouldQueue
             'check_in' => self::localized($booking->check_in, $locale)->isoFormat('D MMMM'),
         ];
 
+        $attempt = $this->attemptId === null ? null : DepositAttempt::query()->find($this->attemptId);
+        $values['transfer'] = $attempt === null ? '' : $money($attempt->amount_minor);
+        $values['transfer_reference'] = $attempt->reference ?? '';
+        $values['reason'] = (string) ($attempt->failure ?? '');
+
         $text = match ($this->kind) {
+            'transfer_rejected' => __('Hello :name, :hotel could not find your bank transfer of :transfer (reference :transfer_reference) for booking :reference: :reason. You can pay another way with your link: :url — or write to us here.', $values, $locale),
+            'transfer_expired' => __('Hello :name, no bank transfer receipt arrived in time for booking :reference, so this transfer offer has ended. You can still pay with your link while it is valid: :url — or write to us here.', $values, $locale),
             'link' => __('Hello :name, here is the link to pay the deposit of :deposit for booking :reference at :hotel (rooms held until :deadline): :url', $values, $locale),
             'reminder' => __('Hello :name, a reminder from :hotel: your rooms for booking :reference are held until :deadline. Pay the deposit of :deposit here to confirm it: :url', $values, $locale),
             'paid' => __('Thank you :name! We received :amount by :method for booking :reference (receipt :receipt). Your booking is confirmed; see you on :check_in.', $values, $locale)

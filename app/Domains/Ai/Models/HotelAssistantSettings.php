@@ -48,6 +48,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<string, array{enabled: bool, price_minor: int|null}>|null $arrival_extras Sprint G: pickup, early check-in, extra bed
  * @property string|null $arrival_photo_path Sprint G: photo of the entrance, on the card
  * @property array<string, array<string, string>>|null $decision_messages
+ * @property array<string, mixed> $bank_transfer 0.36: enabled, bank_name, account_holder, account_number, iban, swift, branch, note (encrypted)
  * @property int $prepay_discount_percent 0.31: discount for paying the whole stay online before arrival (0: not offered)
  * @property string|null $pay_at_hotel_hold_until 0.31: HH:MM on the arrival day until which a pay-at-the-hotel room is kept
  */
@@ -80,7 +81,7 @@ class HotelAssistantSettings extends Model
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
         'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes', 'request_escalate_minutes',
         'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'deposit_online', 'deposit_allow_full', 'deposit_refund_days', 'arrival_directions', 'arrival_tip', 'reception_closes_at', 'night_arrival', 'arrival_extras', 'arrival_photo_path', 'decision_messages', 'silence_minutes', 'daily_alert_cap', 'stay_messages', 'review_url',
-        'prepay_discount_percent', 'pay_at_hotel_hold_until',
+        'prepay_discount_percent', 'pay_at_hotel_hold_until', 'bank_transfer',
         'mode', 'privacy_url', 'human_keywords', 'readiness_override_at', 'readiness_override_reason', 'readiness_override_by',
     ];
 
@@ -102,6 +103,7 @@ class HotelAssistantSettings extends Model
             'deposit_allow_full' => 'boolean',
             'deposit_refund_days' => 'integer',
             'prepay_discount_percent' => 'integer',
+            'bank_transfer' => \App\Support\Casts\RecoverableEncryptedArray::class,
             'arrival_directions' => 'array',
             'arrival_tip' => 'array',
             'night_arrival' => 'array',
@@ -152,6 +154,16 @@ class HotelAssistantSettings extends Model
      * The mode in effect: automatic falls back to supervised while the
      * platform has the automatic-mode feature off for this hotel.
      */
+    /** 0.36: the hotel takes bank transfers and has said where to send them. */
+    public function takesBankTransfer(): bool
+    {
+        $bank = $this->bank_transfer;
+
+        $account = trim((string) ($bank['account_number'] ?? '')).trim((string) ($bank['iban'] ?? ''));
+
+        return (bool) ($bank['enabled'] ?? false) && $account !== '' && trim((string) ($bank['account_holder'] ?? '')) !== '';
+    }
+
     public function effectiveMode(): AssistantMode
     {
         if ($this->mode === AssistantMode::Automatic && ! app(\App\Domains\Platform\Features\Features::class)->enabled(\App\Domains\Platform\Features\Feature::AutomaticMode)) {

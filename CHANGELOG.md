@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Several ways to pay, and bank transfer (0.36.0)
+
+Hotels can now take mobile money (CinetPay) and cards (Stripe) at the same time, and bank transfers, with the pay-now discount on each.
+
+#### Added
+
+- **One account per provider.** Deposits → Account and rules shows a card per provider (CinetPay, Stripe), each with its own keys, mode, set-up guide and check; any number can be on. The guest's payment page shows a button per method. `merchant_accounts` is unique per hotel and driver; the hotel notification address matches each notification to the provider that signed it.
+- **Bank transfer.** The hotel enters its bank details (encrypted). The guest chooses a transfer for the deposit or the whole stay (pay-now price), gets the details and a reference, and must transfer within 48 hours and at least 2 days before arrival (and before a deposit hold ends). The guest uploads the receipt on the page (or sends it on WhatsApp); staff with the deposit alert are told; **Bank transfers to check** on the Payments tab lets staff open the receipt and approve (recorded like any payment: room bill, discount, confirmation, receipt) or reject with a message to the guest. Transfers without a receipt end at their deadline (`deposits:remind`) and the guest is told.
+- **Assistant:** `get_quote` returns `pay_now_ways` (mobile money, card, bank transfer); rule 11 explains the transfer deadline and never to say a payment was received.
+
+#### Changed
+
+- The pay-now discount works with bank transfer alone (no online provider needed).
+- Clearer labels: Enabled/Disabled per method, "Live mode" / "Test mode".
+
+#### Database
+
+- `2026_12_30_000100_payment_methods_and_bank_transfer`: `merchant_accounts` unique (`hotel_id`, `driver`); `deposit_attempts` gets `method`, `expires_at`, `proof_path`, `proof_at`, `decided_by`, `decided_at` and a nullable `merchant_account_id`; `hotel_assistant_settings.bank_transfer`. Reversible without data loss: a rollback keeps every account of a hotel that already uses two providers (the one-account index returns only where it holds), and the migration can run again after it.
+
+#### Tests
+
+- `DepositsTest`: every method on the page; a transfer at the pay-now price from choice to receipt to approval (and not twice, and never for another hotel); rejection and expiry tell the guest; no transfer when it cannot arrive in time; the hotel address routes to the provider that signed; bank details saved only when complete, encrypted.
+- `ToolsAndAmountsTest`: pay-now offered by bank transfer alone, with `pay_now_ways`.
+
 ### "Yes, I want to book it" no longer goes to staff (0.35.8)
 
 Live test on staging: the assistant quoted the Suite at 60 000 XOF; the guest answered "Yes. I want to book it" and got the hand-over message. The reply repeated the 60 000 XOF quoted in the previous turn, but the amount check only accepted amounts returned by tools in the current turn, so it was blocked twice.

@@ -21,19 +21,47 @@ import { t } from '@/lib/i18n';
 
 type Driver = { value: string; label: string; fields: string[] };
 
+type Account = {
+    driver: string;
+    mode: 'test' | 'live';
+    active: boolean;
+    masked: Record<string, string>;
+    checked_at: string | null;
+    last_error: string | null;
+};
+
+type Bank = {
+    enabled: boolean;
+    bank_name: string;
+    account_holder: string;
+    account_number: string;
+    iban: string;
+    swift: string;
+    branch: string;
+    note: string;
+    ready: boolean;
+};
+
+type Transfer = {
+    id: string;
+    booking_id: string;
+    booking: string;
+    guest: string | null;
+    reference: string;
+    amount: string;
+    deadline: string | null;
+    proof_at: string | null;
+    proof_url: string | null;
+};
+
 type Props = {
     month: string;
     online: boolean;
     canManage: boolean;
     canRefund: boolean;
-    account: {
-        driver: string;
-        mode: 'test' | 'live';
-        active: boolean;
-        masked: Record<string, string>;
-        checked_at: string | null;
-        last_error: string | null;
-    } | null;
+    accounts: Record<string, Account>;
+    bank: Bank | null;
+    transfers: Transfer[];
     drivers: Driver[];
     notifyUrl: string | null;
     settings: {
@@ -131,11 +159,11 @@ function RefundRow({
 
 function AccountForm({
     account,
-    drivers,
+    driver,
     notifyUrl,
 }: {
-    account: Props['account'];
-    drivers: Driver[];
+    account: Account | null;
+    driver: Driver;
     notifyUrl: string | null;
 }) {
     const form = useForm<{
@@ -144,13 +172,13 @@ function AccountForm({
         active: boolean;
         credentials: Record<string, string>;
     }>({
-        driver: account?.driver ?? drivers[0]?.value ?? 'cinetpay',
-        mode: account?.mode ?? 'live',
+        driver: driver.value,
+        mode: account?.mode ?? 'test',
         active: account?.active ?? false,
         credentials: {},
     });
     const errors = form.errors as Record<string, string | undefined>;
-    const driver = drivers.find((d) => d.value === form.data.driver);
+    const [open, setOpen] = useState(account !== null);
 
     return (
         <form
@@ -163,88 +191,92 @@ function AccountForm({
                 });
             }}
         >
-            <Heading
-                variant="small"
-                title={t('Your payment account')}
-                description={t(
-                    'Guests pay your hotel directly through your own provider account (mobile money or cards): the money never passes through us. Keys are stored encrypted and never shown again.',
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <p className="font-medium">{driver.label}</p>
+                    <span
+                        className={
+                            account?.active
+                                ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                                : 'rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground'
+                        }
+                    >
+                        {account?.active ? t('Enabled') : t('Disabled')}
+                    </span>
+                </div>
+                {!open && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setOpen(true)}
+                    >
+                        {t('Set up')}
+                    </Button>
                 )}
-            />
-            <div className="flex flex-wrap gap-3">
-                <label className="grid gap-1">
-                    <span className="font-medium">{t('Provider')}</span>
-                    <select
-                        className={selectClass}
-                        value={form.data.driver}
-                        onChange={(e) => form.setData('driver', e.target.value)}
-                    >
-                        {drivers.map((d) => (
-                            <option key={d.value} value={d.value}>
-                                {d.label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="grid gap-1">
-                    <span className="font-medium">{t('Mode')}</span>
-                    <select
-                        className={selectClass}
-                        value={form.data.mode}
-                        onChange={(e) =>
-                            form.setData(
-                                'mode',
-                                e.target.value as 'test' | 'live',
-                            )
-                        }
-                    >
-                        <option value="live">{t('Live')}</option>
-                        <option value="test">{t('Test')}</option>
-                    </select>
-                </label>
             </div>
-            <ProviderGuide
-                driver={form.data.driver}
-                mode={form.data.mode}
-                notifyUrl={notifyUrl}
-            />
-            {driver?.fields.map((field) => (
-                <label key={field} className="grid gap-1">
-                    <span className="font-medium">{fieldLabel(field)}</span>
-                    <Input
-                        type="password"
-                        autoComplete="off"
-                        placeholder={
-                            account?.driver === form.data.driver &&
-                            account.masked[field]
-                                ? account.masked[field] +
-                                  ' · ' +
-                                  t('leave empty to keep')
-                                : ''
-                        }
-                        value={form.data.credentials[field] ?? ''}
-                        onChange={(e) =>
-                            form.setData('credentials', {
-                                ...form.data.credentials,
-                                [field]: e.target.value,
-                            })
-                        }
+            {open && (
+                <>
+                    <label className="grid w-fit gap-1">
+                        <span className="font-medium">{t('Mode')}</span>
+                        <select
+                            className={selectClass}
+                            value={form.data.mode}
+                            onChange={(e) =>
+                                form.setData(
+                                    'mode',
+                                    e.target.value as 'test' | 'live',
+                                )
+                            }
+                        >
+                            <option value="live">{t('Live mode')}</option>
+                            <option value="test">{t('Test mode')}</option>
+                        </select>
+                    </label>
+                    <ProviderGuide
+                        driver={driver.value}
+                        mode={form.data.mode}
+                        notifyUrl={notifyUrl}
                     />
-                </label>
-            ))}
-            <InputError message={errors.credentials ?? errors.driver} />
-            <label className="flex items-center gap-2">
-                <input
-                    type="checkbox"
-                    className="size-4"
-                    checked={form.data.active}
-                    onChange={(e) => form.setData('active', e.target.checked)}
-                />
-                {t('Take payments with this account')}
-            </label>
-            {account && account.checked_at && (
-                <p className="text-xs text-muted-foreground">
-                    {account.checked_at && (
-                        <span className="block">
+                    {driver.fields.map((field) => (
+                        <label key={field} className="grid gap-1">
+                            <span className="font-medium">
+                                {fieldLabel(field)}
+                            </span>
+                            <Input
+                                type="password"
+                                autoComplete="off"
+                                placeholder={
+                                    account?.masked[field]
+                                        ? account.masked[field] +
+                                          ' · ' +
+                                          t('leave empty to keep')
+                                        : ''
+                                }
+                                value={form.data.credentials[field] ?? ''}
+                                onChange={(e) =>
+                                    form.setData('credentials', {
+                                        ...form.data.credentials,
+                                        [field]: e.target.value,
+                                    })
+                                }
+                            />
+                        </label>
+                    ))}
+                    <InputError message={errors.credentials ?? errors.driver} />
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            className="size-4"
+                            checked={form.data.active}
+                            onChange={(e) =>
+                                form.setData('active', e.target.checked)
+                            }
+                        />
+                        {t('Take payments with this account')}
+                    </label>
+                    {account?.checked_at && (
+                        <p className="text-xs text-muted-foreground">
                             {account.last_error
                                 ? t('Last check on :at: refused (:error).', {
                                       at: account.checked_at,
@@ -253,34 +285,233 @@ function AccountForm({
                                 : t('Last check on :at: keys accepted.', {
                                       at: account.checked_at,
                                   })}
-                        </span>
+                        </p>
                     )}
-                </p>
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={form.processing}
+                        >
+                            <KeyRound aria-hidden />
+                            {t('Save')}
+                        </Button>
+                        {account && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                    router.post(
+                                        '/hotel/deposits/account/check',
+                                        { driver: driver.value },
+                                        { preserveScroll: true },
+                                    )
+                                }
+                            >
+                                <ShieldCheck aria-hidden />
+                                {t('Test the keys')}
+                            </Button>
+                        )}
+                    </div>
+                </>
             )}
-            <div className="flex flex-wrap gap-2">
+        </form>
+    );
+}
+
+function BankForm({ bank }: { bank: Bank }) {
+    const form = useForm({
+        enabled: bank.enabled,
+        bank_name: bank.bank_name,
+        account_holder: bank.account_holder,
+        account_number: bank.account_number,
+        iban: bank.iban,
+        swift: bank.swift,
+        branch: bank.branch,
+        note: bank.note,
+    });
+    const text = (
+        key:
+            | 'bank_name'
+            | 'account_holder'
+            | 'account_number'
+            | 'iban'
+            | 'swift'
+            | 'branch',
+        label: string,
+    ) => (
+        <label className="grid gap-1">
+            <span className="font-medium">{label}</span>
+            <Input
+                value={form.data[key]}
+                onChange={(e) => form.setData(key, e.target.value)}
+                autoComplete="off"
+            />
+            <InputError message={form.errors[key]} />
+        </label>
+    );
+
+    return (
+        <form
+            className="flex flex-col gap-3 rounded-xl border bg-card p-5 text-sm"
+            onSubmit={(e) => {
+                e.preventDefault();
+                form.put('/hotel/deposits/bank', { preserveScroll: true });
+            }}
+        >
+            <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">{t('Bank transfer')}</p>
+                <span
+                    className={
+                        bank.ready
+                            ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                            : 'rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground'
+                    }
+                >
+                    {bank.ready ? t('Enabled') : t('Disabled')}
+                </span>
+            </div>
+            <p className="text-muted-foreground">
+                {t(
+                    'Guests who choose it see these details and a reference on their payment page, transfer within 48 hours (and at least 2 days before arrival), then send the receipt. You approve it once the money is on your account; the pay-now discount applies too.',
+                )}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+                {text('account_holder', t('Account holder'))}
+                {text('bank_name', t('Bank'))}
+                {text('account_number', t('Account number (RIB)'))}
+                {text('iban', t('IBAN (optional)'))}
+                {text('swift', t('SWIFT / BIC (optional)'))}
+                {text('branch', t('Branch (optional)'))}
+            </div>
+            <label className="grid gap-1">
+                <span className="font-medium">
+                    {t('Note for the guest (optional)')}
+                </span>
+                <Input
+                    value={form.data.note}
+                    onChange={(e) => form.setData('note', e.target.value)}
+                />
+            </label>
+            <label className="flex items-center gap-2">
+                <input
+                    type="checkbox"
+                    className="size-4"
+                    checked={form.data.enabled}
+                    onChange={(e) => form.setData('enabled', e.target.checked)}
+                />
+                {t('Offer bank transfer')}
+            </label>
+            <div>
                 <Button type="submit" size="sm" disabled={form.processing}>
-                    <KeyRound aria-hidden />
                     {t('Save')}
                 </Button>
-                {account && (
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                            router.post(
-                                '/hotel/deposits/account/check',
-                                {},
-                                { preserveScroll: true },
-                            )
-                        }
-                    >
-                        <ShieldCheck aria-hidden />
-                        {t('Test the keys')}
-                    </Button>
-                )}
             </div>
         </form>
+    );
+}
+
+function TransferRow({ row }: { row: Transfer }) {
+    const [rejecting, setRejecting] = useState(false);
+    const form = useForm({ reason: '' });
+
+    return (
+        <li className="flex flex-col gap-2 py-3 text-sm">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                    <Link
+                        href={`/hotel/bookings/${row.booking_id}`}
+                        className="font-medium hover:underline"
+                    >
+                        {row.guest ?? row.booking}
+                    </Link>
+                    <div className="text-xs text-muted-foreground">
+                        {row.booking} · {t('reference')}{' '}
+                        <span className="font-mono">{row.reference}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {row.proof_at
+                            ? t('Receipt sent :at', { at: row.proof_at })
+                            : t('No receipt yet · transfer before :deadline', {
+                                  deadline: row.deadline ?? '—',
+                              })}
+                    </div>
+                </div>
+                <div className="text-right font-medium tabular-nums">
+                    {row.amount}
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+                {row.proof_url && (
+                    <Button asChild size="sm" variant="outline">
+                        <a
+                            href={row.proof_url}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            {t('See the receipt')}
+                        </a>
+                    </Button>
+                )}
+                <Button
+                    size="sm"
+                    onClick={() =>
+                        router.post(
+                            `/hotel/deposits/transfers/${row.id}/approve`,
+                            {},
+                            { preserveScroll: true },
+                        )
+                    }
+                >
+                    {t('Money received: approve')}
+                </Button>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRejecting(!rejecting)}
+                >
+                    {t('Not received')}
+                </Button>
+            </div>
+            {rejecting && (
+                <form
+                    className="flex flex-wrap items-end gap-2"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        form.post(
+                            `/hotel/deposits/transfers/${row.id}/reject`,
+                            {
+                                preserveScroll: true,
+                            },
+                        );
+                    }}
+                >
+                    <label className="grid flex-1 gap-1">
+                        <span className="text-xs font-medium">
+                            {t('What to tell the guest')}
+                        </span>
+                        <Input
+                            value={form.data.reason}
+                            placeholder={t(
+                                'No transfer with this reference on our account',
+                            )}
+                            onChange={(e) =>
+                                form.setData('reason', e.target.value)
+                            }
+                        />
+                    </label>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={form.processing}
+                    >
+                        {t('Reject and tell the guest')}
+                    </Button>
+                    <InputError message={form.errors.reason} />
+                </form>
+            )}
+        </li>
     );
 }
 
@@ -410,7 +641,7 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
                     />
                     <span className="font-normal text-muted-foreground">
                         {t(
-                            '0 = no pay-now offer. With a discount, the confirmation offers both: pay now online at the lower price, or pay the full price at the hotel. Needs online payments (above).',
+                            '0 = no pay-now offer. With a discount, the confirmation offers both: pay now at the lower price (online or by bank transfer), or pay the full price at the hotel. Needs at least one way to pay above.',
                         )}
                     </span>
                     <InputError message={form.errors.prepay_discount_percent} />
@@ -552,6 +783,21 @@ export default function Deposits(props: Props) {
                             />
                         </div>
 
+                        {props.transfers.length > 0 && (
+                            <Section
+                                title={t('Bank transfers to check')}
+                                description={t(
+                                    'Check your bank account for each reference, then approve: the booking is confirmed and the guest gets the receipt.',
+                                )}
+                            >
+                                <ul className="divide-y">
+                                    {props.transfers.map((row) => (
+                                        <TransferRow key={row.id} row={row} />
+                                    ))}
+                                </ul>
+                            </Section>
+                        )}
+
                         {props.refunds.length > 0 && (
                             <section
                                 aria-labelledby="refunds-heading"
@@ -690,11 +936,25 @@ export default function Deposits(props: Props) {
 
                 {tab === 'settings' && props.canManage && (
                     <>
-                        <AccountForm
-                            account={props.account}
-                            drivers={props.drivers}
-                            notifyUrl={props.notifyUrl}
-                        />
+                        <div className="grid gap-1">
+                            <h2 className="font-medium">
+                                {t('How guests can pay you')}
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                {t(
+                                    'Turn on as many as you like: guests choose on their payment page. The money goes straight to your own accounts; keys are stored encrypted and never shown again.',
+                                )}
+                            </p>
+                        </div>
+                        {props.drivers.map((driver) => (
+                            <AccountForm
+                                key={driver.value}
+                                driver={driver}
+                                account={props.accounts[driver.value] ?? null}
+                                notifyUrl={props.notifyUrl}
+                            />
+                        ))}
+                        {props.bank && <BankForm bank={props.bank} />}
                         <RulesForm settings={props.settings} />
                     </>
                 )}

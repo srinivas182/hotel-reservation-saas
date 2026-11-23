@@ -40,13 +40,21 @@ final class DepositWebhookController extends Controller
     public function forHotel(Request $request, string $hotel, TenantContext $context): Response
     {
         $found = Hotel::query()->find($hotel);
-        $account = $found === null ? null : $context->run($found, fn (): ?MerchantAccount => MerchantAccount::current());
-
-        if ($found === null || $account === null) {
+        if ($found === null) {
             return response('unknown', 404);
         }
 
-        return $this->handle($request, $found, $account, $context);
+        // 0.36: several providers share the address; the one whose signature
+        // the notification carries (Stripe-Signature, CinetPay site id…) takes it.
+        $accounts = $context->run($found, fn () => MerchantAccount::usableAll());
+        foreach ($accounts as $account) {
+            $recognised = $context->run($found, fn (): bool => $account->driver()->notification($request) !== null);
+            if ($recognised) {
+                return $this->handle($request, $found, $account, $context);
+            }
+        }
+
+        return response($accounts->isEmpty() ? 'unknown' : 'unauthorised', $accounts->isEmpty() ? 404 : 401);
     }
 
     private function handle(Request $request, Hotel $hotel, MerchantAccount $found, TenantContext $context): Response

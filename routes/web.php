@@ -155,6 +155,7 @@ Route::middleware('throttle:30,1')->group(function (): void {
     Route::get('pay/{token}', [PublicDepositController::class, 'show'])->name('deposits.show');
     Route::post('pay/{token}', [PublicDepositController::class, 'pay'])->middleware('throttle:10,1')->name('deposits.pay');
     Route::get('pay/{token}/back', [PublicDepositController::class, 'back'])->name('deposits.back');
+    Route::post('pay/{token}/receipt', [PublicDepositController::class, 'proof'])->middleware('throttle:6,1')->name('deposits.proof');
     Route::get('pay-simulation/{reference}', [PublicDepositController::class, 'simulate'])->name('deposits.simulate');
     Route::post('pay-simulation/{reference}', [PublicDepositController::class, 'simulatePay'])->name('deposits.simulate.pay');
 });

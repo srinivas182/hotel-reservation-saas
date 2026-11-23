@@ -25,8 +25,11 @@ use App\Domains\Tenancy\TenantContext;
 use App\Models\User;
 use Brick\Math\RoundingMode;
 use Brick\Money\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -39,7 +42,9 @@ use Throwable;
  * anything changes. Then, once only: the payment goes on the room bill,
  * the booking is confirmed, the guest gets a receipt and staff are told.
  * Without a merchant account, staff confirm a transfer by hand (the guest
- * sends a screenshot), through the same path.
+ * sends a screenshot), through the same path. Since 0.36 a hotel may take
+ * several providers at once, and bank transfers with a reference and a
+ * deadline, approved by staff.
  */
 final class Deposits
 {
@@ -53,12 +58,26 @@ final class Deposits
         private readonly StaffAlerts $alerts,
     ) {}
 
-    /** Deposits are asked for and can be paid online in this hotel. */
+    /** Bank transfer: pay within this many hours (and at least TRANSFER_DAYS_BEFORE_ARRIVAL before arrival). */
+    public const TRANSFER_HOURS = 48;
+
+    public const TRANSFER_DAYS_BEFORE_ARRIVAL = 2;
+
+    /** Deposits are asked for and can be paid through the link in this hotel. */
     public function online(): bool
     {
         $settings = HotelAssistantSettings::current();
 
-        return $settings->deposit_required && $settings->deposit_online && (MerchantAccount::current()?->usable() ?? false);
+        return $settings->deposit_required && $settings->deposit_online && $this->acceptsPayments();
+    }
+
+    /**
+     * 0.36: the link can take a payment: a provider account that works
+     * (CinetPay, Stripe…) or the hotel's bank details for a transfer.
+     */
+    public function acceptsPayments(): bool
+    {
+        return MerchantAccount::usableAll()->isNotEmpty() || HotelAssistantSettings::current()->takesBankTransfer();
     }
 
     /**
@@ -102,7 +121,7 @@ final class Deposits
      */
     public function balanceLinkFor(Booking $booking): ?DepositLink
     {
-        if (! in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::CheckedIn], true) || ! (MerchantAccount::current()?->usable() ?? false) || ! HotelAssistantSettings::current()->deposit_online) {
+        if (! in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::CheckedIn], true) || ! $this->acceptsPayments() || ! HotelAssistantSettings::current()->deposit_online) {
             return null;
         }
 
@@ -174,14 +193,15 @@ final class Deposits
     }
 
     /**
-     * 0.31: the discount (percent) for paying the whole stay online before
-     * arrival; 0 when the hotel does not offer it or cannot take payments online.
+     * 0.31: the discount (percent) for paying the whole stay before arrival,
+     * online or (0.36) by bank transfer; 0 when the hotel does not offer it
+     * or cannot take payments through the link.
      */
     public function prepayPercent(): int
     {
         $settings = HotelAssistantSettings::current();
 
-        return $settings->deposit_online && (MerchantAccount::current()?->usable() ?? false) ? max(0, min(50, $settings->prepay_discount_percent)) : 0;
+        return $settings->deposit_online && $this->acceptsPayments() ? max(0, min(50, $settings->prepay_discount_percent)) : 0;
     }
 
     /**
@@ -226,30 +246,24 @@ final class Deposits
     }
 
     /**
-     * The guest chose what to pay: start a payment with the provider.
+     * The guest chose what to pay and how: start a payment with that
+     * provider (0.36: the hotel may have several; null = the first).
      *
      * @param  'deposit'|'full'  $choice
      */
-    public function start(DepositLink $link, string $choice): DepositAttempt
+    public function start(DepositLink $link, string $choice, ?string $driver = null): DepositAttempt
     {
         if (! $this->canPay($link)) {
             throw new DepositNotPossible(__('This payment link is no longer valid. Write to the hotel on WhatsApp.'));
         }
 
-        $account = MerchantAccount::current();
-        if ($account === null || ! $account->usable()) {
+        $accounts = MerchantAccount::usableAll();
+        $account = $driver === null ? $accounts->first() : $accounts->firstWhere('driver', $driver);
+        if ($account === null) {
             throw new DepositNotPossible(__('Online payment is not available. Write to the hotel on WhatsApp.'));
         }
 
-        $settings = HotelAssistantSettings::current();
-        $amount = match (true) {
-            $link->purpose === 'balance' => $this->dueNow($link->booking),
-            $choice === 'full' && $settings->deposit_allow_full => $this->fullAmount($link),
-            default => $link->deposit_minor,
-        };
-        if ($amount <= 0) {
-            throw new DepositNotPossible(__('Nothing is left to pay on this booking.'));
-        }
+        $amount = $this->amountFor($link, $choice);
         $hotel = $this->context->hotel();
         $booking = $link->booking->loadMissing('guest');
 
@@ -282,11 +296,204 @@ final class Deposits
     }
 
     /**
+     * 0.36: the ways a guest can pay through the link, for the assistant.
+     *
+     * @return list<string>
+     */
+    public function payNowWays(): array
+    {
+        $drivers = MerchantAccount::usableAll()->pluck('driver')->all();
+
+        return array_values(array_filter([
+            array_intersect($drivers, ['cinetpay', 'simulation']) !== [] ? 'mobile money (Wave, Orange Money, MTN MoMo, Moov Money)' : null,
+            in_array('stripe', $drivers, true) || in_array('cinetpay', $drivers, true) ? 'card' : null,
+            HotelAssistantSettings::current()->takesBankTransfer() ? 'bank transfer' : null,
+        ]));
+    }
+
+    /**
+     * What the guest pays for a choice: the balance link's amount due, the
+     * whole stay (at the pay-now price when it applies), or the deposit.
+     *
+     * @param  'deposit'|'full'  $choice
+     */
+    public function amountFor(DepositLink $link, string $choice): int
+    {
+        $amount = match (true) {
+            $link->purpose === 'balance' => $this->dueNow($link->booking),
+            $choice === 'full' && HotelAssistantSettings::current()->deposit_allow_full => $this->fullAmount($link),
+            default => $link->deposit_minor,
+        };
+
+        if ($amount <= 0) {
+            throw new DepositNotPossible(__('Nothing is left to pay on this booking.'));
+        }
+
+        return $amount;
+    }
+
+    /**
+     * 0.36: when a bank transfer must arrive: within 48 hours, at least two
+     * days before arrival, and for a deposit before the rooms are released.
+     * Null when there is no longer time for a transfer.
+     */
+    public function transferDeadline(DepositLink $link): ?CarbonImmutable
+    {
+        if (! HotelAssistantSettings::current()->takesBankTransfer() || ! $this->canPay($link)) {
+            return null;
+        }
+
+        $hotel = $this->context->hotel();
+        $beforeArrival = CarbonImmutable::parse($link->booking->check_in->toDateString(), $hotel->timezone)
+            ->subDays(self::TRANSFER_DAYS_BEFORE_ARRIVAL)->setTime(23, 59)->utc();
+        $deadline = now()->toImmutable()->addHours(self::TRANSFER_HOURS)->min($beforeArrival);
+
+        if ($link->purpose === 'deposit' && $link->expires_at !== null) {
+            $deadline = $deadline->min($link->expires_at);
+        }
+
+        // Less than two hours to transfer is no real offer.
+        return $deadline->lt(now()->addHours(2)) ? null : $deadline;
+    }
+
+    /**
+     * 0.36: the guest will pay by bank transfer. The attempt carries the
+     * amount (the pay-now price for the whole stay), a short reference to
+     * write on the transfer and the deadline. Nothing is paid until staff
+     * approve it after seeing the money on the hotel's account.
+     *
+     * @param  'deposit'|'full'  $choice
+     */
+    public function startTransfer(DepositLink $link, string $choice): DepositAttempt
+    {
+        $deadline = $this->transferDeadline($link);
+        if ($deadline === null) {
+            throw new DepositNotPossible(__('A bank transfer is no longer possible for this booking: it would not arrive in time. Pay online or at the hotel.'));
+        }
+
+        $amount = $this->amountFor($link, $choice);
+
+        // One transfer waiting per link: a new choice replaces the old one.
+        DepositAttempt::query()->where('deposit_link_id', $link->id)->where('method', 'bank_transfer')->where('status', 'pending')->whereNull('proof_at')
+            ->update(['status' => 'failed', 'failure' => 'Replaced by a new transfer choice.', 'updated_at' => now()]);
+
+        $attempt = DepositAttempt::query()->create([
+            'deposit_link_id' => $link->id,
+            'merchant_account_id' => null,
+            'method' => 'bank_transfer',
+            'reference' => 'VIR-'.$link->booking->reference.'-'.strtoupper(Str::random(4)),
+            'amount_minor' => $amount,
+            'currency' => $link->currency,
+            'expires_at' => $deadline,
+        ]);
+
+        Audit::record('deposits.transfer_started', 'The guest chose to pay by bank transfer', subject: $link->booking, properties: ['reference' => $attempt->reference, 'amount_minor' => $amount, 'deadline' => $deadline->toIso8601String()]);
+
+        return $attempt;
+    }
+
+    /**
+     * 0.36: the guest uploaded the transfer receipt: staff check their bank
+     * account, then approve or reject.
+     */
+    public function attachProof(DepositAttempt $attempt, UploadedFile $file): void
+    {
+        if (! $attempt->isTransfer() || $attempt->status !== 'pending') {
+            throw new DepositNotPossible(__('This transfer is no longer waiting for a receipt.'));
+        }
+
+        $path = $file->store('deposit-proofs/'.$attempt->hotel_id, 'local');
+        if ($attempt->proof_path !== null) {
+            Storage::disk('local')->delete($attempt->proof_path);
+        }
+        $attempt->forceFill(['proof_path' => $path, 'proof_at' => now()])->save();
+
+        $booking = $attempt->link->booking->loadMissing('guest');
+        Audit::record('deposits.transfer_proof', 'Bank transfer receipt received', subject: $booking, properties: ['reference' => $attempt->reference]);
+
+        $this->alertQuietly(AlertKind::DepositProof, (string) __(':guest sent a bank transfer receipt of :amount for :reference: check your bank account, then approve it in Deposits', [
+            'guest' => (string) $booking->guest?->name(),
+            'amount' => MoneyFormatter::format(Money::ofMinor($attempt->amount_minor, $attempt->currency), $this->context->hotel()->default_locale),
+            'reference' => $attempt->reference,
+        ]), $booking->id);
+    }
+
+    /**
+     * 0.36: staff saw the transfer on the hotel's bank account. Recorded
+     * like any payment: room bill, pay-now discount, confirmation, receipt.
+     */
+    public function approveTransfer(DepositAttempt $attempt, User $by): bool
+    {
+        $marked = DB::transaction(function () use ($attempt, $by): bool {
+            $locked = DepositAttempt::query()->lockForUpdate()->findOrFail($attempt->id);
+            if (! $locked->isTransfer() || $locked->status !== 'pending') {
+                return false;
+            }
+            $locked->forceFill(['status' => 'paid', 'decided_by' => $by->getKey(), 'decided_at' => now()])->save();
+
+            return true;
+        });
+
+        if (! $marked) {
+            throw new DepositNotPossible(__('This transfer was already handled.'));
+        }
+
+        $attempt->refresh();
+        Audit::record('deposits.transfer_approved', 'Bank transfer approved', subject: $attempt->link->booking, causer: $by, properties: ['reference' => $attempt->reference, 'amount_minor' => $attempt->amount_minor]);
+
+        return $this->markPaid($attempt->link, $attempt->amount_minor, 'bank_transfer', 'manual', $attempt->reference, $by);
+    }
+
+    /**
+     * 0.36: the money is not on the account. The guest is told and can pay
+     * another way; nothing is recorded.
+     */
+    public function rejectTransfer(DepositAttempt $attempt, User $by, string $reason): void
+    {
+        if (! $attempt->isTransfer() || $attempt->status !== 'pending') {
+            throw new DepositNotPossible(__('This transfer was already handled.'));
+        }
+
+        $attempt->forceFill(['status' => 'rejected', 'failure' => mb_substr($reason, 0, 300), 'decided_by' => $by->getKey(), 'decided_at' => now()])->save();
+        Audit::record('deposits.transfer_rejected', 'Bank transfer rejected', subject: $attempt->link->booking, causer: $by, properties: ['reference' => $attempt->reference, 'reason' => $reason]);
+        TellGuestAboutDeposit::dispatch($attempt->deposit_link_id, 'transfer_rejected', $attempt->id);
+    }
+
+    /**
+     * 0.36: transfers past their deadline without a receipt end; the guest
+     * is told the pay-now offer is over (current hotel). Those with a
+     * receipt stay for staff to decide.
+     */
+    public function expireTransfers(): int
+    {
+        $count = 0;
+        $due = DepositAttempt::query()->where('method', 'bank_transfer')->where('status', 'pending')
+            ->whereNull('proof_at')->where('expires_at', '<', now())->get();
+
+        foreach ($due as $attempt) {
+            $attempt->forceFill(['status' => 'expired'])->save();
+            TellGuestAboutDeposit::dispatch($attempt->deposit_link_id, 'transfer_expired', $attempt->id);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * The bank transfer waiting on a link, if any.
+     */
+    public function pendingTransfer(DepositLink $link): ?DepositAttempt
+    {
+        return DepositAttempt::query()->where('deposit_link_id', $link->id)->where('method', 'bank_transfer')->where('status', 'pending')->latest()->first();
+    }
+
+    /**
      * Check a payment with the provider and, once paid, apply it.
      */
     public function settle(DepositAttempt $attempt): DepositAttempt
     {
-        if ($attempt->status !== 'pending') {
+        // Bank transfers are approved by staff, never by a provider.
+        if ($attempt->status !== 'pending' || $attempt->isTransfer() || $attempt->account === null) {
             return $attempt;
         }
 

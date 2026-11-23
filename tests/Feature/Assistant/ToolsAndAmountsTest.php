@@ -69,3 +69,22 @@ it('gives the night price for all the rooms, so the reply never multiplies', fun
         expect($single['nights'][0])->not->toHaveKey('price_all_rooms');
     });
 });
+
+it('offers the pay-now price by bank transfer alone, and says how the guest can pay', function (): void {
+    $this->travelTo('2026-11-01 10:00:00');
+    ['hotel' => $hotel] = assistantHotel();
+
+    app(TenantContext::class)->run($hotel, function (): void {
+        App\Domains\Ai\Models\HotelAssistantSettings::current()->forceFill([
+            'deposit_online' => true,
+            'prepay_discount_percent' => 10,
+            'bank_transfer' => ['enabled' => true, 'account_holder' => 'Hôtel SARL', 'account_number' => 'CI008 0001'],
+        ])->save();
+
+        $quote = json_decode((string) (new GetQuote(new ToolContext('fr')))->handle(new Request(['category_code' => 'EXE', 'check_in' => '2026-11-12', 'check_out' => '2026-11-13', 'adults' => 2])), true);
+
+        expect($quote['payment_options'])->not->toBeNull()
+            ->and($quote['payment_options']['pay_now_ways'])->toBe(['bank transfer'])
+            ->and($quote['payment_options']['pay_now_discount_percent'])->toBe(10);
+    });
+});
