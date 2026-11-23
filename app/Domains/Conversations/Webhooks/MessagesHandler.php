@@ -17,6 +17,7 @@ use App\Domains\Conversations\MessageStatus;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
 use App\Domains\Deposits\Jobs\NoticeDepositProof;
+use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\StaffActions\StaffActionRouter;
 use App\Domains\WhatsApp\Models\WebhookEvent;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
@@ -129,7 +130,11 @@ final class MessagesHandler implements WebhookHandler
         $conversation->contact()->update(['last_inbound_at' => $sentAt]);
 
         $guest = $conversation->contact?->guest;
-        if ($guest !== null && $guest->preferred_locale === null && $message->language !== null) {
+        // 0.36.1: a guest who switches language is answered in the new one
+        // (the detector says nothing when it is unsure).
+        $enabled = HotelSettings::current()->enabled_locales ?? [];
+        if ($guest !== null && $message->language !== null && $guest->preferred_locale !== $message->language
+            && ($guest->preferred_locale === null || in_array($message->language, $enabled, true))) {
             $guest->forceFill(['preferred_locale' => $message->language])->save();
         }
 

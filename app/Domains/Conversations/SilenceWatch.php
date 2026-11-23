@@ -9,6 +9,7 @@ use App\Domains\Assistant\Engine\AssistantEngine;
 use App\Domains\Audit\Audit;
 use App\Domains\Conversations\Exceptions\CannotSend;
 use App\Domains\Conversations\Models\Conversation;
+use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Hotel\StaffedHours;
 use App\Domains\Tenancy\TenantContext;
 
@@ -40,14 +41,19 @@ final class SilenceWatch
             ->get();
 
         foreach ($waiting as $conversation) {
-            $locale = $conversation->contact->guest->preferred_locale ?? $hotel->default_locale;
+            $locale = $this->locale($conversation, $hotel->default_locale);
             $text = $this->engine->handoverMessage($settings, $locale);
             $hours = StaffedHours::forCurrentHotel($hotel);
 
             if (! $hours->isOpen() && ($opening = $hours->nextOpening()) !== null) {
                 /** @var \Carbon\CarbonImmutable $localized */
                 $localized = $opening->locale($locale);
-                $text .= ' '.__('Reception opens at :time.', ['time' => $localized->isoFormat('dddd HH:mm')], $locale);
+                $today = now()->setTimezone($localized->getTimezone());
+                $text .= ' '.match (true) {
+                    $localized->isSameDay($today) => __('Reception opens today at :time.', ['time' => $localized->format('H:i')], $locale),
+                    $localized->isSameDay($today->addDay()) => __('Reception opens tomorrow at :time.', ['time' => $localized->format('H:i')], $locale),
+                    default => __('Reception opens at :time.', ['time' => $localized->isoFormat('dddd HH:mm')], $locale),
+                };
             }
 
             try {
@@ -82,5 +88,23 @@ final class SilenceWatch
         }
 
         return $count;
+    }
+
+    /**
+     * The language of the guest's latest message the hotel answers in, else
+     * the guest's language, else the hotel's.
+     */
+    private function locale(Conversation $conversation, string $default): string
+    {
+        $enabled = HotelSettings::current()->enabled_locales ?? [$default];
+        $latest = $conversation->messages()->where('direction', 'in')->whereNotNull('language')->latest('sent_at')->value('language');
+
+        foreach ([$latest, $conversation->contact?->guest?->preferred_locale] as $candidate) {
+            if (is_string($candidate) && in_array($candidate, $enabled, true)) {
+                return $candidate;
+            }
+        }
+
+        return $default;
     }
 }

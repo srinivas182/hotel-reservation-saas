@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Holding messages in the language the guest writes now (0.36.1)
+
+Live test: a guest who first wrote "Bonjour" and then wrote in English got the staff holding message in French ("La réception ouvre lundi 08:00", on that Monday morning).
+
+#### Fixed
+
+- **The guest's language follows their latest message.** The language saved on the guest was set once (first message) and never changed. It now follows each message the detector is sure about (among the hotel's languages) and each assistant reply's language, so holding messages, confirmations and the payment page use it.
+- **Holding message**: uses the language of the guest's latest message, and says "today at 08:00" / "tomorrow at 08:00" instead of the weekday when reception opens that soon.
+
 ### Several ways to pay, and bank transfer (0.36.0)
 
 Hotels can now take mobile money (CinetPay) and cards (Stripe) at the same time, and bank transfers, with the pay-now discount on each.
