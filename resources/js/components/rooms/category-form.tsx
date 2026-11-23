@@ -17,6 +17,8 @@ export type Category = {
     max_children: number;
     max_occupancy: number;
     extra_bed_allowed: boolean;
+    assistant_keep_back: number;
+    keep_back_release_days: number;
     amenities: string[];
     active: boolean;
     sort_order: number;
@@ -54,6 +56,8 @@ export function CategoryForm({
         max_children: category?.max_children ?? 1,
         max_occupancy: category?.max_occupancy ?? 3,
         extra_bed_allowed: category?.extra_bed_allowed ?? false,
+        assistant_keep_back: category?.assistant_keep_back ?? 0,
+        keep_back_release_days: category?.keep_back_release_days ?? 2,
         amenities: category?.amenities ?? [],
         active: category?.active ?? true,
         sort_order: category?.sort_order ?? 0,
@@ -76,9 +80,12 @@ export function CategoryForm({
             | 'standard_occupancy'
             | 'max_adults'
             | 'max_children'
-            | 'max_occupancy',
+            | 'max_occupancy'
+            | 'assistant_keep_back'
+            | 'keep_back_release_days',
         label: string,
         min = 1,
+        max = 20,
     ) => (
         <div className="grid gap-2">
             <Label htmlFor={`${key}-${category?.id ?? 'new'}`}>{label}</Label>
@@ -86,7 +93,7 @@ export function CategoryForm({
                 id={`${key}-${category?.id ?? 'new'}`}
                 type="number"
                 min={min}
-                max={20}
+                max={max}
                 value={form.data[key]}
                 onChange={(e) => form.setData(key, Number(e.target.value))}
             />
@@ -171,6 +178,62 @@ export function CategoryForm({
                 {number('max_adults', t('Maximum adults'))}
                 {number('max_children', t('Maximum children'), 0)}
                 {number('max_occupancy', t('Maximum guests'))}
+            </div>
+
+            <div className="grid gap-3 rounded-lg border bg-muted/30 p-4">
+                <div>
+                    <p className="text-sm font-medium">
+                        {t('Rooms kept for reception')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        {t(
+                            'The WhatsApp assistant does not sell these rooms, so reception keeps some for walk-ins, phone bookings and guests who extend their stay. They open to the assistant a few days before arrival so they are not left empty. Staff can always sell every room.',
+                        )}
+                    </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {number(
+                        'assistant_keep_back',
+                        t('Rooms kept back each night'),
+                        0,
+                        50,
+                    )}
+                    {number(
+                        'keep_back_release_days',
+                        t('Open to the assistant (days before arrival)'),
+                        0,
+                        30,
+                    )}
+                </div>
+                {category && form.data.assistant_keep_back > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                        {t(
+                            'The assistant sells up to :sold of :total rooms (:percent%) until :days days before arrival, then all of them.',
+                            {
+                                sold: Math.max(
+                                    0,
+                                    category.rooms_count -
+                                        form.data.assistant_keep_back,
+                                ),
+                                total: category.rooms_count,
+                                percent:
+                                    category.rooms_count > 0
+                                        ? Math.round(
+                                              (Math.max(
+                                                  0,
+                                                  category.rooms_count -
+                                                      form.data
+                                                          .assistant_keep_back,
+                                              ) /
+                                                  category.rooms_count) *
+                                                  100,
+                                          )
+                                        : 0,
+                                days: form.data.keep_back_release_days,
+                            },
+                        )}
+                    </p>
+                )}
             </div>
 
             <div className="grid gap-2">

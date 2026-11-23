@@ -111,6 +111,7 @@ final class QuoteService
                 'rate' => Money::ofMinor($price['rate_minor'] ?? $rate->base_minor, $currency),
                 'label' => $price['label'],
                 'available' => $nightStopSell ? 0 : (int) ($inventory[$date]['available'] ?? 0),
+                'kept' => $nightStopSell ? 0 : (int) ($inventory[$date]['kept_for_reception'] ?? 0),
             ];
         }
 
@@ -123,9 +124,11 @@ final class QuoteService
         if ($stopSell) {
             $issues[] = new QuoteIssue('stop_sell', __('This room category is not on sale for some of these nights.'));
         } elseif ($minAvailable < $request->rooms) {
-            $issues[] = new QuoteIssue('not_available', __('Not enough rooms are available for these dates.'), [
-                'available' => $minAvailable,
-            ]);
+            // 0.36.7: for the assistant, rooms kept for reception may still be free.
+            $withKept = $nightRows === [] ? 0 : min(array_map(fn (array $row): int => $row['available'] + $row['kept'], $nightRows));
+            $issues[] = $withKept >= $request->rooms
+                ? new QuoteIssue('kept_for_reception', __('The last rooms for these dates are sold by reception, who will confirm availability.'), ['available' => $minAvailable])
+                : new QuoteIssue('not_available', __('Not enough rooms are available for these dates.'), ['available' => $minAvailable]);
         }
 
         // Charges.

@@ -6,7 +6,10 @@ namespace App\Domains\Availability;
 
 use App\Domains\Availability\Models\InventoryDay;
 use App\Domains\Availability\Models\InventoryHold;
+use App\Domains\Rooms\Models\RoomCategory;
 use App\Domains\Rooms\RoomInventory;
+use App\Domains\Tenancy\HotelClock;
+use App\Domains\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
@@ -15,6 +18,7 @@ use Carbon\CarbonPeriod;
  * Rooms available to sell, per category and night, for the current hotel:
  *
  *     available = sellable rooms - held back - active holds - booked
+ *                 (- rooms kept for reception, for the WhatsApp assistant only, 0.36.7)
  *
  * and 0 on stop-sell nights. Sellable rooms come from RoomInventory (rooms
  * in service minus closures). Uses a fixed number of queries however many
@@ -22,14 +26,17 @@ use Carbon\CarbonPeriod;
  */
 final class AvailabilityService
 {
-    public function __construct(private readonly RoomInventory $inventory) {}
+    public function __construct(
+        private readonly RoomInventory $inventory,
+        private readonly SalesChannel $channel,
+    ) {}
 
     /**
      * @param  list<string>|null  $categoryIds  null for all categories
      * @param  CarbonInterface  $from  first night
      * @param  CarbonInterface  $to  last night (inclusive)
      * @param  string|null  $ignoreHoldId  leave one hold out (when extending or converting it)
-     * @return array<string, array<string, array{sellable: int, held_back: int, held: int, booked: int, stop_sell: bool, available: int}>>
+     * @return array<string, array<string, array{sellable: int, held_back: int, held: int, booked: int, stop_sell: bool, available: int, kept_for_reception: int}>>
      */
     public function forRange(?array $categoryIds, CarbonInterface $from, CarbonInterface $to, ?string $ignoreHoldId = null): array
     {
@@ -64,6 +71,8 @@ final class AvailabilityService
             }
         }
 
+        $keepBack = $this->channel->isAssistant() ? $this->keepBack($ids) : [];
+
         $result = [];
         foreach ($sellable as $categoryId => $nights) {
             foreach ($nights as $date => $rooms) {
@@ -75,18 +84,44 @@ final class AvailabilityService
                 $stopSell = $day->stop_sell ?? false;
                 $heldNow = $held[$key] ?? 0;
 
+                $free = $stopSell ? 0 : max(0, $rooms - $heldBack - $heldNow - $booked);
+                $kept = 0;
+                if (isset($keepBack[$categoryId]) && $date >= $keepBack[$categoryId]['from']) {
+                    $kept = min($free, $keepBack[$categoryId]['rooms']);
+                }
+
                 $result[$categoryId][$date] = [
                     'sellable' => $rooms,
                     'held_back' => $heldBack,
                     'held' => $heldNow,
                     'booked' => $booked,
                     'stop_sell' => $stopSell,
-                    'available' => $stopSell ? 0 : max(0, $rooms - $heldBack - $heldNow - $booked),
+                    'available' => $free - $kept,
+                    'kept_for_reception' => $kept,
                 ];
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Rooms each category keeps for reception, and the first night they are
+     * kept (nights closer than the release days are open to the assistant).
+     *
+     * @param  list<string>  $categoryIds
+     * @return array<string, array{rooms: int, from: string}>
+     */
+    private function keepBack(array $categoryIds): array
+    {
+        $today = HotelClock::today(app(TenantContext::class)->hotel());
+
+        return RoomCategory::query()->whereIn('id', $categoryIds)->where('assistant_keep_back', '>', 0)
+            ->get(['id', 'assistant_keep_back', 'keep_back_release_days'])
+            ->mapWithKeys(fn (RoomCategory $c): array => [$c->id => [
+                'rooms' => $c->assistant_keep_back,
+                'from' => $today->addDays($c->keep_back_release_days)->toDateString(),
+            ]])->all();
     }
 
     /**

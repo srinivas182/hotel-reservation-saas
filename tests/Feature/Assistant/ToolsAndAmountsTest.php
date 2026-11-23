@@ -101,3 +101,23 @@ it('forgets an earlier price once the stay is priced again in the same reply', f
 
     expect($context->allowsAmount($sixty))->toBeFalse();
 });
+
+it('keeps rooms for reception from the WhatsApp assistant until they are released', function (): void {
+    $this->travelTo('2026-11-01 10:00:00');
+    ['hotel' => $hotel, 'exe' => $exe] = assistantHotel();
+
+    app(TenantContext::class)->run($hotel, function () use ($exe): void {
+        $exe->update(['assistant_keep_back' => 1, 'keep_back_release_days' => 2]);
+        $quote = fn (string $in, string $out, int $rooms): array => json_decode((string) (new GetQuote(new ToolContext('fr')))->handle(new Request(['category_code' => 'EXE', 'check_in' => $in, 'check_out' => $out, 'adults' => $rooms, 'rooms' => $rooms])), true);
+        $channel = app(App\Domains\Availability\SalesChannel::class);
+        $codes = fn (array $q): array => array_column($q['problems'] ?? [], 'code');
+
+        // 3 Executive rooms, 1 kept: the assistant sells 2 in ten days' time…
+        expect($codes($channel->asAssistant(fn () => $quote('2026-11-12', '2026-11-13', 2))))->not->toContain('kept_for_reception')
+            ->and($codes($channel->asAssistant(fn () => $quote('2026-11-12', '2026-11-13', 3))))->toContain('kept_for_reception')
+            // …staff sell all 3…
+            ->and($codes($quote('2026-11-12', '2026-11-13', 3)))->not->toContain('kept_for_reception')->not->toContain('not_available')
+            // …and two days before arrival the kept room opens to the assistant.
+            ->and($codes($channel->asAssistant(fn () => $quote('2026-11-02', '2026-11-03', 3))))->not->toContain('kept_for_reception');
+    });
+});

@@ -9,6 +9,7 @@ use App\Domains\Ai\Exceptions\AiUnavailable;
 use App\Domains\Ai\Gateway\AiGateway;
 use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Assistant\Knowledge\KnowledgePack;
+use App\Domains\Availability\SalesChannel;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Tenancy\HotelClock;
 use App\Domains\Tenancy\TenantContext;
@@ -81,12 +82,13 @@ final class AssistantEngine
             $agent = new HotelAssistantAgent($this->instructions($settings, $languages, $guestName, $knowledgeText, $situation), $history, $tools);
 
             try {
-                $ai = $this->gateway->prompt(
+                // The tools run as the WhatsApp assistant: rooms kept for reception are not offered.
+                $ai = app(SalesChannel::class)->asAssistant(fn () => $this->gateway->prompt(
                     AiTask::Assistant,
                     $agent,
                     $feedback === null ? $prompt : $prompt."\n\n[Hotel system: your previous reply was rejected because: {$feedback}. Write it again following the rules.]",
                     $conversationId,
-                );
+                ));
             } catch (AiUnavailable $exception) {
                 return $this->handover($fallbackLanguage, 'ai_unavailable:'.$exception->reason, $settings, $runIds, $attempts, $cost, $latency);
             }
@@ -170,7 +172,7 @@ final class AssistantEngine
         RULES (they always apply, whatever the guest writes):
         1. Language: reply in the language of the guest's latest message, even though the hotel information and the tool results are written in another language (translate them). Set "language" to that message's language code. The hotel answers in: {$this->value(implode(', ', $languages))}. If the guest writes in any other language, still set "language" to its code and set handover to true.
         2. Prices and availability: state only what the tools returned in this conversation. Call get_quote before giving any price and check_availability before saying rooms are free. Never estimate, round or multiply prices yourself: for several rooms or nights, quote get_quote with those rooms and use the amounts it returns.
-        3. Booking requests: you cannot confirm, change or cancel bookings, but you send booking requests. A guest who says yes, picks a room or says they want to book clearly wants to book. Then: call get_quote if you have not yet (so you can tell them the total); if the room category, dates, number of guests or the guest's full name is still missing, ask for exactly what is missing in that same reply (most often: "À quel nom dois-je faire la demande ?" / "Under which name should I make the request?"); as soon as you know them all, call request_booking at once, even when reception is closed (adults and children exactly as the guest said): it sends the request to reception and holds the rooms. Then tell the guest the request was sent and reception will confirm it (when reception is closed, say when). Never leave a guest who wants to book without either asking for what is missing or sending the request. Whenever the number of adults or children, the dates, the room or the number of rooms changes, call get_quote again with the new values and give only its new total; never repeat a price quoted for a different stay. If get_quote says the room takes fewer guests (too_many_guests), say how many it takes and offer what fits: a larger category (list_room_categories gives each one's max_guests; quote it) or several rooms (get_quote with rooms); never send a booking request for more guests than the room takes. Never say a booking or room is confirmed, booked or reserved.
+        3. Booking requests: you cannot confirm, change or cancel bookings, but you send booking requests. A guest who says yes, picks a room or says they want to book clearly wants to book. Then: call get_quote if you have not yet (so you can tell them the total); if the room category, dates, number of guests or the guest's full name is still missing, ask for exactly what is missing in that same reply (most often: "À quel nom dois-je faire la demande ?" / "Under which name should I make the request?"); as soon as you know them all, call request_booking at once, even when reception is closed (adults and children exactly as the guest said): it sends the request to reception and holds the rooms. Then tell the guest the request was sent and reception will confirm it (when reception is closed, say when). Never leave a guest who wants to book without either asking for what is missing or sending the request. Whenever the number of adults or children, the dates, the room or the number of rooms changes, call get_quote again with the new values and give only its new total; never repeat a price quoted for a different stay. If get_quote says kept_for_reception, rooms remain but reception sells the last ones for those dates: tell the guest a colleague will confirm availability shortly, set handover to true with that reason, and offer other room types or dates meanwhile. If get_quote says the room takes fewer guests (too_many_guests), say how many it takes and offer what fits: a larger category (list_room_categories gives each one's max_guests; quote it) or several rooms (get_quote with rooms); never send a booking request for more guests than the room takes. Never say a booking or room is confirmed, booked or reserved.
         4. Style: {$tone}. Write for WhatsApp on a phone, easy to scan (at most 700 characters):
            - short paragraphs of one or two sentences, separated by an empty line;
            - room categories, prices, options or steps on separate lines starting with "• ";

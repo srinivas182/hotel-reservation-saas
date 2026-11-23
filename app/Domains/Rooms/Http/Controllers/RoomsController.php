@@ -50,6 +50,7 @@ final class RoomsController extends Controller
                 ...$category->only([
                     'id', 'code', 'name', 'description', 'standard_occupancy', 'max_adults',
                     'max_children', 'max_occupancy', 'extra_bed_allowed', 'active', 'sort_order',
+                    'assistant_keep_back', 'keep_back_release_days',
                 ]),
                 'amenities' => $category->amenities ?? [],
                 'display_name' => $category->localizedName($locale, $locale),
