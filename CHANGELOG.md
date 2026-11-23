@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Rooms kept for reception (0.36.7)
+
+Hotels asked to sell only part of their rooms on WhatsApp, so reception keeps some for walk-ins, phone bookings and guests who extend their stay, without ever overbooking.
+
+#### Added
+
+- **Per room category: "Rooms kept back each night"** and **"Open to the assistant (days before arrival)"** (Rooms → the category; default 0 rooms, released 2 days before). The WhatsApp assistant (and the practice screen) does not see kept rooms for nights further away than the release; nearer nights it can sell them all, so they are not left empty. The form shows the result ("up to 8 of 10 rooms (80%) until 2 days before arrival").
+- **Staff always sell every room**: reception, the calendar, bookings and extensions (which staff make) ignore the limit, so an in-house guest can still extend.
+- **`kept_for_reception`** quote issue: when only kept rooms remain, the assistant tells the guest a colleague will confirm availability, flags the conversation for staff (who can sell the last rooms) and offers other rooms or dates meanwhile. Booking requests from the assistant cannot take kept rooms.
+- `SalesChannel` (scoped): the assistant's tools run in the assistant channel; `AvailabilityService` returns `kept_for_reception` per night in that channel only.
+
+#### Database
+
+- `2026_12_31_000100_assistant_keep_back`: `room_categories.assistant_keep_back`, `keep_back_release_days`. Reversible.
+
+#### Tests
+
+- `ToolsAndAmountsTest`: with 3 rooms and 1 kept, the assistant sells 2 (the 3rd is `kept_for_reception`), staff sell 3, and within the release days the assistant sells all 3.
+
 ### Prices follow the number of guests (0.36.6)
 
 Live test by voice note: the Suite was quoted for the default number of guests, then booked "for 3 guests" at the same 60 000 XOF.

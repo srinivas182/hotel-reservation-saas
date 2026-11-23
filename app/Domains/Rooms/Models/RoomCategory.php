@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $max_adults
  * @property int $max_children
  * @property int $max_occupancy
+ * @property int $assistant_keep_back rooms the WhatsApp assistant may not sell (0.36.7)
+ * @property int $keep_back_release_days released to the assistant this many days before arrival
  * @property bool $extra_bed_allowed
  * @property list<string>|null $amenities
  * @property bool $active
@@ -34,6 +36,7 @@ class RoomCategory extends Model
     protected $fillable = [
         'code', 'name', 'description', 'standard_occupancy', 'max_adults', 'max_children',
         'max_occupancy', 'extra_bed_allowed', 'amenities', 'active', 'sort_order',
+        'assistant_keep_back', 'keep_back_release_days',
     ];
 
     /**
@@ -49,6 +52,8 @@ class RoomCategory extends Model
             'max_adults' => 'integer',
             'max_children' => 'integer',
             'max_occupancy' => 'integer',
+            'assistant_keep_back' => 'integer',
+            'keep_back_release_days' => 'integer',
             'extra_bed_allowed' => 'boolean',
             'active' => 'boolean',
             'sort_order' => 'integer',

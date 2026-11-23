@@ -93,6 +93,9 @@ final class RoomCategoryController extends Controller
             'max_adults' => ['required', 'integer', 'min:1', 'lte:max_occupancy'],
             'max_children' => ['required', 'integer', 'min:0', 'lte:max_occupancy'],
             'extra_bed_allowed' => ['required', 'boolean'],
+            // 0.36.7: rooms kept for reception (not sold by the WhatsApp assistant).
+            'assistant_keep_back' => ['nullable', 'integer', 'min:0', 'max:50'],
+            'keep_back_release_days' => ['nullable', 'integer', 'min:0', 'max:30'],
             'amenities' => ['nullable', 'array'],
             'amenities.*' => [Rule::in(Amenity::values())],
             'active' => ['required', 'boolean'],
@@ -113,6 +116,8 @@ final class RoomCategoryController extends Controller
             'max_children' => (int) $data['max_children'],
             'max_occupancy' => (int) $data['max_occupancy'],
             'extra_bed_allowed' => (bool) $data['extra_bed_allowed'],
+            'assistant_keep_back' => (int) ($data['assistant_keep_back'] ?? 0),
+            'keep_back_release_days' => (int) ($data['keep_back_release_days'] ?? 2),
             'amenities' => array_values(array_unique($data['amenities'] ?? [])),
             'active' => (bool) $data['active'],
             'sort_order' => (int) ($data['sort_order'] ?? 0),
