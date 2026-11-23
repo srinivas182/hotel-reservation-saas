@@ -11,18 +11,20 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('deposits:remind')]
-#[Description('Remind guests whose rooms are released soon to pay their deposit, in every hotel')]
+#[Description('Remind guests whose rooms are released soon to pay their deposit, and end bank transfers past their deadline, in every hotel')]
 final class RemindDeposits extends Command
 {
     public function handle(TenantContext $context, Deposits $deposits): int
     {
         $total = 0;
+        $expired = 0;
 
-        $context->eachHotel(function () use ($deposits, &$total): void {
+        $context->eachHotel(function () use ($deposits, &$total, &$expired): void {
             $total += $deposits->remindDue();
+            $expired += $deposits->expireTransfers();
         });
 
-        $this->components->info("{$total} reminder(s) sent.");
+        $this->components->info("{$total} reminder(s) sent, {$expired} bank transfer(s) past their deadline.");
 
         return self::SUCCESS;
     }

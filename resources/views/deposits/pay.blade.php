@@ -23,6 +23,7 @@
         .choice:has(input:checked) { border-color: var(--accent); }
         .amount { font-weight:700; font-size:1.15rem; }
         button { width:100%; margin-top:16px; background:var(--accent); color:var(--accent-fg); border:0; border-radius:12px; padding:15px 16px; font-size:1.1rem; font-weight:700; min-height:52px; }
+        button.alt { background:transparent; color:inherit; border:2px solid var(--accent); }
         .methods { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
         .methods span { border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:.85rem; }
         .ok { background:#dcfce7; color:#14532d; border-radius:12px; padding:14px; margin-top:14px; }
@@ -48,6 +49,9 @@
 
     @if ($error)
         <div class="warn" role="alert">{{ $error }}</div>
+    @endif
+    @if ($notice)
+        <div class="ok" role="status">{{ $notice }}</div>
     @endif
 
     @if ($state === 'paid')
@@ -80,17 +84,65 @@
                     <span><span class="amount">{{ $full }}</span><br><span class="muted">{{ $saving ? __('The whole stay, paid now: you save :percent%', ['percent' => $saving]) : __('The whole stay, nothing to pay on arrival') }}</span></span>
                 </label>
             @endif
-            @if ($cards)
-                <div class="methods" aria-label="{{ __('Accepted') }}"><span>Visa</span><span>Mastercard</span><span>American Express</span></div>
-                <button type="submit">{{ __('Pay by card') }}</button>
-            @else
+            @if ($mobileMoney)
+                <button type="submit" name="method" value="{{ $mobileMoney }}">{{ __('Pay by mobile money') }}</button>
                 <div class="methods" aria-label="{{ __('Accepted') }}"><span>Wave</span><span>Orange Money</span><span>MTN MoMo</span><span>Moov Money</span></div>
-                <button type="submit">{{ __('Pay by mobile money') }}</button>
             @endif
-            <small class="muted">{{ __('You pay :hotel directly, through its payment provider.', ['hotel' => $hotel->name]) }}</small>
+            @if ($cards)
+                <button type="submit" name="method" value="stripe" @class(['alt' => $mobileMoney])>{{ __('Pay by card') }}</button>
+                <div class="methods" aria-label="{{ __('Accepted') }}"><span>Visa</span><span>Mastercard</span><span>American Express</span></div>
+            @endif
+            @if ($bank && $transferUntil)
+                <button type="submit" name="method" value="bank_transfer" @class(['alt' => $mobileMoney || $cards])>{{ __('Pay by bank transfer') }}</button>
+                <small class="muted">{{ __('Transfer before :deadline; the hotel confirms once the money arrives.', ['deadline' => $transferUntil]) }}</small>
+            @endif
+            @if ($mobileMoney || $cards)
+                <small class="muted">{{ __('You pay :hotel directly, through its payment provider.', ['hotel' => $hotel->name]) }}</small>
+            @endif
+            @if (! $mobileMoney && ! $cards && ! ($bank && $transferUntil))
+                <p class="warn">{{ __('Online payment is not available. Write to the hotel on WhatsApp.') }}</p>
+            @endif
         </form>
 
-        @if ($manual !== '')
+        @if ($transfer && $bank)
+            <div class="card" aria-label="{{ __('Bank transfer') }}">
+                <h2>{{ __('Your bank transfer') }}</h2>
+                <div class="row"><span class="muted">{{ __('Amount') }}</span><span class="amount">{{ $transfer['amount'] }}</span></div>
+                <div class="row"><span class="muted">{{ __('Reference to write on the transfer') }}</span><strong>{{ $transfer['reference'] }}</strong></div>
+                <div class="row"><span class="muted">{{ __('Account holder') }}</span><span>{{ $bank['account_holder'] }}</span></div>
+                @if (($bank['bank_name'] ?? '') !== '')
+                    <div class="row"><span class="muted">{{ __('Bank') }}</span><span>{{ $bank['bank_name'] }}</span></div>
+                @endif
+                @if (($bank['account_number'] ?? '') !== '')
+                    <div class="row"><span class="muted">{{ __('Account number') }}</span><span>{{ $bank['account_number'] }}</span></div>
+                @endif
+                @if (($bank['iban'] ?? '') !== '')
+                    <div class="row"><span class="muted">IBAN</span><span>{{ $bank['iban'] }}</span></div>
+                @endif
+                @if (($bank['swift'] ?? '') !== '')
+                    <div class="row"><span class="muted">SWIFT / BIC</span><span>{{ $bank['swift'] }}</span></div>
+                @endif
+                @if (($bank['branch'] ?? '') !== '')
+                    <div class="row"><span class="muted">{{ __('Branch') }}</span><span>{{ $bank['branch'] }}</span></div>
+                @endif
+                @if (($bank['note'] ?? '') !== '')
+                    <p class="muted">{{ $bank['note'] }}</p>
+                @endif
+                <p class="held">⏳ {{ __('Transfer before :deadline, then send the receipt below.', ['deadline' => $transfer['deadline']]) }}</p>
+                @if ($transfer['proof_at'])
+                    <div class="ok" role="status">{{ __('Receipt received :at. The hotel checks its bank account and confirms on WhatsApp.', ['at' => $transfer['proof_at']]) }}</div>
+                @endif
+                <form method="post" action="{{ route('deposits.proof', $token) }}" enctype="multipart/form-data">
+                    @csrf
+                    <label class="muted" for="receipt">{{ $transfer['proof_at'] ? __('Send another receipt') : __('Your transfer receipt (photo or PDF)') }}</label>
+                    <input id="receipt" type="file" name="receipt" accept="image/*,application/pdf" required style="display:block;margin-top:8px;width:100%">
+                    <button type="submit">{{ __('Send the receipt') }}</button>
+                </form>
+                <small class="muted">{{ __('You can also send the receipt on WhatsApp. Nothing is confirmed until the hotel sees the money on its account.') }}</small>
+            </div>
+        @endif
+
+        @if ($manual !== '' && ! $bank)
             <div class="card">
                 <h2>{{ __('Or pay by transfer') }}</h2>
                 <p>{{ $manual }}</p>

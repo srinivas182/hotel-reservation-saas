@@ -30,9 +30,12 @@ use App\Domains\Tenancy\TenantContext;
 use App\Domains\WhatsApp\AccountStatus;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 
 require_once __DIR__.'/../WhatsApp/helpers.php';
 require_once __DIR__.'/../Assistant/helpers.php';
@@ -296,7 +299,7 @@ it('lets a hotel take deposits by card with its own Stripe account', function ()
     Http::fake([
         'api.stripe.com/v1/checkout/sessions/*' => fn () => Http::response([
             'id' => 'cs_dep', 'payment_status' => 'paid', 'status' => 'complete', 'amount_total' => $link->deposit_minor, 'currency' => 'xof', 'payment_intent' => 'pi_dep',
-            'client_reference_id' => Illuminate\Support\Facades\DB::table('deposit_attempts')->value('reference'),
+            'client_reference_id' => DB::table('deposit_attempts')->value('reference'),
         ]),
         'api.stripe.com/v1/checkout/sessions' => Http::response(['id' => 'cs_dep', 'url' => 'https://checkout.stripe.com/c/pay/cs_dep']),
         'graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.X']]]),
@@ -477,19 +480,21 @@ it('keeps the merchant keys secret and checks them with the provider', function 
     ])->assertRedirect();
 
     asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertOk()
-        ->assertInertia(fn ($page) => $page->where('account.masked.apikey', '••••••7654')->where('account.driver', 'cinetpay'))
+        ->assertInertia(fn ($page) => $page->where('accounts.cinetpay.masked.apikey', '••••••7654')->where('accounts.cinetpay.driver', 'cinetpay'))
         ->assertDontSee('live-key-987654');
 
     // Saving again with empty keys keeps them.
     asStaffOf($this->hotel, $this->owner)->put(route('hotel.deposits.account'), ['driver' => 'cinetpay', 'mode' => 'live', 'active' => true, 'credentials' => ['apikey' => '']])->assertRedirect();
-    expect(($this->in)(fn () => MerchantAccount::query()->sole()->credential('apikey')))->toBe('live-key-987654'); // gitleaks:allow
+    expect(($this->in)(fn () => MerchantAccount::forDriver('cinetpay')?->credential('apikey')))->toBe('live-key-987654'); // gitleaks:allow
+    // 0.36: one account per provider; the simulation account is untouched.
+    expect(($this->in)(fn () => MerchantAccount::query()->count()))->toBe(2);
 
     Http::fake(['api-checkout.cinetpay.com/*' => Http::response(['code' => '609', 'message' => 'AUTH_NOT_FOUND'])]);
-    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.account.check'))->assertRedirect();
-    expect(($this->in)(fn () => MerchantAccount::query()->sole()->last_error))->toBe('AUTH_NOT_FOUND');
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.account.check'), ['driver' => 'cinetpay'])->assertRedirect();
+    expect(($this->in)(fn () => MerchantAccount::forDriver('cinetpay')?->last_error))->toBe('AUTH_NOT_FOUND');
 
     // Reception neither sees nor changes the account.
-    asStaffOf($this->hotel, $this->reception)->get(route('hotel.deposits'))->assertOk()->assertInertia(fn ($page) => $page->where('account', null));
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.deposits'))->assertOk()->assertInertia(fn ($page) => $page->where('accounts', [])->where('bank', null));
     asStaffOf($this->hotel, $this->reception)->put(route('hotel.deposits.account'), ['driver' => 'cinetpay', 'mode' => 'live', 'active' => false])->assertForbidden();
 });
 
@@ -510,9 +515,150 @@ it('shows the hotel its notification address before any payment account is saved
     ($this->in)(fn () => MerchantAccount::query()->delete());
 
     asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))
-        ->assertInertia(fn ($page) => $page->where('account', null)
+        ->assertInertia(fn ($page) => $page->where('accounts', [])
             ->where('notifyUrl', route('webhooks.deposits.hotel', $this->hotel->id)));
 
     $this->postJson(route('webhooks.deposits.hotel', $this->hotel->id), [])->assertNotFound();
     $this->postJson(route('webhooks.deposits.hotel', '01ZZZZZZZZZZZZZZZZZZZZZZZZ'), [])->assertNotFound();
+});
+
+/*
+| 0.36: several payment methods at once, and bank transfer.
+*/
+
+function depositBank(object $test, int $prepay = 10): void
+{
+    ($test->in)(fn () => HotelAssistantSettings::current()->forceFill([
+        'deposit_allow_full' => true,
+        'prepay_discount_percent' => $prepay,
+        'bank_transfer' => ['enabled' => true, 'bank_name' => 'SGBCI', 'account_holder' => 'CNH Test Hotel SARL', 'account_number' => 'CI008 01234 000123456789 12', 'iban' => '', 'swift' => 'SGCICIAB', 'branch' => 'Plateau', 'note' => ''],
+    ])->save());
+}
+
+it('offers every payment method the hotel turns on, and bank transfer', function (): void {
+    ($this->in)(fn () => MerchantAccount::query()->create(['driver' => 'stripe', 'mode' => 'test', 'credentials' => ['secret_key' => 'sk_test_x', 'webhook_secret' => 'whsec_x'], 'active' => true])); // gitleaks:allow
+    depositBank($this);
+    depositBooking($this);
+
+    $this->get(route('deposits.show', depositToken($this)))->assertOk()
+        ->assertSee('value="simulation"', false)
+        ->assertSee('value="stripe"', false)
+        ->assertSee('value="bank_transfer"', false);
+
+    // The bank details stay hidden until the guest chooses a transfer.
+    $this->get(route('deposits.show', depositToken($this)))->assertDontSee('CI008 01234');
+});
+
+it('takes a bank transfer at the pay-now price once staff see the money', function (): void {
+    Storage::fake('local');
+    depositBank($this, prepay: 10);
+    $booking = depositBooking($this);
+    $token = depositToken($this);
+    $expected = ($this->in)(fn () => app(Deposits::class)->fullAmount(depositLink($this)));
+
+    $this->post(route('deposits.pay', $token), ['choice' => 'full', 'method' => 'bank_transfer'])->assertRedirect(route('deposits.show', $token));
+    $attempt = ($this->in)(fn () => DepositAttempt::query()->sole());
+
+    expect($attempt->method)->toBe('bank_transfer')
+        ->and($attempt->merchant_account_id)->toBeNull()
+        ->and($attempt->amount_minor)->toBe($expected)
+        ->and($attempt->reference)->toStartWith('VIR-'.$booking->reference)
+        // 24-hour deposit hold < 48 hours: the transfer must arrive before the rooms are released.
+        ->and($attempt->expires_at?->toIso8601String())->toBe(depositLink($this)->expires_at?->toIso8601String());
+
+    $this->get(route('deposits.show', $token))->assertOk()->assertSee($attempt->reference)->assertSee('CNH Test Hotel SARL')->assertSee('CI008 01234 000123456789 12');
+
+    $this->sent = [];
+    $this->post(route('deposits.proof', $token), ['receipt' => UploadedFile::fake()->image('recu.jpg')])->assertRedirect(route('deposits.show', $token));
+    $attempt->refresh();
+    expect($attempt->proof_at)->not->toBeNull()
+        ->and(Storage::disk('local')->exists((string) $attempt->proof_path))->toBeTrue()
+        ->and(implode(' ', depositStaffTexts($this)))->toContain($attempt->reference);
+
+    // Nothing is confirmed by the receipt alone.
+    expect($booking->refresh()->status)->toBe(BookingStatus::Tentative);
+
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertInertia(fn ($page) => $page->has('transfers', 1)->where('transfers.0.reference', $attempt->reference));
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits.transfers.proof', $attempt->id))->assertOk();
+
+    $this->sent = [];
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.transfers.approve', $attempt->id))->assertRedirect();
+
+    $booking->refresh();
+    expect($booking->status)->toBe(BookingStatus::Confirmed)
+        ->and($booking->prepay_discount_minor)->toBeGreaterThan(0)
+        ->and(depositLink($this)->method)->toBe('bank_transfer')
+        ->and(depositLink($this)->provider_reference)->toBe($attempt->reference)
+        ->and($attempt->refresh()->status)->toBe('paid')
+        ->and(implode(' ', depositGuestTexts($this)))->toContain(depositLink($this)->receipt_number);
+
+    // Approving twice does nothing.
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.transfers.approve', $attempt->id))->assertSessionHasErrors('transfer');
+
+    // Another hotel never sees the receipt.
+    $other = Hotel::factory()->create(['currency' => 'XOF', 'timezone' => 'Africa/Abidjan', 'default_locale' => 'fr']);
+    asStaffOf($other, staffMember($other, SystemRole::Owner))->get(route('hotel.deposits.transfers.proof', $attempt->id))->assertNotFound();
+});
+
+it('tells the guest when a transfer is not found or arrives too late', function (): void {
+    depositBank($this);
+    depositBooking($this);
+    $token = depositToken($this);
+
+    $this->post(route('deposits.pay', $token), ['choice' => 'deposit', 'method' => 'bank_transfer']);
+    $first = ($this->in)(fn () => DepositAttempt::query()->sole());
+    $this->sent = [];
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.transfers.reject', $first->id), ['reason' => 'aucun virement avec cette référence'])->assertRedirect();
+
+    expect($first->refresh()->status)->toBe('rejected')
+        ->and(implode(' ', depositGuestTexts($this)))->toContain('aucun virement avec cette référence')
+        ->and(depositLink($this)->status)->toBe('open');
+
+    // A new transfer, no receipt, deadline passes: it ends and the guest is told.
+    $this->post(route('deposits.pay', $token), ['choice' => 'deposit', 'method' => 'bank_transfer']);
+    $second = ($this->in)(fn () => DepositAttempt::query()->where('status', 'pending')->sole());
+    $this->sent = [];
+    $this->travelTo($second->expires_at->addMinute());
+    $this->artisan('deposits:remind')->assertSuccessful();
+
+    // The guest wrote more than 24 hours ago: no free text is possible, so staff are asked to tell them.
+    expect($second->refresh()->status)->toBe('expired')
+        ->and($this->conversation->refresh()->handover_reason)->toBe('deposit_not_told:transfer_expired');
+});
+
+it('offers no transfer when it could not arrive before the deadline', function (): void {
+    depositBank($this);
+    $request = ($this->in)(fn (): BookingRequest => app(BookingRequestService::class)->submit(
+        $this->conversation,
+        new StayRequest($this->exe->id, CarbonImmutable::parse('2026-11-02'), CarbonImmutable::parse('2026-11-03'), adults: 1),
+        'Awa Koné',
+    ));
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.booking-requests.approve', $request), ['edit' => false, 'acknowledge_price' => false]);
+    $token = depositToken($this);
+
+    $this->get(route('deposits.show', $token))->assertOk()->assertDontSee('value="bank_transfer"', false);
+    $this->post(route('deposits.pay', $token), ['choice' => 'deposit', 'method' => 'bank_transfer'])->assertRedirect(route('deposits.show', $token));
+    expect(($this->in)(fn () => DepositAttempt::query()->count()))->toBe(0);
+});
+
+it('routes a notification on the hotel address to the provider that signed it', function (): void {
+    ($this->in)(function (): void {
+        MerchantAccount::query()->delete();
+        MerchantAccount::query()->create(['driver' => 'cinetpay', 'mode' => 'test', 'credentials' => ['apikey' => 'k', 'site_id' => '445566', 'secret_key' => 's'], 'active' => true]); // gitleaks:allow
+        MerchantAccount::query()->create(['driver' => 'stripe', 'mode' => 'test', 'credentials' => ['secret_key' => 'sk_test_x', 'webhook_secret' => 'whsec_x'], 'active' => true]); // gitleaks:allow
+    });
+
+    $this->post(route('webhooks.deposits.hotel', $this->hotel->id), ['cpm_trans_id' => 'DEPX', 'cpm_site_id' => '999'])->assertStatus(401);
+    $this->post(route('webhooks.deposits.hotel', $this->hotel->id), ['cpm_trans_id' => 'DEPX', 'cpm_site_id' => '445566'])->assertOk();
+});
+
+it('lets the hotel save its bank details only when complete, encrypted', function (): void {
+    asStaffOf($this->hotel, $this->owner)->put(route('hotel.deposits.bank'), ['enabled' => true, 'account_holder' => 'CNH'])->assertSessionHasErrors('account_number');
+
+    asStaffOf($this->hotel, $this->owner)->put(route('hotel.deposits.bank'), ['enabled' => true, 'account_holder' => 'CNH Test Hotel SARL', 'account_number' => 'CI008 0001', 'bank_name' => 'SGBCI'])->assertRedirect();
+
+    expect(($this->in)(fn () => HotelAssistantSettings::current()->takesBankTransfer()))->toBeTrue()
+        ->and((string) DB::table('hotel_assistant_settings')->value('bank_transfer'))->not->toContain('CI008');
+
+    asStaffOf($this->hotel, $this->reception)->put(route('hotel.deposits.bank'), ['enabled' => false])->assertForbidden();
 });

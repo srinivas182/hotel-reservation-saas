@@ -12,6 +12,7 @@ use App\Domains\Deposits\DepositPresenter;
 use App\Domains\Deposits\Deposits;
 use App\Domains\Deposits\Jobs\TellGuestAboutDeposit;
 use App\Domains\Deposits\MerchantCheck;
+use App\Domains\Deposits\Models\DepositAttempt;
 use App\Domains\Deposits\Models\DepositLink;
 use App\Domains\Deposits\Models\MerchantAccount;
 use App\Domains\Deposits\Reconciliation;
@@ -23,6 +24,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -46,23 +48,38 @@ final class DepositController extends Controller
         $hotel = $this->context->hotel();
         $month = $this->month($request);
         $settings = HotelAssistantSettings::current();
-        $account = MerchantAccount::current();
         $manages = $request->user()?->can('hotel.settings.manage') === true;
         $with = ['booking.guest', 'confirmer'];
+        $bank = $settings->bank_transfer ?? [];
 
         return Inertia::render('hotel/deposits', [
             'month' => $month->format('Y-m'),
             'online' => $this->deposits->online(),
             'canManage' => $manages,
             'canRefund' => $request->user()?->can('folio.payments') === true,
-            'account' => $manages ? ($account === null ? null : [
+            // 0.36: one account per provider; each can be on at the same time.
+            'accounts' => $manages ? MerchantAccount::query()->get()->mapWithKeys(fn (MerchantAccount $account): array => [$account->driver => [
                 'driver' => $account->driver,
                 'mode' => $account->mode,
                 'active' => $account->active,
                 'masked' => $account->maskedCredentials(),
                 'checked_at' => $account->checked_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
                 'last_error' => $account->last_error,
-            ]) : null,
+            ]])->all() : [],
+            'bank' => $manages ? [
+                'enabled' => (bool) ($bank['enabled'] ?? false),
+                'bank_name' => (string) ($bank['bank_name'] ?? ''),
+                'account_holder' => (string) ($bank['account_holder'] ?? ''),
+                'account_number' => (string) ($bank['account_number'] ?? ''),
+                'iban' => (string) ($bank['iban'] ?? ''),
+                'swift' => (string) ($bank['swift'] ?? ''),
+                'branch' => (string) ($bank['branch'] ?? ''),
+                'note' => (string) ($bank['note'] ?? ''),
+                'ready' => $settings->takesBankTransfer(),
+            ] : null,
+            'transfers' => DepositAttempt::query()->with(['link.booking.guest'])->where('method', 'bank_transfer')->where('status', 'pending')
+                ->orderByRaw('proof_at is null')->orderBy('expires_at')->limit(50)->get()
+                ->map(fn (DepositAttempt $a): array => DepositPresenter::transfer($a))->values(),
             // Known before the first save, so the provider can be set up in one go.
             'notifyUrl' => $manages ? route('webhooks.deposits.hotel', $hotel->id) : null,
             'drivers' => collect(MerchantAccount::DRIVERS)
@@ -98,9 +115,9 @@ final class DepositController extends Controller
             'credentials.*' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $account = MerchantAccount::current() ?? new MerchantAccount;
-        $driverChanged = $account->exists && $account->driver !== $data['driver'];
-        $credentials = $driverChanged || ! $account->exists ? [] : $account->credentials;
+        // 0.36: each provider has its own account; saving one leaves the others as they are.
+        $account = MerchantAccount::forDriver($data['driver']) ?? new MerchantAccount(['driver' => $data['driver']]);
+        $credentials = $account->exists ? $account->credentials : [];
 
         foreach (MerchantAccount::DRIVERS[$data['driver']]['fields'] as $field) {
             $value = trim((string) ($data['credentials'][$field] ?? ''));
@@ -116,7 +133,7 @@ final class DepositController extends Controller
 
         $account->fill(['driver' => $data['driver'], 'mode' => $data['mode'], 'active' => (bool) $data['active'], 'credentials' => $credentials])->save();
 
-        Audit::record('deposits.account_saved', 'Mobile-money account saved', subject: $account, causer: $request->user(), properties: [
+        Audit::record('deposits.account_saved', 'Payment account saved', subject: $account, causer: $request->user(), properties: [
             'driver' => $account->driver, 'mode' => $account->mode, 'active' => $account->active, 'keys_changed' => array_keys(array_filter((array) ($data['credentials'] ?? []))),
         ]);
 
@@ -127,7 +144,8 @@ final class DepositController extends Controller
 
     public function checkAccount(Request $request, MerchantCheck $check): RedirectResponse
     {
-        $account = MerchantAccount::current();
+        $driver = (string) $request->input('driver', '');
+        $account = $driver === '' ? MerchantAccount::current() : MerchantAccount::forDriver($driver);
         abort_if($account === null, 404);
 
         $error = $check->run($account);
@@ -157,6 +175,79 @@ final class DepositController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Deposit rules saved.')]);
 
         return back();
+    }
+
+    /**
+     * 0.36: the hotel's bank details for transfers. Stored encrypted; shown
+     * to a guest only on their own payment page.
+     */
+    public function saveBank(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'bank_name' => ['nullable', 'string', 'max:80'],
+            'account_holder' => ['nullable', 'string', 'max:120'],
+            'account_number' => ['nullable', 'string', 'max:60'],
+            'iban' => ['nullable', 'string', 'max:40'],
+            'swift' => ['nullable', 'string', 'max:15'],
+            'branch' => ['nullable', 'string', 'max:80'],
+            'note' => ['nullable', 'string', 'max:300'],
+        ]);
+
+        $bank = array_map(fn (mixed $v): mixed => is_string($v) ? trim($v) : $v, $data);
+        if ($bank['enabled'] && (($bank['account_holder'] ?? '') === '' || (($bank['account_number'] ?? '').($bank['iban'] ?? '')) === '')) {
+            throw ValidationException::withMessages(['account_number' => __('Enter the account holder and the account number (or IBAN) before turning bank transfer on.')]);
+        }
+
+        $settings = HotelAssistantSettings::current();
+        $settings->forceFill(['bank_transfer' => $bank])->save();
+
+        Audit::record('deposits.bank_saved', 'Bank transfer details saved', subject: $settings, causer: $request->user(), properties: ['enabled' => $bank['enabled']]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Bank transfer details saved.')]);
+
+        return back();
+    }
+
+    /** 0.36: staff saw the transfer on the hotel's bank account. */
+    public function approveTransfer(Request $request, DepositAttempt $attempt): RedirectResponse
+    {
+        try {
+            $this->deposits->approveTransfer($attempt, $this->user($request));
+        } catch (DepositNotPossible $e) {
+            throw ValidationException::withMessages(['transfer' => $e->getMessage()]);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Transfer approved; the guest gets the receipt.')]);
+
+        return back();
+    }
+
+    /** 0.36: the money is not on the account: the guest is told. */
+    public function rejectTransfer(Request $request, DepositAttempt $attempt): RedirectResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:200']]);
+
+        try {
+            $this->deposits->rejectTransfer($attempt, $this->user($request), (string) $data['reason']);
+        } catch (DepositNotPossible $e) {
+            throw ValidationException::withMessages(['transfer' => $e->getMessage()]);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Transfer rejected; the guest is told.')]);
+
+        return back();
+    }
+
+    /** 0.36: the receipt the guest uploaded, for staff only. */
+    public function proof(Request $request, DepositAttempt $attempt): StreamedResponse
+    {
+        abort_if($attempt->proof_path === null || ! Storage::disk('local')->exists($attempt->proof_path), 404);
+        Audit::record('deposits.transfer_proof_viewed', 'Bank transfer receipt viewed', subject: $attempt->link->booking, causer: $request->user(), properties: ['reference' => $attempt->reference]);
+
+        return Storage::disk('local')->response($attempt->proof_path, $attempt->reference.'.'.pathinfo($attempt->proof_path, PATHINFO_EXTENSION), [
+            'Content-Security-Policy' => "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**

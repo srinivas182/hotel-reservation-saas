@@ -129,7 +129,9 @@ final class GetQuote extends AssistantTool
                 'pay_now_online' => $format(Money::ofMinor($prepay, $total->getCurrency())),
                 'pay_now_discount_percent' => $deposits->prepayPercent(),
                 'pay_at_hotel' => $format($total),
-                'note' => 'The guest chooses after reception approves the booking: paying the whole stay online now costs pay_now_online; paying at the hotel costs pay_at_hotel.',
+                // 0.36: how the guest can pay now (from the payment link reception sends).
+                'pay_now_ways' => $deposits->payNowWays(),
+                'note' => 'The guest chooses after reception approves the booking: paying the whole stay now (pay_now_ways) costs pay_now_online; paying at the hotel costs pay_at_hotel. A bank transfer must arrive within 48 hours and at least 2 days before arrival.',
             ],
         ];
     }

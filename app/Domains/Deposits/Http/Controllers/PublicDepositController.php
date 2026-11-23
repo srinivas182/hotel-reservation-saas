@@ -49,6 +49,12 @@ final class PublicDepositController extends Controller
             $full = $open && ! $balance && $settings->deposit_allow_full ? $deposits->fullAmount($link) : null;
             $pending = $link->attempts()->where('status', 'pending')->whereNotNull('checkout_url')->where('created_at', '>', now()->subMinutes(30))->exists();
             $hotelSettings = HotelSettings::current();
+            // 0.36: every provider the hotel takes, and bank transfer.
+            $providers = MerchantAccount::usableAll()->map(fn (MerchantAccount $a): string => $a->driver)->all();
+            $transfer = $open ? $deposits->pendingTransfer($link) : null;
+            $transferDeadline = $open && $transfer === null ? $deposits->transferDeadline($link) : null;
+            $bank = $settings->takesBankTransfer() ? $settings->bank_transfer : null;
+            $when = fn ($date): ?string => $date?->setTimezone($hotel->timezone)->settings(['locale' => $locale])->isoFormat('dddd D MMMM, HH:mm');
 
             return view('deposits.pay', [
                 'hotel' => $hotel,
@@ -64,8 +70,18 @@ final class PublicDepositController extends Controller
                 'balance' => $balance,
                 // 0.31: paying everything now gets the hotel's pay-now discount.
                 'saving' => $open && $deposits->prepayTotal($booking) !== null ? $deposits->prepayPercent() : null,
-                // 0.30: hotels taking cards through Stripe.
-                'cards' => MerchantAccount::current()?->driver === 'stripe',
+                // 0.30: cards through Stripe; 0.36: mobile money and cards can both be on.
+                'mobileMoney' => array_values(array_intersect($providers, ['cinetpay', 'simulation']))[0] ?? null,
+                'cards' => in_array('stripe', $providers, true),
+                'bank' => $bank,
+                'transferUntil' => $when($transferDeadline),
+                'transfer' => $transfer === null ? null : [
+                    'id' => $transfer->id,
+                    'reference' => $transfer->reference,
+                    'amount' => $money($transfer->amount_minor),
+                    'deadline' => $when($transfer->expires_at),
+                    'proof_at' => $when($transfer->proof_at),
+                ],
                 'pending' => $pending && $link->status !== 'paid',
                 'deposit' => $money($link->deposit_minor),
                 'full' => $full !== null && $full > $link->deposit_minor ? $money($full) : null,
@@ -80,6 +96,7 @@ final class PublicDepositController extends Controller
                 'manual' => trim((string) ($settings->deposit_instructions[$locale] ?? $settings->deposit_instructions[$hotel->default_locale] ?? '')),
                 'whatsapp' => ($hotelSettings->whatsapp_display_e164 ?? $hotelSettings->phone_e164) === null ? null : 'https://wa.me/'.ltrim((string) ($hotelSettings->whatsapp_display_e164 ?? $hotelSettings->phone_e164), '+'),
                 'error' => $request->session()->get('deposit_error'),
+                'notice' => $request->session()->get('deposit_notice'),
             ]);
         });
     }
@@ -87,11 +104,23 @@ final class PublicDepositController extends Controller
     public function pay(Request $request, string $token, TenantContext $context): RedirectResponse
     {
         [$link, $hotel] = $this->find($token, $context);
-        $data = $request->validate(['choice' => ['required', Rule::in(['deposit', 'full'])]]);
+        $data = $request->validate([
+            'choice' => ['required', Rule::in(['deposit', 'full'])],
+            // 0.36: which way to pay; empty = the first provider (older pages).
+            'method' => ['nullable', Rule::in([...array_keys(MerchantAccount::DRIVERS), 'bank_transfer'])],
+        ]);
+        $choice = $data['choice'] === 'full' ? 'full' : 'deposit';
+        $method = $data['method'] ?? null;
 
-        $url = $context->run($hotel, function () use ($link, $data): ?string {
+        $url = $context->run($hotel, function () use ($link, $choice, $method): ?string {
             try {
-                return app(Deposits::class)->start($link, $data['choice'] === 'full' ? 'full' : 'deposit')->checkout_url;
+                if ($method === 'bank_transfer') {
+                    app(Deposits::class)->startTransfer($link, $choice);
+
+                    return null;
+                }
+
+                return app(Deposits::class)->start($link, $choice, $method)->checkout_url;
             } catch (DepositNotPossible $e) {
                 session()->flash('deposit_error', $e->getMessage());
 
@@ -100,6 +129,30 @@ final class PublicDepositController extends Controller
         });
 
         return $url === null ? to_route('deposits.show', $token) : redirect()->away($url);
+    }
+
+    /** 0.36: the guest uploads the receipt of their bank transfer. */
+    public function proof(Request $request, string $token, TenantContext $context): RedirectResponse
+    {
+        [$link, $hotel] = $this->find($token, $context);
+        $request->validate(['receipt' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120']]);
+
+        $context->run($hotel, function () use ($link, $request): void {
+            $deposits = app(Deposits::class);
+            $transfer = $deposits->pendingTransfer($link);
+
+            try {
+                if ($transfer === null) {
+                    throw new DepositNotPossible(__('This transfer is no longer waiting for a receipt.'));
+                }
+                $deposits->attachProof($transfer, $request->file('receipt'));
+                session()->flash('deposit_notice', __('Thank you: the hotel checks its bank account and confirms on WhatsApp.'));
+            } catch (DepositNotPossible $e) {
+                session()->flash('deposit_error', $e->getMessage());
+            }
+        });
+
+        return to_route('deposits.show', $token);
     }
 
     /** The provider sends the payer back here: check, then show the result. */

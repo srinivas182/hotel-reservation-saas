@@ -6,6 +6,7 @@ namespace App\Domains\Deposits;
 
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Models\Booking;
+use App\Domains\Deposits\Models\DepositAttempt;
 use App\Domains\Deposits\Models\DepositLink;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Folio\RestaurantSettings;
@@ -47,6 +48,29 @@ final class DepositPresenter
             'refund_due' => $money($link->refund_due_minor),
             'refunded_at' => $at($link->refunded_at),
             'refund_note' => $link->refund_note,
+        ];
+    }
+
+    /**
+     * 0.36: a bank transfer waiting for staff.
+     *
+     * @return array<string, mixed>
+     */
+    public static function transfer(DepositAttempt $attempt): array
+    {
+        $hotel = app(TenantContext::class)->hotel();
+        $booking = $attempt->link->booking;
+
+        return [
+            'id' => $attempt->id,
+            'booking_id' => $booking->id,
+            'booking' => $booking->reference,
+            'guest' => $booking->guest?->name(),
+            'reference' => $attempt->reference,
+            'amount' => MoneyFormatter::format(Money::ofMinor($attempt->amount_minor, $attempt->currency), $hotel->default_locale),
+            'deadline' => $attempt->expires_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
+            'proof_at' => $attempt->proof_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
+            'proof_url' => $attempt->proof_path === null ? null : route('hotel.deposits.transfers.proof', $attempt->id),
         ];
     }
 

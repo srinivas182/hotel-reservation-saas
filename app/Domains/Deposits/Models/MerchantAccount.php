@@ -12,10 +12,11 @@ use App\Domains\Deposits\Drivers\SimulatedDeposits;
 use App\Domains\Tenancy\Concerns\BelongsToHotel;
 use App\Support\Casts\RecoverableEncryptedArray;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * The hotel's own payment account (Sprint F). Guests pay the hotel
+ * One of the hotel's own payment accounts (Sprint F; one per provider since 0.36). Guests pay the hotel
  * directly: the platform never holds their money. Keys are stored
  * encrypted and never sent to the browser.
  *
@@ -51,9 +52,41 @@ class MerchantAccount extends Model implements PaymentCredentials
         return ['credentials' => RecoverableEncryptedArray::class, 'active' => 'boolean', 'checked_at' => 'immutable_datetime'];
     }
 
+    /**
+     * 0.36: a hotel may have one account per provider. The first one that
+     * takes payments (CinetPay before Stripe), else the first saved.
+     */
     public static function current(): ?self
     {
-        return self::query()->first();
+        $all = self::all();
+
+        return self::ordered($all)->first(fn (self $a): bool => $a->usable()) ?? $all->first();
+    }
+
+    /**
+     * Every account that takes payments now, CinetPay first.
+     *
+     * @return Collection<int, self>
+     */
+    public static function usableAll(): Collection
+    {
+        return self::ordered(self::all())->filter(fn (self $a): bool => $a->usable())->values();
+    }
+
+    public static function forDriver(string $driver): ?self
+    {
+        return self::query()->where('driver', $driver)->first();
+    }
+
+    /**
+     * @param  Collection<int, self>  $accounts
+     * @return Collection<int, self>
+     */
+    private static function ordered(Collection $accounts): Collection
+    {
+        $order = array_flip(array_keys(self::DRIVERS));
+
+        return $accounts->sortBy(fn (self $a): int => $order[$a->driver] ?? 99)->values();
     }
 
     /** Ready to take payments. */
