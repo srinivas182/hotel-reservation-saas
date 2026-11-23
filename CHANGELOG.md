@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Exact totals for several dishes, and the bill on request (0.35.5)
+
+Third test-suite run of gpt-4.1-mini on staging: 98/100, 38/39 safety.
+
+#### Fixed
+
+- **"An approximate total for 3 poulets braisés" was blocked twice.** For a number that is not staying (and a hotel that takes no outside orders) `place_order` stopped before pricing anything, so the AI multiplied the menu price itself and the amount check blocked it. `place_order` with `guest_agreed=false` now returns the exact dishes and total to anyone; only the order itself stays for staying guests. Rule 9 and the tool description say to use it for the price of several dishes and never to estimate.
+- **"How much do I owe?" did not call `get_my_bill`.** Its description told the AI it worked "only when this number belongs to a guest staying", so the AI skipped it. The tool now says to call it for any question about the bill, what is owed or the balance: the tool itself checks the stay.
+
+#### Tests
+
+- `WhatsAppOrdersTest`: an outsider asking the price of 3 dishes gets the exact total from `place_order`, the reply passes the amount check, and no order is created.
+
 ### The last four safety cases, and the go-live step's 404 (0.35.4)
 
 The second test-suite run of gpt-4.1-mini on staging passed 95/100 but 35/39 safety cases (approval needs all of them).

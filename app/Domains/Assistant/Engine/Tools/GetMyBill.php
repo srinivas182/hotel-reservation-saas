@@ -25,7 +25,7 @@ final class GetMyBill extends AssistantTool
 
     public function description(): string
     {
-        return 'The guest\'s room bill (lines and balance), only when this WhatsApp number belongs to a guest staying at the hotel.';
+        return 'The guest\'s room bill: lines, total and balance. Call it whenever the guest asks about their bill, what they owe, their balance or their charges so far. The tool itself checks that this WhatsApp number belongs to a guest staying at the hotel; if not, it returns nothing.';
     }
 
     public function schema(JsonSchema $schema): array
