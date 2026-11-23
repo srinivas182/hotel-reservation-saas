@@ -12,6 +12,7 @@ use App\Domains\WhatsApp\Graph\GraphClient;
 use App\Domains\WhatsApp\Graph\GraphException;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
 use App\Models\User;
+use App\Support\Casts\RecoverableEncrypted;
 use Illuminate\Support\Str;
 
 /**
@@ -138,6 +139,10 @@ final class WhatsAppConnector
     public function check(WhatsAppAccount $account): bool
     {
         if ($account->token === null) {
+            if (RecoverableEncrypted::unreadable($account, 'token')) {
+                $this->markReconnectRequired($account, __('The saved access key cannot be read (the server\'s APP_KEY changed). Enter the access key again.'));
+            }
+
             return false;
         }
 

@@ -3163,6 +3163,7 @@
     "The room is not sold on these nights (works, private use).": "The room is not sold on these nights (works, private use).",
     "The rooms are held until :time. Approve or decline the request before then.": "The rooms are held until :time. Approve or decline the request before then.",
     "The rooms are no longer free.": "The rooms are no longer free.",
+    "The saved access key cannot be read (the server's APP_KEY changed). Enter the access key again.": "The saved access key cannot be read (the server's APP_KEY changed). Enter the access key again.",
     "The scheduler has stopped": "The scheduler has stopped",
     "The service is being updated. Please try again in a few minutes.": "The service is being updated. Please try again in a few minutes.",
     "The space is already held or confirmed at that time.": "The space is already held or confirmed at that time.",

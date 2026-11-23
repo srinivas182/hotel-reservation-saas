@@ -9,6 +9,7 @@ use App\Domains\Tenancy\TenantContext;
 use App\Domains\WhatsApp\AccountStatus;
 use App\Domains\WhatsApp\Models\WhatsAppAccount;
 use App\Domains\WhatsApp\WhatsAppConnector;
+use Illuminate\Encryption\Encrypter;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -88,6 +89,24 @@ it('marks the account for reconnection when the token stops working', function (
     expect($account->status)->toBe(AccountStatus::ReconnectRequired)
         ->and($account->last_error)->toContain('expired')
         ->and(AuditLog::query()->where('event', 'whatsapp.reconnect_required')->exists())->toBeTrue();
+});
+
+it('asks for the access key again when it was saved under another APP_KEY, without failing the check', function (): void {
+    $account = $this->context->run($this->hotel, fn () => WhatsAppAccount::query()->create([
+        'waba_id' => '9000', 'phone_number_id' => '5550001', 'status' => AccountStatus::Connected, 'token' => 'old-token',
+    ]));
+    $otherKey = new Encrypter(random_bytes(32), 'AES-256-CBC');
+    DB::table('whatsapp_accounts')->where('id', $account->id)->update(['token' => $otherKey->encryptString('old-token')]);
+    Http::fake();
+
+    $this->artisan('whatsapp:check')->assertSuccessful();
+
+    $account = $this->context->run($this->hotel, fn () => $account->fresh());
+    expect($account->token)->toBeNull()
+        ->and($account->status)->toBe(AccountStatus::ReconnectRequired)
+        ->and($account->last_error)->toContain('APP_KEY')
+        ->and(AuditLog::query()->where('event', 'whatsapp.reconnect_required')->exists())->toBeTrue();
+    Http::assertNothingSent();
 });
 
 it('restores a connection once the token works again', function (): void {

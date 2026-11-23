@@ -223,7 +223,21 @@ return [
             ],
         ],
 
+        'staging' => [
+            'supervisor-1' => [
+                'maxProcesses' => 3,
+            ],
+        ],
+
         'local' => [
+            'supervisor-1' => [
+                'maxProcesses' => 3,
+            ],
+        ],
+
+        // Any other APP_ENV: without a match Horizon starts no workers at
+        // all, and every job waits forever. Keep this entry last.
+        '*' => [
             'supervisor-1' => [
                 'maxProcesses' => 3,
             ],
