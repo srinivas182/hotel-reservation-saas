@@ -47,6 +47,7 @@ final class RatesController extends Controller
                     'active' => $category->active,
                     'extra_bed_allowed' => $category->extra_bed_allowed,
                     'standard_occupancy' => $category->standard_occupancy,
+                    'max_occupancy' => $category->max_occupancy,
                     'rate' => $rate === null ? null : [
                         'base' => $major($rate->base_minor),
                         'extra_adult' => $major($rate->extra_adult_minor),

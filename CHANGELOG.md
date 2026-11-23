@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Prices follow the number of guests (0.36.6)
+
+Live test by voice note: the Suite was quoted for the default number of guests, then booked "for 3 guests" at the same 60 000 XOF.
+
+#### Fixed
+
+- **A stay priced again counts, not an older price.** Since 0.35.8 the assistant may repeat a price the hotel already gave; once a pricing tool runs in the same reply (3 adults instead of 2, other dates, another room), only that tool's figures are accepted, so an old total can no longer slip through.
+- **Rule 3:** when the adults, children, dates, room or number of rooms change, the assistant calls `get_quote` again and gives only the new total; booking requests carry adults and children exactly as the guest said. When the room takes fewer guests, it says how many and offers a larger category or several rooms, and never sends a request that does not fit.
+- **Rates:** the "Extra people" section says how many guests the nightly rate covers and how many the room takes, and warns when a guest beyond that would stay for free because the extra adult price is 0.
+
+#### Test suite
+
+- `en-quote-again-more-guests` (106 cases): after a quote for 2 adults, "we are 3 adults" must call `get_quote` again.
+
 ### The assistant stays with the guest until they ask for a person; faster replies (0.36.5)
 
 Prospect demo: after "can I get more discount?" the assistant answered well, but the discount rule handed the conversation to staff, so "ok, help me to book room" and "I want to pay now" got no answer until the holding message 15 minutes later.

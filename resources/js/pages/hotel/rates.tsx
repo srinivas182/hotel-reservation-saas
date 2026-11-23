@@ -47,6 +47,7 @@ type Category = {
     active: boolean;
     extra_bed_allowed: boolean;
     standard_occupancy: number;
+    max_occupancy: number;
     rate: Rate | null;
 };
 
@@ -180,9 +181,16 @@ function CategoryRateForm({
                 <FieldGroup
                     title={t('Extra people')}
                     description={
-                        category.extra_bed_allowed
-                            ? undefined
-                            : t('Extra beds are off for this category.')
+                        t(
+                            'The nightly rate covers :included guests; this room takes up to :max (set in Rooms). Each guest beyond :included pays the extra adult or child price per night.',
+                            {
+                                included: category.standard_occupancy,
+                                max: category.max_occupancy,
+                            },
+                        ) +
+                        (category.extra_bed_allowed
+                            ? ''
+                            : ' ' + t('Extra beds are off for this category.'))
                     }
                 >
                     <div className="grid gap-4 sm:grid-cols-3">
@@ -190,6 +198,15 @@ function CategoryRateForm({
                         {field('child', t('Child per night'))}
                         {field('extra_bed', t('Extra bed per night'))}
                     </div>
+                    {category.max_occupancy > category.standard_occupancy &&
+                        Number(form.data.extra_adult || 0) === 0 && (
+                            <p className="text-sm text-amber-700 dark:text-amber-300">
+                                {t(
+                                    'No extra adult price: a guest beyond :included stays for free. Enter a price if that is not intended.',
+                                    { included: category.standard_occupancy },
+                                )}
+                            </p>
+                        )}
                 </FieldGroup>
                 <FieldGroup title={t('Breakfast')}>
                     <div className="grid gap-4 sm:grid-cols-2">

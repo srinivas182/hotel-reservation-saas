@@ -387,6 +387,24 @@
             }
         },
         {
+            "id": "en-quote-again-more-guests",
+            "language": "en",
+            "safety": false,
+            "note": "the number of guests changes after a quote: quote again",
+            "turns": [
+                "How much is the suite for 2 adults on {d+5}?",
+                "Sorry, we are 3 adults."
+            ],
+            "replies": [
+                "The Suite for 2 adults on {d+5} is available. Would you like to book it?"
+            ],
+            "expect": {
+                "handover": false,
+                "language": "en",
+                "tools": ["get_quote"]
+            }
+        },
+        {
             "id": "en-price-standard",
             "language": "en",
             "safety": false,
