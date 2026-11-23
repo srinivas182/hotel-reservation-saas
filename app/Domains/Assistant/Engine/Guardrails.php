@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domains\Assistant\Engine;
 
+use App\Domains\BookingRequests\BookingRequest;
+use App\Domains\BookingRequests\BookingRequestStatus;
+
 /**
  * Checks run by code on every reply before it can reach a guest. They do
  * not depend on the AI following its instructions.
@@ -49,6 +52,17 @@ final class Guardrails
     private const NEGATION_PATTERN = '/\b(not|never|no need|don\'t|do not|doesn\'t|does not|won\'t|will not|without|ne|n\'|pas|jamais|aucun|aucune|sans|surtout pas)\b|\bn\'/iu';
 
     /**
+     * Words telling the guest their booking request went to reception
+     * (0.37.0): only true when request_booking really sent one.
+     */
+    private const REQUEST_SENT_PATTERNS = [
+        '/\b(booking\s+)?request\b[^.!?\n]{0,80}\b(has been|was|is|have been)\s+(now\s+)?(sent|forwarded|passed|transmitted|submitted)\b/iu',
+        '/\b(i|we)\s*(have|\'ve)?\s+(just\s+)?(sent|forwarded|passed|transmitted|submitted)\s+(your|the)\s+(booking\s+)?(request|booking)\b/iu',
+        '/\bdemande\b[^.!?\n]{0,80}\b(a été|est|vient d\'être)\s+(bien\s+)?(transmise|envoyée|soumise)\b/iu',
+        '/\b(j\'ai|nous avons)\s+(bien\s+)?(transmis|envoyé|soumis)\s+(votre|la)\s+demande\b/iu',
+    ];
+
+    /**
      * @return list<array{check: string, passed: bool, detail: string|null}>
      */
     public function check(string $reply, ToolContext $context, string $knowledge): array
@@ -68,6 +82,10 @@ final class Guardrails
         $confirmation = $this->confirmation($reply);
         $results[] = ['check' => 'no_confirmation', 'passed' => $confirmation === null, 'detail' => $confirmation === null ? null : "Says the booking is confirmed: \"{$confirmation}\""];
 
+        $claim = $this->firstMatch($reply, self::REQUEST_SENT_PATTERNS);
+        $unsent = $claim !== null && ! $this->requestSent($context);
+        $results[] = ['check' => 'request_really_sent', 'passed' => ! $unsent, 'detail' => $unsent ? "Says the booking request was sent (\"{$claim}\") but request_booking did not send one: call request_booking now, or ask the guest for what is missing" : null];
+
         $long = mb_strlen($reply) > self::MAX_LENGTH;
         $results[] = ['check' => 'length', 'passed' => ! $long, 'detail' => $long ? 'Longer than '.self::MAX_LENGTH.' characters' : null];
 
@@ -78,6 +96,28 @@ final class Guardrails
         $results[] = ['check' => 'not_empty', 'passed' => ! $empty, 'detail' => $empty ? 'Empty reply' : null];
 
         return $results;
+    }
+
+    /**
+     * A booking request was sent in this reply, or one is already waiting
+     * for reception in this conversation.
+     */
+    private function requestSent(ToolContext $context): bool
+    {
+        if ($context->isPractice()) {
+            return true;
+        }
+
+        foreach ($context->calls() as $call) {
+            if ($call['tool'] === 'request_booking' && str_contains($call['result'], '"request_sent":true')) {
+                return true;
+            }
+        }
+
+        return $context->conversationId !== null && BookingRequest::query()
+            ->where('conversation_id', $context->conversationId)
+            ->where('status', BookingRequestStatus::Pending->value)
+            ->exists();
     }
 
     /**

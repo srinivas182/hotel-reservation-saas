@@ -45,6 +45,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $booking_id
  * @property string|null $coupon_code
  * @property int $discount_minor coupon discount already taken off total_minor
+ * @property string|null $guest_notes what the guest asked for (pet, cot, late arrival…)
  * @property CarbonImmutable|null $created_at
  */
 class BookingRequest extends Model

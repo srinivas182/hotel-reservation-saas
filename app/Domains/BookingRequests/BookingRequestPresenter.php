@@ -94,6 +94,7 @@ final class BookingRequestPresenter
             'children' => implode(', ', array_map('strval', array_filter($request->children_ages, fn ($a): bool => $a !== null))),
             'breakfast' => $request->breakfast,
             'extra_bed' => $request->extra_bed,
+            'guest_notes' => $request->guest_notes,
             'quoted_total' => MoneyFormatter::format($quoted, $locale),
             'current_total' => MoneyFormatter::format($current, $locale),
             'price_changed' => ! $current->isEqualTo($quoted),

@@ -37,7 +37,7 @@ final class KnowledgeController extends Controller
         return Inertia::render('hotel/assistant-knowledge', [
             'locale' => $locale,
             'locales' => array_map(fn (string $code): array => ['code' => $code, 'label' => Locales::SUPPORTED[$code] ?? $code], $enabled),
-            'sections' => collect(KnowledgeSection::cases())->map(fn (KnowledgeSection $s): array => ['value' => $s->value, 'label' => $s->label()])->values(),
+            'sections' => collect(KnowledgeSection::cases())->map(fn (KnowledgeSection $s): array => ['value' => $s->value, 'label' => $s->label(), 'hint' => $s->hint()])->values(),
             'entries' => KnowledgeEntry::query()->where('locale', $locale)->orderBy('sort_order')->orderBy('id')->get()
                 ->map(fn (KnowledgeEntry $e): array => ['section' => $e->section->value, 'question' => $e->question, 'content' => $e->content])->values(),
             'versions' => KnowledgeVersion::query()->with('publisher')->orderByDesc('version')->limit(10)->get()

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Onboarding;
 
 /**
- * The 15 questions the information pack is drafted from.
+ * The 16 questions the information pack is drafted from.
  */
 final class Questionnaire
 {
@@ -25,10 +25,11 @@ final class Questionnaire
             'cancellation' => (string) __('Your cancellation policy?'),
             'deposit' => (string) __('Do you ask for a deposit? How much and how?'),
             'children' => (string) __('Children: ages, extra beds, prices?'),
-            'pets' => (string) __('Are pets allowed?'),
+            'pets' => (string) __('Pets: allowed or not, which animals, fee per night, places they cannot go?'),
             'parking' => (string) __('Parking: available, free, secured?'),
             'transfers' => (string) __('Airport or station transfers: offered, price?'),
             'wifi' => (string) __('Wi-Fi, air conditioning, generator, other facilities?'),
+            'accessibility' => (string) __('Accessibility: step-free entrance, lift, ground-floor or adapted rooms?'),
             'rules' => (string) __('House rules (smoking, visitors, quiet hours…)?'),
         ];
     }
@@ -43,8 +44,8 @@ final class Questionnaire
         return [
             'about' => 'about', 'location' => 'location', 'directions' => 'location', 'checkin' => 'policies',
             'breakfast' => 'restaurant', 'restaurant' => 'restaurant', 'payment' => 'payments', 'cancellation' => 'policies',
-            'deposit' => 'payments', 'children' => 'policies', 'pets' => 'house_rules', 'parking' => 'parking',
-            'transfers' => 'transfers', 'wifi' => 'about', 'rules' => 'house_rules',
+            'deposit' => 'payments', 'children' => 'children', 'pets' => 'pets', 'accessibility' => 'accessibility', 'parking' => 'parking',
+            'transfers' => 'transfers', 'wifi' => 'amenities', 'rules' => 'house_rules',
         ];
     }
 }

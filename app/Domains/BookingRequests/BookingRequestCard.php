@@ -74,6 +74,7 @@ final class BookingRequestCard implements StaffCard
             ])),
             __('Total: :total', ['total' => MoneyFormatter::format(Money::ofMinor($request->total_minor, $request->currency), $locale)], $locale)
                 .($settings->deposit_required ? ' · '.__('deposit :percent%', ['percent' => $settings->deposit_percent], $locale) : ''),
+            $request->guest_notes === null ? null : __('📝 Guest asks: :notes', ['notes' => $request->guest_notes], $locale),
             $left === null ? null : ($left === 0
                 ? __('After this one, no :category room is left on at least one night.', ['category' => $category], $locale)
                 : trans_choice('After this one, :count :category room is left.|After this one, :count :category rooms are left.', $left, ['category' => $category], $locale)),

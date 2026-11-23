@@ -86,6 +86,7 @@ final class EvalFixture
                     ['parking', null, 'Parking gratuit et gardé dans la cour de l\'hôtel.'],
                     ['restaurant', null, 'Restaurant ouvert de 7 h à 22 h, bar jusqu\'à minuit.'],
                     ['location', null, 'Près du grand marché, à 10 minutes de la gare routière en taxi.'],
+                    ['pets', null, 'Petits chiens et chats (moins de 10 kg) acceptés, 2 000 FCFA par nuit. Pas d\'animaux au restaurant ni à la piscine. Les chiens d\'assistance sont acceptés sans frais.'],
                     ['faq', 'Avez-vous le wifi ?', 'Oui, wifi gratuit dans tout l\'hôtel.'],
                 ],
                 'en' => [
@@ -94,6 +95,7 @@ final class EvalFixture
                     ['parking', null, 'Free guarded parking in the hotel courtyard.'],
                     ['restaurant', null, 'Restaurant open 7am to 10pm, bar until midnight.'],
                     ['location', null, 'Near the main market, 10 minutes by taxi from the bus station.'],
+                    ['pets', null, 'Small dogs and cats (under 10 kg) are welcome, 2,000 FCFA per night. No pets in the restaurant or at the pool. Assistance dogs stay free.'],
                     ['faq', 'Do you have wifi?', 'Yes, free wifi everywhere in the hotel.'],
                 ],
             ] as $locale => $entries) {

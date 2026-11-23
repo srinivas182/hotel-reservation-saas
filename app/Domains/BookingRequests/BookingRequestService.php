@@ -57,7 +57,7 @@ final class BookingRequestService
     /**
      * Create (or replace) the conversation's open request and hold its rooms.
      */
-    public function submit(Conversation $conversation, StayRequest $stay, string $guestName, ?string $couponCode = null): BookingRequest
+    public function submit(Conversation $conversation, StayRequest $stay, string $guestName, ?string $couponCode = null, ?string $guestNotes = null): BookingRequest
     {
         $guest = $conversation->contact->guest ?? throw new RequestNotPossible('no_guest', 'The conversation has no guest.');
         $name = trim($guestName);
@@ -79,6 +79,7 @@ final class BookingRequestService
 
         $hotel = $this->context->hotel();
         $expiresAt = $this->expiryFrom(CarbonImmutable::now());
+        $notes = self::cleanNotes($guestNotes);
         $category = RoomCategory::query()->findOrFail($stay->categoryId);
 
         // 0.31: a coupon the guest gave, checked for this stay before anything is held.
@@ -94,7 +95,7 @@ final class BookingRequestService
         }
 
         try {
-            $request = DB::transaction(function () use ($conversation, $guest, $name, $stay, $quote, $hotel, $expiresAt, $category, $coupon, $discount): BookingRequest {
+            $request = DB::transaction(function () use ($conversation, $guest, $name, $stay, $quote, $hotel, $expiresAt, $category, $coupon, $discount, $notes): BookingRequest {
                 // One open request per conversation: the previous one is replaced.
                 foreach (BookingRequest::query()->where('conversation_id', $conversation->id)->where('status', BookingRequestStatus::Pending->value)->lockForUpdate()->get() as $previous) {
                     $this->releaseHold($previous);
@@ -121,6 +122,7 @@ final class BookingRequestService
                     'total_minor' => $quote->total->minus($discount)->getMinorAmount()->toInt(),
                     'coupon_code' => $coupon?->code,
                     'discount_minor' => $discount->getMinorAmount()->toInt(),
+                    'guest_notes' => $notes,
                     'currency' => $hotel->currency,
                     'expires_at' => $expiresAt,
                 ]);
@@ -151,6 +153,17 @@ final class BookingRequestService
         $this->alertStaff($request, 'new');
 
         return $request;
+    }
+
+    /**
+     * The guest's wishes as one short line: no line breaks, at most 500
+     * characters, nothing when empty.
+     */
+    public static function cleanNotes(?string $notes): ?string
+    {
+        $notes = trim((string) preg_replace('/\s+/u', ' ', (string) $notes));
+
+        return $notes === '' ? null : mb_substr($notes, 0, 500);
     }
 
     /**
@@ -220,7 +233,8 @@ final class BookingRequestService
                     guest: ['first_name' => $guest->first_name, 'last_name' => $guest->last_name, 'phone' => $guest->phone_e164, 'email' => $guest->email, 'preferred_locale' => $guest->preferred_locale],
                     channel: BookingChannel::WhatsApp,
                     status: $settings->deposit_required ? BookingStatus::Tentative : BookingStatus::Confirmed,
-                    notes: __('From WhatsApp request :reference', ['reference' => $request->reference]),
+                    notes: __('From WhatsApp request :reference', ['reference' => $request->reference])
+                        .($request->guest_notes !== null ? "\n".__('Guest asks: :notes', ['notes' => $request->guest_notes]) : ''),
                     paymentNote: $settings->deposit_required ? (string) __('Deposit of :percent% requested on WhatsApp', ['percent' => $settings->deposit_percent]) : null,
                     overrideTotal: $overrideTotal,
                     overrideReason: $overrideReason,

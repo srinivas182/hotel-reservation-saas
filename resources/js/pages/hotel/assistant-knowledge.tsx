@@ -13,7 +13,7 @@ type Entry = { section: string; question: string | null; content: string };
 type Props = {
     locale: string;
     locales: { code: string; label: string }[];
-    sections: { value: string; label: string }[];
+    sections: { value: string; label: string; hint: string }[];
     entries: Entry[];
     versions: { version: number; by: string | null; at: string }[];
     preview?: string;
@@ -104,9 +104,14 @@ export default function Knowledge({
                                 className="flex flex-col gap-2 rounded-xl border bg-card p-4"
                             >
                                 <div className="flex items-center justify-between">
-                                    <h2 className="font-medium">
-                                        {section.label}
-                                    </h2>
+                                    <div>
+                                        <h2 className="font-medium">
+                                            {section.label}
+                                        </h2>
+                                        <p className="text-xs text-muted-foreground">
+                                            {section.hint}
+                                        </p>
+                                    </div>
                                     <Button
                                         type="button"
                                         size="sm"
@@ -148,6 +153,11 @@ export default function Knowledge({
                                                     : section.label
                                             }
                                             className="min-h-20 rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                                            placeholder={
+                                                section.value === 'faq'
+                                                    ? t('Answer')
+                                                    : section.hint
+                                            }
                                             maxLength={3000}
                                             value={entry.content}
                                             onChange={(e) =>

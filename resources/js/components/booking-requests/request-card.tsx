@@ -24,6 +24,7 @@ export type PendingRequest = {
     children: string;
     breakfast: boolean;
     extra_bed: boolean;
+    guest_notes?: string | null;
     quoted_total: string;
     current_total: string;
     coupon?: { code: string; discount: string } | null;
@@ -105,6 +106,11 @@ export function RequestCard({
                 {request.breakfast && ` · ${t('breakfast')}`}
                 {request.extra_bed && ` · ${t('extra bed')}`}
             </div>
+            {request.guest_notes && (
+                <div className="rounded bg-muted px-2 py-1">
+                    {t('Guest asks: :notes', { notes: request.guest_notes })}
+                </div>
+            )}
             <div>
                 {t('Quoted to the guest: :total', {
                     total: request.quoted_total,
