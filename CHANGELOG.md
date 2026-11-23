@@ -4,17 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-### A discount question no longer stops the assistant; faster replies (0.36.5)
+### The assistant stays with the guest until they ask for a person; faster replies (0.36.5)
 
-Prospect demo: the guest asked "is 10% the maximum or can I get more discount?". The assistant answered well, but the discount rule (0.35.4) handed the conversation to staff, so "ok, help me to book room" and "I want to pay now" got no answer.
-
-#### Fixed
-
-- **Flag, don't take over, for discount questions.** `discount_request` now only flags the conversation and alerts staff (`ConversationHandover::flag`): the assistant's reply is sent and it keeps answering, so the guest can go on and book. Staff can still step in and offer more. Complaints, cancellations, other guests and the guest asking for a person still hand over fully.
+Prospect demo: after "can I get more discount?" the assistant answered well, but the discount rule handed the conversation to staff, so "ok, help me to book room" and "I want to pay now" got no answer until the holding message 15 minutes later.
 
 #### Changed
 
-- **Quicker first reply:** the assistant waits 4 seconds (was 8) for a guest's follow-up messages before answering them together.
+- **Only a guest asking for a person takes the conversation away from the assistant** (the hotel's keywords such as "réception", or the AI seeing a request for a person), plus the hourly reply limit against abuse. Every other reason (discount request, complaint, change or cancellation, another guest's details, more than 3 rooms, a language the hotel does not use, a reply blocked by the checks, an unclear voice note, no information pack) now **flags** the conversation and alerts staff (`ConversationHandover::flag`), and the assistant keeps answering and guiding the guest to book. The AI's own reply goes out (rule 5 tells it to say a colleague will follow up on that point and keep helping); when there is no usable reply, a neutral one: "Let me check this point with our team… Meanwhile I can still help you with prices, availability and your booking."
+- In supervised mode a flagged reply waits as a draft for staff approval.
+- **Quicker replies:** the assistant waits 2 seconds (was 8) for a guest's follow-up messages before answering them together.
+
+#### Tests
+
+- LiveAssistantTest: a discount question and a complaint flag staff while the assistant answers the next message; asking for the reception still hands over with the hotel's message.
+- SupervisedModeTest: a flagged complaint sends nothing in supervised mode.
 
 ### Messages laid out for WhatsApp (0.36.4)
 
