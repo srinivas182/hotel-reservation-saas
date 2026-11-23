@@ -142,6 +142,14 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             $this->rememberLanguage($conversation, $result->language);
         }
 
+        // Nothing new from the guest to answer (a reaction, an empty message):
+        // stay silent rather than hand the guest to staff.
+        if ($result->handoverReason === 'nothing_to_answer') {
+            $this->markAnswered($conversation, $latest);
+
+            return;
+        }
+
         if ($result->handover) {
             $this->handOver($conversation, $latest, (string) $result->handoverReason, $sender, $handover, $result->reply);
 
@@ -189,7 +197,8 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
      */
     private function unanswered(Conversation $conversation): array
     {
-        $query = $conversation->messages()->where('direction', 'in')->orderBy('sent_at')->orderBy('id');
+        // Reactions (👍) never wait for an answer.
+        $query = $conversation->messages()->where('direction', 'in')->where('type', '!=', 'reaction')->orderBy('sent_at')->orderBy('id');
 
         if ($conversation->last_answered_message_id !== null) {
             $answered = Message::query()->find($conversation->last_answered_message_id);
@@ -221,6 +230,9 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
                 'audio' => $message->transcript !== null ? '[Voice note] '.$message->transcript : '[Voice note]',
                 'image' => '[The guest sent a photo]'.($message->body ? ' '.$message->body : ''),
                 'document' => '[The guest sent a document]',
+                'video' => '[The guest sent a video]'.($message->body ? ' '.$message->body : ''),
+                'sticker' => '[The guest sent a sticker]',
+                'reaction' => '',
                 'location' => '[The guest shared a location]'.($message->body ? ' '.$message->body : ''),
                 default => (string) $message->body,
             };

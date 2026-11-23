@@ -306,6 +306,8 @@ it('lets a hotel take deposits by card with its own Stripe account', function ()
     ]);
 
     $this->post(route('deposits.pay', $link->token), ['choice' => 'deposit'])->assertRedirect('https://checkout.stripe.com/c/pay/cs_dep');
+    // The guest gave no email on WhatsApp: Stripe asks for it, never the platform's address.
+    Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/v1/checkout/sessions') && ! array_key_exists('customer_email', $request->data()));
     $reference = ($this->in)(fn () => DepositAttempt::query()->sole()->reference);
     $body = (string) json_encode(['type' => 'checkout.session.completed', 'data' => ['object' => ['id' => 'cs_dep', 'client_reference_id' => $reference]]]);
     $sign = fn (string $secret): string => 't='.time().',v1='.hash_hmac('sha256', time().'.'.$body, $secret);

@@ -281,7 +281,8 @@ final class Deposits
                 'return_url' => route('deposits.back', $link->token),
                 'notify_url' => route('webhooks.deposits', $account->id),
                 'name' => $booking->guest?->name() ?? '',
-                'email' => $booking->guest->email ?? (string) config('mail.from.address'),
+                // 0.36.3: only the guest's own email; never the platform's address.
+                'email' => (string) ($booking->guest->email ?? ''),
             ]);
         } catch (PaymentFailed $e) {
             $attempt->forceFill(['status' => 'failed', 'failure' => mb_substr($e->getMessage(), 0, 300)])->save();

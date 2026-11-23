@@ -87,6 +87,28 @@ it('answers a guest message once, 8 seconds later', function (): void {
     expect(assistantMessages($this))->toHaveCount(1);
 });
 
+it('never answers or hands over a reaction, even right after a question', function (): void {
+    HotelAssistantAgent::fake([aiReply('Avec plaisir, pour quelles dates ?', ['intent' => 'availability_question'])]);
+
+    webhookPost($this, [inbound('wamid.IN1', message: ['text' => ['body' => 'Vous avez une suite ?']])]);
+    $this->travel(2)->seconds();
+    // The guest reacts 👍 before the reply: the question is still answered.
+    webhookPost($this, [inbound('wamid.R1', message: ['type' => 'reaction', 'reaction' => ['message_id' => 'wamid.OUT1', 'emoji' => '👍']])]);
+    runReplies($this);
+
+    expect(assistantMessages($this))->toBe(['Avec plaisir, pour quelles dates ?']);
+
+    // A reaction to the reply: nothing is sent, nobody is alerted.
+    webhookPost($this, [inbound('wamid.R2', message: ['type' => 'reaction', 'reaction' => ['message_id' => 'wamid.OUT2', 'emoji' => '👍']])]);
+    runReplies($this);
+
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    expect(assistantMessages($this))->toHaveCount(1)
+        ->and($conversation->mode)->toBe(ConversationMode::Assistant)
+        ->and($conversation->handover_reason)->toBeNull()
+        ->and(($this->in)(fn () => Message::query()->where('type', 'reaction')->pluck('body')->all()))->toBe(['👍', '👍']);
+});
+
 it('answers a burst of messages with one reply', function (): void {
     HotelAssistantAgent::fake([aiReply('Oui, pour quelles dates ?', ['intent' => 'availability_question'])]);
 
