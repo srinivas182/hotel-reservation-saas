@@ -242,6 +242,11 @@ export default function AssistantSettings({
                                 </label>
                             ))}
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                            {t(
+                                'Guests who write in another language are passed to staff. To add a language, tick it under Hotel settings → Enabled languages.',
+                            )}
+                        </p>
                         <InputError message={errors.languages} />
                     </fieldset>
                     {enabledLocales.map((locale) => (

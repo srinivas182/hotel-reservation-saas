@@ -43,6 +43,8 @@ it('works each step out from the hotel\'s real data, and lets steps be skipped',
         ->and($steps['hours']['done'])->toBeTrue()
         ->and($steps['team']['skipped'])->toBeTrue()
         ->and($steps['whatsapp']['done'])->toBeFalse()
+        ->and($steps['whatsapp']['skippable'])->toBeTrue()
+        ->and($steps['golive']['skippable'])->toBeFalse()
         ->and(AuditLog::query()->where('event', 'setup.taxes_confirmed')->exists())->toBeTrue();
 
     asStaffOf($this->hotel, $this->owner)->get(route('hotel.today'))->assertInertia(fn ($page) => $page->where('setup.done', 6)->where('setup.total', 10));

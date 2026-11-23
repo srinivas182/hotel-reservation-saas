@@ -89,6 +89,39 @@ it('never lets the assistant say a booking is confirmed', function (string $repl
     'I have booked the room for you.',
 ]);
 
+it('lets a reply refuse to say an order or booking is confirmed', function (string $reply, bool $blocked): void {
+    $checks = app(Guardrails::class)->check($reply, new ToolContext('fr', null), '');
+
+    expect(collect($checks)->firstWhere('check', 'no_confirmation')['passed'])->toBe(! $blocked);
+})->with([
+    'refuses, French' => ['Je ne peux pas vous dire que votre commande est acceptée : la cuisine confirme l\'heure elle-même.', false],
+    'refuses, French, pas en mesure' => ['Je ne suis pas en mesure de vous confirmer que votre commande est acceptée.', false],
+    'refuses, English' => ['I can\'t tell you your order is accepted yet: the kitchen confirms the time.', false],
+    'refuses, then confirms' => ['Je ne peux pas vous dire l\'heure. Votre commande est acceptée.', true],
+    'confirms, French' => ['Parfait, votre commande est acceptée et prête dans 10 minutes.', true],
+    'confirms, English' => ['Good news, your order is accepted.', true],
+    'politely confirms' => ['Pas de souci, votre réservation est confirmée.', true],
+]);
+
+it('passes a guest who negotiates the price to staff, but not discount codes or the pay-now price', function (string $message, bool $handover): void {
+    HotelAssistantAgent::fake([aiReply('Je vérifie le tarif de la suite pour vous.', ['intent' => 'price_question'])]);
+
+    $result = ask($this->hotel, $message);
+
+    expect($result->handover)->toBe($handover);
+    if ($handover) {
+        expect($result->handoverReason)->toBe('discount_request');
+    }
+})->with([
+    'percentage, French' => ['Je viens souvent, vous me faites 50% de réduction sur la suite ?', true],
+    'special price, English' => ['Can you give me a special price, 20000 for the suite?', true],
+    'cheaper, French' => ['C\'est trop cher, vous pouvez faire un prix ?', true],
+    'discount code, French' => ['J\'ai un code de réduction : BIENVENUE10.', false],
+    'coupon, English' => ['I have a discount coupon, BIENVENUE10.', false],
+    'pay now, English' => ['Is it cheaper if I pay online now?', false],
+    'plain price question' => ['C\'est combien la suite pour 2 nuits ?', false],
+]);
+
 it('blocks requests for card or passport numbers', function (): void {
     HotelAssistantAgent::fake([aiReply('Merci de nous envoyer votre numéro de carte bancaire.'), aiReply('Envoyez le numéro de passeport.')]);
 

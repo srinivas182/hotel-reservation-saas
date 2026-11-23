@@ -75,6 +75,21 @@ it('creates an event enquiry from WhatsApp and alerts the events team', function
         ->and(collect($this->sent)->pluck('to')->all())->toContain('2250700000060');
 });
 
+it('keeps an event with rooms for the attendees with the events team, not reception', function (): void {
+    HotelAssistantAgent::fake([enquiryCall(), aiReply('Thank you Mary, our events team is preparing your quote.', ['language' => 'en', 'intent' => 'group_or_special_request'])]);
+
+    $result = ($this->ask)('We need a meeting room for 25 people and 10 rooms for our team. My name is Mary Johnson.');
+
+    expect($result->handover)->toBeFalse()
+        ->and(array_column($result->tools, 'tool'))->toContain('event_enquiry');
+});
+
+it('still hands a group of rooms without an event to reception', function (): void {
+    HotelAssistantAgent::fake([aiReply('Notre équipe vous répond pour les 10 chambres.', ['intent' => 'group_or_special_request'])]);
+
+    expect(($this->ask)('Il me faut 10 chambres le 12 décembre.')->handoverReason)->toBe('group_or_special_request');
+});
+
 it('asks for the name first, and creates nothing from the practice screen', function (): void {
     HotelAssistantAgent::fake([enquiryCall(''), aiReply('À quel nom puis-je enregistrer la demande ?', ['intent' => 'event_enquiry'])]);
     expect(($this->ask)('Séminaire le 12')->tools[0]['result'])->toContain('contact name');
