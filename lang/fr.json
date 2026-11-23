@@ -3806,5 +3806,9 @@
     "❌ Declining the request of :guest (:reference).": "❌ Refus de la demande de :guest (:reference).",
     "💰 :count guest still owes :total today.|💰 :count guests still owe :total today.": "💰 :count client doit encore :total aujourd’hui.|💰 :count clients doivent encore :total aujourd’hui.",
     "💳 Payment to check — :hotel": "💳 Paiement à vérifier — :hotel",
-    "🛎️ New booking request — :hotel": "🛎️ Nouvelle demande de réservation — :hotel"
+    "🛎️ New booking request — :hotel": "🛎️ Nouvelle demande de réservation — :hotel",
+    "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!": "Bonjour {name},\n\nVotre réservation *{reference}* à {hotel} est confirmée.\n\n• Chambre : {room}\n• Arrivée : {check_in}\n• Départ : {check_out}\n• Total : *{total}*\n\nÀ très bientôt !",
+    "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}": "Bonjour {name},\n\n{hotel} accepte votre demande.\n\n• Chambre : {room}\n• Arrivée : {check_in}\n• Départ : {check_out}\n• Total : *{total}*\n\nPour confirmer la réservation *{reference}*, merci de verser un acompte de *{deposit}* avant le {deposit_deadline}.\n\nComment payer : {payment_instructions}",
+    "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.": "Bonjour {name},\n\nNous sommes désolés : {hotel} ne peut pas accepter votre demande du {check_in} au {check_out}.\n\nN'hésitez pas à nous écrire pour d'autres dates.",
+    "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it.": "Bonjour {name},\n\nMerci pour votre demande du {check_in} au {check_out}.\n\nNotre réception vous contactera très vite pour la finaliser."
 }

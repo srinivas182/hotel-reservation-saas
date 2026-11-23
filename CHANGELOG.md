@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Messages laid out for WhatsApp (0.36.4)
+
+Assistant replies and booking messages read as one long paragraph on a phone.
+
+#### Changed
+
+- **Assistant style (rule 4):** short paragraphs separated by an empty line, categories, prices and options on separate "• " lines, key facts (room, dates, total) in WhatsApp bold, one clear question at the end, at most 700 characters.
+- **`WhatsAppText::tidy()`** turns any Markdown the AI writes into WhatsApp formatting (`**bold**` → `*bold*`, `- item` → `• item`, headings → bold) and keeps at most one empty line between paragraphs.
+- **Booking messages** (confirmed, deposit, declined, expired) now show the stay on separate lines (room, arrival, departure, total in bold); the pay-now and pay-at-the-hotel choices are separate paragraphs. A hotel's own custom texts are unchanged.
+
 ### A 👍 is not a question; the guest's own email on card payments; Inbox at the top (0.36.3)
 
 Live test: after the booking request was sent, the guest reacted 👍 to the assistant's message and got "Thank you for your message. A member of our team will reply to you shortly", and the conversation went to staff.

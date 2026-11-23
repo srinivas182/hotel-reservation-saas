@@ -3806,5 +3806,9 @@
     "❌ Declining the request of :guest (:reference).": "❌ Declining the request of :guest (:reference).",
     "💰 :count guest still owes :total today.|💰 :count guests still owe :total today.": "💰 :count guest still owes :total today.|💰 :count guests still owe :total today.",
     "💳 Payment to check — :hotel": "💳 Payment to check — :hotel",
-    "🛎️ New booking request — :hotel": "🛎️ New booking request — :hotel"
+    "🛎️ New booking request — :hotel": "🛎️ New booking request — :hotel",
+    "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!": "Hello {name},\n\nYour booking *{reference}* at {hotel} is confirmed.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nSee you soon!",
+    "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}": "Hello {name},\n\n{hotel} has accepted your request.\n\n• Room: {room}\n• Arrival: {check_in}\n• Departure: {check_out}\n• Total: *{total}*\n\nTo confirm booking *{reference}*, please pay a deposit of *{deposit}* before {deposit_deadline}.\n\nHow to pay: {payment_instructions}",
+    "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.": "Hello {name},\n\nWe are sorry: {hotel} cannot accept your request from {check_in} to {check_out}.\n\nDo not hesitate to write to us for other dates.",
+    "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it.": "Hello {name},\n\nThank you for your request from {check_in} to {check_out}.\n\nOur reception will contact you very soon to finalise it."
 }

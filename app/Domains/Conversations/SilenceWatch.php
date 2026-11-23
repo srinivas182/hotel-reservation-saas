@@ -97,7 +97,7 @@ final class SilenceWatch
     private function locale(Conversation $conversation, string $default): string
     {
         $enabled = HotelSettings::current()->enabled_locales ?? [$default];
-        $latest = $conversation->messages()->where('direction', 'in')->whereNotNull('language')->latest('sent_at')->value('language');
+        $latest = $conversation->messages()->where('direction', 'in')->whereNotNull('language')->orderByDesc('sent_at')->orderByDesc('id')->value('language');
 
         foreach ([$latest, $conversation->contact?->guest?->preferred_locale] as $candidate) {
             if (is_string($candidate) && in_array($candidate, $enabled, true)) {

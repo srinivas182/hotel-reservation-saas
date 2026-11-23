@@ -251,7 +251,7 @@ final class InboxController extends Controller
     private function guestLanguage(Conversation $conversation): string
     {
         return $conversation->contact->guest->preferred_locale
-            ?? $conversation->messages()->where('direction', 'in')->whereNotNull('language')->latest('sent_at')->value('language')
+            ?? $conversation->messages()->where('direction', 'in')->whereNotNull('language')->orderByDesc('sent_at')->orderByDesc('id')->value('language')
             ?? $this->context->hotel()->default_locale;
     }
 
