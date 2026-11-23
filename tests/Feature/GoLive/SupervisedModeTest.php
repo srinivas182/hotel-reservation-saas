@@ -7,7 +7,6 @@ use App\Domains\Ai\AssistantMode;
 use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Assistant\Engine\HotelAssistantAgent;
 use App\Domains\BookingRequests\BookingRequest;
-use App\Domains\Conversations\ConversationMode;
 use App\Domains\Conversations\ConversationNeedsStaff;
 use App\Domains\Conversations\Jobs\ReplyToGuest;
 use App\Domains\Conversations\MessageStatus;
@@ -127,12 +126,12 @@ it('alerts staff about a draft nobody approved, without messaging the guest', fu
     expect($this->sent)->toBe(0);
 });
 
-it('passes the conversation to staff without messaging the guest in supervised mode', function (): void {
+it('flags a complaint for staff without messaging the guest in supervised mode', function (): void {
     HotelAssistantAgent::fake([aiReply('Je transmets.', ['intent' => 'complaint'])]);
 
     guestSays($this, 'wamid.I1', 'C’est inadmissible');
 
-    expect(($this->in)(fn () => Conversation::query()->sole()->mode))->toBe(ConversationMode::Staff)
+    expect(($this->in)(fn () => Conversation::query()->sole()->needs_attention))->toBeTrue()
         ->and($this->sent)->toBe(0);
 });
 
