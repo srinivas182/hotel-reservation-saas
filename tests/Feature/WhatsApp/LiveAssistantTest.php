@@ -363,3 +363,64 @@ it('keeps "typing…" on during a long answer and never fails the reply when Wha
     Http::fake(['graph.facebook.com/v23.0/5550099/messages' => Http::response(['error' => ['message' => 'nope']], 400)]);
     expect(app(App\Domains\WhatsApp\Graph\GraphClient::class)->typing('5550099', 'hotel-token', 'wamid.TYPE4'))->toBeFalse();
 });
+
+it('takes over only when the guest asks for a person, not for a keyword in an ordinary sentence', function (string $text, bool $takeOver): void {
+    HotelAssistantAgent::fake([aiReply('Je vérifie avec la réception, qui vous confirmera. Voulez-vous les prix ?', ['intent' => 'other'])]);
+
+    webhookPost($this, [inbound('wamid.KW1', message: ['text' => ['body' => $text]])]);
+    runReplies($this);
+
+    expect(($this->in)(fn () => Conversation::query()->sole()->mode))->toBe($takeOver ? ConversationMode::Staff : ConversationMode::Assistant);
+})->with([
+    'keyword alone' => ['Réception ?', true],
+    'asks to talk' => ['Je veux parler à la réception', true],
+    'asks for a call' => ['Can a real person call me please', true],
+    'check with reception' => ['Can you confirm from reception??', false],
+    'room for one person' => ['Une chambre pour une personne le 12 décembre', false],
+    'staff in a question' => ['Does the staff speak English at night? Is the pool open?', false],
+    'call me' => ['Please ask a person to call me back', true],
+]);
+
+it('answers again a guest passed to staff when nobody replied for 30 minutes, and keeps it flagged', function (): void {
+    HotelAssistantAgent::fake([
+        aiReply('Bien sûr, pour quelles dates ?', ['intent' => 'availability_question']),
+    ]);
+
+    webhookPost($this, [inbound('wamid.R1', message: ['text' => ['body' => 'Réception']])]);
+    runReplies($this);
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    expect($conversation->mode)->toBe(ConversationMode::Staff);
+
+    // Too soon: still with staff.
+    $this->travel(10)->minutes();
+    webhookPost($this, [inbound('wamid.R2', message: ['text' => ['body' => 'Il y a quelqu’un ?']])]);
+    runReplies($this);
+    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Staff);
+
+    $this->travel(25)->minutes();
+    webhookPost($this, [inbound('wamid.R3', message: ['text' => ['body' => 'Je veux réserver une chambre pour 2']])]);
+    runReplies($this);
+
+    $fresh = ($this->in)(fn () => $conversation->fresh());
+    expect($fresh->mode)->toBe(ConversationMode::Assistant)
+        ->and($fresh->needs_attention)->toBeTrue()
+        ->and($fresh->handover_reason)->toBe('no_staff_reply')
+        ->and(last(assistantMessages($this)))->toBe('Bien sûr, pour quelles dates ?');
+});
+
+it('never takes back a conversation staff took over or answered', function (): void {
+    $reception = staffMember($this->hotel, SystemRole::Reception);
+    HotelAssistantAgent::fake([aiReply('Bonjour', ['intent' => 'greeting'])]);
+
+    webhookPost($this, [inbound('wamid.S1', message: ['text' => ['body' => 'Bonjour']])]);
+    runReplies($this);
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    asStaffOf($this->hotel, $reception)->put(route('hotel.inbox.mode', $conversation), ['mode' => 'staff'])->assertRedirect();
+
+    $this->travel(2)->hours();
+    webhookPost($this, [inbound('wamid.S2', message: ['text' => ['body' => 'Une chambre ?']])]);
+    runReplies($this);
+
+    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Staff)
+        ->and(assistantMessages($this))->toHaveCount(1);
+});

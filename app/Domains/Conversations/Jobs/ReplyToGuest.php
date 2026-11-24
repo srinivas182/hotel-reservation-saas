@@ -56,6 +56,15 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 
     public const STAFF_QUIET_MINUTES = 10;
 
+    /**
+     * 0.37.5: minutes after which a conversation the assistant passed to
+     * staff, and no one answered, goes back to the assistant.
+     */
+    public const RESUME_MINUTES = 30;
+
+    /** Hand-overs the assistant may take back (never a staff take-over). */
+    public const RESUMABLE = ['guest_asked_for_person'];
+
     public int $tries = 3;
 
     public function __construct(
@@ -199,7 +208,18 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 
     private function assistantMayAnswer(Conversation $conversation): bool
     {
-        if ($conversation->mode !== ConversationMode::Assistant || HotelAssistantSettings::current()->mode === AssistantMode::Off) {
+        if (HotelAssistantSettings::current()->mode === AssistantMode::Off) {
+            return false;
+        }
+
+        // 0.37.5: a guest the assistant passed to staff, whom nobody answered,
+        // is not left in silence: after RESUME_MINUTES the assistant answers
+        // again (the conversation stays flagged for staff).
+        if ($this->noStaffCame($conversation)) {
+            app(ConversationHandover::class)->resume($conversation);
+        }
+
+        if ($conversation->mode !== ConversationMode::Assistant) {
             return false;
         }
 
@@ -210,6 +230,16 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         $account = WhatsAppAccount::query()->first();
 
         return $account !== null && $account->status->canSend();
+    }
+
+    private function noStaffCame(Conversation $conversation): bool
+    {
+        return $conversation->mode === ConversationMode::Staff
+            && in_array($conversation->handover_reason, self::RESUMABLE, true)
+            && $conversation->assigned_to === null
+            && $conversation->handed_over_at !== null
+            && $conversation->handed_over_at->lte(now()->subMinutes(self::RESUME_MINUTES))
+            && ($conversation->staff_replied_at === null || $conversation->staff_replied_at->lt($conversation->handed_over_at));
     }
 
     /**
@@ -347,20 +377,37 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
     }
 
     /**
-     * A guest who writes one of the hotel's keywords ("réception", "human"…)
-     * always reaches a person.
+     * A guest who asks for a person with one of the hotel's keywords
+     * ("réception", "human"…) always reaches one.
+     *
+     * 0.37.5: the keyword alone ("Réception ?", "agent please") or with a
+     * wish to talk ("je veux parler à la réception", "call me, a person").
+     * A keyword in an ordinary sentence ("can you confirm with reception?",
+     * "une chambre pour une personne") is left to the assistant, which
+     * flags the question for staff and keeps helping.
      *
      * @param  list<Message>  $messages
      */
     private function asksForPerson(array $messages): bool
     {
         $keywords = array_map(fn (string $k): string => self::fold($k), HotelAssistantSettings::current()->humanKeywords());
+        $talk = '(?:talk|speak|chat|connect|parler|discuter|joindre|contacter)';
+        $call = '(?:call|phone|ring|contact|appel\w*|rappel\w*|contacte\w*|joindre)';
 
         foreach ($messages as $message) {
             $text = ' '.self::fold((string) ($message->type === 'audio' ? $message->transcript : $message->body)).' ';
 
             foreach ($keywords as $keyword) {
-                if ($keyword !== '' && preg_match('/[^a-z0-9]'.preg_quote($keyword, '/').'[^a-z0-9]/', $text) === 1) {
+                if ($keyword === '' || preg_match('/[^a-z0-9]'.preg_quote($keyword, '/').'[^a-z0-9]/', $text) !== 1) {
+                    continue;
+                }
+
+                $words = preg_split('/[^a-z0-9]+/', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                $k = preg_quote($keyword, '/');
+                // "parler à la réception", "talk to a person", "a real person call me"
+                if (count($words) <= 3
+                    || preg_match('/\\b'.$talk.'\\b\\W+(?:\\w+\\W+){0,3}'.$k.'\\b/', $text) === 1
+                    || preg_match('/\\b'.$k.'\\W+(?:\\w+\\W+){0,2}'.$call.'\\b/', $text) === 1) {
                     return true;
                 }
             }
