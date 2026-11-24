@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Graph API v25.0 by default (0.37.8)
+
+#### Changed
+
+- New installs call Meta's Graph API **v25.0** by default (supported until 29 July 2028) instead of v23.0 (until 8 October 2027).
+- A server that sets `WHATSAPP_GRAPH_VERSION` in its `.env` keeps its value until it is changed there.
+- The platform uses none of the features Meta removes in v26.0 (`pretty`, `debug`, `?ids=`, ETag requests).
+
 ### CNH Global Tech brand and full legal pages (0.37.7)
 
 #### Changed

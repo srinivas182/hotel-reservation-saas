@@ -26,7 +26,7 @@ return [
 
     'graph_url' => env('WHATSAPP_GRAPH_URL', 'https://graph.facebook.com'),
 
-    'graph_version' => env('WHATSAPP_GRAPH_VERSION', 'v23.0'),
+    'graph_version' => env('WHATSAPP_GRAPH_VERSION', 'v25.0'),
 
     // Set by simulation mode: where simulated numbers ("SIM-…") are sent.
     'simulation_graph_url' => null,

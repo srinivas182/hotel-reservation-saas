@@ -81,13 +81,13 @@ it('sends only simulated numbers to the simulator when simulation is on', functi
     config(['simulation.enabled' => true, 'whatsapp.simulation_graph_url' => 'https://app.test/simulation/graph', 'whatsapp.graph_url' => 'https://graph.facebook.com']);
     $graph = app(GraphClient::class);
 
-    expect($graph->url('SIM-5550001/messages'))->toBe('https://app.test/simulation/graph/v23.0/SIM-5550001/messages')
-        ->and($graph->url('sim-media-1'))->toBe('https://app.test/simulation/graph/v23.0/sim-media-1')
-        ->and($graph->url('1530088293513718/messages'))->toBe('https://graph.facebook.com/v23.0/1530088293513718/messages')
-        ->and($graph->url('oauth/access_token'))->toBe('https://graph.facebook.com/v23.0/oauth/access_token');
+    expect($graph->url('SIM-5550001/messages'))->toBe('https://app.test/simulation/graph/v25.0/SIM-5550001/messages')
+        ->and($graph->url('sim-media-1'))->toBe('https://app.test/simulation/graph/v25.0/sim-media-1')
+        ->and($graph->url('1530088293513718/messages'))->toBe('https://graph.facebook.com/v25.0/1530088293513718/messages')
+        ->and($graph->url('oauth/access_token'))->toBe('https://graph.facebook.com/v25.0/oauth/access_token');
 
     config(['simulation.enabled' => false]);
-    expect($graph->url('SIM-5550001/messages'))->toBe('https://graph.facebook.com/v23.0/SIM-5550001/messages');
+    expect($graph->url('SIM-5550001/messages'))->toBe('https://graph.facebook.com/v25.0/SIM-5550001/messages');
 });
 
 it('opens the hotel page when its history has several entries by people', function (): void {

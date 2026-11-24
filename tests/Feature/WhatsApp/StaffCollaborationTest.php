@@ -34,7 +34,7 @@ beforeEach(function (): void {
     ['hotel' => $this->hotel] = assistantHotel();
     $this->in = fn (callable $callback) => app(TenantContext::class)->run($this->hotel, $callback);
     ($this->in)(fn () => WhatsAppAccount::query()->create(['waba_id' => '9000', 'phone_number_id' => '5550001', 'status' => AccountStatus::Connected, 'token' => 't']));
-    Http::fake(['graph.facebook.com/v23.0/5550001/messages' => Http::response(['messages' => [['id' => 'wamid.OUT']]])]);
+    Http::fake(['graph.facebook.com/v25.0/5550001/messages' => Http::response(['messages' => [['id' => 'wamid.OUT']]])]);
     $this->amara = staffMember($this->hotel, SystemRole::Reception);
     $this->kofi = staffMember($this->hotel, SystemRole::Reception);
     webhookPost($this, [inbound('wamid.IN1', message: ['text' => ['body' => 'Hello, is breakfast included?']], name: 'John Smith')]);

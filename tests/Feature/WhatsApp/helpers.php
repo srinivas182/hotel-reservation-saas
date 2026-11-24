@@ -11,7 +11,7 @@ function configureMeta(): void
         'whatsapp.app_secret' => 'test-app-secret',
         'whatsapp.config_id' => '222222',
         'whatsapp.verify_token' => 'verify-me',
-        'whatsapp.graph_version' => 'v23.0',
+        'whatsapp.graph_version' => 'v25.0',
     ]);
 }
 
@@ -21,10 +21,10 @@ function configureMeta(): void
 function fakeGraph(array $overrides = []): void
 {
     Http::fake([
-        'graph.facebook.com/v23.0/oauth/access_token*' => Http::response(['access_token' => 'business-token-abc'] + ($overrides['token'] ?? [])),
-        'graph.facebook.com/v23.0/*/register' => Http::response(['success' => true]),
-        'graph.facebook.com/v23.0/*/subscribed_apps' => Http::response(['success' => true]),
-        'graph.facebook.com/v23.0/*' => $overrides['phone'] ?? Http::response([
+        'graph.facebook.com/v25.0/oauth/access_token*' => Http::response(['access_token' => 'business-token-abc'] + ($overrides['token'] ?? [])),
+        'graph.facebook.com/v25.0/*/register' => Http::response(['success' => true]),
+        'graph.facebook.com/v25.0/*/subscribed_apps' => Http::response(['success' => true]),
+        'graph.facebook.com/v25.0/*' => $overrides['phone'] ?? Http::response([
             'display_phone_number' => '+225 07 00 00 00 00',
             'verified_name' => 'First Class Lodge',
             'quality_rating' => 'GREEN',
