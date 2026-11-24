@@ -16,6 +16,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 #### Security
 
+- Passkey library `web-auth/webauthn-lib` updated to 5.3.17 (six advisories published on 17 November 2026).
 - **Card numbers typed in WhatsApp are never stored.** A valid card number keeps only its last four digits. The security code and the expiry date are masked before the message is saved, shown to staff or sent to the AI. The same applies to voice-note transcripts and to messages already stored.
 
 #### Changed
