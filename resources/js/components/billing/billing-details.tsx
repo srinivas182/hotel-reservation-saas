@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { askText } from '@/lib/ask';
 
 export type BillingDetails = {
     billing_entity_id: number | null;
@@ -129,12 +130,17 @@ export function BillingDetailsForm({
                         size="sm"
                         type="button"
                         variant="ghost"
-                        onClick={() => {
-                            const until = window.prompt(
-                                t('Delay payment until (YYYY-MM-DD)'),
-                            );
+                        onClick={async () => {
+                            const until = await askText({
+                                title: t('Delay payment until'),
+                                inputType: 'date',
+                                required: true,
+                            });
                             const reason = until
-                                ? window.prompt(t('Reason'))
+                                ? await askText({
+                                      title: t('Reason'),
+                                      required: true,
+                                  })
                                 : null;
                             if (until && reason) {
                                 router.post(

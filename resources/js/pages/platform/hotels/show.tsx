@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { askText } from '@/lib/ask';
 
 type Credit = { granted: number; used: number; left: number } | null;
 type Props = {
@@ -809,12 +810,13 @@ export default function HotelShow({
                                     ) : (
                                         <Button
                                             variant="destructive"
-                                            onClick={() => {
-                                                const reason = window.prompt(
-                                                    t(
+                                            onClick={async () => {
+                                                const reason = await askText({
+                                                    title: t(
                                                         'Close this hotel? Reason:',
                                                     ),
-                                                );
+                                                    required: true,
+                                                });
                                                 if (reason) {
                                                     router.post(
                                                         PlatformLifecycleController.close.url(

@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Row = {
     id: number;
@@ -209,8 +210,10 @@ function AnnouncementForm({
                         type="button"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() =>
-                            window.confirm(t('Delete this announcement?')) &&
+                        onClick={async () =>
+                            (await askConfirm(
+                                t('Delete this announcement?'),
+                            )) &&
                             router.delete(
                                 AnnouncementController.destroy.url(row.id),
                                 {

@@ -48,9 +48,15 @@ export default function Billing(props: Props) {
 
                 <Section
                     title={t('Plans')}
-                    description={t(
-                        'To change plan or buy credits, contact us (online payment is coming).',
-                    )}
+                    description={
+                        props.gateways.length > 0
+                            ? t(
+                                  'Change plan or buy credits online below, or contact us.',
+                              )
+                            : t(
+                                  'To change plan or buy credits, contact us: pay by transfer or mobile money using the details on the invoice.',
+                              )
+                    }
                 >
                     <div className="grid gap-3 sm:grid-cols-3">
                         {props.plans.map((p) => (

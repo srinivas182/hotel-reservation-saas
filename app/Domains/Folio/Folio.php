@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Folio;
 
 use App\Domains\Audit\Audit;
+use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Events\Models\Event;
 use App\Domains\Events\Models\EventQuote;
@@ -38,7 +39,9 @@ final class Folio
     public function statement(Booking|Event $owner): array
     {
         $hotel = $this->context->hotel();
-        $lines = $owner instanceof Booking ? $this->accommodation($owner) : [];
+        // 0.38.0: a cancelled stay has no accommodation charge; its bill
+        // stays for what was paid, so the refund can be seen and recorded.
+        $lines = $owner instanceof Booking && $owner->status !== BookingStatus::Cancelled ? $this->accommodation($owner) : [];
 
         $stored = FolioLine::query()->with('author')->where($this->column($owner), $owner->id)->orderBy('created_at')->orderBy('id')->get();
         $corrected = $stored->pluck('corrects_line_id')->filter()->all();

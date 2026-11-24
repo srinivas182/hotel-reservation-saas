@@ -4,6 +4,8 @@ import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
+import { todayPlus } from '@/lib/dates';
+import { askText } from '@/lib/ask';
 
 export type InvoiceRow = {
     id: string;
@@ -43,37 +45,50 @@ export function Invoices({
     platform?: boolean;
     methods?: string[];
 }) {
-    const pay = (invoice: InvoiceRow) => {
-        const amount = window.prompt(
-            t('Amount received'),
-            String(invoice.balance_minor),
-        );
+    const pay = async (invoice: InvoiceRow) => {
+        const amount = await askText({
+            title: t('Amount received'),
+            defaultValue: String(invoice.balance_minor),
+            inputType: 'number',
+            required: true,
+        });
         if (!amount) {
             return;
         }
-        const method = window.prompt(
-            t('Method (:methods)', { methods: methods.join(', ') }),
-            methods[0] ?? 'other',
-        );
-        const reference = window.prompt(t('Reference (optional)')) ?? '';
+        const method = await askText({
+            title: t('Method'),
+            choices: methods,
+            defaultValue: methods[0] ?? 'other',
+            required: true,
+        });
+        if (!method) {
+            return;
+        }
+        const reference =
+            (await askText({ title: t('Reference (optional)') })) ?? '';
         router.post(
             PlatformInvoiceController.payment.url(invoice.id),
             {
                 amount,
                 method,
                 reference,
-                received_on: new Date().toISOString().slice(0, 10),
+                received_on: todayPlus(),
             },
             { preserveScroll: true },
         );
     };
-    const credit = (invoice: InvoiceRow) => {
-        const amount = window.prompt(
-            t('Credit note amount'),
-            String(invoice.balance_minor),
-        );
+    const credit = async (invoice: InvoiceRow) => {
+        const amount = await askText({
+            title: t('Credit note amount'),
+            defaultValue: String(invoice.balance_minor),
+            inputType: 'number',
+            required: true,
+        });
         const reason = amount
-            ? window.prompt(t('Reason for the credit note'))
+            ? await askText({
+                  title: t('Reason for the credit note'),
+                  required: true,
+              })
             : null;
         if (amount && reason) {
             router.post(

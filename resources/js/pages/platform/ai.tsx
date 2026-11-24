@@ -19,6 +19,7 @@ import {
     useTabs,
 } from '@/components/page';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Provider = {
     id: number;
@@ -704,10 +705,10 @@ export default function PlatformAi({
                                             size="sm"
                                             variant="ghost"
                                             className="text-destructive"
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.stopPropagation();
                                                 if (
-                                                    window.confirm(
+                                                    await askConfirm(
                                                         t('Delete :name?', {
                                                             name: p.name,
                                                         }),
@@ -837,13 +838,13 @@ export default function PlatformAi({
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() =>
-                                                    window.confirm(
+                                                onClick={async () =>
+                                                    (await askConfirm(
                                                         t(
                                                             'Run the full test suite against :name? It calls the real model about 65 times and costs money. Approve the model automatically if it passes?',
                                                             { name: m.label },
                                                         ),
-                                                    ) &&
+                                                    )) &&
                                                     router.post(
                                                         AiController.evaluate.url(
                                                             m.id,
@@ -861,12 +862,12 @@ export default function PlatformAi({
                                                 size="sm"
                                                 variant="ghost"
                                                 className="text-destructive"
-                                                onClick={() =>
-                                                    window.confirm(
+                                                onClick={async () =>
+                                                    (await askConfirm(
                                                         t('Delete :name?', {
                                                             name: m.label,
                                                         }),
-                                                    ) &&
+                                                    )) &&
                                                     router.delete(
                                                         AiController.destroyModel.url(
                                                             m.id,

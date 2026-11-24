@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { todayPlus } from '@/lib/dates';
 
 export type QuoteResult = {
     bookable: boolean;
@@ -26,10 +27,7 @@ const selectClass =
     'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50';
 
 function today(offset = 0): string {
-    const date = new Date();
-    date.setDate(date.getDate() + offset);
-
-    return date.toISOString().slice(0, 10);
+    return todayPlus(offset);
 }
 
 /**

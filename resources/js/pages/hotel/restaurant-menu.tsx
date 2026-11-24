@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Option = { value: string; label: string };
 type Item = {
@@ -140,6 +141,13 @@ function ItemForm({
                                 ...form.data.name,
                                 [l]: e.target.value,
                             })
+                        }
+                    />
+                    {/* 0.38.0: a missing dish name was refused without a message. */}
+                    <InputError
+                        message={
+                            errors[`name.${l}`] ??
+                            (l === locales[0] ? errors.name : undefined)
                         }
                     />
                     <Input
@@ -348,8 +356,8 @@ function ItemRow({
                 size="sm"
                 variant="ghost"
                 className="text-destructive"
-                onClick={() =>
-                    window.confirm(t('Remove this dish from the menu?')) &&
+                onClick={async () =>
+                    (await askConfirm(t('Remove this dish from the menu?'))) &&
                     router.delete(MenuController.destroyItem.url(item.id), {
                         preserveScroll: true,
                     })
@@ -455,12 +463,12 @@ export default function RestaurantMenu({
                                         size="sm"
                                         variant="ghost"
                                         className="text-destructive"
-                                        onClick={() =>
-                                            window.confirm(
+                                        onClick={async () =>
+                                            (await askConfirm(
                                                 t(
                                                     'Delete this section and its dishes?',
                                                 ),
-                                            ) &&
+                                            )) &&
                                             router.delete(
                                                 MenuController.destroySection.url(
                                                     section.id,

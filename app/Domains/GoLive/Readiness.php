@@ -57,7 +57,7 @@ final class Readiness
         $recent = $account !== null && $this->context->bypass('Readiness: recent webhook', fn (): bool => WebhookEvent::query()
             ->where('phone_number_id', $account->phone_number_id)
             ->where('received_at', '>', now()->subDay())
-            ->exists());
+            ->exists(), audited: false);
         $checks[] = new ReadinessCheck('webhook_recent', __('A WhatsApp notification received in the last 24 hours'), true, $recent, $recent ? null : (string) __('Send a test message to the hotel number.'));
 
         $missing = $this->missingTemplates($settings, $hotel->default_locale);

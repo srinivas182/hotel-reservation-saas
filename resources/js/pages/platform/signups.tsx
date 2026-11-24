@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { askConfirm, askText } from '@/lib/ask';
 
 type Settings = {
     mode: string;
@@ -549,10 +550,10 @@ function LegalForm({ doc, onDone }: { doc: Legal; onDone: () => void }) {
     return (
         <form
             className="grid gap-4"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
                 e.preventDefault();
                 if (
-                    window.confirm(
+                    await askConfirm(
                         t(
                             'Publish a new version? Owners will be asked to accept it at their next login.',
                         ),
@@ -623,10 +624,11 @@ function SignupActions({ s }: { s: Signup }) {
                     <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                            const reason = window.prompt(
-                                t('What should the hotel change?'),
-                            );
+                        onClick={async () => {
+                            const reason = await askText({
+                                title: t('What should the hotel change?'),
+                                required: true,
+                            });
                             if (reason) {
                                 router.post(
                                     PlatformSignupController.decideGoLive.url(
@@ -646,10 +648,13 @@ function SignupActions({ s }: { s: Signup }) {
                 size="sm"
                 variant="ghost"
                 className={s.status === 'suspended' ? '' : 'text-destructive'}
-                onClick={() => {
+                onClick={async () => {
                     const suspend = s.status !== 'suspended';
                     const reason = suspend
-                        ? window.prompt(t('Reason for suspending'))
+                        ? await askText({
+                              title: t('Reason for suspending'),
+                              required: true,
+                          })
                         : '';
                     if (!suspend || reason) {
                         router.post(

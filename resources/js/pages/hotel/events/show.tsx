@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { askText } from '@/lib/ask';
 
 type Option = { value: string; label: string };
 type EventDetail = {
@@ -200,12 +201,13 @@ export default function ShowEvent({
                                 <Button
                                     variant="ghost"
                                     className="text-destructive"
-                                    onClick={() => {
-                                        const reason = window.prompt(
-                                            t(
+                                    onClick={async () => {
+                                        const reason = await askText({
+                                            title: t('Mark as lost'),
+                                            label: t(
                                                 'Why was it lost? (price, date, chose another place…)',
                                             ),
-                                        );
+                                        });
                                         if (reason !== null) {
                                             post(
                                                 EventController.close.url(
@@ -236,10 +238,12 @@ export default function ShowEvent({
                                 <Button
                                     variant="ghost"
                                     className="text-destructive"
-                                    onClick={() => {
-                                        const reason = window.prompt(
-                                            t('Reason for cancelling'),
-                                        );
+                                    onClick={async () => {
+                                        const reason = await askText({
+                                            title: t('Cancel the event'),
+                                            label: t('Reason for cancelling'),
+                                            required: true,
+                                        });
                                         if (reason) {
                                             post(
                                                 EventController.close.url(

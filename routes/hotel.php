@@ -383,6 +383,7 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     Route::get('hotel/bookings/export', BookingExportController::class)->middleware(['can:bookings.export', 'throttle:10,1'])->name('hotel.bookings.export');
     Route::get('hotel/bookings', [BookingController::class, 'index'])->middleware('can:bookings.view')->name('hotel.bookings.index');
     Route::get('hotel/bookings/new', [BookingController::class, 'create'])->middleware('can:bookings.create')->name('hotel.bookings.create');
+    Route::post('hotel/bookings/guest-lookup', [BookingController::class, 'guest'])->middleware(['can:bookings.create', 'throttle:60,1'])->name('hotel.bookings.guest');
     Route::post('hotel/bookings', [BookingController::class, 'store'])->middleware('can:bookings.create')->name('hotel.bookings.store');
     Route::get('hotel/bookings/{booking}', [BookingController::class, 'show'])->middleware('can:bookings.view')->name('hotel.bookings.show');
     Route::middleware('can:bookings.manage')->group(function (): void {

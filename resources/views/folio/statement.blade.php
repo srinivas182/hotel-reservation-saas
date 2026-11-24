@@ -60,7 +60,8 @@
         </tfoot>
     </table>
 
-    <p class="note">{{ __('Statement of account, not a tax invoice. Amounts include taxes.') }}</p>
+    {{-- 0.38.0: "include taxes" only when the hotel has taxes set up. --}}
+    <p class="note">{{ \App\Domains\Finance\Taxes\TaxRate::query()->where('active', true)->exists() ? __('Statement of account, not a tax invoice. Amounts include taxes.') : __('Statement of account, not a tax invoice.') }}</p>
     <p class="no-print"><button onclick="window.print()">{{ __('Print') }}</button></p>
 </main>
 </body>

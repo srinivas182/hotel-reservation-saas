@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { askText } from '@/lib/ask';
 
 export type Quote = {
     id: number;
@@ -292,8 +293,11 @@ export function EventQuotes({
                     ),
             },
         );
-    const acceptByStaff = (quote: Quote) => {
-        const name = window.prompt(t('Who accepted the quote (name)?'));
+    const acceptByStaff = async (quote: Quote) => {
+        const name = await askText({
+            title: t('Who accepted the quote (name)?'),
+            required: true,
+        });
         if (name) {
             router.post(
                 EventQuoteController.accept.url(quote.id),

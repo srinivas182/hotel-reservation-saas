@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Option = { value: string; label: string };
 
@@ -433,10 +434,10 @@ export default function Taxes(props: Props) {
                                                   variant="ghost"
                                                   size="sm"
                                                   className="text-destructive"
-                                                  onClick={(e) => {
+                                                  onClick={async (e) => {
                                                       e.stopPropagation();
                                                       if (
-                                                          window.confirm(
+                                                          await askConfirm(
                                                               t(
                                                                   'Delete :name?',
                                                                   {

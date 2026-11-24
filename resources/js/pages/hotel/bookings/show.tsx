@@ -21,6 +21,7 @@ import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Booking = {
     id: string;
@@ -69,6 +70,7 @@ type Props = {
     timeline: {
         event: string;
         description: string;
+        changes: string[];
         by: string | null;
         at: string | null;
     }[];
@@ -193,8 +195,8 @@ export default function ShowBooking({
     deposit,
 }: Props) {
     const [panel, setPanel] = useState<'modify' | 'cancel' | null>(null);
-    const post = (url: string, message?: string) => {
-        if (!message || window.confirm(message)) {
+    const post = async (url: string, message?: string) => {
+        if (!message || (await askConfirm(message))) {
             router.post(url, {}, { preserveScroll: true });
         }
     };
@@ -433,6 +435,11 @@ export default function ShowBooking({
                                             <span className="text-muted-foreground">
                                                 {' '}
                                                 · {entry.by}
+                                            </span>
+                                        )}
+                                        {entry.changes.length > 0 && (
+                                            <span className="block text-xs text-muted-foreground">
+                                                {entry.changes.join(' · ')}
                                             </span>
                                         )}
                                     </span>

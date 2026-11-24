@@ -33,6 +33,7 @@ import type { DayChecklist } from '@/components/workspace/checklists';
 import { ScreenTip } from '@/components/workspace/screen-tip';
 import { TodayHero } from '@/components/workspace/today-hero';
 import { cn } from '@/lib/utils';
+import { askConfirm } from '@/lib/ask';
 
 type Item = {
     id: string;
@@ -539,9 +540,9 @@ export default function Today(props: Props) {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => {
+                                                onClick={async () => {
                                                     if (
-                                                        window.confirm(
+                                                        await askConfirm(
                                                             t(
                                                                 'Mark this guest as a no-show? All nights go back on sale.',
                                                             ),

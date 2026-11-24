@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { askConfirm } from '@/lib/ask';
 
 type Closure = {
     id: string;
@@ -252,9 +253,9 @@ function RoomPanel({
                             <Button
                                 variant="ghost"
                                 className="text-destructive"
-                                onClick={() => {
+                                onClick={async () => {
                                     if (
-                                        window.confirm(
+                                        await askConfirm(
                                             t('Remove room :number?', {
                                                 number: room.number,
                                             }),
@@ -563,9 +564,9 @@ export default function Rooms({
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-destructive"
-                                                onClick={() => {
+                                                onClick={async () => {
                                                     if (
-                                                        window.confirm(
+                                                        await askConfirm(
                                                             t('Delete :name?', {
                                                                 name: category.display_name,
                                                             }),

@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Hotel panel fixes from the first test round (0.38.1)
+
+#### Fixed
+
+- New booking: check-out starts the day after check-in. On computers set to a time zone east of UTC (India), it started on the check-in day.
+- Room bill:
+    - a payment above the balance due shows a warning and needs a second click;
+    - correction lines show a single minus sign;
+    - the balance line no longer splits on phones.
+- A cancelled booking that was paid keeps its bill and shows the amount to refund to the guest (no accommodation charge).
+- Booking history shows what a change of stay changed: dates, room category, rooms, guests and total.
+- The guest statement says "taxes included" only when the hotel has taxes set up.
+- The plan page no longer says online payment is coming when it is available.
+- A dish saved without a name shows the error on the form.
+- Table bookings: a day without a restaurant service says so.
+
+#### Changed
+
+- **No more browser pop-ups.** Confirmations and questions are in-page dialogs that work on phones and in browsers that block pop-ups. This covers accepting an order, a correction reason, checking out with a balance, deletes, refusals and reasons.
+- The go-live check no longer writes "Hotel scoping bypassed" to the hotel's audit log on every page load.
+
+#### Security
+
+- The guest's phone number is no longer put in the page address when reception looks up a known guest: the lookup is sent in the body of the request.
+
 ### Fixes from the first test round (0.38.0)
 
 #### Fixed
