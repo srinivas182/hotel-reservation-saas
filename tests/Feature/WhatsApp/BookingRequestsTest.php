@@ -239,3 +239,25 @@ it('does not send a second request for the same nights unless the guest wants an
     ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Oui, une deuxième chambre en plus')], $this->conversation->id));
     expect(($this->in)(fn () => BookingRequest::query()->count()))->toBe(2);
 });
+
+it('sends the guest the new details when reception changes or cancels the stay', function (): void {
+    Http::swap(new Illuminate\Http\Client\Factory);
+    Http::fake(['graph.facebook.com/*' => fn () => Http::response(['messages' => [['id' => 'wamid.'.Illuminate\Support\Str::random(12)]]])]);
+    $request = submitRequest($this);
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.booking-requests.approve', $request), ['edit' => false, 'acknowledge_price' => false])->assertSessionHasNoErrors();
+    $booking = ($this->in)(fn () => $request->fresh()->booking);
+    ($this->in)(fn () => $this->conversation->fresh()->forceFill(['needs_attention' => true, 'handover_reason' => 'assistant:change booking '.$booking->reference.': new dates'])->save());
+
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.bookings.show', $booking))->assertInertia(fn ($page) => $page->where('guestOnWhatsApp', true));
+
+    $stay = ['room_category_id' => $this->exe->id, 'check_in' => '2026-11-15', 'check_out' => '2026-11-18', 'adults' => 2, 'children' => '', 'rooms' => 1, 'breakfast' => false, 'extra_bed' => false];
+    asStaffOf($this->hotel, $this->reception)->put(route('hotel.bookings.update', $booking), [...$stay, 'notify_guest' => true])->assertSessionHasNoErrors()->assertRedirect();
+
+    $last = fn () => ($this->in)(fn () => App\Domains\Conversations\Models\Message::query()->where('direction', 'out')->where('source', 'system')->latest('id')->value('body'));
+    expect($last())->toContain($booking->reference)->toContain('18');
+    $conversation = ($this->in)(fn () => $this->conversation->fresh());
+    expect($conversation->needs_attention)->toBeFalse()->and($conversation->handover_reason)->toBeNull();
+
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.cancel', $booking), ['reason' => 'Guest asked', 'notify_guest' => true])->assertSessionHasNoErrors();
+    expect($last())->not->toBe(null)->and(($this->in)(fn () => App\Domains\Conversations\Models\Message::query()->where('source', 'system')->count()))->toBeGreaterThanOrEqual(3);
+});
