@@ -73,6 +73,7 @@ final class AssistantEngine
         $attempts = 0;
 
         foreach ([1, 2] as $attempts) {
+            app(\App\Domains\Conversations\TypingIndicator::class)->keepAlive();
             $tools = new ToolContext($fallbackLanguage, $conversationId);
             foreach ($history as $turn) {
                 if ($turn->role === 'hotel') {

@@ -304,3 +304,62 @@ it('lets only staff who can reply change the mode', function (): void {
 
     asStaffOf($this->hotel, staffMember($this->hotel, SystemRole::ReadOnly))->put(route('hotel.inbox.mode', $conversation), ['mode' => 'staff'])->assertForbidden();
 });
+
+/**
+ * The "typing…" requests sent to WhatsApp, as the guest message IDs they were for.
+ *
+ * @return list<string>
+ */
+function typingFor(): array
+{
+    return Http::recorded(fn ($request): bool => isset($request->data()['typing_indicator']))
+        ->map(fn (array $pair): string => (string) $pair[0]->data()['message_id'])->values()->all();
+}
+
+it('shows "typing…" in the guest chat while the assistant prepares an automatic answer', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['mode' => 'automatic']));
+    HotelAssistantAgent::fake([aiReply('Bonjour ! Comment puis-je vous aider ?', ['intent' => 'greeting'])]);
+
+    webhookPost($this, [inbound('wamid.TYPE1', message: ['text' => ['body' => 'Bonjour']])]);
+    runReplies($this);
+
+    $typing = Http::recorded(fn ($request): bool => isset($request->data()['typing_indicator']))->first()[0];
+    expect(typingFor())->toBe(['wamid.TYPE1'])
+        ->and($typing->data())->toMatchArray(['messaging_product' => 'whatsapp', 'status' => 'read', 'typing_indicator' => ['type' => 'text']])
+        ->and(assistantMessages($this))->toBe(['Bonjour ! Comment puis-je vous aider ?']);
+});
+
+it('does not show "typing…" when staff approve drafts first, or answer themselves', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['mode' => 'supervised']));
+    HotelAssistantAgent::fake([aiReply('Bonjour !', ['intent' => 'greeting'])]);
+
+    webhookPost($this, [inbound('wamid.TYPE2', message: ['text' => ['body' => 'Bonjour']])]);
+    runReplies($this);
+
+    ($this->in)(fn () => Conversation::query()->update(['mode' => ConversationMode::Staff->value]));
+    webhookPost($this, [inbound('wamid.TYPE3', message: ['text' => ['body' => 'Allô ?']])]);
+    runReplies($this);
+
+    expect(typingFor())->toBe([]);
+});
+
+it('keeps "typing…" on during a long answer and never fails the reply when WhatsApp refuses it', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['mode' => 'automatic']));
+    $typing = app(App\Domains\Conversations\TypingIndicator::class);
+    webhookPost($this, [inbound('wamid.TYPE4', message: ['text' => ['body' => 'Bonjour']])]);
+    $message = ($this->in)(fn () => Message::query()->where('wamid', 'wamid.TYPE4')->sole());
+
+    ($this->in)(function () use ($typing, $message): void {
+        $typing->start($message);
+        $typing->keepAlive();               // too soon: nothing new
+        $this->travel(19)->seconds();
+        $typing->keepAlive();               // refreshed before WhatsApp hides it
+        $typing->stop();
+        $this->travel(30)->seconds();
+        $typing->keepAlive();               // stopped: nothing
+    });
+    expect(typingFor())->toBe(['wamid.TYPE4', 'wamid.TYPE4']);
+
+    Http::fake(['graph.facebook.com/v23.0/5550099/messages' => Http::response(['error' => ['message' => 'nope']], 400)]);
+    expect(app(App\Domains\WhatsApp\Graph\GraphClient::class)->typing('5550099', 'hotel-token', 'wamid.TYPE4'))->toBeFalse();
+});

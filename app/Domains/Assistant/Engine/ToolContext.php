@@ -74,6 +74,9 @@ final class ToolContext
         }
 
         $this->calls[] = ['tool' => $tool, 'arguments' => $arguments, 'result' => mb_substr($result, 0, 2000)];
+
+        // 0.37.4: a long answer keeps "typing…" on in the guest's chat.
+        app(\App\Domains\Conversations\TypingIndicator::class)->keepAlive();
     }
 
     /**

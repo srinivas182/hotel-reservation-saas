@@ -47,6 +47,11 @@ final class TranscribeMessage implements RequiresHotelContext, ShouldQueue
             return;
         }
 
+        // 0.37.4: the guest sees "typing…" while their voice note is heard.
+        if ($message->conversation?->mode === \App\Domains\Conversations\ConversationMode::Assistant) {
+            app(\App\Domains\Conversations\TypingIndicator::class)->start($message);
+        }
+
         try {
             $result = $gateway->transcribe($path, $message->conversation_id);
         } catch (AiUnavailable $exception) {

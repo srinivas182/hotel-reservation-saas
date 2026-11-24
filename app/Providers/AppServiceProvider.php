@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(\App\Domains\Workspace\Workspace::class);
         // 0.36.7: who is selling (the WhatsApp assistant does not see rooms kept for reception).
         $this->app->scoped(\App\Domains\Availability\SalesChannel::class);
+        $this->app->scoped(\App\Domains\Conversations\TypingIndicator::class);
         $this->app->scoped(\App\Domains\Workspace\ShiftChecklists::class);
         // Sprint D: app notifications (tests bind FakePushTransport).
         $this->app->bind(\App\Domains\Push\PushTransport::class, \App\Domains\Push\WebPushTransport::class);
