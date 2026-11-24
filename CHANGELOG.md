@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### CNH Global Tech brand and full legal pages (0.37.7)
+
+#### Changed
+
+- The platform name is **CNH Global Tech**: the working name "Assistant Hôtel" is replaced on the website, in emails and in the app, unless a name was already chosen in Platform → Website.
+- **Terms of service, privacy notice and data processing agreement** are now full pages of the public website: header, footer, contents list, version and date, print or save as PDF, French and English. The texts are complete standard versions (version 2, no longer marked as drafts). They cover:
+    - who operates the platform and the technology provider;
+    - data collected, purposes, the AI assistant, WhatsApp, sub-processors, transfers and retention;
+    - rights under Côte d'Ivoire Law 2013-450, data deletion instructions (required by Meta), cookies, liability, termination and applicable law.
+- Company name, address and contact email in the legal texts are filled in from Platform → Billing (issuing company) and the brand's support email.
+- WhatsApp pricing wording updated to Meta's rules since 1 October 2026: replies are free up to 1,000 a month per number.
+
+#### Notes
+
+- Publishing version 2 asks hotel owners to accept the new texts at their next login. Texts already republished by the platform team are not replaced.
+
 ### Booking changes priced, and ⏳ in the chat (0.37.6)
 
 #### Added

@@ -29,7 +29,7 @@ const GUIDES: Record<string, Guide> = {
                       'Sign in to dashboard.stripe.com in live mode (the account must be activated to take real payments).',
                   ),
             t(
-                'Developers → API keys → Create restricted key: name it "Assistant Hôtel" and set Checkout Sessions to Write and Balance to Read; leave everything else at None. Copy the key (rk_…) into "Secret key". The standard secret key (sk_…) also works.',
+                'Developers → API keys → Create restricted key: name it after the platform (for example "Hotel bookings") and set Checkout Sessions to Write and Balance to Read; leave everything else at None. Copy the key (rk_…) into "Secret key". The standard secret key (sk_…) also works.',
             ),
             t(
                 'Developers → Webhooks → Add endpoint (or Add destination). Endpoint URL: :url. Events: checkout.session.completed, checkout.session.expired, checkout.session.async_payment_succeeded and checkout.session.async_payment_failed.',

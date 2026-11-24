@@ -1,6 +1,7 @@
 @php
     $frHome = \App\Domains\Site\Models\BrandSettings::defaultLocale() === 'en' ? '/fr' : '/';
-    $alt = fn (string $p) => $p === 'home' ? ['fr' => url($frHome), 'en' => url('/en')] : ['fr' => url('/'.$p), 'en' => url('/en/'.$p)];
+    // 0.37.7: pages outside the site's own routes (the legal texts) give their language links.
+    $alt = isset($alternates) ? fn (string $p) => $alternates : fn (string $p) => $p === 'home' ? ['fr' => url($frHome), 'en' => url('/en')] : ['fr' => url('/'.$p), 'en' => url('/en/'.$p)];
     $link = fn (string $p) => $locale === 'en' ? ($p === 'home' ? '/en' : '/en/'.$p) : ($p === 'home' ? (\App\Domains\Site\Models\BrandSettings::defaultLocale() === 'en' ? '/fr' : '/') : '/'.$p);
     $nav = ['features' => __('Features'), 'pricing' => __('Pricing'), 'countries' => __('Countries'), 'faq' => __('FAQ'), 'help' => __('Help')];
 @endphp
