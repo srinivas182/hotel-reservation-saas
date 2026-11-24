@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### The assistant never leaves a guest stuck (0.37.5)
+
+#### Fixed
+
+- "Can you confirm from reception??" handed the guest to staff, because the message contained the keyword "reception". The assistant then stayed silent for good. A keyword now hands over only when it is alone ("Réception ?") or comes with a wish to talk or be called ("je veux parler à la réception", "a person call me"). An ordinary sentence is left to the assistant. The same goes for French "une chambre pour une personne", which used to hand over on "personne".
+- Assistant rule 12: asking to check something with reception is not a request for a person. The assistant flags the question for staff, says reception will confirm, and keeps helping.
+
+#### Added
+
+- If the assistant passed a guest to staff and **nobody answered within 30 minutes**, the assistant answers the guest's next message. The conversation stays flagged ("no staff reply") in the Inbox. A conversation staff took over themselves, or answered, is never taken back.
+
 ### "Typing…" while the assistant answers (0.37.4)
 
 #### Added
