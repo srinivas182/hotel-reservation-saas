@@ -30,7 +30,7 @@ final class RequestBooking extends AssistantTool
 
     public function description(): string
     {
-        return 'Send a booking request to reception and hold the rooms, also when reception is closed. Call it as soon as the guest wants to book and you know the room category, dates, number of guests and their full name; if one is missing, ask the guest for it first. Reception confirms or declines; the booking is NOT confirmed by this tool.';
+        return 'Send a booking request to reception and hold the rooms, also when reception is closed. Call it as soon as the guest wants to book and you know the room category, dates, number of guests and their full name; if one is missing, ask the guest for it first. Reception confirms or declines; the booking is NOT confirmed by this tool. Never use it to cancel or change a booking. If it answers possible_duplicate, ask the guest whether they want an extra room on top of their booking, and only then call it again with additional_room=true.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -46,6 +46,7 @@ final class RequestBooking extends AssistantTool
             'breakfast' => $schema->boolean(),
             'extra_bed' => $schema->boolean(),
             'coupon_code' => $schema->string()->description('A discount code the guest gave, if any'),
+            'additional_room' => $schema->boolean()->description('True only after the guest confirmed they want this room in addition to a booking or request they already have for the same dates.'),
             'special_requests' => $schema->string()->description('Short note for reception of what the guest asked for or told you: a pet (which animal, size), a baby cot, a late or early arrival, an accessible room, a celebration… Empty if nothing.'),
         ];
     }
@@ -91,6 +92,16 @@ final class RequestBooking extends AssistantTool
             return ['error' => 'Conversation not found.'];
         }
 
+        // 0.38.0: the same guest already has a booking or a request for these dates.
+        if (! (bool) ($arguments['additional_room'] ?? false) && ($existing = $this->overlapping($conversation, $checkIn, $checkOut)) !== null) {
+            return [
+                'request_sent' => false,
+                'reason' => 'possible_duplicate',
+                'existing' => $existing,
+                'message' => 'This guest already has '.$existing.' for overlapping dates. Ask whether they want an extra room in addition; send again with additional_room=true only if they say so.',
+            ];
+        }
+
         try {
             $request = app(BookingRequestService::class)->submit($conversation, $stay, (string) ($arguments['guest_name'] ?? ''), isset($arguments['coupon_code']) ? (string) $arguments['coupon_code'] : null, isset($arguments['special_requests']) ? (string) $arguments['special_requests'] : null);
         } catch (RequestNotPossible $exception) {
@@ -122,5 +133,35 @@ final class RequestBooking extends AssistantTool
             'rooms_held_until' => $request->expires_at->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             'next_step' => 'Tell the guest the request was sent and reception will confirm it. Do NOT say it is confirmed.',
         ];
+    }
+
+    /**
+     * A booking or waiting request of this guest that overlaps the stay, as
+     * words for the assistant ("booking CTH-26-0011, 10–12 December"), or null.
+     */
+    private function overlapping(Conversation $conversation, CarbonImmutable $checkIn, CarbonImmutable $checkOut): ?string
+    {
+        $guestId = $conversation->contact?->guest_id;
+
+        if ($guestId !== null) {
+            $booking = \App\Domains\Bookings\Models\Booking::query()
+                ->where('guest_id', $guestId)
+                ->whereIn('status', [\App\Domains\Bookings\BookingStatus::Tentative->value, \App\Domains\Bookings\BookingStatus::Confirmed->value, \App\Domains\Bookings\BookingStatus::CheckedIn->value])
+                ->whereDate('check_in', '<', $checkOut->toDateString())
+                ->whereDate('check_out', '>', $checkIn->toDateString())
+                ->first();
+            if ($booking !== null) {
+                return 'booking '.$booking->reference.' ('.$booking->check_in->toDateString().' to '.$booking->check_out->toDateString().')';
+            }
+        }
+
+        $request = \App\Domains\BookingRequests\BookingRequest::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('status', \App\Domains\BookingRequests\BookingRequestStatus::Pending->value)
+            ->whereDate('check_in', '<', $checkOut->toDateString())
+            ->whereDate('check_out', '>', $checkIn->toDateString())
+            ->first();
+
+        return $request === null ? null : 'a booking request '.$request->reference.' waiting for reception ('.$request->check_in->toDateString().' to '.$request->check_out->toDateString().')';
     }
 }

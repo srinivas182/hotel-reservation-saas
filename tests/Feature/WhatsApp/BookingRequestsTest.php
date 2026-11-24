@@ -220,3 +220,22 @@ it('counts the requests waiting for an answer on Today in the menu', function ()
     asStaffOf($this->hotel, $this->reception)->post(route('hotel.booking-requests.decline', $request), ['reason' => 'full'])->assertSessionHasNoErrors();
     asStaffOf($this->hotel, $this->reception)->get(route('hotel.inbox'))->assertInertia(fn ($page) => $page->where('actionCounts.requests', 0));
 });
+
+it('does not send a second request for the same nights unless the guest wants another room', function (): void {
+    submitRequest($this);
+    $call = ['guest_name' => 'Awa Koné', 'category_code' => 'EXE', 'check_in' => '2026-11-13', 'check_out' => '2026-11-15', 'adults' => 2];
+
+    HotelAssistantAgent::fake([
+        new ToolCall('c1', 'request_booking', $call),
+        aiReply('Vous avez déjà une demande pour ces dates : la réception vous répond très vite.', ['intent' => 'booking_request']),
+    ]);
+    ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Je réserve du 13 au 15')], $this->conversation->id));
+    expect(($this->in)(fn () => BookingRequest::query()->count()))->toBe(1);
+
+    HotelAssistantAgent::fake([
+        new ToolCall('c2', 'request_booking', [...$call, 'additional_room' => true]),
+        aiReply('Merci ! La demande pour la deuxième chambre est transmise à la réception.', ['intent' => 'booking_request']),
+    ]);
+    ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Oui, une deuxième chambre en plus')], $this->conversation->id));
+    expect(($this->in)(fn () => BookingRequest::query()->count()))->toBe(2);
+});

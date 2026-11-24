@@ -88,7 +88,15 @@ final class RoomCategoryController extends Controller
             'name.*' => ['nullable', 'string', 'max:80'],
             'description' => ['nullable', 'array'],
             'description.*' => ['nullable', 'string', 'max:1000'],
-            'max_occupancy' => ['required', 'integer', 'min:1', 'max:20'],
+            'max_occupancy' => ['required', 'integer', 'min:1', 'max:20',
+                // 0.38.0: the maximum must be reachable, or guests and the assistant are told different numbers.
+                function (string $attribute, mixed $value, \Closure $fail) use ($request): void {
+                    $sum = (int) $request->input('max_adults') + (int) $request->input('max_children');
+                    if ((int) $value > $sum) {
+                        $fail(__('Maximum guests cannot be more than maximum adults plus maximum children (:sum).', ['sum' => $sum]));
+                    }
+                },
+            ],
             'standard_occupancy' => ['required', 'integer', 'min:1', 'lte:max_occupancy'],
             'max_adults' => ['required', 'integer', 'min:1', 'lte:max_occupancy'],
             'max_children' => ['required', 'integer', 'min:0', 'lte:max_occupancy'],

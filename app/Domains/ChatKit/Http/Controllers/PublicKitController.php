@@ -25,7 +25,7 @@ final class PublicKitController extends Controller
 {
     public function go(Request $request, string $hotel, TenantContext $context, ?string $code = null): View
     {
-        $found = Hotel::query()->where('slug', $hotel)->where('status', 'active')->firstOrFail();
+        $found = Hotel::query()->where('slug', $hotel)->whereIn('status', ['trial', 'active'])->firstOrFail();
 
         return $context->run($found, function () use ($request, $found, $code): View {
             $kit = app(ChatKit::class);
@@ -59,7 +59,7 @@ final class PublicKitController extends Controller
      */
     public function button(string $hotel, TenantContext $context): Response
     {
-        $found = Hotel::query()->where('slug', $hotel)->where('status', 'active')->firstOrFail();
+        $found = Hotel::query()->where('slug', $hotel)->whereIn('status', ['trial', 'active'])->firstOrFail();
 
         $config = $context->run($found, function () use ($found): array {
             $kit = app(ChatKit::class);

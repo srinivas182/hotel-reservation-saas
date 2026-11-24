@@ -151,3 +151,9 @@ it('keeps rooms and categories separate between hotels', function (): void {
         ->where('categories.0.id', $ownCategory->id)
         ->has('rooms', 0));
 });
+
+it('refuses a maximum of guests the adults and children limits can never reach', function (): void {
+    asStaffOf($this->hotel, $this->manager)
+        ->post(route('hotel.room-categories.store'), categoryPayload(['max_adults' => 2, 'max_children' => 0, 'max_occupancy' => 4]))
+        ->assertSessionHasErrors('max_occupancy');
+});

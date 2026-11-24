@@ -36,7 +36,7 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
 
     public const INTENTS = [
         'greeting', 'availability_question', 'price_question', 'booking_request', 'information_question',
-        'modification_or_cancellation', 'complaint', 'human_request', 'group_or_special_request', 'table_booking', 'menu_question', 'food_order', 'bill_question', 'event_enquiry', 'other',
+        'modification_or_cancellation', 'complaint', 'human_request', 'group_or_special_request', 'table_booking', 'menu_question', 'food_order', 'bill_question', 'event_enquiry', 'emergency', 'other',
     ];
 
     /**

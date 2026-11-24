@@ -127,7 +127,7 @@ final class ArrivalSettingsController extends Controller
     /** The entrance photo, public: WhatsApp fetches it for the card. */
     public function entrance(string $hotel, TenantContext $context): StreamedResponse
     {
-        $found = Hotel::query()->where('slug', $hotel)->where('status', 'active')->firstOrFail();
+        $found = Hotel::query()->where('slug', $hotel)->whereIn('status', ['trial', 'active'])->firstOrFail();
 
         return $context->run($found, function (): StreamedResponse {
             $path = HotelAssistantSettings::current()->arrival_photo_path;

@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixes from the first test round (0.38.0)
+
+#### Fixed
+
+- **The assistant no longer goes silent.** A message sent while the assistant was still answering the previous one is answered instead of dropped. After a colleague's reply, or a hand-over nobody picked up, the assistant comes back to the waiting message on its own once the wait is over (10 minutes after a staff reply, 5 minutes after an unanswered hand-over, was 30).
+- Handing a conversation back to the assistant answers what the guest wrote after the last staff reply.
+- The reply limit is 60 an hour (was 30), so a long booking conversation never reaches it.
+- Restaurant menu, chat kit and arrival pages work for hotels still on their trial (they showed "not found").
+- A room category can no longer have a maximum of guests the adult and child limits can never reach. Existing categories are corrected.
+
+#### Security
+
+- **Card numbers typed in WhatsApp are never stored.** A valid card number keeps only its last four digits. The security code and the expiry date are masked before the message is saved, shown to staff or sent to the AI. The same applies to voice-note transcripts and to messages already stored.
+
+#### Changed
+
+- The assistant:
+    - writes dates day first, never quotes a past date and never assumes the number of guests;
+    - lists every available category, explains the price breakdown and uses the hotel's currency words;
+    - passes cancellations, corrections to guest details and emergencies to reception;
+    - says honestly that it is a virtual assistant when asked.
+- A second booking request for the same nights is not sent unless the guest asks for another room.
+
 ### Graph API v25.0 by default (0.37.8)
 
 #### Changed

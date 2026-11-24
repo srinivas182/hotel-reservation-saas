@@ -64,7 +64,7 @@ final class TranscribeMessage implements RequiresHotelContext, ShouldQueue
         $language = $detector->detect($result->text);
 
         $message->forceFill([
-            'transcript' => $result->text,
+            'transcript' => \App\Domains\Conversations\CardNumberMask::mask($result->text),
             'transcript_language' => $language,
             'language' => $language ?? $message->language,
             'transcribed_at' => now(),

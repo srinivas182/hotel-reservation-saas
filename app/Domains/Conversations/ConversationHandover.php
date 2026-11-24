@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Conversations;
 
 use App\Domains\Audit\Audit;
+use App\Domains\Conversations\Jobs\ReplyToGuest;
 use App\Domains\Conversations\Models\Conversation;
 use App\Models\User;
 
@@ -66,7 +67,12 @@ final class ConversationHandover
 
     public function toAssistant(Conversation $conversation, ?User $by = null): void
     {
-        $latest = $conversation->messages()->where('direction', 'in')->orderByDesc('sent_at')->orderByDesc('id')->value('id');
+        // 0.38.0: messages a colleague answered are not answered again, but
+        // what the guest wrote after the colleague's last reply (or while
+        // nobody answered) is: the assistant picks it up at once.
+        $lastStaff = $conversation->messages()->where('direction', 'out')->where('source', MessageSource::Staff->value)->max('sent_at');
+        $answeredUpTo = $lastStaff === null ? null : $conversation->messages()->where('direction', 'in')->where('sent_at', '<=', $lastStaff)
+            ->orderByDesc('sent_at')->orderByDesc('id')->value('id');
 
         $conversation->forceFill([
             'mode' => ConversationMode::Assistant,
@@ -75,11 +81,18 @@ final class ConversationHandover
             'assigned_to' => null,
             'assigned_at' => null,
             'waiting_since' => null,
-            // Messages staff have already dealt with are not answered again.
-            'last_answered_message_id' => $latest ?? $conversation->last_answered_message_id,
+            // Handing back is the colleague's decision: no quiet time after it.
+            'staff_replied_at' => null,
+            'last_answered_message_id' => $answeredUpTo ?? $conversation->last_answered_message_id,
         ])->save();
 
         Audit::record('conversations.handed_to_assistant', 'Conversation handed back to the assistant', subject: $conversation, causer: $by);
+
+        $waiting = $conversation->messages()->where('direction', 'in')->where('type', '!=', 'reaction')
+            ->orderByDesc('sent_at')->orderByDesc('id')->first();
+        if ($waiting !== null && $waiting->id !== $conversation->last_answered_message_id && $waiting->sent_at->gt(now()->subHours(Conversation::WINDOW_HOURS))) {
+            ReplyToGuest::schedule($waiting);
+        }
     }
 
     /**

@@ -101,3 +101,9 @@ it('publishes a public menu page with photos and a QR code, and no personal data
 
     asStaffOf($this->hotel, $this->chef)->get(route('hotel.restaurant.menu.qr', $this->outlet))->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
 });
+
+it('shows the public menu of a hotel still on its trial', function (): void {
+    $this->hotel->forceFill(['status' => 'trial'])->save();
+
+    $this->get('/m/first-class-lodge/restaurant')->assertOk()->assertSee('Poulet braisé');
+});
