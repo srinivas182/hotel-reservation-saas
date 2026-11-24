@@ -97,6 +97,31 @@ class GraphClient
     }
 
     /**
+     * Mark a guest's message as read and show "typing…" in their chat
+     * (0.37.4). WhatsApp hides it when the reply arrives, or after 25
+     * seconds. Best effort: never throws.
+     */
+    public function typing(string $phoneNumberId, string $token, string $wamid): bool
+    {
+        if (self::isDemo($phoneNumberId)) {
+            return true;
+        }
+
+        try {
+            $response = $this->http($token, retry: false)->timeout(5)->post($this->url("{$phoneNumberId}/messages"), [
+                'messaging_product' => 'whatsapp',
+                'status' => 'read',
+                'message_id' => $wamid,
+                'typing_indicator' => ['type' => 'text'],
+            ]);
+
+            return $response->successful();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * Download a media file by its ID (two steps: get a short-lived URL,
      * then fetch it with the same token).
      *

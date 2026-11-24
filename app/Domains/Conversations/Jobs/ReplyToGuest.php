@@ -15,6 +15,7 @@ use App\Domains\Conversations\MessageSender;
 use App\Domains\Conversations\MessageSource;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
+use App\Domains\Conversations\TypingIndicator;
 use App\Domains\Hotel\StaffedHours;
 use App\Domains\Tenancy\Contracts\RequiresHotelContext;
 use App\Domains\Tenancy\TenantContext;
@@ -137,12 +138,20 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return;
         }
 
-        $result = $engine->respond(
-            $this->turns($conversation),
-            $conversation->id,
-            $conversation->contact?->guest?->name(),
-            $this->situation($context),
-        );
+        // 0.37.4: "typing…" in the guest's chat while the answer is prepared.
+        $typing = app(TypingIndicator::class);
+        $typing->start($latest);
+
+        try {
+            $result = $engine->respond(
+                $this->turns($conversation),
+                $conversation->id,
+                $conversation->contact?->guest?->name(),
+                $this->situation($context),
+            );
+        } finally {
+            $typing->stop();
+        }
 
         // The guest's language follows what they write now (0.36.1): later
         // messages (holding messages, confirmations, payment page) use it.

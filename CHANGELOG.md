@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### "Typing…" while the assistant answers (0.37.4)
+
+#### Added
+
+- When the assistant answers by itself (automatic mode), the guest's message is marked as read (blue ticks) and the guest sees **"typing…"** in WhatsApp until the reply arrives. This uses WhatsApp Cloud API's typing indicator.
+- WhatsApp hides the indicator after 25 seconds, so a long answer refreshes it every 18 seconds while the assistant works.
+- Voice notes show it while they are transcribed.
+- No indicator for drafts waiting for staff approval or for conversations staff are handling, so the guest never waits for a reply that is not coming.
+- Best effort: if WhatsApp refuses the indicator, the reply is unaffected.
+
 ### No staff check for money the gateway already took (0.37.3)
 
 #### Fixed
