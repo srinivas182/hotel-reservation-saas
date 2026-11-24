@@ -242,6 +242,7 @@ final class BookingController extends Controller
                 ],
             ],
             'timeline' => $timeline,
+            'guestOnWhatsApp' => \App\Domains\Bookings\Jobs\TellGuestAboutBooking::conversationFor($booking) !== null,
             'folio' => $request->user()?->can('folio.view') === true ? (function () use ($booking, $hotel): ?array {
                 $statement = app(\App\Domains\Folio\Folio::class)->statement($booking);
                 $cancelled = $booking->status === BookingStatus::Cancelled;

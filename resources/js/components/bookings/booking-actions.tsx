@@ -164,6 +164,7 @@ export function ModifyStay({
     categories,
     quote,
     canOverride,
+    guestOnWhatsApp = false,
     onDone,
 }: {
     bookingId: string;
@@ -171,9 +172,15 @@ export function ModifyStay({
     categories: { id: string; name: string; extra_bed_allowed: boolean }[];
     quote?: QuoteResult;
     canOverride: boolean;
+    guestOnWhatsApp?: boolean;
     onDone: () => void;
 }) {
-    const form = useForm({ ...stay, override_total: '', override_reason: '' });
+    const form = useForm({
+        ...stay,
+        override_total: '',
+        override_reason: '',
+        notify_guest: guestOnWhatsApp,
+    });
     const { data, setData } = form;
     const errors = form.errors as Record<string, string | undefined>;
 
@@ -380,6 +387,14 @@ export function ModifyStay({
                     </p>
                 </div>
             )}
+            <NotifyGuest
+                available={guestOnWhatsApp}
+                checked={data.notify_guest}
+                onChange={(value) => setData('notify_guest', value)}
+                label={t(
+                    'Send the new dates, room and total to the guest on WhatsApp',
+                )}
+            />
             <div className="flex gap-2">
                 <Button disabled={form.processing}>{t('Save changes')}</Button>
                 <Button type="button" variant="ghost" onClick={onDone}>
@@ -390,14 +405,54 @@ export function ModifyStay({
     );
 }
 
+/**
+ * 0.38.2: whether the guest is told on WhatsApp. Shown only when the guest
+ * has a WhatsApp conversation with the hotel.
+ */
+function NotifyGuest({
+    available,
+    checked,
+    onChange,
+    label,
+}: {
+    available: boolean;
+    checked: boolean;
+    onChange: (value: boolean) => void;
+    label: string;
+}) {
+    if (!available) {
+        return (
+            <p className="text-xs text-muted-foreground">
+                {t(
+                    'This guest has no WhatsApp conversation with the hotel: tell them by phone or email.',
+                )}
+            </p>
+        );
+    }
+
+    return (
+        <label className="flex items-center gap-2 text-sm">
+            <input
+                type="checkbox"
+                className="size-4"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+            />
+            {label}
+        </label>
+    );
+}
+
 export function CancelBooking({
     bookingId,
+    guestOnWhatsApp = false,
     onDone,
 }: {
     bookingId: string;
+    guestOnWhatsApp?: boolean;
     onDone: () => void;
 }) {
-    const form = useForm({ reason: '' });
+    const form = useForm({ reason: '', notify_guest: guestOnWhatsApp });
 
     return (
         <form
@@ -419,6 +474,14 @@ export function CancelBooking({
                 maxLength={300}
             />
             <InputError message={form.errors.reason} />
+            <NotifyGuest
+                available={guestOnWhatsApp}
+                checked={form.data.notify_guest}
+                onChange={(value) => form.setData('notify_guest', value)}
+                label={t(
+                    'Tell the guest on WhatsApp that the booking is cancelled',
+                )}
+            />
             <div className="flex gap-2">
                 <Button variant="destructive" disabled={form.processing}>
                     {t('Cancel booking')}

@@ -67,6 +67,7 @@ type Booking = {
 
 type Props = {
     booking: Booking;
+    guestOnWhatsApp: boolean;
     timeline: {
         event: string;
         description: string;
@@ -193,6 +194,7 @@ export default function ShowBooking({
     canEditStayPhones,
     folio,
     deposit,
+    guestOnWhatsApp,
 }: Props) {
     const [panel, setPanel] = useState<'modify' | 'cancel' | null>(null);
     const post = async (url: string, message?: string) => {
@@ -300,12 +302,14 @@ export default function ShowBooking({
                             categories={categories}
                             quote={quote}
                             canOverride={actions.override_price}
+                            guestOnWhatsApp={guestOnWhatsApp}
                             onDone={() => setPanel(null)}
                         />
                     )}
                     {panel === 'cancel' && (
                         <CancelBooking
                             bookingId={booking.id}
+                            guestOnWhatsApp={guestOnWhatsApp}
                             onDone={() => setPanel(null)}
                         />
                     )}

@@ -9,6 +9,7 @@ use App\Domains\Bookings\BookingLifecycle;
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Exceptions\BookingActionNotAllowed;
 use App\Domains\Bookings\Exceptions\BookingNotPossible;
+use App\Domains\Bookings\Jobs\TellGuestAboutBooking;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Folio\Folio;
@@ -45,9 +46,15 @@ final class BookingActionController extends Controller
 
     public function cancel(Request $request, Booking $booking, #[CurrentUser] User $user): RedirectResponse
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:300']]);
+        $data = $request->validate(['reason' => ['required', 'string', 'max:300'], 'notify_guest' => ['sometimes', 'boolean']]);
 
-        return $this->attempt(fn () => $this->lifecycle->cancel($booking, (string) $data['reason'], $user), __('Booking cancelled.'));
+        return $this->attempt(function () use ($booking, $data, $user): void {
+            $this->lifecycle->cancel($booking, (string) $data['reason'], $user);
+            // 0.38.2: the guest is told on WhatsApp when reception ticks the box.
+            if ((bool) ($data['notify_guest'] ?? false)) {
+                TellGuestAboutBooking::dispatch($booking->id, TellGuestAboutBooking::CANCELLED);
+            }
+        }, __('Booking cancelled.'));
     }
 
     public function noShow(Booking $booking, #[CurrentUser] User $user): RedirectResponse
@@ -81,6 +88,7 @@ final class BookingActionController extends Controller
             'extra_bed' => ['required', 'boolean'],
             'override_total' => [$override ? 'required' : 'nullable', 'numeric', 'min:0', 'max:1000000000'],
             'override_reason' => [$override ? 'required' : 'nullable', 'string', 'max:300'],
+            'notify_guest' => ['sometimes', 'boolean'],
         ], ['override_reason.required' => __('Give a reason for changing the price.')]);
 
         $stay = new StayRequest(
@@ -108,7 +116,13 @@ final class BookingActionController extends Controller
             throw ValidationException::withMessages(['room_category_id' => $exception->getMessage()]);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Booking changed.')]);
+        // 0.38.2: the new dates, room and total go to the guest on WhatsApp.
+        $notify = (bool) ($data['notify_guest'] ?? false) && TellGuestAboutBooking::conversationFor($booking) !== null;
+        if ($notify) {
+            TellGuestAboutBooking::dispatch($booking->id, TellGuestAboutBooking::CHANGED);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $notify ? __('Booking changed. The guest is sent the new details on WhatsApp.') : __('Booking changed.')]);
 
         return back();
     }

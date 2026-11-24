@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Guest told when reception changes or cancels a booking (0.38.2)
+
+#### Added
+
+- **Change stay** and **Cancel booking** have a box, ticked by default, to tell the guest on WhatsApp:
+    - a change sends the new room, dates, guests and total;
+    - a cancellation says that reception will contact the guest about any refund.
+- Within 24 hours of the guest's last message, the message is sent as free text. After that, a change uses the approved `booking_confirmed` template. When nothing can be sent, the chat is flagged for staff.
+- Once the guest is told, the assistant's "change booking …" or "cancellation …" flag on the chat is cleared.
+- Guests without a WhatsApp chat: the form says to tell them by phone or email.
+
 ### Hotel panel fixes from the first test round (0.38.1)
 
 #### Fixed
