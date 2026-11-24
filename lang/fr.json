@@ -1746,6 +1746,7 @@
     "Maximum adults": "Adultes maximum",
     "Maximum children": "Enfants maximum",
     "Maximum guests": "Personnes maximum",
+    "Maximum guests cannot be more than maximum adults plus maximum children (:sum).": "Le nombre maximum de personnes ne peut pas dépasser le maximum d’adultes plus le maximum d’enfants (:sum).",
     "Maximum uses": "Utilisations maximum",
     "Measure": "Mesure",
     "Median time to decide (min)": "Délai médian de décision (min)",

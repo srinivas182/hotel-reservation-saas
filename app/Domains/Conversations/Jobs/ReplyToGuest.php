@@ -36,8 +36,17 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 {
     use Queueable;
 
+    /**
+     * Upper bound only: retryUntil() decides when the job gives up, so a
+     * reply waiting for another one in the same conversation is not dropped.
+     */
+    public int $tries = 30;
+
     /** @var list<int> seconds between attempts */
     public array $backoff = [5, 20];
+
+    /** Seconds to wait when another reply in the conversation is being prepared. */
+    public const BUSY_RETRY_SECONDS = 5;
 
     /** Seconds before a stuck attempt is stopped. */
     public int $timeout = 120;
@@ -52,7 +61,8 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
      */
     public const TAKE_OVER = ['guest_asked_for_person', 'reply_limit'];
 
-    public const MAX_REPLIES_PER_HOUR = 30;
+    /** 0.38.0: 60 (was 30): a long booking conversation must never reach it. */
+    public const MAX_REPLIES_PER_HOUR = 60;
 
     public const STAFF_QUIET_MINUTES = 10;
 
@@ -60,12 +70,20 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
      * 0.37.5: minutes after which a conversation the assistant passed to
      * staff, and no one answered, goes back to the assistant.
      */
-    public const RESUME_MINUTES = 30;
+    public const RESUME_MINUTES = 5;
 
     /** Hand-overs the assistant may take back (never a staff take-over). */
-    public const RESUMABLE = ['guest_asked_for_person'];
+    public const RESUMABLE = ['guest_asked_for_person', 'reply_limit'];
 
-    public int $tries = 3;
+    /**
+     * 0.38.0: a job that waits for another reply in the same conversation is
+     * released again and again; it is limited in time, not in attempts, so a
+     * message sent while the assistant is still answering is never dropped.
+     */
+    public function retryUntil(): \DateTimeInterface
+    {
+        return now()->addMinutes(10);
+    }
 
     public function __construct(
         public readonly string $conversationId,
@@ -83,7 +101,7 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 
         if (! $lock->get()) {
             // Another reply is being prepared; answer what is left afterwards.
-            $this->release(self::DELAY_SECONDS);
+            $this->release(self::BUSY_RETRY_SECONDS);
 
             return;
         }
@@ -99,7 +117,19 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
     {
         $conversation = Conversation::query()->with('contact.guest')->find($this->conversationId);
 
-        if ($conversation === null || ! $this->assistantMayAnswer($conversation)) {
+        if ($conversation === null) {
+            return;
+        }
+
+        if (! $this->assistantMayAnswer($conversation)) {
+            // 0.38.0: waiting for staff is never silence for good: once the
+            // wait is over, the assistant comes back to this message.
+            $retryAt = $this->retryAt($conversation);
+            // A sync queue would run the delayed job at once, again and again.
+            if ($retryAt !== null && ! $this->job instanceof \Illuminate\Queue\Jobs\SyncJob) {
+                self::dispatch($this->conversationId, $this->triggerMessageId)->delay($retryAt);
+            }
+
             return;
         }
 
@@ -230,6 +260,35 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         $account = WhatsAppAccount::query()->first();
 
         return $account !== null && $account->status->canSend();
+    }
+
+    /**
+     * When the assistant may answer again, if the only obstacle is a wait:
+     * a colleague's recent reply, or a hand-over nobody has picked up yet.
+     */
+    private function retryAt(Conversation $conversation): ?\Carbon\CarbonImmutable
+    {
+        if (HotelAssistantSettings::current()->mode === AssistantMode::Off) {
+            return null;
+        }
+
+        if ($conversation->mode === ConversationMode::Assistant && $conversation->staff_replied_at !== null) {
+            $at = $conversation->staff_replied_at->addMinutes(self::STAFF_QUIET_MINUTES)->addSeconds(5);
+
+            return $at->isFuture() ? $at : null;
+        }
+
+        if ($conversation->mode === ConversationMode::Staff
+            && in_array($conversation->handover_reason, self::RESUMABLE, true)
+            && $conversation->assigned_to === null
+            && $conversation->handed_over_at !== null
+            && ($conversation->staff_replied_at === null || $conversation->staff_replied_at->lt($conversation->handed_over_at))) {
+            $at = $conversation->handed_over_at->addMinutes(self::RESUME_MINUTES)->addSeconds(5);
+
+            return $at->isFuture() ? $at : null;
+        }
+
+        return null;
     }
 
     private function noStaffCame(Conversation $conversation): bool

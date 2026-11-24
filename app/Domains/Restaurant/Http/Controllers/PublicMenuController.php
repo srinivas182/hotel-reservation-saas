@@ -24,7 +24,7 @@ final class PublicMenuController extends Controller
 {
     public function show(Request $request, string $hotelSlug, string $outletSlug, TenantContext $context, MenuCatalog $catalog): View
     {
-        $hotel = Hotel::query()->where('slug', $hotelSlug)->where('status', 'active')->firstOrFail();
+        $hotel = Hotel::query()->where('slug', $hotelSlug)->whereIn('status', ['trial', 'active'])->firstOrFail();
 
         return $context->run($hotel, function () use ($request, $hotel, $outletSlug, $catalog): View {
             $outlet = Outlet::query()->where('public_slug', $outletSlug)->where('active', true)->firstOrFail();
@@ -48,7 +48,7 @@ final class PublicMenuController extends Controller
 
     public function photo(string $hotelSlug, string $outletSlug, int $item, TenantContext $context): StreamedResponse
     {
-        $hotel = Hotel::query()->where('slug', $hotelSlug)->where('status', 'active')->firstOrFail();
+        $hotel = Hotel::query()->where('slug', $hotelSlug)->whereIn('status', ['trial', 'active'])->firstOrFail();
 
         return $context->run($hotel, function () use ($outletSlug, $item): StreamedResponse {
             $outlet = Outlet::query()->where('public_slug', $outletSlug)->firstOrFail();

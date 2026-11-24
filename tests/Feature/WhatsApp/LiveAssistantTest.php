@@ -246,7 +246,7 @@ it('passes the conversation to staff after too many replies or repeated replies'
     $conversation = ($this->in)(fn () => Conversation::query()->sole());
 
     ($this->in)(function () use ($conversation, $setup): void {
-        $count = $setup === 'limit' ? 30 : 5;
+        $count = $setup === 'limit' ? ReplyToGuest::MAX_REPLIES_PER_HOUR : 5;
 
         foreach (range(1, $count) as $i) {
             Message::query()->create([
@@ -397,7 +397,7 @@ it('takes over only when the guest asks for a person, not for a keyword in an or
     'call me' => ['Please ask a person to call me back', true],
 ]);
 
-it('answers again a guest passed to staff when nobody replied for 30 minutes, and keeps it flagged', function (): void {
+it('answers again a guest passed to staff when nobody replied for 5 minutes, and keeps it flagged', function (): void {
     HotelAssistantAgent::fake([
         aiReply('Bien sûr, pour quelles dates ?', ['intent' => 'availability_question']),
     ]);
@@ -408,12 +408,12 @@ it('answers again a guest passed to staff when nobody replied for 30 minutes, an
     expect($conversation->mode)->toBe(ConversationMode::Staff);
 
     // Too soon: still with staff.
-    $this->travel(10)->minutes();
+    $this->travel(2)->minutes();
     webhookPost($this, [inbound('wamid.R2', message: ['text' => ['body' => 'Il y a quelqu’un ?']])]);
     runReplies($this);
     expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Staff);
 
-    $this->travel(25)->minutes();
+    $this->travel(4)->minutes();
     webhookPost($this, [inbound('wamid.R3', message: ['text' => ['body' => 'Je veux réserver une chambre pour 2']])]);
     runReplies($this);
 
@@ -439,4 +439,66 @@ it('never takes back a conversation staff took over or answered', function (): v
 
     expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Staff)
         ->and(assistantMessages($this))->toHaveCount(1);
+});
+
+it('never stores a card number a guest types in WhatsApp', function (): void {
+    HotelAssistantAgent::fake([aiReply('Merci, la réception vous envoie un lien de paiement.', ['intent' => 'payment_question'])]);
+
+    webhookPost($this, [inbound('wamid.CARD', message: ['text' => ['body' => 'Ma carte 4242 4242 4242 4242 CVV 123']])]);
+    runReplies($this);
+
+    $body = ($this->in)(fn () => Message::query()->where('direction', 'in')->sole()->body);
+    expect($body)->toBe('Ma carte •••• •••• •••• 4242 CVV •••')
+        ->and($body)->not->toContain('4242 4242');
+    HotelAssistantAgent::assertPrompted(fn ($prompt) => ! str_contains($prompt->prompt, '4242 4242 4242 4242'));
+});
+
+it('comes back to a guest waiting for staff once the hand-over wait is over', function (): void {
+    HotelAssistantAgent::fake([aiReply('Bien sûr, pour quelles dates ?', ['intent' => 'availability_question'])]);
+
+    webhookPost($this, [inbound('wamid.W1', message: ['text' => ['body' => 'Réception']])]);
+    runReplies($this);
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    expect($conversation->mode)->toBe(ConversationMode::Staff);
+
+    $this->travel(1)->minute();
+    webhookPost($this, [inbound('wamid.W2', message: ['text' => ['body' => 'Il y a quelqu’un ?']])]);
+    runReplies($this);
+
+    // Nobody writes again: a later attempt is already planned for this message.
+    $retries = Queue::pushed(ReplyToGuest::class)->all();
+    expect($retries)->toHaveCount(1);
+
+    $this->travel(5)->minutes();
+    runReplies($this);
+
+    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Assistant)
+        ->and(last(assistantMessages($this)))->toBe('Bien sûr, pour quelles dates ?');
+});
+
+it('answers what the guest wrote after the last staff reply when staff hands back', function (): void {
+    $reception = staffMember($this->hotel, SystemRole::Reception);
+    HotelAssistantAgent::fake([
+        aiReply('Bonjour', ['intent' => 'greeting']),
+        aiReply('Oui, pour combien de personnes ?', ['intent' => 'availability_question']),
+    ]);
+
+    webhookPost($this, [inbound('wamid.H1', message: ['text' => ['body' => 'Bonjour']])]);
+    runReplies($this);
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    asStaffOf($this->hotel, $reception)->put(route('hotel.inbox.mode', $conversation), ['mode' => 'staff'])->assertRedirect();
+
+    ($this->in)(fn () => Message::query()->create([
+        'conversation_id' => $conversation->id, 'direction' => 'out', 'type' => 'text', 'body' => 'Je regarde pour vous.',
+        'status' => 'sent', 'source' => MessageSource::Staff, 'sent_at' => now(),
+    ]));
+    $this->travel(1)->minute();
+    webhookPost($this, [inbound('wamid.H2', message: ['text' => ['body' => 'Une chambre pour ce soir ?']])]);
+    runReplies($this);
+    expect(assistantMessages($this))->toHaveCount(1);
+
+    asStaffOf($this->hotel, $reception)->put(route('hotel.inbox.mode', $conversation), ['mode' => 'assistant'])->assertRedirect();
+    runReplies($this);
+
+    expect(last(assistantMessages($this)))->toBe('Oui, pour combien de personnes ?');
 });

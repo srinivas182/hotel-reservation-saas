@@ -1746,6 +1746,7 @@
     "Maximum adults": "Maximum adults",
     "Maximum children": "Maximum children",
     "Maximum guests": "Maximum guests",
+    "Maximum guests cannot be more than maximum adults plus maximum children (:sum).": "Maximum guests cannot be more than maximum adults plus maximum children (:sum).",
     "Maximum uses": "Maximum uses",
     "Measure": "Measure",
     "Median time to decide (min)": "Median time to decide (min)",
