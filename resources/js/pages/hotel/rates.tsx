@@ -27,6 +27,8 @@ import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
 import { TryAStay } from '@/components/rates/try-a-stay';
 import type { QuoteResult } from '@/components/rates/try-a-stay';
+import { todayPlus } from '@/lib/dates';
+import { askConfirm } from '@/lib/ask';
 
 type Option = { value: string; label: string };
 
@@ -83,10 +85,7 @@ const selectClass = 'h-9 w-full disabled:opacity-50';
 const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function today(offset = 0): string {
-    const date = new Date();
-    date.setDate(date.getDate() + offset);
-
-    return date.toISOString().slice(0, 10);
+    return todayPlus(offset);
 }
 
 function CategoryRateForm({
@@ -882,10 +881,10 @@ export default function Rates(props: Props) {
                                                       variant="ghost"
                                                       size="sm"
                                                       className="text-destructive"
-                                                      onClick={(e) => {
+                                                      onClick={async (e) => {
                                                           e.stopPropagation();
                                                           if (
-                                                              window.confirm(
+                                                              await askConfirm(
                                                                   t(
                                                                       'Delete :name?',
                                                                       {

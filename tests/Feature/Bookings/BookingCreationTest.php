@@ -107,14 +107,9 @@ it('creates a booking from the quick booking form and recognises returning guest
         ->and($this->context->run($this->hotel, fn () => $guests->first()->bookings()->count()))->toBe(2);
 
     asStaffOf($this->hotel, $reception)
-        ->get(route('hotel.bookings.create', ['phone' => '+225 07 11 22 33 44']), [
-            'X-Inertia' => 'true',
-            'X-Inertia-Version' => (string) (new App\Http\Middleware\HandleInertiaRequests)->version(request()),
-            'X-Inertia-Partial-Component' => 'hotel/bookings/create',
-            'X-Inertia-Partial-Data' => 'guest',
-        ])
-        ->assertJsonPath('props.guest.first_name', 'Moussa')
-        ->assertJsonPath('props.guest.bookings', 2);
+        ->postJson(route('hotel.bookings.guest'), ['phone' => '+225 07 11 22 33 44'])
+        ->assertJsonPath('guest.first_name', 'Moussa')
+        ->assertJsonPath('guest.bookings', 2);
 });
 
 it('shows booking errors on the form', function (): void {

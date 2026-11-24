@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import Heading from '@/components/heading';
@@ -8,7 +8,9 @@ import type { QuoteResult } from '@/components/rates/try-a-stay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { postJson } from '@/lib/http';
 import { t } from '@/lib/i18n';
+import { addDays } from '@/lib/dates';
 
 type Props = {
     currency: string;
@@ -18,24 +20,18 @@ type Props = {
     locales: Record<string, string>;
     canOverridePrice: boolean;
     quote?: QuoteResult;
-    guest?: {
-        first_name: string;
-        last_name: string | null;
-        email: string | null;
-        preferred_locale: string | null;
-        bookings: number;
-    } | null;
+};
+
+type KnownGuest = {
+    first_name: string;
+    last_name: string | null;
+    email: string | null;
+    preferred_locale: string | null;
+    bookings: number;
 };
 
 const selectClass =
     'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none';
-
-function addDays(date: string, days: number): string {
-    const value = new Date(`${date}T00:00:00`);
-    value.setDate(value.getDate() + days);
-
-    return value.toISOString().slice(0, 10);
-}
 
 export default function CreateBooking({
     currency,
@@ -45,8 +41,8 @@ export default function CreateBooking({
     locales,
     canOverridePrice,
     quote,
-    guest,
 }: Props) {
+    const [guest, setGuest] = useState<KnownGuest | null>(null);
     const form = useForm({
         room_category_id: categories[0]?.id ?? '',
         check_in: today,
@@ -129,7 +125,13 @@ export default function CreateBooking({
 
         if (phone.length >= 7 && phone !== lastGuestLookup.current) {
             lastGuestLookup.current = phone;
-            router.reload({ only: ['guest'], data: { phone } });
+            // In the body of a POST: the phone never goes in the address bar.
+            postJson<{ guest: KnownGuest | null }>(
+                BookingController.guest().url,
+                { phone },
+            )
+                .then((response) => setGuest(response.guest))
+                .catch(() => setGuest(null));
         }
     };
 

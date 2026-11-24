@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { addDays } from '@/lib/dates';
+import { askText } from '@/lib/ask';
 
 type Booking = {
     id: string;
@@ -55,10 +57,7 @@ type Props = {
 const selectClass =
     'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
 const shift = (date: string, days: number) => {
-    const d = new Date(`${date}T12:00:00`);
-    d.setDate(d.getDate() + days);
-
-    return d.toISOString().slice(0, 10);
+    return addDays(date, days);
 };
 
 function QuickAdd({
@@ -150,6 +149,13 @@ function QuickAdd({
                         </option>
                     ))}
                 </select>
+                {slots !== undefined && slots.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                        {t(
+                            'The restaurant has no service on this day. Choose another date.',
+                        )}
+                    </p>
+                )}
                 <InputError message={errors.time} />
             </div>
             <div className="grid gap-1">
@@ -227,11 +233,21 @@ export default function Restaurant({
             {},
             { preserveScroll: true },
         );
-    const move = (booking: Booking, status: string) => {
-        const reason =
-            status === 'declined' || status === 'cancelled'
-                ? window.prompt(t('Reason (optional)'))
-                : null;
+    const move = async (booking: Booking, status: string) => {
+        let reason: string | null = null;
+        if (status === 'declined' || status === 'cancelled') {
+            reason = await askText({
+                title:
+                    status === 'declined'
+                        ? t('Decline this table booking?')
+                        : t('Cancel this table booking?'),
+                label: t('Reason (optional)'),
+            });
+            // Closing the dialog keeps the booking as it is.
+            if (reason === null) {
+                return;
+            }
+        }
         router.post(
             TableBookingController.status.url(booking.id),
             { status, reason },

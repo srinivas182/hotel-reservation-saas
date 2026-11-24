@@ -5,6 +5,7 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
 import type { InvoiceRow } from './invoices';
+import { askConfirm } from '@/lib/ask';
 
 type GatewayOption = { id: number; name: string; test: boolean };
 type Pack = {
@@ -135,12 +136,12 @@ export function PayOnline({
                         size="sm"
                         variant="outline"
                         disabled={plan === '' || plan === currentPlanId}
-                        onClick={() =>
-                            window.confirm(
+                        onClick={async () =>
+                            (await askConfirm(
                                 t(
                                     'Upgrades apply now (pro rata); downgrades at the end of the period.',
                                 ),
-                            ) &&
+                            )) &&
                             router.put(
                                 HotelPaymentController.changePlan.url(),
                                 { plan_id: plan },

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
+import { askText } from '@/lib/ask';
 
 type Props = {
     q: string;
@@ -73,12 +74,16 @@ export default function Privacy({ q, guests }: Props) {
                                 <Button
                                     size="sm"
                                     variant="destructive"
-                                    onClick={() => {
-                                        const confirm = window.prompt(
-                                            t(
+                                    onClick={async () => {
+                                        const confirm = await askText({
+                                            title: t('Anonymise this guest?'),
+                                            description: t(
                                                 'This cannot be undone. Type ANONYMISE to remove this guest’s name, contact details and messages.',
                                             ),
-                                        );
+                                            label: 'ANONYMISE',
+                                            required: true,
+                                            confirmLabel: t('Anonymise'),
+                                        });
                                         if (confirm) {
                                             router.post(
                                                 GuestDataController.anonymise.url(

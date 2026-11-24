@@ -29,6 +29,7 @@ use Brick\Math\RoundingMode;
 use Brick\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -82,7 +83,7 @@ final class BookingController extends Controller
         ]);
     }
 
-    public function create(Request $request, QuotePresenter $quotes, GuestDirectory $guests): Response
+    public function create(Request $request, QuotePresenter $quotes): Response
     {
         $hotel = $this->context->hotel();
         $locale = $hotel->default_locale;
@@ -102,18 +103,26 @@ final class BookingController extends Controller
             'locales' => Locales::SUPPORTED,
             'canOverridePrice' => $request->user()?->can('bookings.override_price') === true,
             'quote' => Inertia::optional(fn (): array => $quotes->fromRequest($request)),
-            'guest' => Inertia::optional(function () use ($request, $guests): ?array {
-                $guest = $guests->findByPhone((string) $request->query('phone', ''));
-
-                return $guest === null ? null : [
-                    'first_name' => $guest->first_name,
-                    'last_name' => $guest->last_name,
-                    'email' => $guest->email,
-                    'preferred_locale' => $guest->preferred_locale,
-                    'bookings' => $guest->bookings()->count(),
-                ];
-            }),
         ]);
+    }
+
+    /**
+     * 0.38.0: a known guest, found by phone. Sent in the body of a POST so
+     * the guest's phone never appears in the address bar, browser history
+     * or server logs.
+     */
+    public function guest(Request $request, GuestDirectory $guests): JsonResponse
+    {
+        $phone = $request->validate(['phone' => ['required', 'string', 'max:25']])['phone'];
+        $guest = $guests->findByPhone((string) $phone);
+
+        return response()->json(['guest' => $guest === null ? null : [
+            'first_name' => $guest->first_name,
+            'last_name' => $guest->last_name,
+            'email' => $guest->email,
+            'preferred_locale' => $guest->preferred_locale,
+            'bookings' => $guest->bookings()->count(),
+        ]]);
     }
 
     public function store(StoreBookingRequest $request, BookingService $bookings, #[CurrentUser] User $user): RedirectResponse
@@ -183,6 +192,7 @@ final class BookingController extends Controller
             ->map(fn (AuditLog $entry): array => [
                 'event' => $entry->event,
                 'description' => __($entry->description),
+                'changes' => $entry->event === 'bookings.modified' ? $this->stayChanges($entry, $hotel->currency, $locale) : [],
                 'by' => $entry->causer instanceof User ? $entry->causer->name : null,
                 'at' => $entry->created_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
             ])->values();
@@ -232,8 +242,12 @@ final class BookingController extends Controller
                 ],
             ],
             'timeline' => $timeline,
-            'folio' => $request->user()?->can('folio.view') === true && $booking->status !== BookingStatus::Cancelled ? (function () use ($booking, $hotel): array {
+            'folio' => $request->user()?->can('folio.view') === true ? (function () use ($booking, $hotel): ?array {
                 $statement = app(\App\Domains\Folio\Folio::class)->statement($booking);
+                $cancelled = $booking->status === BookingStatus::Cancelled;
+                if ($cancelled && $statement['lines'] === []) {
+                    return null;
+                }
                 $fmt = fn (int $minor): string => MoneyFormatter::format(Money::ofMinor($minor, $hotel->currency), $hotel->default_locale);
 
                 return [
@@ -242,9 +256,10 @@ final class BookingController extends Controller
                     'payments' => $fmt($statement['payments_minor']),
                     'balance' => $fmt($statement['balance_minor']),
                     'balance_minor' => $statement['balance_minor'],
+                    'refund' => $statement['balance_minor'] < 0 ? $fmt(-$statement['balance_minor']) : null,
                     'statement_url' => route('hotel.bookings.statement', $booking),
                     'methods' => array_map(fn (string $m): array => ['value' => $m, 'label' => \App\Domains\Folio\RestaurantSettings::methodLabel($m)], \App\Domains\Folio\RestaurantSettings::current()->methods()),
-                    'can_charge' => request()->user()?->can('folio.charge') === true,
+                    'can_charge' => ! $cancelled && request()->user()?->can('folio.charge') === true,
                     'can_pay' => request()->user()?->can('folio.payments') === true,
                     'currency' => $hotel->currency,
                 ];
@@ -331,5 +346,52 @@ final class BookingController extends Controller
             'early_departure' => $status === BookingStatus::CheckedIn && $booking->check_out->gt($today->max($booking->check_in->addDay())),
             'override_price' => $user?->can('bookings.override_price') === true,
         ];
+    }
+
+    /**
+     * 0.38.0: what a change to the stay changed, for the booking history
+     * ("Dates: 24 → 26 Dec", "Total: 60,000 → 90,000 F CFA").
+     *
+     * @return list<string>
+     */
+    private function stayChanges(AuditLog $entry, string $currency, string $locale): array
+    {
+        $properties = $entry->properties ?? collect();
+        $old = (array) $properties->get('old', []);
+        $new = (array) $properties->get('new', []);
+        $changes = [];
+
+        if (($old['check_in'] ?? null) !== ($new['check_in'] ?? null) || ($old['check_out'] ?? null) !== ($new['check_out'] ?? null)) {
+            $changes[] = __('Dates: :old → :new', [
+                'old' => ($old['check_in'] ?? '?').' – '.($old['check_out'] ?? '?'),
+                'new' => ($new['check_in'] ?? '?').' – '.($new['check_out'] ?? '?'),
+            ]);
+        }
+
+        if (($old['room_category_id'] ?? null) !== ($new['room_category_id'] ?? null)) {
+            $names = RoomCategory::query()->whereIn('id', array_filter([$old['room_category_id'] ?? null, $new['room_category_id'] ?? null]))->get()
+                ->mapWithKeys(fn (RoomCategory $c): array => [$c->id => $c->localizedName($locale, $locale)]);
+            $changes[] = __('Room category: :old → :new', ['old' => $names[$old['room_category_id'] ?? ''] ?? '?', 'new' => $names[$new['room_category_id'] ?? ''] ?? '?']);
+        }
+
+        foreach (['rooms' => 'Rooms: :old → :new', 'adults' => 'Adults: :old → :new'] as $key => $label) {
+            if (($old[$key] ?? null) !== ($new[$key] ?? null)) {
+                $changes[] = __($label, ['old' => $old[$key] ?? '?', 'new' => $new[$key] ?? '?']);
+            }
+        }
+
+        $children = fn (array $data): int => count(array_filter((array) ($data['children_ages'] ?? []), fn ($a): bool => $a !== null));
+        if ($children($old) !== $children($new)) {
+            $changes[] = __('Children: :old → :new', ['old' => $children($old), 'new' => $children($new)]);
+        }
+
+        if (isset($old['total_minor'], $new['total_minor']) && $old['total_minor'] !== $new['total_minor']) {
+            $changes[] = __('Total: :old → :new', [
+                'old' => MoneyFormatter::format(Money::ofMinor((int) $old['total_minor'], $currency), $locale),
+                'new' => MoneyFormatter::format(Money::ofMinor((int) $new['total_minor'], $currency), $locale),
+            ]);
+        }
+
+        return $changes;
     }
 }

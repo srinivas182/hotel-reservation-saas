@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageBody, PageHeader, Section } from '@/components/page';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Entry = { section: string; question: string | null; content: string };
 
@@ -203,12 +204,12 @@ export default function Knowledge({
                                     ? t('Save the draft first')
                                     : undefined
                             }
-                            onClick={() =>
-                                window.confirm(
+                            onClick={async () =>
+                                (await askConfirm(
                                     t(
                                         'Publish the draft in every language? The assistant will use it straight away.',
                                     ),
-                                ) &&
+                                )) &&
                                 router.post(
                                     KnowledgeController.publish.url(),
                                     {},

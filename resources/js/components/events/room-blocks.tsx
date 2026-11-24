@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 export type Block = {
     id: number;
@@ -250,12 +251,12 @@ export function RoomBlocks({
                                 size="sm"
                                 variant="ghost"
                                 className="ml-auto"
-                                onClick={() =>
-                                    window.confirm(
+                                onClick={async () =>
+                                    (await askConfirm(
                                         t(
                                             'Put the unused rooms back on sale now?',
                                         ),
-                                    ) &&
+                                    )) &&
                                     router.post(
                                         RoomBlockController.release.url(b.id),
                                         {},

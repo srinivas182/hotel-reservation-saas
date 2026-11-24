@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { launchEmbeddedSignup } from '@/lib/embedded-signup';
 import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Account = {
     status: string;
@@ -176,9 +177,9 @@ export default function WhatsAppConnection({ account, signup, errors }: Props) {
                             <Button
                                 variant="ghost"
                                 className="text-destructive"
-                                onClick={() => {
+                                onClick={async () => {
                                     if (
-                                        window.confirm(
+                                        await askConfirm(
                                             t(
                                                 'Disconnect WhatsApp? Guests will no longer reach the hotel through this platform.',
                                             ),

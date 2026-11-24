@@ -26,6 +26,7 @@ export type Folio = {
     payments: string;
     balance: string;
     balance_minor: number;
+    refund?: string | null;
     statement_url: string;
     methods: { value: string; label: string }[];
     can_charge: boolean;
@@ -37,6 +38,37 @@ export type Folio = {
 
 const selectClass =
     'flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
+
+/** Digits after the decimal point in this currency (XOF 0, EUR 2). */
+function currencyDecimals(currency: string): number {
+    try {
+        return (
+            new Intl.NumberFormat('en', {
+                style: 'currency',
+                currency,
+            }).resolvedOptions().maximumFractionDigits ?? 2
+        );
+    } catch {
+        return 2;
+    }
+}
+
+/**
+ * The sign shown before a line: payments lower the balance (−), a
+ * correction of a payment raises it again (+). Amounts that already carry a
+ * minus are never shown with two.
+ */
+function signedAmount(type: string, amount: string): string {
+    const negative = /^[-−]/.test(amount.trim());
+    const value = amount.trim().replace(/^[-−]\s*/, '');
+    const lowers = type === 'payment' ? !negative : negative;
+
+    if (type === 'payment') {
+        return `${lowers ? '−' : '+'}${value}`;
+    }
+
+    return `${lowers ? '−' : ''}${value}`;
+}
 
 export function RoomBill({
     bookingId,
@@ -54,8 +86,11 @@ export function RoomBill({
         unit_price: '',
         tax_scope: '',
     });
+    const [overpaymentSeen, setOverpaymentSeen] = useState(false);
+    const [correcting, setCorrecting] = useState<number | null>(null);
+    const [reason, setReason] = useState('');
     const payment = useForm({
-        amount: folio.balance_minor > 0 ? '' : '',
+        amount: '',
         method: folio.methods[0]?.value ?? 'cash',
         reference: '',
     });
@@ -185,12 +220,26 @@ export function RoomBill({
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
+                        const minor = Math.round(
+                            Number(payment.data.amount) *
+                                10 ** currencyDecimals(folio.currency),
+                        );
+                        // 0.38.0: more than the balance due is asked twice.
+                        if (
+                            minor > Math.max(0, folio.balance_minor) &&
+                            !overpaymentSeen
+                        ) {
+                            setOverpaymentSeen(true);
+
+                            return;
+                        }
                         payment.post(
                             folio.pay_url ?? FolioController.pay.url(bookingId),
                             {
                                 preserveScroll: true,
                                 onSuccess: () => {
                                     payment.reset();
+                                    setOverpaymentSeen(false);
                                     setPanel(null);
                                 },
                             },
@@ -210,9 +259,10 @@ export function RoomBill({
                         step="any"
                         className="w-36"
                         value={payment.data.amount}
-                        onChange={(e) =>
-                            payment.setData('amount', e.target.value)
-                        }
+                        onChange={(e) => {
+                            setOverpaymentSeen(false);
+                            payment.setData('amount', e.target.value);
+                        }}
                     />
                     <select
                         aria-label={t('Method')}
@@ -237,9 +287,24 @@ export function RoomBill({
                             payment.setData('reference', e.target.value)
                         }
                     />
-                    <Button size="sm" disabled={payment.processing}>
-                        {t('Record')}
+                    <Button
+                        size="sm"
+                        variant={overpaymentSeen ? 'destructive' : 'default'}
+                        disabled={payment.processing}
+                    >
+                        {overpaymentSeen ? t('Record anyway') : t('Record')}
                     </Button>
+                    {overpaymentSeen && (
+                        <p
+                            role="alert"
+                            className="basis-full text-sm text-amber-700 dark:text-amber-400"
+                        >
+                            {t(
+                                'This is more than the balance due (:balance). Check the amount, or record it anyway: the guest will have money to get back.',
+                                { balance: folio.balance },
+                            )}
+                        </p>
+                    )}
                     <InputError
                         message={payment.errors.amount ?? payment.errors.method}
                     />
@@ -281,8 +346,7 @@ export function RoomBill({
                                     : ''
                             }
                         >
-                            {line.type === 'payment' ? '−' : ''}
-                            {line.amount}
+                            {signedAmount(line.type, line.amount)}
                         </span>
                         {line.id !== null &&
                             !line.corrected &&
@@ -294,26 +358,61 @@ export function RoomBill({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => {
-                                        const reason = window.prompt(
-                                            t('Why correct this line?'),
+                                        setReason('');
+                                        setCorrecting(
+                                            correcting === line.id
+                                                ? null
+                                                : line.id,
                                         );
-                                        if (reason) {
-                                            router.post(
-                                                FolioController.correct.url(
-                                                    line.id as number,
-                                                ),
-                                                { reason },
-                                                { preserveScroll: true },
-                                            );
-                                        }
                                     }}
                                 >
                                     {t('Correct')}
                                 </Button>
                             )}
+                        {correcting !== null && correcting === line.id && (
+                            <form
+                                className="flex basis-full flex-wrap items-center gap-2"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    if (reason.trim() === '') {
+                                        return;
+                                    }
+                                    router.post(
+                                        FolioController.correct.url(correcting),
+                                        { reason: reason.trim() },
+                                        {
+                                            preserveScroll: true,
+                                            onSuccess: () =>
+                                                setCorrecting(null),
+                                        },
+                                    );
+                                }}
+                            >
+                                <Input
+                                    autoFocus
+                                    required
+                                    aria-label={t('Why correct this line?')}
+                                    placeholder={t('Why correct this line?')}
+                                    className="min-w-56 flex-1"
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                />
+                                <Button size="sm" variant="destructive">
+                                    {t('Correct this line')}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setCorrecting(null)}
+                                >
+                                    {t('Cancel')}
+                                </Button>
+                            </form>
+                        )}
                     </li>
                 ))}
-                <li className="flex justify-between px-3 py-2 font-medium">
+                <li className="flex flex-wrap justify-between gap-x-4 gap-y-1 px-3 py-2 font-medium">
                     <span>
                         {t('Charges :charges · Payments :payments', {
                             charges: folio.charges,
@@ -322,10 +421,18 @@ export function RoomBill({
                     </span>
                     <span
                         className={
-                            folio.balance_minor > 0 ? 'text-destructive' : ''
+                            folio.balance_minor > 0
+                                ? 'whitespace-nowrap text-destructive'
+                                : 'whitespace-nowrap'
                         }
                     >
-                        {t('Balance due: :balance', { balance: folio.balance })}
+                        {folio.refund
+                            ? t('To refund to the guest: :amount', {
+                                  amount: folio.refund,
+                              })
+                            : t('Balance due: :balance', {
+                                  balance: folio.balance,
+                              })}
                     </span>
                 </li>
             </ul>

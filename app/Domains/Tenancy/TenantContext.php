@@ -93,18 +93,25 @@ final class TenantContext
     /**
      * Platform-level access across all hotels. Every use is audited.
      *
+     * 0.38.0: $audited = false only for automatic read-only checks the
+     * system runs on the current hotel's own records (the go-live check
+     * reading the hotel's own webhook events, on every page load). They
+     * filled the hotel's audit log with entries nobody made.
+     *
      * @template T
      *
      * @param  callable(): T  $callback
      * @return T
      */
-    public function bypass(string $reason, callable $callback): mixed
+    public function bypass(string $reason, callable $callback, bool $audited = true): mixed
     {
         if (trim($reason) === '') {
             throw new InvalidArgumentException('A reason is required to bypass hotel scoping.');
         }
 
-        Audit::record('tenancy.bypass', 'Hotel scoping bypassed', properties: ['reason' => $reason]);
+        if ($audited) {
+            Audit::record('tenancy.bypass', 'Hotel scoping bypassed', properties: ['reason' => $reason]);
+        }
 
         $this->bypassDepth++;
 

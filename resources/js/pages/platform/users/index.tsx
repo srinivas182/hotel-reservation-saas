@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFormat } from '@/hooks/use-format';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Row = {
     id: string;
@@ -324,9 +325,9 @@ export default function PlatformUsers({
                                                       variant="ghost"
                                                       size="sm"
                                                       className="text-destructive"
-                                                      onClick={() => {
+                                                      onClick={async () => {
                                                           if (
-                                                              window.confirm(
+                                                              await askConfirm(
                                                                   t(
                                                                       'Deactivate :name? They will be signed out everywhere.',
                                                                       {

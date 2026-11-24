@@ -41,6 +41,16 @@ it('lists what is missing before go-live', function (): void {
         ->and(($this->in)(fn () => app(Readiness::class)->requiredMet()))->toBeTrue();
 });
 
+it('runs the go-live check without writing to the hotel audit log', function (): void {
+    makeReady($this->hotel, $this->owner);
+    $before = AuditLog::query()->where('event', 'tenancy.bypass')->count();
+
+    ($this->failing)();
+    ($this->failing)();
+
+    expect(AuditLog::query()->where('event', 'tenancy.bypass')->count())->toBe($before);
+});
+
 it('requires a deposit-request template and instructions when deposits are on', function (): void {
     makeReady($this->hotel, $this->owner);
     ($this->in)(fn () => HotelAssistantSettings::current()->update(['deposit_required' => true]));

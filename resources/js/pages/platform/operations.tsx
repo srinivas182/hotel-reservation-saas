@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { askConfirm } from '@/lib/ask';
 
 type Props = {
     problems: { key: string; detail: string }[];
@@ -230,10 +231,10 @@ export default function Operations({
                                             size="sm"
                                             variant="ghost"
                                             className="text-destructive"
-                                            onClick={() =>
-                                                window.confirm(
+                                            onClick={async () =>
+                                                (await askConfirm(
                                                     t('Discard this job?'),
-                                                ) &&
+                                                )) &&
                                                 router.delete(
                                                     OperationsController.forget.url(
                                                         f.uuid,

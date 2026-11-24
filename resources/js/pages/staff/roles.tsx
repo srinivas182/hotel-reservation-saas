@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type RoleRow = {
     id: number;
@@ -154,9 +155,9 @@ export default function Roles({ roles, permissions }: Props) {
                                             variant="ghost"
                                             size="sm"
                                             className="text-destructive"
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 if (
-                                                    window.confirm(
+                                                    await askConfirm(
                                                         t(
                                                             'Delete the role :name?',
                                                             { name: role.name },

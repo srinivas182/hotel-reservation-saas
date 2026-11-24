@@ -121,7 +121,7 @@ it('prints a statement of account and keeps bills to the right people and hotel'
     asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.charges.store', $this->stay), ['description' => 'Minibar', 'quantity' => 1, 'unit_price' => 1500]);
 
     asStaffOf($this->hotel, $this->reception)->get(route('hotel.bookings.statement', $this->stay))
-        ->assertOk()->assertSee('Minibar')->assertSee($this->stay->reference);
+        ->assertOk()->assertSee('Minibar')->assertSee($this->stay->reference)->assertDontSee('Montants toutes taxes comprises');
 
     $readOnly = staffMember($this->hotel, SystemRole::ReadOnly);
     asStaffOf($this->hotel, $readOnly)->get(route('hotel.bookings.statement', $this->stay))->assertOk();
@@ -141,4 +141,17 @@ it('lets managers set room charge limits and payment methods', function (): void
     expect($settings->room_charge_order_limit_minor)->toBe(25000)->and($settings->methods())->toBe(['cash', 'wave'])->and($settings->accept_outside_orders)->toBeFalse();
 
     asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.payments.store', $this->stay), ['amount' => 100, 'method' => 'orange_money'])->assertSessionHasErrors('method');
+});
+
+it('keeps the bill of a cancelled booking that was paid, showing what to refund', function (): void {
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.payments.store', $this->stay), ['amount' => 10000, 'method' => 'cash'])->assertSessionHasNoErrors();
+    ($this->in)(fn () => $this->stay->forceFill(['status' => BookingStatus::Cancelled])->save());
+
+    expect(($this->statement)()['balance_minor'])->toBe(-10000);
+
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.bookings.show', $this->stay))
+        ->assertInertia(fn ($page) => $page
+            ->where('folio.balance_minor', -10000)
+            ->where('folio.can_charge', false)
+            ->whereNot('folio.refund', null));
 });

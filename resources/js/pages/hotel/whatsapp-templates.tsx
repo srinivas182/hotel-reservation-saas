@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PageBody, PageHeader } from '@/components/page';
 import { t } from '@/lib/i18n';
+import { askConfirm } from '@/lib/ask';
 
 type Template = {
     id: string;
@@ -159,9 +160,9 @@ export default function WhatsAppTemplates({
                                     size="sm"
                                     variant="ghost"
                                     className="text-destructive"
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (
-                                            window.confirm(
+                                            await askConfirm(
                                                 t('Delete :name?', {
                                                     name: template.name,
                                                 }),

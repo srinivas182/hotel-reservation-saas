@@ -286,3 +286,13 @@ it('runs the lifecycle through the booking page with the right permissions', fun
         'rooms' => 1, 'breakfast' => false, 'extra_bed' => false, 'override_total' => '1000', 'override_reason' => 'x',
     ])->assertForbidden();
 });
+
+it('shows in the booking history what a change of stay changed', function (): void {
+    $booking = book($this->hotel, $this->exe, '2026-11-20', '2026-11-22');
+    ($this->in)(fn () => ($this->life)()->modify($booking, stay($this->exe->id, '2026-11-25', '2026-11-28')));
+
+    asStaffOf($this->hotel, staffMember($this->hotel, SystemRole::Reception))->get(route('hotel.bookings.show', $booking))
+        ->assertInertia(fn ($page) => $page->where('timeline.0.event', 'bookings.modified')
+            ->where('timeline.0.changes', fn ($changes): bool => collect($changes)->contains(fn (string $c): bool => str_contains($c, '2026-11-20 – 2026-11-22') && str_contains($c, '2026-11-25 – 2026-11-28'))
+                && collect($changes)->contains(fn (string $c): bool => str_contains($c, '75'))));
+});

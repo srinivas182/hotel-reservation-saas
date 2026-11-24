@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t } from '@/lib/i18n';
+import { askText } from '@/lib/ask';
 
 type OrderCard = {
     id: string;
@@ -43,12 +44,16 @@ const selectClass =
     'flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
 
 function Card({ order }: { order: OrderCard }) {
-    const act = (status: string) => {
+    const act = async (status: string) => {
         if (status === 'accepted') {
-            const eta = window.prompt(
-                t('Ready in how many minutes? (5, 10, 15, 20, 30, 45 or 60)'),
-                '20',
-            );
+            const eta = await askText({
+                title: t('Ready in how many minutes?'),
+                choices: ['5', '10', '15', '20', '30', '45', '60'],
+                defaultValue: '20',
+                inputType: 'number',
+                required: true,
+                confirmLabel: t('Accept the order'),
+            });
             if (eta) {
                 router.post(
                     OrderBoardController.status.url(order.id),
@@ -59,10 +64,24 @@ function Card({ order }: { order: OrderCard }) {
 
             return;
         }
-        const reason =
-            status === 'declined' || status === 'cancelled'
-                ? window.prompt(t('Reason (optional)'))
-                : null;
+        let reason: string | null = null;
+        if (status === 'declined' || status === 'cancelled') {
+            reason = await askText({
+                title:
+                    status === 'declined'
+                        ? t('Decline this order?')
+                        : t('Cancel this order?'),
+                label: t('Reason (optional)'),
+                confirmLabel:
+                    status === 'declined'
+                        ? t('Decline')
+                        : t('Cancel the order'),
+            });
+            // Closing the dialog keeps the order as it is.
+            if (reason === null) {
+                return;
+            }
+        }
         router.post(
             OrderBoardController.status.url(order.id),
             { status, reason },
