@@ -122,6 +122,29 @@ class GraphClient
     }
 
     /**
+     * React to a guest's message with an emoji, or remove the reaction
+     * with an empty one (0.37.6). Best effort: never throws.
+     */
+    public function react(string $phoneNumberId, string $token, string $to, string $wamid, string $emoji): bool
+    {
+        if (self::isDemo($phoneNumberId)) {
+            return true;
+        }
+
+        try {
+            return $this->http($token, retry: false)->timeout(5)->post($this->url("{$phoneNumberId}/messages"), [
+                'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
+                'to' => $to,
+                'type' => 'reaction',
+                'reaction' => ['message_id' => $wamid, 'emoji' => $emoji],
+            ])->successful();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * Download a media file by its ID (two steps: get a short-lived URL,
      * then fetch it with the same token).
      *

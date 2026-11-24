@@ -131,3 +131,43 @@ it('lets the assistant mention a request already waiting for reception', functio
 
     expect($result->attempts)->toBe(1)->and($result->handover)->toBeFalse();
 });
+
+it('prices a change to the guest’s own booking, and only theirs', function (): void {
+    HotelAssistantAgent::fake([
+        new ToolCall('c1', 'request_booking', ['guest_name' => 'Awa Koné', 'category_code' => 'EXE', 'check_in' => '2026-11-12', 'check_out' => '2026-11-14', 'adults' => 2]),
+        aiReply('Votre demande pour 50 000 FCFA a été transmise à la réception.', ['intent' => 'booking_request']),
+    ]);
+    ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Réservez pour Awa Koné')], $this->conversation->id));
+    $request = ($this->in)(fn () => BookingRequest::query()->sole());
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.booking-requests.approve', $request), ['edit' => false, 'acknowledge_price' => false])->assertSessionHasNoErrors();
+    $reference = ($this->in)(fn () => Booking::query()->sole()->reference);
+
+    ($this->in)(function () use ($reference): void {
+        $context = new App\Domains\Assistant\Engine\ToolContext('fr', $this->conversation->id);
+        $tool = new App\Domains\Assistant\Engine\Tools\QuoteBookingChange($context);
+
+        // A child of 5 joins: 2 nights × 2 500.
+        $child = json_decode((string) $tool->handle(new Laravel\Ai\Tools\Request(['children_ages' => [5]])), true);
+        expect($child['found'])->toBeTrue()
+            ->and($child['booking']['reference'])->toBe($reference)
+            ->and($child['possible'])->toBeTrue()
+            ->and($child['more_to_pay'])->toBeTrue()
+            ->and($context->allowsAmount('50000'))->toBeTrue()
+            ->and($context->allowsAmount('55000'))->toBeTrue()
+            ->and($context->allowsAmount('5000'))->toBeTrue()
+            ->and($child['note'])->toContain('change booking '.$reference);
+
+        // One more adult: the Executive takes 2 adults.
+        $adult = json_decode((string) $tool->handle(new Laravel\Ai\Tools\Request(['adults' => 3])), true);
+        expect($adult['possible'])->toBeFalse()
+            ->and(array_column($adult['problems'], 'code'))->toContain('too_many_guests');
+    });
+
+    // Another number learns nothing.
+    ($this->in)(function (): void {
+        webhookPost($this, [inbound('wamid.other1', from: '2250700000077', name: 'Other')]);
+        $other = Conversation::query()->whereHas('contact', fn ($q) => $q->where('wa_id', '2250700000077'))->sole();
+        $result = json_decode((string) (new App\Domains\Assistant\Engine\Tools\QuoteBookingChange(new App\Domains\Assistant\Engine\ToolContext('fr', $other->id)))->handle(new Laravel\Ai\Tools\Request(['adults' => 3])), true);
+        expect($result['found'])->toBeFalse()->and($result)->not->toHaveKey('booking');
+    });
+});

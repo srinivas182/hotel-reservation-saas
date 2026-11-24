@@ -29,6 +29,7 @@ type Props = {
         deposit_instructions: Record<string, string>;
         decision_messages: Record<string, Record<string, string>>;
         silence_minutes: number;
+        waiting_reaction: boolean;
         stay_messages: Record<string, { enabled: boolean; time: string }>;
         review_url: string;
     };
@@ -534,6 +535,29 @@ export default function AssistantSettings({
                         <h2 className="font-medium">
                             {t('Staff and stay messages')}
                         </h2>
+                        <label className="flex items-start gap-2 text-sm">
+                            <input
+                                type="checkbox"
+                                className="mt-0.5 size-4"
+                                checked={form.data.waiting_reaction}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'waiting_reaction',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            <span>
+                                {t(
+                                    'Show ⏳ on the guest’s message while the assistant prepares its answer',
+                                )}
+                                <span className="block text-muted-foreground">
+                                    {t(
+                                        'WhatsApp shows “typing…” only at the top of the chat; the ⏳ appears next to the guest’s message and goes away when the answer arrives.',
+                                    )}
+                                </span>
+                            </span>
+                        </label>
                         <div className="grid max-w-xs gap-1">
                             <Label htmlFor="silence_minutes">
                                 {t(

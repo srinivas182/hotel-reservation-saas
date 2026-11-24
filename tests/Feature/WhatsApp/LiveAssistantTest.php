@@ -327,6 +327,22 @@ it('shows "typing…" in the guest chat while the assistant prepares an automati
     expect(typingFor())->toBe(['wamid.TYPE1'])
         ->and($typing->data())->toMatchArray(['messaging_product' => 'whatsapp', 'status' => 'read', 'typing_indicator' => ['type' => 'text']])
         ->and(assistantMessages($this))->toBe(['Bonjour ! Comment puis-je vous aider ?']);
+
+    // 0.37.6: ⏳ on the guest's message meanwhile, taken off afterwards.
+    $reactions = Http::recorded(fn ($request): bool => ($request->data()['type'] ?? null) === 'reaction')
+        ->map(fn (array $pair): array => $pair[0]->data()['reaction'])->values()->all();
+    expect($reactions)->toBe([['message_id' => 'wamid.TYPE1', 'emoji' => '⏳'], ['message_id' => 'wamid.TYPE1', 'emoji' => '']]);
+});
+
+it('leaves out the ⏳ when the hotel switches it off', function (): void {
+    ($this->in)(fn () => HotelAssistantSettings::current()->update(['mode' => 'automatic', 'waiting_reaction' => false]));
+    HotelAssistantAgent::fake([aiReply('Bonjour !', ['intent' => 'greeting'])]);
+
+    webhookPost($this, [inbound('wamid.TYPE5', message: ['text' => ['body' => 'Bonjour']])]);
+    runReplies($this);
+
+    expect(typingFor())->toBe(['wamid.TYPE5'])
+        ->and(Http::recorded(fn ($request): bool => ($request->data()['type'] ?? null) === 'reaction'))->toHaveCount(0);
 });
 
 it('does not show "typing…" when staff approve drafts first, or answer themselves', function (): void {

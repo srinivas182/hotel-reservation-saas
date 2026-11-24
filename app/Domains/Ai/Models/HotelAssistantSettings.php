@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $deposit_percent
  * @property int $deposit_hours
  * @property int $silence_minutes
+ * @property bool $waiting_reaction 0.37.6: ⏳ on the guest's message while the assistant prepares its answer
  * @property int $daily_alert_cap
  * @property array<string, array{enabled?: bool, time?: string}>|null $stay_messages
  * @property string|null $review_url
@@ -73,6 +74,7 @@ class HotelAssistantSettings extends Model
         'deposit_allow_full' => true,
         'deposit_refund_days' => 2,
         'silence_minutes' => 15,
+        'waiting_reaction' => true,
         'daily_alert_cap' => 50,
         'mode' => 'off',
     ];
@@ -80,7 +82,7 @@ class HotelAssistantSettings extends Model
     protected $fillable = [
         'enabled', 'display_name', 'tone', 'languages', 'handover_messages',
         'daily_budget_micro_usd', 'kill_switch', 'budget_alerted_on', 'request_hold_minutes', 'request_escalate_minutes',
-        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'deposit_online', 'deposit_allow_full', 'deposit_refund_days', 'arrival_directions', 'arrival_tip', 'reception_closes_at', 'night_arrival', 'arrival_extras', 'arrival_photo_path', 'decision_messages', 'silence_minutes', 'daily_alert_cap', 'stay_messages', 'review_url',
+        'deposit_required', 'deposit_percent', 'deposit_hours', 'deposit_instructions', 'deposit_online', 'deposit_allow_full', 'deposit_refund_days', 'arrival_directions', 'arrival_tip', 'reception_closes_at', 'night_arrival', 'arrival_extras', 'arrival_photo_path', 'decision_messages', 'silence_minutes', 'waiting_reaction', 'daily_alert_cap', 'stay_messages', 'review_url',
         'prepay_discount_percent', 'pay_at_hotel_hold_until', 'bank_transfer',
         'mode', 'privacy_url', 'human_keywords', 'readiness_override_at', 'readiness_override_reason', 'readiness_override_by',
     ];
@@ -109,6 +111,7 @@ class HotelAssistantSettings extends Model
             'night_arrival' => 'array',
             'arrival_extras' => 'array',
             'silence_minutes' => 'integer',
+            'waiting_reaction' => 'boolean',
             'daily_alert_cap' => 'integer',
             'stay_messages' => 'array',
             'mode' => AssistantMode::class,

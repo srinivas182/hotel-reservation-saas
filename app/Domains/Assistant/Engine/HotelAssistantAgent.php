@@ -13,6 +13,7 @@ use App\Domains\Assistant\Engine\Tools\GetMyBill;
 use App\Domains\Assistant\Engine\Tools\GetQuote;
 use App\Domains\Assistant\Engine\Tools\ListRoomCategories;
 use App\Domains\Assistant\Engine\Tools\PlaceOrder;
+use App\Domains\Assistant\Engine\Tools\QuoteBookingChange;
 use App\Domains\Assistant\Engine\Tools\RequestBooking;
 use App\Domains\Assistant\Engine\Tools\RestaurantAvailability;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -84,7 +85,7 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
     {
         $entitlements = app(\App\Domains\Billing\Entitlements::class);
         $features = app(\App\Domains\Platform\Features\Features::class);
-        $tools = [new GetMyBill($this->context)];
+        $tools = [new GetMyBill($this->context), new QuoteBookingChange($this->context)];
         $restaurantOn = $features->enabled(\App\Domains\Platform\Features\Feature::WhatsAppRestaurant);
 
         if ($restaurantOn && $entitlements->has(\App\Domains\Billing\Module::Restaurant)) {
