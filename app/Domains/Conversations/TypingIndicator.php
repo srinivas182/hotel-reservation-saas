@@ -29,13 +29,24 @@ final class TypingIndicator
 
     private ?float $shownAt = null;
 
+    /** 0.37.6: the guest message that got an ⏳, to take it off again. */
+    private ?Message $reacted = null;
+
     public function __construct(private readonly GraphClient $graph) {}
 
-    public function start(Message $guestMessage): void
+    /**
+     * @param  bool  $react  also put ⏳ on the guest's message (0.37.6),
+     *                       taken off by stop(): only where stop() follows
+     */
+    public function start(Message $guestMessage, bool $react = false): void
     {
         $this->message = $guestMessage;
         $this->shownAt = null;
-        $this->show();
+
+        if ($this->show() && $react && HotelAssistantSettings::current()->waiting_reaction) {
+            $this->react($guestMessage, '⏳');
+            $this->reacted = $guestMessage;
+        }
     }
 
     public function keepAlive(): void
@@ -47,27 +58,45 @@ final class TypingIndicator
 
     public function stop(): void
     {
+        if ($this->reacted !== null) {
+            $this->react($this->reacted, '');
+        }
+
         $this->message = null;
         $this->shownAt = null;
+        $this->reacted = null;
     }
 
-    private function show(): void
+    private function react(Message $message, string $emoji): void
+    {
+        $account = WhatsAppAccount::query()->first();
+        $to = $message->loadMissing('conversation.contact')->conversation?->contact?->wa_id;
+
+        if ($account !== null && is_string($to) && $to !== '' && $message->wamid !== null) {
+            $this->graph->react($account->phone_number_id, (string) $account->token, $to, $message->wamid, $emoji);
+        }
+    }
+
+    /** Whether the indicator applies (automatic mode, a WhatsApp message, a usable number). */
+    private function show(): bool
     {
         $message = $this->message;
         if ($message === null || $message->direction !== 'in' || $message->wamid === null || $message->wamid === '') {
-            return;
+            return false;
         }
 
         if (HotelAssistantSettings::current()->effectiveMode() !== AssistantMode::Automatic) {
-            return;
+            return false;
         }
 
         $account = WhatsAppAccount::query()->first();
         if ($account === null || ! $account->status->canSend()) {
-            return;
+            return false;
         }
 
         $this->shownAt = (now()->getPreciseTimestamp(3) / 1000);
         $this->graph->typing($account->phone_number_id, (string) $account->token, $message->wamid);
+
+        return true;
     }
 }

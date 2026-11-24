@@ -21,7 +21,7 @@ final class ToolContext
     /** A pricing tool ran in this reply: only its figures count, not older ones. */
     private bool $priced = false;
 
-    private const PRICING_TOOLS = ['get_quote', 'request_booking', 'place_order', 'get_my_bill'];
+    private const PRICING_TOOLS = ['get_quote', 'request_booking', 'place_order', 'get_my_bill', 'quote_booking_change'];
 
     /** @var list<array{tool: string, arguments: array<string, mixed>, result: string}> */
     private array $calls = [];

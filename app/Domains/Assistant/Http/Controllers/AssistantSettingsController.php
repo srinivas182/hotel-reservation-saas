@@ -56,6 +56,7 @@ final class AssistantSettingsController extends Controller
                 'deposit_instructions' => (object) ($settings->deposit_instructions ?? []),
                 'decision_messages' => (object) ($settings->decision_messages ?? []),
                 'silence_minutes' => $settings->silence_minutes,
+                'waiting_reaction' => $settings->waiting_reaction,
                 'stay_messages' => StayMessenger::settings($settings),
                 'review_url' => $settings->review_url ?? '',
             ],
@@ -100,6 +101,7 @@ final class AssistantSettingsController extends Controller
             'decision_messages.*' => ['array'],
             'decision_messages.*.*' => ['nullable', 'string', 'max:900'],
             'silence_minutes' => ['nullable', 'integer', 'min:5', 'max:240'],
+            'waiting_reaction' => ['sometimes', 'boolean'],
             'stay_messages' => ['nullable', 'array'],
             'stay_messages.*.enabled' => ['boolean'],
             'stay_messages.*.time' => ['date_format:H:i'],
@@ -150,6 +152,7 @@ final class AssistantSettingsController extends Controller
                 ->filter()
                 ->all(),
             'silence_minutes' => (int) ($data['silence_minutes'] ?? $settings->silence_minutes),
+            'waiting_reaction' => (bool) ($data['waiting_reaction'] ?? $settings->waiting_reaction),
             'stay_messages' => collect(StayMessageKind::cases())->mapWithKeys(fn (StayMessageKind $k): array => [$k->value => [
                 'enabled' => (bool) ($data['stay_messages'][$k->value]['enabled'] ?? false),
                 'time' => (string) ($data['stay_messages'][$k->value]['time'] ?? $k->defaultTime()),

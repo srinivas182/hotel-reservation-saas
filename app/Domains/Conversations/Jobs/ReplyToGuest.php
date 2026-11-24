@@ -149,7 +149,7 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
 
         // 0.37.4: "typing…" in the guest's chat while the answer is prepared.
         $typing = app(TypingIndicator::class);
-        $typing->start($latest);
+        $typing->start($latest, react: true);
 
         try {
             $result = $engine->respond(
