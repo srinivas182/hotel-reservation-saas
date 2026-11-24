@@ -33,8 +33,8 @@ beforeEach(function (): void {
     $this->owner = staffMember($this->hotel, SystemRole::Owner);
     $this->metaTemplate = ['body' => ['id' => 'tpl-1', 'status' => 'PENDING', 'category' => 'UTILITY'], 'status' => 200];
     Http::fake([
-        'graph.facebook.com/v23.0/9000/message_templates*' => fn () => Http::response($this->metaTemplate['body'], $this->metaTemplate['status']),
-        'graph.facebook.com/v23.0/5550001/messages' => Http::response(['messages' => [['id' => 'wamid.T1']]]),
+        'graph.facebook.com/v25.0/9000/message_templates*' => fn () => Http::response($this->metaTemplate['body'], $this->metaTemplate['status']),
+        'graph.facebook.com/v25.0/5550001/messages' => Http::response(['messages' => [['id' => 'wamid.T1']]]),
     ]);
 });
 

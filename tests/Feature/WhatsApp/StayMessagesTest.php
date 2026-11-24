@@ -46,7 +46,7 @@ beforeEach(function (): void {
         }
     });
     $this->sent = [];
-    Http::fake(['graph.facebook.com/v23.0/5550001/messages' => function ($request) {
+    Http::fake(['graph.facebook.com/v25.0/5550001/messages' => function ($request) {
         $this->sent[] = $request->data();
 
         return Http::response(['messages' => [['id' => 'wamid.S'.count($this->sent)]]]);

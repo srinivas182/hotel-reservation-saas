@@ -2,7 +2,7 @@
 
 Multi-hotel SaaS platform that lets guests book rooms, tables and events over WhatsApp, while hotel staff manage availability, approvals and guest messaging from a phone-friendly dashboard. Built by **Mayura Consultancy Services**.
 
-> Status: **0.37.7** — usability sprints A–H, the Sprint I design and the Sprint J website delivered; staging deployment pending server access. See `CHANGELOG.md`.
+> Status: **0.37.8** — usability sprints A–H, the Sprint I design and the Sprint J website delivered; staging deployment pending server access. See `CHANGELOG.md`.
 >
 > **New here?** Read the [developer guide](docs/developer-guide.md): local set-up, DigitalOcean, default accounts and roles. Server reference: [`docs/deployment.md`](docs/deployment.md).
 

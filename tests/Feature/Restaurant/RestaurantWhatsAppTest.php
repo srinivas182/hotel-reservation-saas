@@ -43,7 +43,7 @@ beforeEach(function (): void {
         MenuItem::query()->create(['menu_section_id' => $section->id, 'name' => ['fr' => 'Poulet braisé'], 'price_minor' => 5500, 'allergens' => ['peanuts'], 'active' => true]);
     });
     $this->sent = [];
-    Http::fake(['graph.facebook.com/v23.0/5550001/messages' => function ($request) {
+    Http::fake(['graph.facebook.com/v25.0/5550001/messages' => function ($request) {
         $this->sent[] = $request->data();
 
         return Http::response(['messages' => [['id' => 'wamid.R'.count($this->sent)]]]);

@@ -37,8 +37,8 @@ beforeEach(function (): void {
     // Tests change what Meta answers to a send by replacing $this->sendResponse.
     $this->sendResponse = ['body' => ['messages' => [['id' => 'wamid.OUT1']]], 'status' => 200];
     Http::fake([
-        'graph.facebook.com/v23.0/5550001/messages' => fn () => Http::response($this->sendResponse['body'], $this->sendResponse['status']),
-        'graph.facebook.com/v23.0/media-1' => Http::response(['url' => 'https://lookaside.fbsbx.com/media-1', 'mime_type' => 'audio/ogg; codecs=opus', 'file_size' => 4]),
+        'graph.facebook.com/v25.0/5550001/messages' => fn () => Http::response($this->sendResponse['body'], $this->sendResponse['status']),
+        'graph.facebook.com/v25.0/media-1' => Http::response(['url' => 'https://lookaside.fbsbx.com/media-1', 'mime_type' => 'audio/ogg; codecs=opus', 'file_size' => 4]),
         'lookaside.fbsbx.com/*' => Http::response('OGGS', 200, ['Content-Type' => 'audio/ogg']),
     ]);
 });
@@ -117,7 +117,7 @@ it('saves voice notes privately for the hotel and lets staff play them', functio
 });
 
 it('records media that is too large instead of downloading it', function (): void {
-    Http::fake(['graph.facebook.com/v23.0/media-big' => Http::response(['url' => 'https://lookaside.fbsbx.com/big', 'mime_type' => 'video/mp4', 'file_size' => 50_000_000])]);
+    Http::fake(['graph.facebook.com/v25.0/media-big' => Http::response(['url' => 'https://lookaside.fbsbx.com/big', 'mime_type' => 'video/mp4', 'file_size' => 50_000_000])]);
 
     webhookPost($this, [inbound('wamid.IN3', message: ['type' => 'video', 'video' => ['id' => 'media-big', 'mime_type' => 'video/mp4']])]);
 

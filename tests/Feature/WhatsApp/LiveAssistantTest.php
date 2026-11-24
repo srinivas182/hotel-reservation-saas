@@ -40,12 +40,12 @@ beforeEach(function (): void {
     });
     $this->sent = 0;
     Http::fake([
-        'graph.facebook.com/v23.0/5550001/messages' => function () {
+        'graph.facebook.com/v25.0/5550001/messages' => function () {
             $this->sent++;
 
             return Http::response(['messages' => [['id' => 'wamid.OUT'.$this->sent]]]);
         },
-        'graph.facebook.com/v23.0/media-1' => Http::response(['url' => 'https://lookaside.fbsbx.com/media-1', 'mime_type' => 'audio/ogg', 'file_size' => 4]),
+        'graph.facebook.com/v25.0/media-1' => Http::response(['url' => 'https://lookaside.fbsbx.com/media-1', 'mime_type' => 'audio/ogg', 'file_size' => 4]),
         'lookaside.fbsbx.com/*' => Http::response('OGGS', 200, ['Content-Type' => 'audio/ogg']),
     ]);
     Queue::fake([ReplyToGuest::class]);
@@ -376,7 +376,7 @@ it('keeps "typing…" on during a long answer and never fails the reply when Wha
     });
     expect(typingFor())->toBe(['wamid.TYPE4', 'wamid.TYPE4']);
 
-    Http::fake(['graph.facebook.com/v23.0/5550099/messages' => Http::response(['error' => ['message' => 'nope']], 400)]);
+    Http::fake(['graph.facebook.com/v25.0/5550099/messages' => Http::response(['error' => ['message' => 'nope']], 400)]);
     expect(app(App\Domains\WhatsApp\Graph\GraphClient::class)->typing('5550099', 'hotel-token', 'wamid.TYPE4'))->toBeFalse();
 });
 

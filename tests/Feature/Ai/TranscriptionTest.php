@@ -38,7 +38,7 @@ beforeEach(function (): void {
     AiPlatformSettings::current()->update(['transcription_model_id' => $main->id, 'transcription_fallback_id' => $backup->id]);
 
     Http::fake([
-        'graph.facebook.com/v23.0/media-1' => Http::response(['url' => 'https://lookaside.fbsbx.com/media-1', 'mime_type' => 'audio/ogg', 'file_size' => 4]),
+        'graph.facebook.com/v25.0/media-1' => Http::response(['url' => 'https://lookaside.fbsbx.com/media-1', 'mime_type' => 'audio/ogg', 'file_size' => 4]),
         'lookaside.fbsbx.com/*' => Http::response('OGGS', 200, ['Content-Type' => 'audio/ogg']),
     ]);
     $this->voiceNote = fn () => webhookPost($this, [inbound('wamid.V1', message: ['type' => 'audio', 'audio' => ['id' => 'media-1', 'mime_type' => 'audio/ogg', 'voice' => true]])]);

@@ -132,7 +132,7 @@ Set these in the server's `.env` (never commit them):
 | `WHATSAPP_APP_SECRET`    | App Dashboard → App settings → Basic                                |
 | `WHATSAPP_CONFIG_ID`     | Facebook Login for Business → Configurations (Embedded Signup v4)   |
 | `WHATSAPP_VERIFY_TOKEN`  | Any long random string; the same value goes in the webhook settings |
-| `WHATSAPP_GRAPH_VERSION` | Graph API version, e.g. `v23.0`                                     |
+| `WHATSAPP_GRAPH_VERSION` | Graph API version, e.g. `v25.0`                                     |
 
 Webhook address for Meta: `https://<staging or production host>/webhooks/whatsapp`.
 Subscribe to: `messages`, `message_template_status_update`,

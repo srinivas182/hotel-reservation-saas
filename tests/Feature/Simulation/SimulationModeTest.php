@@ -23,7 +23,7 @@ it('refuses to run in production', function (): void {
 it('accepts sends like Meta and answers them with receipts', function (): void {
     Queue::fake();
 
-    $this->postJson('/simulation/graph/v23.0/SIM-1/messages', ['to' => '2250700000001', 'type' => 'text'])
+    $this->postJson('/simulation/graph/v25.0/SIM-1/messages', ['to' => '2250700000001', 'type' => 'text'])
         ->assertOk()
         ->assertJsonPath('messaging_product', 'whatsapp')
         ->assertJsonStructure(['messages' => [['id']]]);
@@ -44,10 +44,10 @@ it('turns receipts into normal WhatsApp notifications', function (): void {
 
 it('injects Meta failures and serves media', function (): void {
     config(['simulation.meta.failure_rate' => 1.0]);
-    $this->postJson('/simulation/graph/v23.0/SIM-1/messages', ['to' => '1'])->assertStatus(503);
+    $this->postJson('/simulation/graph/v25.0/SIM-1/messages', ['to' => '1'])->assertStatus(503);
 
     config(['simulation.meta.failure_rate' => 0.0]);
-    $this->getJson('/simulation/graph/v23.0/sim-media-1')->assertOk()->assertJsonPath('mime_type', 'audio/ogg');
+    $this->getJson('/simulation/graph/v25.0/sim-media-1')->assertOk()->assertJsonPath('mime_type', 'audio/ogg');
     $this->get('/simulation/media/sim-media-1')->assertOk();
 });
 

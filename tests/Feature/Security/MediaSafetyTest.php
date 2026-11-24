@@ -40,7 +40,7 @@ function mediaMessage($test, string $mediaId, string $type): Message
 
 it('never stores files of dangerous types', function (string $mime): void {
     Http::fake([
-        'graph.facebook.com/v23.0/media-x' => Http::response(['url' => 'https://lookaside.fbsbx.com/x', 'mime_type' => $mime, 'file_size' => 10]),
+        'graph.facebook.com/v25.0/media-x' => Http::response(['url' => 'https://lookaside.fbsbx.com/x', 'mime_type' => $mime, 'file_size' => 10]),
         'lookaside.fbsbx.com/*' => Http::response('<script>alert(1)</script>', 200, ['Content-Type' => $mime]),
     ]);
     $message = mediaMessage($this, 'media-x', 'document');
@@ -53,7 +53,7 @@ it('never stores files of dangerous types', function (string $mime): void {
 
 it('serves stored documents as downloads in a sandbox', function (): void {
     Http::fake([
-        'graph.facebook.com/v23.0/media-d' => Http::response(['url' => 'https://lookaside.fbsbx.com/d', 'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'file_size' => 4]),
+        'graph.facebook.com/v25.0/media-d' => Http::response(['url' => 'https://lookaside.fbsbx.com/d', 'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'file_size' => 4]),
         'lookaside.fbsbx.com/*' => Http::response('PK..', 200),
     ]);
     $message = mediaMessage($this, 'media-d', 'document');

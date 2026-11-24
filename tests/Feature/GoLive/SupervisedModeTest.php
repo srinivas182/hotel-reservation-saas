@@ -37,7 +37,7 @@ beforeEach(function (): void {
         HotelAssistantSettings::current()->update(['mode' => AssistantMode::Supervised, 'privacy_url' => 'https://lodge.example/privacy']);
     });
     $this->sent = 0;
-    Http::fake(['graph.facebook.com/v23.0/5550001/messages' => function () {
+    Http::fake(['graph.facebook.com/v25.0/5550001/messages' => function () {
         $this->sent++;
 
         return Http::response(['messages' => [['id' => 'wamid.O'.$this->sent]]]);

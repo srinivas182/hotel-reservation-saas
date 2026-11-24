@@ -37,7 +37,7 @@ beforeEach(function (): void {
     $this->in = fn (callable $callback) => app(TenantContext::class)->run($this->hotel, $callback);
     ($this->in)(fn () => WhatsAppAccount::query()->create(['waba_id' => '9000', 'phone_number_id' => '5550001', 'status' => AccountStatus::Connected, 'token' => 't']));
     $this->sent = [];
-    Http::fake(['graph.facebook.com/v23.0/5550001/messages' => function ($request) {
+    Http::fake(['graph.facebook.com/v25.0/5550001/messages' => function ($request) {
         $this->sent[] = $request->data();
 
         return Http::response(['messages' => [['id' => 'wamid.A'.count($this->sent)]]]);
