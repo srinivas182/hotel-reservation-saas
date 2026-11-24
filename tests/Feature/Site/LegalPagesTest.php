@@ -64,7 +64,7 @@ it('renames the working brand and publishes the full legal texts once, keeping l
 
     expect(BrandSettings::query()->first()->name)->toBe('CNH Global Tech')
         ->and(LegalDocument::current('terms')->version)->toBe(2)
-        ->and(LegalDocument::current('terms')->body)->toBe(LegalDefaults::all()['terms'])
+        ->and(LegalDocument::current('terms')->body)->toEqual(LegalDefaults::all()['terms'])
         ->and(LegalDocument::current('privacy')->text('en'))->toBe('# Ours')
         ->and(DB::table('legal_documents')->where('kind', 'terms')->count())->toBe(2);
 

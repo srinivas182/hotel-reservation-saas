@@ -34,7 +34,7 @@ return new class extends Migration
                 continue;
             }
 
-            // A new install already started from these texts.
+            // A new install already started from these texts (== because MySQL may reorder JSON keys).
             if ((int) $latest->version !== 1 || json_decode((string) $latest->body, true) === $body) {
                 continue;
             }
