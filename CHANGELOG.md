@@ -9,9 +9,9 @@ All notable changes to this project are documented here. The format follows [Kee
 #### Added
 
 - **Changes to a guest's own booking:** new assistant tool `quote_booking_change`. When a guest asks to add an adult or a child, change dates or the room, or add breakfast, the assistant finds their booking from their WhatsApp number and quotes the new total and the difference from the hotel's rates. It also says when the room does not take that many guests and offers what fits. It flags the change for reception with the booking reference and the new total, and never says the change is done.
-  - A change of guests only, in the same room and on the same nights, is not refused for lack of rooms, since the booking already holds its room.
-  - Bookings with a special price or a discount code are confirmed by reception.
-  - Other numbers learn nothing.
+    - A change of guests only, in the same room and on the same nights, is not refused for lack of rooms, since the booking already holds its room.
+    - Bookings with a special price or a discount code are confirmed by reception.
+    - Other numbers learn nothing.
 - **⏳ on the guest's message** while the assistant prepares its answer, removed when the answer is ready. WhatsApp only shows "typing…" at the top of the chat. Hotels can switch the ⏳ off in Assistant settings (on by default).
 
 #### Database
