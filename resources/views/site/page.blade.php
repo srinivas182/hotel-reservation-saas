@@ -215,7 +215,7 @@
                             </article>
                         @endforeach
                     </div>
-                    <p class="fine" style="text-align:center">{{ $pricing['includes_tax'] ? __('Prices include VAT.') : __('Prices exclude VAT.') }} {{ __('WhatsApp messages you start are billed by Meta to your own account; replies to guests are free.') }} <a href="{{ $link('pricing') }}">{{ __('All prices and currencies') }} →</a></p>
+                    <p class="fine" style="text-align:center">{{ $pricing['includes_tax'] ? __('Prices include VAT.') : __('Prices exclude VAT.') }} {{ __('WhatsApp messages are billed by Meta to your own account; replies to guests are free up to 1,000 a month per number.') }} <a href="{{ $link('pricing') }}">{{ __('All prices and currencies') }} →</a></p>
                 </div>
             </section>
         @endif
@@ -283,7 +283,7 @@
                     </article>
                 @endforeach
             </div>
-            <p class="fine">{{ $pricing['includes_tax'] ? __('Prices include VAT.') : __('Prices exclude VAT.') }} {{ __('WhatsApp messages you start are billed by Meta to your own account; replies to guests are free.') }}</p>
+            <p class="fine">{{ $pricing['includes_tax'] ? __('Prices include VAT.') : __('Prices exclude VAT.') }} {{ __('WhatsApp messages are billed by Meta to your own account; replies to guests are free up to 1,000 a month per number.') }}</p>
             @if ($pricing['packs'] !== [])
                 <h2>{{ __('Extra credits') }}</h2>
                 <ul class="prose">@foreach ($pricing['packs'] as $pack)<li>{{ $pack['name'] }} — {{ $pack['price'] }}</li>@endforeach</ul>

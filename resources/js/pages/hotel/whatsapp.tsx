@@ -85,7 +85,7 @@ export default function WhatsAppConnection({ account, signup, errors }: Props) {
                 <p className="rounded-xl border bg-card px-4 py-3 text-sm">
                     <span className="font-medium">
                         {t(
-                            'WhatsApp messages you start are billed by Meta to your own account; replies to guests are free.',
+                            'WhatsApp messages are billed by Meta to your own account; replies to guests are free up to 1,000 a month per number.',
                         )}
                     </span>{' '}
                     <span className="text-muted-foreground">
