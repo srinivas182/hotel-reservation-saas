@@ -28,6 +28,8 @@ export type DepositRow = {
     refund_due: string | null;
     refunded_at: string | null;
     refund_note: string | null;
+    /** 0.39.1: the payment can be refunded from here (Stripe). */
+    online_refund?: boolean;
 };
 
 export type BookingDeposit = {

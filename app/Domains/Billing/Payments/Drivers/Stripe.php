@@ -8,6 +8,7 @@ use App\Domains\Billing\Payments\Payable;
 use App\Domains\Billing\Payments\PaymentCredentials;
 use App\Domains\Billing\Payments\PaymentDriver;
 use App\Domains\Billing\Payments\PaymentFailed;
+use App\Domains\Billing\Payments\RefundsPayments;
 use App\Domains\Billing\Payments\VerifiedPayment;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Http;
  * Amounts: Stripe takes the smallest unit, except for zero-decimal
  * currencies (XOF, XAF and others), which are sent in whole units.
  */
-final class Stripe implements PaymentDriver
+final class Stripe implements PaymentDriver, RefundsPayments
 {
     public const BASE = 'https://api.stripe.com/v1';
 
@@ -118,6 +119,35 @@ final class Stripe implements PaymentDriver
             'reference' => is_string($request->input('data.object.client_reference_id')) ? $request->input('data.object.client_reference_id') : null,
             'token' => is_string($request->input('data.object.id')) ? $request->input('data.object.id') : null,
         ]);
+    }
+
+    public function canRefund(?string $providerReference): bool
+    {
+        return is_string($providerReference) && str_starts_with($providerReference, 'stripe:pi_');
+    }
+
+    /**
+     * 0.39.1: a refund to the card the guest paid with (POST /v1/refunds).
+     */
+    public function refund(string $providerReference, int $amountMinor, string $currency, string $idempotencyKey): string
+    {
+        $this->guardMode();
+
+        if (! $this->canRefund($providerReference)) {
+            throw new PaymentFailed(__('This payment cannot be refunded from here: refund it in the Stripe dashboard.'));
+        }
+
+        $response = $this->http()->asForm()->withHeaders(['Idempotency-Key' => $idempotencyKey])->post(self::BASE.'/refunds', [
+            'payment_intent' => substr($providerReference, strlen('stripe:')),
+            'amount' => self::toStripe($amountMinor, $currency),
+            'reason' => 'requested_by_customer',
+        ]);
+
+        if (! $response->successful() || ! is_string($response->json('id')) || $response->json('status') === 'failed') {
+            throw new PaymentFailed((string) ($response->json('error.message') ?? __('Stripe refused the refund.')));
+        }
+
+        return (string) $response->json('id');
     }
 
     /**

@@ -728,3 +728,49 @@ it('lets the hotel save its bank details only when complete, encrypted', functio
 
     asStaffOf($this->hotel, $this->reception)->put(route('hotel.deposits.bank'), ['enabled' => false])->assertForbidden();
 });
+
+it('refunds an online payment from the app once, records it and tells the guest', function (): void {
+    $booking = depositBooking($this);
+    depositPayByLink($this);
+    ($this->in)(fn () => app(BookingLifecycle::class)->cancel($booking->refresh(), 'Plans changed', $this->owner));
+    $link = depositLink($this);
+
+    // The red count on Deposits includes refunds to make.
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))
+        ->assertInertia(fn ($page) => $page->where('refunds.0.online_refund', true)->where('actionCounts.deposits', 1));
+
+    $this->sent = [];
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.refund-online', $link))->assertSessionHasNoErrors()->assertRedirect();
+
+    $link = depositLink($this);
+    expect($link->refund_status)->toBe('done')
+        ->and($link->refund_note)->toContain('sim-refund-')
+        ->and(($this->in)(fn () => FolioLine::query()->where('corrects_line_id', $link->folio_line_id)->exists()))->toBeTrue()
+        ->and(implode("\n", depositGuestTexts($this)))->toContain('rembours');
+
+    // A second click refunds nothing more.
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.refund-online', $link))->assertSessionHasErrors('refund');
+});
+
+it('leaves cash and transfer refunds manual', function (): void {
+    $booking = depositBooking($this);
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.deposit.confirm', $booking), ['method' => 'cash'])->assertRedirect();
+    ($this->in)(fn () => app(BookingLifecycle::class)->cancel($booking->refresh(), 'Plans changed', $this->owner));
+
+    asStaffOf($this->hotel, $this->owner)->get(route('hotel.deposits'))->assertInertia(fn ($page) => $page->where('refunds.0.online_refund', false));
+    asStaffOf($this->hotel, $this->owner)->post(route('hotel.deposits.refund-online', depositLink($this)))->assertSessionHasErrors('refund');
+});
+
+it('asks Stripe for a refund of the payment intent, once', function (): void {
+    Http::fake(['api.stripe.com/v1/refunds' => Http::response(['id' => 're_123', 'status' => 'succeeded'])]);
+    $account = new MerchantAccount(['driver' => 'stripe', 'mode' => 'test']);
+    $account->credentials = ['secret_key' => 'sk_test_x', 'webhook_secret' => 'whsec_x']; // gitleaks:allow
+    $stripe = new App\Domains\Billing\Payments\Drivers\Stripe($account);
+
+    expect($stripe->canRefund('stripe:cs_abc'))->toBeFalse()
+        ->and($stripe->refund('stripe:pi_abc', 25000, 'XOF', 'deposit-refund-1'))->toBe('re_123');
+
+    Http::assertSent(fn ($request) => $request->url() === 'https://api.stripe.com/v1/refunds'
+        && $request['payment_intent'] === 'pi_abc' && (int) $request['amount'] === 25000
+        && $request->header('Idempotency-Key')[0] === 'deposit-refund-1');
+});

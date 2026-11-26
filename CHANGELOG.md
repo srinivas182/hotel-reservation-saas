@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Refunds after a cancellation (0.39.1)
+
+#### Added
+
+- **Refund now on the card.** A deposit paid by card through the hotel's Stripe account is refunded from the Deposits page with one click, after a confirmation:
+    - the refund goes back to the guest's card;
+    - the bill is corrected and the guest is told on WhatsApp;
+    - a double click never refunds twice (one idempotency key per deposit, plus a lock);
+    - a refusal from Stripe is shown and audited.
+- Refunds of cash, bank transfers and mobile money stay manual ("Refunded" with a note). The guest is now told on WhatsApp for those too.
+
+#### Changed
+
+- The red count on Deposits now includes refunds to make, not only transfer receipts to check.
+
+#### Security
+
+- Symfony components updated to 7.4.24 (http-kernel, mailer, routing, serializer: seven advisories published this week).
+
 ### Instant WhatsApp bookings and guest self-cancellation (0.39.0)
 
 #### Added

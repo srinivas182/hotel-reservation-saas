@@ -17,6 +17,7 @@ import { ProviderGuide } from '@/components/billing/provider-guide';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { askConfirm } from '@/lib/ask';
 import { t } from '@/lib/i18n';
 
 type Driver = { value: string; label: string; fields: string[] };
@@ -104,6 +105,35 @@ function RefundRow({
     canRefund: boolean;
 }) {
     const form = useForm({ note: '' });
+    const [refunding, setRefunding] = useState(false);
+    const [refundError, setRefundError] = useState<string | null>(null);
+    const refundOnline = async () => {
+        if (
+            !(await askConfirm({
+                title: t('Refund :amount now?', {
+                    amount: row.refund_due ?? '',
+                }),
+                description: t(
+                    'The money goes back to the card the guest paid with, and the guest is told on WhatsApp. This cannot be undone.',
+                ),
+                confirmLabel: t('Refund now'),
+                destructive: true,
+            }))
+        ) {
+            return;
+        }
+        setRefunding(true);
+        setRefundError(null);
+        router.post(
+            `/hotel/deposits/${row.id}/refund-online`,
+            {},
+            {
+                preserveScroll: true,
+                onError: (errors) => setRefundError(errors.refund ?? null),
+                onFinish: () => setRefunding(false),
+            },
+        );
+    };
 
     return (
         <li className="flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-end">
@@ -122,6 +152,19 @@ function RefundRow({
                     })}
                 </span>
             </div>
+            {canRefund && row.online_refund && (
+                <div className="flex flex-col gap-1">
+                    <Button
+                        type="button"
+                        size="sm"
+                        disabled={refunding}
+                        onClick={() => void refundOnline()}
+                    >
+                        {t('Refund now on the card')}
+                    </Button>
+                    <InputError message={refundError ?? undefined} />
+                </div>
+            )}
             {canRefund && (
                 <form
                     className="flex flex-1 flex-col gap-1"
