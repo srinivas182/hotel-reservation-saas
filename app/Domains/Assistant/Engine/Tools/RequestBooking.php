@@ -30,7 +30,7 @@ final class RequestBooking extends AssistantTool
 
     public function description(): string
     {
-        return 'Send a booking request to reception and hold the rooms, also when reception is closed. Call it as soon as the guest wants to book and you know the room category, dates, number of guests and their full name; if one is missing, ask the guest for it first. Reception confirms or declines; the booking is NOT confirmed by this tool. Never use it to cancel or change a booking. If it answers possible_duplicate, ask the guest whether they want an extra room on top of their booking, and only then call it again with additional_room=true.';
+        return 'Send a booking request to reception and hold the rooms, also when reception is closed. Call it as soon as the guest wants to book and you know the room category, dates, number of guests and their full name; if one is missing, ask the guest for it first. Reception confirms or declines, unless the answer says confirmed=true: then the booking is confirmed at once. Follow next_step exactly. Never use it to cancel or change a booking. If it answers possible_duplicate, ask the guest whether they want an extra room on top of their booking, and only then call it again with additional_room=true.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -123,6 +123,24 @@ final class RequestBooking extends AssistantTool
             $this->context->allowMoney($payNow);
             $extra['pay_now_online'] = MoneyFormatter::format($payNow, $locale);
             $extra['payment_choice'] = 'Once reception confirms, the guest receives a link to pay the whole stay now for pay_now_online, or can pay total_to_pay at the hotel.';
+        }
+
+        // 0.39.0: confirmed at once when the hotel allows it and rooms are free.
+        $booking = app(BookingRequestService::class)->autoConfirm($request);
+
+        if ($booking !== null) {
+            unset($extra['payment_choice']);
+
+            return [
+                ...$extra,
+                'request_sent' => true,
+                'confirmed' => true,
+                'booking_reference' => $booking->reference,
+                'status' => $booking->status->value,
+                'total_to_pay' => MoneyFormatter::format(Money::ofMinor($booking->total_minor, $booking->currency), $locale),
+                'next_step' => 'The booking is CONFIRMED. The guest receives a separate message right now with the booking reference, the details and how to pay (payment link or pay at the hotel). Reply in one or two short sentences: thank the guest, say the booking is confirmed and the details and payment link are in the next message. Do not repeat the link or the amounts.'
+                    .($booking->status->value === 'tentative' ? ' The room is kept until the deposit is paid: say so.' : ''),
+            ];
         }
 
         return [

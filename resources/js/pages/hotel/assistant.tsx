@@ -23,6 +23,9 @@ type Props = {
         kill_switch: boolean;
         request_hold_minutes: number;
         request_escalate_minutes: number;
+        auto_confirm: boolean;
+        auto_confirm_max_rooms: number;
+        auto_confirm_max_nights: number;
         deposit_required: boolean;
         deposit_percent: number;
         deposit_hours: number;
@@ -375,6 +378,75 @@ export default function AssistantSettings({
                                     )}
                                 </p>
                             </div>
+                        </div>
+                        {/* 0.39.0: confirmed by the assistant when rooms are free. */}
+                        <div className="grid gap-3 rounded-lg border p-3">
+                            <label className="flex items-center gap-2 text-sm font-medium">
+                                <input
+                                    type="checkbox"
+                                    className="size-4"
+                                    checked={form.data.auto_confirm}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'auto_confirm',
+                                            e.target.checked,
+                                        )
+                                    }
+                                />
+                                {t(
+                                    'Confirm bookings automatically when rooms are free',
+                                )}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                                {t(
+                                    'The guest gets the confirmation and the payment link at once, without waiting for reception. With a deposit, the room is kept until it is paid. Larger groups, long stays and special requests still come to reception. Works when the assistant replies by itself (Automatic).',
+                                )}
+                            </p>
+                            {form.data.auto_confirm && (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-1">
+                                        <Label htmlFor="auto_confirm_max_rooms">
+                                            {t('Up to this many rooms')}
+                                        </Label>
+                                        <Input
+                                            id="auto_confirm_max_rooms"
+                                            type="number"
+                                            min={1}
+                                            max={20}
+                                            value={
+                                                form.data.auto_confirm_max_rooms
+                                            }
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'auto_confirm_max_rooms',
+                                                    Number(e.target.value),
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                    <div className="grid gap-1">
+                                        <Label htmlFor="auto_confirm_max_nights">
+                                            {t('Up to this many nights')}
+                                        </Label>
+                                        <Input
+                                            id="auto_confirm_max_nights"
+                                            type="number"
+                                            min={1}
+                                            max={60}
+                                            value={
+                                                form.data
+                                                    .auto_confirm_max_nights
+                                            }
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'auto_confirm_max_nights',
+                                                    Number(e.target.value),
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <label className="flex items-center gap-2 text-sm">
                             <input

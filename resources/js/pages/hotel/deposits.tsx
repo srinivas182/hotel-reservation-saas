@@ -588,8 +588,13 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
             </label>
             <fieldset className="flex flex-wrap items-center gap-2">
                 <legend className="mb-1 font-medium">
-                    {t('When a booking is cancelled')}
+                    {t('Free cancellation')}
                 </legend>
+                <p className="mb-1 basis-full text-xs text-muted-foreground">
+                    {t(
+                        'Until this time, guests can cancel on WhatsApp by themselves: the room is freed at once and any payment is refunded. After it, cancellations go to reception and the deposit is kept.',
+                    )}
+                </p>
                 <select
                     className={selectClass}
                     value={form.data.refund}
@@ -597,10 +602,12 @@ function RulesForm({ settings }: { settings: Props['settings'] }) {
                     onChange={(e) => form.setData('refund', e.target.value)}
                 >
                     <option value="days">
-                        {t('Refund the deposit if cancelled at least')}
+                        {t('Guests can cancel and get refunded until')}
                     </option>
                     <option value="never">
-                        {t('Never refund the deposit')}
+                        {t(
+                            'No free cancellation: reception decides, deposit kept',
+                        )}
                     </option>
                 </select>
                 {form.data.refund === 'days' && (

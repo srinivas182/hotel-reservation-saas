@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\BookingRequests;
 
+use App\Domains\Ai\AssistantMode;
 use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Audit\Audit;
 use App\Domains\Availability\Exceptions\NotEnoughRooms;
@@ -189,7 +190,7 @@ final class BookingRequestService
      */
     public function approve(
         BookingRequest $request,
-        User $by,
+        ?User $by,
         ?StayRequest $changedStay = null,
         bool $priceChangeAcknowledged = false,
         ?Money $overrideTotal = null,
@@ -249,7 +250,7 @@ final class BookingRequestService
                 $request->forceFill([
                     'status' => BookingRequestStatus::Approved,
                     'booking_id' => $booking->id,
-                    'decided_by' => $by->getKey(),
+                    'decided_by' => $by?->getKey(),
                     'decided_at' => now(),
                 ])->save();
 
@@ -259,7 +260,7 @@ final class BookingRequestService
             throw new RequestNotPossible('not_available', $exception->getMessage());
         }
 
-        Audit::record('booking_requests.approved', 'WhatsApp booking request approved', subject: $request, causer: $by, properties: [
+        Audit::record('booking_requests.approved', $by === null ? 'WhatsApp booking request confirmed automatically (rooms free)' : 'WhatsApp booking request approved', subject: $request, causer: $by, properties: [
             'reference' => $request->reference,
             'booking' => $booking->reference,
             'changed' => $changedStay !== null,
@@ -269,6 +270,33 @@ final class BookingRequestService
         BookingRequestDecided::dispatch($request->id);
 
         return $booking;
+    }
+
+    /**
+     * 0.39.0: confirm a request at once, without reception, when the hotel
+     * allows it and the stay is within its limits. Anything unusual (more
+     * rooms or nights than the limits, a special request, a price that
+     * changed, rooms no longer free) stays pending for reception.
+     */
+    public function autoConfirm(BookingRequest $request): ?Booking
+    {
+        $settings = HotelAssistantSettings::current();
+        $stay = $request->stay();
+
+        if (! $settings->auto_confirm
+            || $settings->mode !== AssistantMode::Automatic
+            || $request->status !== BookingRequestStatus::Pending
+            || $stay->rooms > $settings->auto_confirm_max_rooms
+            || $stay->nights() > $settings->auto_confirm_max_nights
+            || $request->guest_notes !== null) {
+            return null;
+        }
+
+        try {
+            return $this->approve($request, null);
+        } catch (RequestNotPossible) {
+            return null;
+        }
     }
 
     public function decline(BookingRequest $request, User $by, string $reason): void
