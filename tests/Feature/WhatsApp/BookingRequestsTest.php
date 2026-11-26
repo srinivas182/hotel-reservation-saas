@@ -261,3 +261,73 @@ it('sends the guest the new details when reception changes or cancels the stay',
     asStaffOf($this->hotel, $this->reception)->post(route('hotel.bookings.cancel', $booking), ['reason' => 'Guest asked', 'notify_guest' => true])->assertSessionHasNoErrors();
     expect($last())->not->toBe(null)->and(($this->in)(fn () => App\Domains\Conversations\Models\Message::query()->where('source', 'system')->count()))->toBeGreaterThanOrEqual(3);
 });
+
+function autoConfirm(object $test, array $settings = []): void
+{
+    ($test->in)(fn () => App\Domains\Ai\Models\HotelAssistantSettings::current()->forceFill([
+        'mode' => App\Domains\Ai\AssistantMode::Automatic, 'auto_confirm' => true, ...$settings,
+    ])->save());
+}
+
+it('confirms a booking at once when the hotel allows it and rooms are free', function (): void {
+    autoConfirm($this);
+    HotelAssistantAgent::fake([
+        new ToolCall('c1', 'request_booking', ['guest_name' => 'Awa Koné', 'category_code' => 'EXE', 'check_in' => '2026-11-12', 'check_out' => '2026-11-14', 'adults' => 2]),
+        aiReply('Merci Awa, votre réservation est confirmée : les détails et le lien de paiement arrivent dans le message suivant.', ['intent' => 'booking_request']),
+    ]);
+
+    ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Oui je réserve, Awa Koné')], $this->conversation->id));
+
+    $request = ($this->in)(fn () => BookingRequest::query()->with('booking')->sole());
+    expect($request->status)->toBe(BookingRequestStatus::Approved)
+        ->and($request->decided_by)->toBeNull()
+        ->and($request->booking)->not->toBeNull()
+        ->and($request->booking->status)->toBe(BookingStatus::Confirmed);
+    $sent = ($this->in)(fn () => App\Domains\Conversations\Models\Message::query()->where('direction', 'out')->pluck('body')->implode("\n"));
+    expect($sent)->toContain('*'.$request->booking->reference.'*')->toContain('confirmée');
+});
+
+it('keeps requests for reception when auto-confirm is off, over the limits, or the assistant is supervised', function (array $settings, int $rooms): void {
+    autoConfirm($this, $settings);
+    $request = submitRequest($this, rooms: $rooms);
+
+    expect(($this->in)(fn () => app(BookingRequestService::class)->autoConfirm($request)))->toBeNull()
+        ->and(($this->in)(fn () => $request->fresh()->status))->toBe(BookingRequestStatus::Pending);
+})->with([
+    'off' => [['auto_confirm' => false], 1],
+    'too many rooms' => [['auto_confirm_max_rooms' => 1], 2],
+    'too many nights' => [['auto_confirm_max_nights' => 1], 1],
+    'supervised' => [['mode' => App\Domains\Ai\AssistantMode::Supervised], 1],
+]);
+
+it('lets a guest cancel their own booking within the free cancellation time, after confirming', function (): void {
+    autoConfirm($this);
+    ($this->in)(fn () => App\Domains\Ai\Models\HotelAssistantSettings::current()->forceFill(['deposit_refund_days' => 2])->save());
+    $booking = ($this->in)(fn () => app(BookingRequestService::class)->autoConfirm(submitRequest($this)));
+    $cancel = function (string $id): void {
+        HotelAssistantAgent::fake([new ToolCall($id, 'cancel_booking', ['confirm' => true]), aiReply('D’accord.', ['intent' => 'cancellation'])]);
+        ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Annulez ma réservation')], $this->conversation->id));
+    };
+
+    // A "yes" before the guest was asked is not enough.
+    $cancel('x1');
+    expect(($this->in)(fn () => $booking->fresh()->status))->toBe(BookingStatus::Confirmed);
+
+    $cancel('x2');
+    expect(($this->in)(fn () => $booking->fresh()->status))->toBe(BookingStatus::Cancelled)
+        ->and(availableNights($this->hotel, $this->exe, '2026-11-12', '2026-11-13'))->toBe(['2026-11-12' => 3, '2026-11-13' => 3]);
+});
+
+it('sends late or non-refundable cancellations to reception', function (?int $days): void {
+    autoConfirm($this);
+    ($this->in)(fn () => App\Domains\Ai\Models\HotelAssistantSettings::current()->forceFill(['deposit_refund_days' => $days])->save());
+    $booking = ($this->in)(fn () => app(BookingRequestService::class)->autoConfirm(submitRequest($this)));
+    $this->travelTo('2026-11-11 09:00:00');
+
+    foreach (['y1', 'y2'] as $id) {
+        HotelAssistantAgent::fake([new ToolCall($id, 'cancel_booking', ['confirm' => true]), aiReply('La réception vous contacte.', ['intent' => 'cancellation'])]);
+        ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Annulez ma réservation')], $this->conversation->id));
+    }
+
+    expect(($this->in)(fn () => $booking->fresh()->status))->toBe(BookingStatus::Confirmed);
+})->with(['two days rule, one day before' => [2], 'never refunded' => [null]]);

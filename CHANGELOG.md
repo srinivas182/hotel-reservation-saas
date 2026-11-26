@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Instant WhatsApp bookings and guest self-cancellation (0.39.0)
+
+#### Added
+
+- **Confirm bookings automatically when rooms are free** (AI assistant settings, off by default). When the assistant replies by itself, a request with free rooms is confirmed at once. The guest gets the confirmation and the payment link without waiting for reception:
+    - with a deposit, the booking is kept until it is paid and released automatically if it is not;
+    - without one, the guest pays online or at the hotel by the hold time.
+      More rooms or nights than the hotel's limits (3 rooms and 14 nights by default), special requests, a changed price or rooms no longer free still go to reception.
+- **Guests cancel their own booking on WhatsApp** within the free cancellation time (Deposits page: "Guests can cancel and get refunded until N days before arrival"):
+    - the assistant names the booking and the refund rule, and cancels only after the guest confirms;
+    - the rooms are freed at once, and any payment follows the refund rule;
+    - an unpaid (tentative) booking can be cancelled until the arrival day;
+    - after the deadline, or with no free cancellation, the request goes to reception.
+
 ### Guest told when reception changes or cancels a booking (0.38.2)
 
 #### Added

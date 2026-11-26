@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assistant\Engine;
 
 use App\Domains\Assistant\Engine\Tools\BookTable;
+use App\Domains\Assistant\Engine\Tools\CancelMyBooking;
 use App\Domains\Assistant\Engine\Tools\CheckAvailability;
 use App\Domains\Assistant\Engine\Tools\EventEnquiry;
 use App\Domains\Assistant\Engine\Tools\GetHotelInfo;
@@ -85,7 +86,7 @@ final class HotelAssistantAgent implements Agent, Conversational, HasStructuredO
     {
         $entitlements = app(\App\Domains\Billing\Entitlements::class);
         $features = app(\App\Domains\Platform\Features\Features::class);
-        $tools = [new GetMyBill($this->context), new QuoteBookingChange($this->context)];
+        $tools = [new GetMyBill($this->context), new QuoteBookingChange($this->context), new CancelMyBooking($this->context)];
         $restaurantOn = $features->enabled(\App\Domains\Platform\Features\Feature::WhatsAppRestaurant);
 
         if ($restaurantOn && $entitlements->has(\App\Domains\Billing\Module::Restaurant)) {
