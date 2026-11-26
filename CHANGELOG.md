@@ -19,6 +19,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - The red count on Deposits now includes refunds to make, not only transfer receipts to check.
 
+#### Security
+
+- Symfony components updated to 7.4.24 (http-kernel, mailer, routing, serializer: seven advisories published this week).
+
 ### Instant WhatsApp bookings and guest self-cancellation (0.39.0)
 
 #### Added
