@@ -108,7 +108,7 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * Things staff must act on, counted for the menu: bank transfer
-     * receipts to check (Deposits) and booking requests to accept or
+     * receipts to check and refunds to make (Deposits) and booking requests to accept or
      * decline (Today). Each only for those allowed to act on it.
      *
      * @return array{deposits: int, requests: int}
@@ -130,13 +130,15 @@ class HandleInertiaRequests extends Middleware
         $query = \Illuminate\Support\Facades\DB::query();
         if ($deposits) {
             $query->selectSub(\App\Domains\Deposits\Models\DepositAttempt::query()->selectRaw('count(*)')->where('method', 'bank_transfer')->where('status', 'pending')->whereNotNull('proof_at'), 'deposits');
+            // 0.39.1: refunds to make after a cancellation count too.
+            $query->selectSub(\App\Domains\Deposits\Models\DepositLink::query()->selectRaw('count(*)')->where('refund_status', 'due'), 'refunds');
         }
         if ($requests) {
             $query->selectSub(\App\Domains\BookingRequests\BookingRequest::query()->selectRaw('count(*)')->where('status', \App\Domains\BookingRequests\BookingRequestStatus::Pending->value), 'requests');
         }
         $row = (array) $query->first();
 
-        return ['deposits' => (int) ($row['deposits'] ?? 0), 'requests' => (int) ($row['requests'] ?? 0)];
+        return ['deposits' => (int) ($row['deposits'] ?? 0) + (int) ($row['refunds'] ?? 0), 'requests' => (int) ($row['requests'] ?? 0)];
     }
 
     /**

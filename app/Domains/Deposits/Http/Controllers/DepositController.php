@@ -96,7 +96,8 @@ final class DepositController extends Controller
                 'pay_at_hotel_hold_until' => $settings->pay_at_hotel_hold_until,
             ],
             'totals' => $reconciliation->month($month),
-            'refunds' => DepositLink::query()->with($with)->where('refund_status', 'due')->oldest('updated_at')->get()->map(fn (DepositLink $l): array => DepositPresenter::row($l))->values(),
+            'refunds' => DepositLink::query()->with($with)->where('refund_status', 'due')->oldest('updated_at')->get()
+                ->map(fn (DepositLink $l): array => [...DepositPresenter::row($l), 'online_refund' => $this->deposits->onlineRefunder($l) !== null])->values(),
             'open' => DepositLink::query()->with($with)->where('status', 'open')->orderBy('expires_at')->limit(50)->get()->map(fn (DepositLink $l): array => DepositPresenter::row($l))->values(),
             'paid' => DepositLink::query()->with($with)->where('status', 'paid')
                 ->whereBetween('paid_at', [$month->shiftTimezone($hotel->timezone)->utc(), $month->addMonth()->shiftTimezone($hotel->timezone)->utc()])
@@ -285,6 +286,20 @@ final class DepositController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Refund recorded.')]);
+
+        return back();
+    }
+
+    /** 0.39.1: refund through the provider the guest paid with (Stripe). */
+    public function refundOnline(Request $request, DepositLink $link): RedirectResponse
+    {
+        try {
+            $this->deposits->refundOnline($link, $this->user($request));
+        } catch (DepositNotPossible $e) {
+            throw ValidationException::withMessages(['refund' => $e->getMessage()]);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Refund sent. The guest is told on WhatsApp.')]);
 
         return back();
     }

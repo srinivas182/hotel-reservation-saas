@@ -7,6 +7,7 @@ namespace App\Domains\Deposits;
 use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Audit\Audit;
 use App\Domains\Billing\Payments\PaymentFailed;
+use App\Domains\Billing\Payments\RefundsPayments;
 use App\Domains\Bookings\BookingLifecycle;
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Exceptions\BookingActionNotAllowed;
@@ -28,6 +29,7 @@ use Brick\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -716,6 +718,68 @@ final class Deposits
         });
 
         Audit::record('deposits.refunded', 'Deposit refunded', subject: $link->booking, causer: $by, properties: ['link' => $link->id, 'amount_minor' => $link->refund_due_minor, 'note' => $note]);
+
+        // 0.39.1: the guest hears that the money is on its way back.
+        TellGuestAboutDeposit::dispatch($link->id, 'refunded');
+    }
+
+    /**
+     * 0.39.1: the provider that took this payment, when it can refund it
+     * from here (Stripe cards; the staging simulation). Null for transfers,
+     * cash and mobile money: those refunds stay manual.
+     */
+    public function onlineRefunder(DepositLink $link): ?RefundsPayments
+    {
+        if ($link->refund_status !== 'due' || $link->paid_via !== 'online' || $link->provider_reference === null) {
+            return null;
+        }
+
+        $accountId = DepositAttempt::query()->where('deposit_link_id', $link->id)->where('status', 'paid')->whereNotNull('merchant_account_id')->value('merchant_account_id');
+        $account = $accountId === null ? null : MerchantAccount::query()->whereKey($accountId)->first();
+        $driver = $account?->driver();
+
+        return $driver instanceof RefundsPayments && $driver->canRefund($link->provider_reference) ? $driver : null;
+    }
+
+    /**
+     * 0.39.1: send the money back through the provider, then record it as
+     * refunded. One refund per deposit, even on a double click: the
+     * provider gets the same idempotency key and the link is locked.
+     */
+    public function refundOnline(DepositLink $link, User $by): string
+    {
+        $refunder = $this->onlineRefunder($link);
+
+        if ($refunder === null) {
+            throw new DepositNotPossible(__('This payment cannot be refunded from here: send the money back yourself, then record it.'));
+        }
+
+        $lock = Cache::lock('deposit-refund:'.$link->id, 60);
+
+        if (! $lock->get()) {
+            throw new DepositNotPossible(__('This refund is already being made.'));
+        }
+
+        try {
+            $link->refresh();
+            if ($link->refund_status !== 'due') {
+                throw new DepositNotPossible(__('There is no refund to make on this deposit.'));
+            }
+
+            try {
+                $refundId = $refunder->refund((string) $link->provider_reference, (int) $link->refund_due_minor, $link->currency, 'deposit-refund-'.$link->id);
+            } catch (PaymentFailed $e) {
+                Audit::record('deposits.refund_failed', 'Online refund refused by the provider', subject: $link->booking, causer: $by, properties: ['link' => $link->id, 'error' => $e->getMessage()]);
+
+                throw new DepositNotPossible(__('The refund was refused: :reason', ['reason' => $e->getMessage()]));
+            }
+
+            $this->markRefunded($link, $by, (string) __('Refunded online (:id)', ['id' => $refundId]));
+
+            return $refundId;
+        } finally {
+            $lock->release();
+        }
     }
 
     /**

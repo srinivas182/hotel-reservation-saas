@@ -49,7 +49,7 @@ final class TellGuestAboutDeposit implements RequiresHotelContext, ShouldQueue
     public const TEMPLATES = ['link' => 'deposit_reminder', 'reminder' => 'deposit_reminder', 'paid' => 'deposit_received'];
 
     /**
-     * @param  'link'|'reminder'|'paid'|'late'|'transfer_rejected'|'transfer_expired'  $kind
+     * @param  'link'|'reminder'|'paid'|'late'|'transfer_rejected'|'transfer_expired'|'refunded'  $kind
      */
     public function __construct(public readonly string $linkId, public readonly string $kind, public readonly ?string $attemptId = null) {}
 
@@ -80,6 +80,7 @@ final class TellGuestAboutDeposit implements RequiresHotelContext, ShouldQueue
             'method' => RestaurantSettings::methodLabel((string) $link->method),
             'receipt' => (string) $link->receipt_number,
             'left' => $money($left),
+            'refund' => $money((int) ($link->refund_due_minor ?? $link->paid_minor)),
             'check_in' => self::localized($booking->check_in, $locale)->isoFormat('D MMMM'),
         ];
 
@@ -89,6 +90,10 @@ final class TellGuestAboutDeposit implements RequiresHotelContext, ShouldQueue
         $values['reason'] = (string) ($attempt->failure ?? '');
 
         $text = match ($this->kind) {
+            // 0.39.1: the money was sent back after a cancellation.
+            'refunded' => $link->paid_via === 'online'
+                ? __('Hello :name, :hotel has refunded :refund for booking :reference. A card refund can take 5 to 10 days to show on your statement.', $values, $locale)
+                : __('Hello :name, :hotel has sent back :refund for booking :reference. Write to us here if you have not received it.', $values, $locale),
             'transfer_rejected' => __('Hello :name, :hotel could not find your bank transfer of :transfer (reference :transfer_reference) for booking :reference: :reason. You can pay another way with your link: :url — or write to us here.', $values, $locale),
             'transfer_expired' => __('Hello :name, no bank transfer receipt arrived in time for booking :reference, so this transfer offer has ended. You can still pay with your link while it is valid: :url — or write to us here.', $values, $locale),
             'link' => __('Hello :name, here is the link to pay the deposit of :deposit for booking :reference at :hotel (rooms held until :deadline): :url', $values, $locale),
