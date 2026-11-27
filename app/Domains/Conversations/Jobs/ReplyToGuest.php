@@ -67,12 +67,9 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
     public const STAFF_QUIET_MINUTES = 10;
 
     /**
-     * 0.37.5: minutes after which a conversation the assistant passed to
-     * staff, and no one answered, goes back to the assistant.
+     * Hand-overs during which the assistant keeps answering new questions
+     * until a colleague takes over or replies (never a staff take-over).
      */
-    public const RESUME_MINUTES = 5;
-
-    /** Hand-overs the assistant may take back (never a staff take-over). */
     public const RESUMABLE = ['guest_asked_for_person', 'reply_limit'];
 
     /**
@@ -160,6 +157,13 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         }
 
         if ($this->tooManyReplies($conversation)) {
+            if ($this->waitingForStaff($conversation)) {
+                // Already with staff for this reason: no second hand-over message.
+                $this->markAnswered($conversation, $latest);
+
+                return;
+            }
+
             $this->handOver($conversation, $latest, 'reply_limit', $sender, $handover);
 
             return;
@@ -177,6 +181,8 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return;
         }
 
+        $waiting = $this->waitingForStaff($conversation);
+
         // 0.37.4: "typing…" in the guest's chat while the answer is prepared.
         $typing = app(TypingIndicator::class);
         $typing->start($latest, react: true);
@@ -186,7 +192,7 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
                 $this->turns($conversation),
                 $conversation->id,
                 $conversation->contact?->guest?->name(),
-                $this->situation($context),
+                $this->situation($context, $conversation, $unanswered, $waiting),
             );
         } finally {
             $typing->stop();
@@ -209,6 +215,16 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         if ($result->handover) {
             // The guest asking for a person (the AI saw it) is a real take-over.
             $reason = $result->intent === 'human_request' ? 'guest_asked_for_person' : (string) $result->handoverReason;
+
+            // Already waiting for a colleague: the AI's answer goes out, with
+            // no second hand-over (and no second "a colleague will reply").
+            if ($waiting && in_array($reason, self::TAKE_OVER, true)) {
+                $this->send($conversation, $result->reply, $sender, $handover);
+                $this->markAnswered($conversation, $latest);
+
+                return;
+            }
+
             // The AI's own reply goes out; when the engine had no usable reply
             // (blocked twice, no information pack, AI unavailable) a neutral one does.
             $engineOnly = $reason === 'guardrail' || $reason === 'no_information_pack' || str_starts_with($reason, 'ai_unavailable');
@@ -226,14 +242,34 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return;
         }
 
-        try {
-            $sender->sendText($conversation, $reply, null, MessageSource::Assistant);
-        } catch (CannotSend $exception) {
-            Log::warning('Assistant reply not sent', ['conversation' => $conversation->id, 'reason' => $exception->getMessage()]);
-            $handover->toStaff($conversation, 'send_failed');
+        $this->send($conversation, $reply, $sender, $handover);
+        $this->markAnswered($conversation, $latest);
+    }
+
+    /**
+     * 0.39.2: one copy only: the same text the assistant sent to this guest
+     * in the last 10 minutes is not sent again (testers saw the hand-over
+     * message two or three times).
+     */
+    private function send(Conversation $conversation, string $text, MessageSender $sender, ConversationHandover $handover, bool $quiet = false): void
+    {
+        $sentAlready = $conversation->messages()->where('source', MessageSource::Assistant->value)
+            ->where('sent_at', '>', now()->subMinutes(10))
+            ->pluck('body')
+            ->contains(fn (?string $body): bool => trim((string) $body) === trim($text));
+
+        if ($sentAlready) {
+            return;
         }
 
-        $this->markAnswered($conversation, $latest);
+        try {
+            $sender->sendText($conversation, $text, null, MessageSource::Assistant);
+        } catch (CannotSend $exception) {
+            Log::warning('Assistant reply not sent', ['conversation' => $conversation->id, 'reason' => $exception->getMessage()]);
+            if (! $quiet) {
+                $handover->toStaff($conversation, 'send_failed');
+            }
+        }
     }
 
     private function assistantMayAnswer(Conversation $conversation): bool
@@ -242,14 +278,11 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return false;
         }
 
-        // 0.37.5: a guest the assistant passed to staff, whom nobody answered,
-        // is not left in silence: after RESUME_MINUTES the assistant answers
-        // again (the conversation stays flagged for staff).
-        if ($this->noStaffCame($conversation)) {
-            app(ConversationHandover::class)->resume($conversation);
-        }
-
-        if ($conversation->mode !== ConversationMode::Assistant) {
+        // 0.39.2: a guest waiting for a colleague is never left in silence.
+        // Until someone takes the conversation or replies, the assistant
+        // answers the guest's new questions at once; the conversation stays
+        // with staff (and flagged) so a colleague still picks it up.
+        if ($conversation->mode !== ConversationMode::Assistant && ! $this->waitingForStaff($conversation)) {
             return false;
         }
 
@@ -278,26 +311,19 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return $at->isFuture() ? $at : null;
         }
 
-        if ($conversation->mode === ConversationMode::Staff
-            && in_array($conversation->handover_reason, self::RESUMABLE, true)
-            && $conversation->assigned_to === null
-            && $conversation->handed_over_at !== null
-            && ($conversation->staff_replied_at === null || $conversation->staff_replied_at->lt($conversation->handed_over_at))) {
-            $at = $conversation->handed_over_at->addMinutes(self::RESUME_MINUTES)->addSeconds(5);
-
-            return $at->isFuture() ? $at : null;
-        }
-
         return null;
     }
 
-    private function noStaffCame(Conversation $conversation): bool
+    /**
+     * 0.39.2: handed to staff by the assistant (the guest asked for a person,
+     * or the reply limit), and no colleague has taken it or replied since.
+     */
+    private function waitingForStaff(Conversation $conversation): bool
     {
         return $conversation->mode === ConversationMode::Staff
             && in_array($conversation->handover_reason, self::RESUMABLE, true)
             && $conversation->assigned_to === null
             && $conversation->handed_over_at !== null
-            && $conversation->handed_over_at->lte(now()->subMinutes(self::RESUME_MINUTES))
             && ($conversation->staff_replied_at === null || $conversation->staff_replied_at->lt($conversation->handed_over_at));
     }
 
@@ -368,19 +394,72 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         return $merged;
     }
 
-    private function situation(TenantContext $context): string
+    /**
+     * @param  list<Message>  $unanswered
+     */
+    private function situation(TenantContext $context, Conversation $conversation, array $unanswered, bool $waiting): string
     {
         $hours = StaffedHours::forCurrentHotel($context->hotel());
+        $lines = [];
 
         if ($hours->isOpen()) {
-            return 'Reception is staffed now: booking requests are usually answered quickly.';
+            $lines[] = 'Reception is staffed now: booking requests are usually answered quickly.';
+        } else {
+            $opening = $hours->nextOpening();
+            $lines[] = $opening === null
+                ? 'Reception is not staffed now. Still take booking requests (rule 3): the rooms are held until staff confirm.'
+                : 'Reception is closed now. Still take booking requests (rule 3): the rooms are held, and staff reply and confirm bookings from '.$this->when($opening, $context).'. Tell the guest this when relevant.';
         }
 
-        $opening = $hours->nextOpening();
+        if ($waiting) {
+            $lines[] = 'A colleague has already been asked to reply to this guest and has not yet. Answer the guest\'s new questions now; do not hand over again for the same request (say a colleague will reply soon only if the guest asks).';
+        }
 
-        return $opening === null
-            ? 'Reception is not staffed now. Still take booking requests (rule 3): the rooms are held until staff confirm.'
-            : 'Reception is closed now. Still take booking requests (rule 3): the rooms are held, and staff reply and confirm bookings from '.$opening->format('l H:i').' (hotel time). Tell the guest this when relevant.';
+        if (count($unanswered) > 1) {
+            $lines[] = 'The guest sent '.count($unanswered).' messages since your last reply: answer every question in them (rule 19).';
+        }
+
+        $language = $this->guestLanguage($conversation, $unanswered);
+        if ($language !== null) {
+            $lines[] = 'LANGUAGE: the guest is writing in "'.$language.'": reply in that language (rule 20).';
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * "today 08:00" or "tomorrow 08:00" or "Monday 08:00", hotel time.
+     */
+    private function when(\Carbon\CarbonInterface $opening, TenantContext $context): string
+    {
+        $timezone = $context->hotel()->timezone ?: config('app.timezone');
+        $local = $opening->copy()->setTimezone($timezone);
+        $today = now($timezone);
+
+        return match (true) {
+            $local->isSameDay($today) => 'today at '.$local->format('H:i').' (hotel time)',
+            $local->isSameDay($today->copy()->addDay()) => 'tomorrow at '.$local->format('H:i').' (hotel time)',
+            default => $local->format('l').' at '.$local->format('H:i').' (hotel time)',
+        };
+    }
+
+    /**
+     * 0.39.2: the language of the guest's latest words (text, or a voice
+     * note), so a photo or a sticker after English is answered in English.
+     *
+     * @param  list<Message>  $unanswered
+     */
+    private function guestLanguage(Conversation $conversation, array $unanswered): ?string
+    {
+        foreach (array_reverse($unanswered) as $message) {
+            if ($message->language !== null) {
+                return $message->language;
+            }
+        }
+
+        return $conversation->messages()->where('direction', 'in')->whereNotNull('language')
+            ->where('sent_at', '>', now()->subHours(Conversation::WINDOW_HOURS))
+            ->orderByDesc('sent_at')->orderByDesc('id')->value('language');
     }
 
     private function tooManyReplies(Conversation $conversation): bool
@@ -406,6 +485,19 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
     private function handOver(Conversation $conversation, Message $latest, string $reason, MessageSender $sender, ConversationHandover $handover, ?string $message = null): void
     {
         $takeOver = in_array($reason, self::TAKE_OVER, true);
+        $locale = $conversation->contact->guest->preferred_locale ?? app(TenantContext::class)->hotel()->default_locale;
+
+        // 0.39.2: asking again while already waiting: a short reminder, not
+        // the hand-over message a second time.
+        if ($takeOver && $this->waitingForStaff($conversation) && $conversation->handover_reason === $reason) {
+            if (HotelAssistantSettings::current()->effectiveMode() !== AssistantMode::Supervised) {
+                $this->send($conversation, __('I have already passed your request to reception: a colleague will reply as soon as possible. Meanwhile I can help with anything else.', locale: $locale), $sender, $handover, quiet: true);
+            }
+            $this->markAnswered($conversation, $latest);
+
+            return;
+        }
+
         $takeOver ? $handover->toStaff($conversation, $reason) : $handover->flag($conversation, $reason);
 
         // In supervised mode nothing is sent to guests without staff approval;
@@ -419,19 +511,14 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             return;
         }
 
-        $locale = $conversation->contact->guest->preferred_locale ?? app(TenantContext::class)->hotel()->default_locale;
         // A language the hotel does not use: the hotel's own message, in its language.
         $text = $message !== null && ! str_starts_with($reason, 'language:') ? $message : match (true) {
             $takeOver || str_starts_with($reason, 'language:') => app(AssistantEngine::class)->handoverMessage(HotelAssistantSettings::current(), $locale),
             default => __('Let me check this point with our team: they will get back to you. Meanwhile I can still help you with prices, availability and your booking.', locale: $locale),
         };
 
-        try {
-            $sender->sendText($conversation, $text, null, MessageSource::Assistant);
-        } catch (CannotSend) {
-            // Staff are already alerted through the conversation.
-        }
-
+        // Staff are already alerted through the conversation.
+        $this->send($conversation, $text, $sender, $handover, quiet: true);
         $this->markAnswered($conversation, $latest);
     }
 

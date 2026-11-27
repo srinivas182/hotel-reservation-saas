@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### WhatsApp assistant: second test round, critical fixes (0.39.2)
+
+#### Fixed
+
+- **No more silence while a guest waits for a colleague** (TC2, TC41, TC82, TC88). After "reception", the guest gets the hand-over message, and the assistant answers their next questions at once until a colleague takes the conversation or replies. The conversation stays with staff and flagged. The 5-minute wait is gone.
+- **No duplicate hand-over messages** (TC127, TC144). Asking for reception again gets a short "already passed to reception" reminder. The assistant never sends the same text twice within 10 minutes.
+- **Answers are no longer lost when a guest writes quickly** (TC53, TC89). When Meta refuses a message because the guest got too many messages in a short time (error 131056), the message is sent later instead of failing. When several messages are waiting, the assistant is told to answer every question in them.
+- **"My booking" questions are answered** (TC83–TC87). New `my_bookings` tool: reference, status, room, dates, guests, total, what is still to pay, and the payment link. Lookups go by the guest linked to the WhatsApp number or by the same phone number. Another number's booking is never shown, even with its reference.
+- **Reply language follows the guest** (TC108, TC137, TC138, TC143). The assistant is told the language of the guest's latest words, so a photo, PDF or sticker after English is answered in English.
+- **"Today" vs "tomorrow"** (TC50). Reception's next opening is given as today, tomorrow or a weekday, in hotel time.
+
 ### Refunds after a cancellation (0.39.1)
 
 #### Added

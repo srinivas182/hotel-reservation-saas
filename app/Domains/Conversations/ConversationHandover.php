@@ -95,25 +95,6 @@ final class ConversationHandover
         }
     }
 
-    /**
-     * 0.37.5: the assistant answers again a guest staff did not answer.
-     * Unlike toAssistant(), the guest's new messages stay to be answered
-     * and the conversation stays flagged, so staff still see it.
-     */
-    public function resume(Conversation $conversation): void
-    {
-        $conversation->forceFill([
-            'mode' => ConversationMode::Assistant,
-            'needs_attention' => true,
-            'handover_reason' => 'no_staff_reply',
-            'waiting_since' => null,
-        ])->save();
-
-        Audit::record('conversations.assistant_resumed', 'No staff reply: the assistant answers the guest again', subject: $conversation, properties: [
-            'handed_over_at' => $conversation->handed_over_at?->toIso8601String(),
-        ]);
-    }
-
     public function pause(Conversation $conversation, ?User $by = null): void
     {
         $conversation->forceFill(['mode' => ConversationMode::Paused])->save();

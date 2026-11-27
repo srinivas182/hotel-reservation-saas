@@ -244,3 +244,19 @@ it('processes message events that arrived before message handling existed', func
     expect($event->fresh()->processed_at)->not->toBeNull()
         ->and(($this->in)(fn () => Message::query()->where('wamid', 'wamid.OLD1')->exists()))->toBeTrue();
 });
+
+it('sends a message later when Meta says the guest got too many messages in a short time', function (): void {
+    webhookPost($this, [inbound('wamid.IN1')]);
+    $this->sendResponse = ['body' => ['error' => ['message' => 'Pair rate limit hit', 'code' => 131056]], 'status' => 400];
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    $message = ($this->in)(fn () => Message::query()->create([
+        'conversation_id' => $conversation->id, 'direction' => 'out', 'client_id' => (string) Str::uuid(), 'type' => 'text', 'body' => 'Answer 31',
+        'status' => MessageStatus::Queued, 'source' => MessageSource::Assistant, 'sent_at' => now(),
+    ]));
+
+    $job = (new SendMessage($message->id))->withFakeQueueInteractions();
+    ($this->in)(fn () => app()->call([$job, 'handle']));
+
+    $job->assertReleased();
+    expect(($this->in)(fn () => $message->fresh()->status))->toBe(MessageStatus::Queued);
+});

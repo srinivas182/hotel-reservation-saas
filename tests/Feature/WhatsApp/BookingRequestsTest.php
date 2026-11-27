@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Responses\Data\ToolCall;
 
 require_once __DIR__.'/helpers.php';
+require_once __DIR__.'/../Bookings/helpers.php';
 require_once __DIR__.'/../Assistant/helpers.php';
 require_once __DIR__.'/../Availability/helpers.php';
 require_once __DIR__.'/../Access/helpers.php';
@@ -331,3 +332,16 @@ it('sends late or non-refundable cancellations to reception', function (?int $da
 
     expect(($this->in)(fn () => $booking->fresh()->status))->toBe(BookingStatus::Confirmed);
 })->with(['two days rule, one day before' => [2], 'never refunded' => [null]]);
+
+it('shows the guest their own bookings by WhatsApp number, and never another number\'s', function (): void {
+    $mine = book($this->hotel, $this->exe, '2026-12-10', '2026-12-12', phone: '+2250700000001');
+    $other = book($this->hotel, $this->exe, '2026-12-15', '2026-12-16', phone: '+2250799999999');
+    $tool = fn (array $arguments): array => ($this->in)(fn () => json_decode((string) (new App\Domains\Assistant\Engine\Tools\MyBookings(new App\Domains\Assistant\Engine\ToolContext('fr', $this->conversation->id)))->handle(new Laravel\Ai\Tools\Request($arguments)), true));
+
+    $result = $tool([]);
+    expect($result['found'])->toBeTrue()
+        ->and(collect($result['bookings'])->pluck('reference')->all())->toBe([$mine->reference]);
+
+    $foreign = $tool(['booking_reference' => $other->reference]);
+    expect($foreign['found'])->toBeFalse();
+});
