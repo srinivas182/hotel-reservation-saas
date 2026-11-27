@@ -345,3 +345,53 @@ it('shows the guest their own bookings by WhatsApp number, and never another num
     $foreign = $tool(['booking_reference' => $other->reference]);
     expect($foreign['found'])->toBeFalse();
 });
+
+it('sends a confirmed change to reception, who apply it from Today, and the guest gets the new details', function (): void {
+    Http::swap(new Illuminate\Http\Client\Factory);
+    Http::fake(['graph.facebook.com/*' => fn () => Http::response(['messages' => [['id' => 'wamid.'.Illuminate\Support\Str::random(12)]]])]);
+    $booking = book($this->hotel, $this->exe, '2026-12-10', '2026-12-12', phone: '+2250700000001');
+    ($this->in)(fn () => $this->conversation->forceFill(['last_inbound_at' => now()])->save());
+
+    HotelAssistantAgent::fake([
+        new ToolCall('q1', 'quote_booking_change', ['booking_reference' => $booking->reference, 'check_out' => '2026-12-13', 'send_to_reception' => true]),
+        aiReply('C’est transmis à la réception, qui vous confirme la modification.', ['intent' => 'modification_or_cancellation']),
+    ]);
+    ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Oui, ajoutez une nuit')], $this->conversation->id));
+
+    $change = ($this->in)(fn () => App\Domains\BookingRequests\BookingChangeRequest::query()->sole());
+    expect($change->kind)->toBe('change')->and($change->status)->toBe('pending')->and($change->stay['check_out'])->toBe('2026-12-13');
+
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.today'))
+        ->assertInertia(fn ($page) => $page->where('changeRequests.0.reference', $booking->reference)->where('actionCounts.requests', 1));
+
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.change-requests.apply', $change))->assertSessionHasNoErrors();
+
+    expect(($this->in)(fn () => $booking->fresh()->check_out->toDateString()))->toBe('2026-12-13')
+        ->and(($this->in)(fn () => $change->fresh()->status))->toBe('applied')
+        ->and(($this->in)(fn () => App\Domains\Conversations\Models\Message::query()->where('source', 'system')->latest('id')->value('body')))->toContain($booking->reference);
+});
+
+it('lets reception decline a late cancellation, and the guest is told why', function (): void {
+    Http::swap(new Illuminate\Http\Client\Factory);
+    Http::fake(['graph.facebook.com/*' => fn () => Http::response(['messages' => [['id' => 'wamid.'.Illuminate\Support\Str::random(12)]]])]);
+    ($this->in)(fn () => App\Domains\Ai\Models\HotelAssistantSettings::current()->forceFill(['deposit_refund_days' => null])->save());
+    $booking = book($this->hotel, $this->exe, '2026-12-10', '2026-12-12', phone: '+2250700000001');
+    ($this->in)(fn () => $this->conversation->forceFill(['last_inbound_at' => now()])->save());
+
+    HotelAssistantAgent::fake([
+        new ToolCall('c1', 'cancel_booking', ['confirm' => true]),
+        aiReply('La réception va examiner votre demande d’annulation.', ['intent' => 'modification_or_cancellation']),
+    ]);
+    ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Oui, annulez')], $this->conversation->id));
+
+    $change = ($this->in)(fn () => App\Domains\BookingRequests\BookingChangeRequest::query()->sole());
+    expect($change->kind)->toBe('cancellation');
+
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.change-requests.decline', $change), ['reason' => 'la nuit est due'])->assertSessionHasNoErrors();
+
+    expect(($this->in)(fn () => $booking->fresh()->status))->toBe(BookingStatus::Confirmed)
+        ->and(($this->in)(fn () => App\Domains\Conversations\Models\Message::query()->where('source', 'system')->latest('id')->value('body')))->toContain('la nuit est due');
+
+    // Already handled: a second click changes nothing.
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.change-requests.apply', $change))->assertSessionHasErrors('change');
+});

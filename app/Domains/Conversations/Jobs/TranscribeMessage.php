@@ -6,6 +6,7 @@ namespace App\Domains\Conversations\Jobs;
 
 use App\Domains\Ai\Exceptions\AiUnavailable;
 use App\Domains\Ai\Gateway\AiGateway;
+use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Assistant\LanguageDetector;
 use App\Domains\Conversations\Models\Message;
 use App\Domains\Tenancy\Contracts\RequiresHotelContext;
@@ -63,12 +64,20 @@ final class TranscribeMessage implements RequiresHotelContext, ShouldQueue
 
         $language = $detector->detect($result->text);
 
+        // 0.39.3: speech models invent a word or two from silence ("სამგულო."
+        // from 4 silent seconds, TC125). A very short transcript with no
+        // Latin letters, at a hotel answering in Latin-script languages,
+        // is treated as nothing heard.
+        $words = preg_split('/[^\p{L}\p{N}]+/u', $result->text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $latinHotel = collect(HotelAssistantSettings::current()->languages ?? ['fr', 'en'])->every(fn ($l): bool => in_array($l, ['fr', 'en', 'es', 'pt', 'de', 'it', 'nl', 'sw', 'yo', 'ha', 'wo'], true));
+        $text = $latinHotel && count($words) <= 3 && preg_match('/\p{Latin}/u', $result->text) !== 1 ? '' : $result->text;
+
         $message->forceFill([
-            'transcript' => \App\Domains\Conversations\CardNumberMask::mask($result->text),
+            'transcript' => $text === '' ? null : \App\Domains\Conversations\CardNumberMask::mask($text),
             'transcript_language' => $language,
             'language' => $language ?? $message->language,
             'transcribed_at' => now(),
-            'transcript_error' => $result->text === '' ? __('Nothing could be heard in this voice note.') : null,
+            'transcript_error' => $text === '' ? __('Nothing could be heard in this voice note.') : null,
         ])->save();
 
         ReplyToGuest::schedule($message);

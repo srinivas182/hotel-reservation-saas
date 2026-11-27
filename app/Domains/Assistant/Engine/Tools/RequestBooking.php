@@ -46,7 +46,7 @@ final class RequestBooking extends AssistantTool
             'breakfast' => $schema->boolean(),
             'extra_bed' => $schema->boolean(),
             'coupon_code' => $schema->string()->description('A discount code the guest gave, if any'),
-            'additional_room' => $schema->boolean()->description('True only after the guest confirmed they want this room in addition to a booking or request they already have for the same dates.'),
+            'additional_room' => $schema->boolean()->description('True only after the guest confirmed they want this room in addition to a booking or request they already have for the same dates. The rooms, adults and children are then ONLY those of the extra room(s), never the existing booking added to them.'),
             'special_requests' => $schema->string()->description('Short note for reception of what the guest asked for or told you: a pet (which animal, size), a baby cot, a late or early arrival, an accessible room, a celebration… Empty if nothing.'),
         ];
     }

@@ -111,3 +111,23 @@ it('remembers the guest\'s language from their first text message', function ():
     expect($guest->preferred_locale)->toBe('en')
         ->and(($this->in)(fn () => Message::query()->sole()->language))->toBe('en');
 });
+
+it('treats a made-up word from a silent voice note as nothing heard', function (): void {
+    Transcription::fake(['სამგულო.']);
+
+    ($this->voiceNote)();
+
+    $message = ($this->in)(fn () => Message::query()->sole());
+    expect($message->transcript)->toBeNull()
+        ->and($message->transcript_error)->not->toBeNull();
+});
+
+it('hears an audio file sent as a document, and masks a spoken security code next to a card number', function (): void {
+    Transcription::fake(['My card number is 4242 4242 4242 4242 and the code is 123']);
+
+    webhookPost($this, [inbound('wamid.D1', message: ['type' => 'document', 'document' => ['id' => 'media-1', 'mime_type' => 'audio/mp4', 'filename' => 'question.m4a']])]);
+
+    $message = ($this->in)(fn () => Message::query()->sole());
+    expect($message->type)->toBe('audio')
+        ->and($message->transcript)->toBe('My card number is •••• •••• •••• 4242 and the code is •••');
+});

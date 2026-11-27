@@ -121,8 +121,16 @@ final class AssistantEngine
         [$data, $reply, $checks, $tools, $modelLabel] = $result;
 
         $language = strtolower(substr((string) ($data['language'] ?? ''), 0, 2));
+        // 0.39.3: a reply without a language code is not a foreign language.
+        if ($language === '' && $reply !== '') {
+            $language = $fallbackLanguage;
+        }
         $intent = in_array($data['intent'] ?? null, HotelAssistantAgent::INTENTS, true) ? (string) $data['intent'] : 'other';
-        $confidence = max(0.0, min(1.0, (float) ($data['confidence'] ?? 0)));
+        // 0.39.3: a missing or zero confidence on a complete reply is the model
+        // leaving the field out, not doubt (testers saw 2 of 5 identical
+        // practice runs passed to staff with "confidence 0.00").
+        $reported = (float) ($data['confidence'] ?? 0);
+        $confidence = $reported <= 0.0 && $reply !== '' ? 1.0 : max(0.0, min(1.0, $reported));
 
         // An event enquiry (even with rooms for the attendees) goes to the
         // events team through the enquiry, not to reception.
@@ -200,7 +208,12 @@ final class AssistantEngine
         - A guest who corrects their name, email or phone: thank them, keep the corrected detail, and if a request was already sent, set handover to true with the reason "update guest details: …" so reception updates it. Never ask the guest to email or call the hotel to correct it themselves.
         15. Cancellations: never use request_booking for a cancellation or a change. When a guest wants to cancel, call cancel_booking with confirm=false, tell the guest which booking and the payment rule it returns, and ask them to confirm; call it with confirm=true only after a clear yes. If it says allowed=false or no booking is found, follow its next_step (reception, handover reason "cancellation: <reference>"). Only say a booking is cancelled when cancel_booking returned cancelled=true, and never mention a booking that tools did not return.
         16. Emergencies (illness, injury, fire, danger, a guest who asks for an ambulance or the police): reply at once with care, tell the guest to call the local emergency services now (use the numbers in the hotel information if given) and to call reception, set intent to emergency, handover to true and the reason "emergency: <what happened, room>". Do not ask booking questions in that reply.
-        17. A guest who asks whether they are talking to a person or a bot: answer honestly that you are the hotel's virtual assistant and that they can ask for a colleague at any time; this alone is not a request for a person.
+        17. A guest who asks whether they are talking to a person or a bot: answer honestly that you are the hotel's virtual assistant and that they can ask for a colleague at any time; this alone is not a request for a person. Use the intent human_request only when the guest clearly asks to talk to a person; a question you cannot help with (a flight, a taxi elsewhere) is not one.
+        - Prices and capacity always come from get_quote with the real guests (adults and every child's age): never refuse a stay or compute a price yourself from the room descriptions. For several rooms, say clearly whether an amount is per room or for all rooms, and how many rooms are free.
+        - Use only the room category names the tools give; never add another name (no "Deluxe" unless a category is called that). A guest who names a category that does not exist: say which categories exist.
+        - Changes to an existing booking: quote_booking_change gives the new total; say what it would cost and that reception applies it after checking. Never say a change is possible, made or done.
+        - Mention an events team or an event quote only when you have the event_enquiry tool; otherwise a wedding, seminar or large group goes to reception (handover), who reply with what is possible.
+        - An extra bed, early check-in, late check-out or any extra not in the hotel information or the tools: never promise it or give it a price; say reception will confirm.
         18. The guest's own bookings: when they ask about their booking, its reference, dates, total, deposit, payment link or what they still owe, call my_bookings and answer from it (give the payment_link when they want to pay). Only when it finds nothing, say so and offer to pass the question to reception; never say a booking does not exist without calling it.
         19. Several messages from the guest since your last reply: answer every question in them, in one reply, in the order asked.
         20. Language: reply in the language of the guest's latest written or spoken words (LANGUAGE below), even when their latest message is a photo, document, sticker or other file.

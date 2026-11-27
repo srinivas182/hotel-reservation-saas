@@ -539,3 +539,25 @@ it('answers a photo in the language the guest was writing, and asks for every qu
     HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'LANGUAGE: the guest is writing in "en"')
         && ! str_contains($prompt->agent->instructions(), 'messages since your last reply'));
 });
+
+it('flags an emergency for staff even when the assistant did not call it one', function (): void {
+    HotelAssistantAgent::fake([aiReply('Appelez immédiatement les secours au 185 et la réception.', ['intent' => 'other'])]);
+
+    webhookPost($this, [inbound('wamid.E1', message: ['text' => ['body' => 'Mon père a une douleur à la poitrine, il ne respire plus bien']])]);
+    runReplies($this);
+
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    expect($conversation->needs_attention)->toBeTrue()
+        ->and($conversation->handover_reason)->toStartWith('emergency:')
+        ->and(last(assistantMessages($this)))->toContain('secours');
+});
+
+it('does not pass a complete answer to staff because the model left out its confidence', function (): void {
+    HotelAssistantAgent::fake([aiReply('Oui, il y a une piscine.', ['intent' => 'faq', 'confidence' => 0])]);
+
+    webhookPost($this, [inbound('wamid.C1', message: ['text' => ['body' => 'Il y a une piscine ?']])]);
+    runReplies($this);
+
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    expect($conversation->needs_attention)->toBeFalse()->and($conversation->mode)->toBe(ConversationMode::Assistant);
+});

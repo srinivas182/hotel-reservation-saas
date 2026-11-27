@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Assistant\Engine\Tools;
 
+use App\Domains\BookingRequests\BookingChangeRequests;
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\GuestBookings;
 use App\Domains\Bookings\Models\Booking;
@@ -37,7 +38,7 @@ final class QuoteBookingChange extends AssistantTool
 
     public function description(): string
     {
-        return 'The guest\'s own upcoming bookings, and the exact new price when they want to change one: more or fewer adults or children, other dates, another room category, more rooms, breakfast. Give only what changes; the rest stays as booked. Returns the current total, the new total and the difference. Call it whenever a guest asks to change their booking or what a change would cost.';
+        return 'The guest\'s own upcoming bookings, and the exact new price when they want to change one: more or fewer adults or children, other dates, another room category, more rooms, breakfast, an extra bed. Give only what changes; the rest stays as booked. Returns the current total, the new total and the difference. Call it whenever a guest asks to change their booking or what a change would cost. When the guest confirms they want the change, call it again with the same changes and send_to_reception=true: reception then applies it.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -51,6 +52,8 @@ final class QuoteBookingChange extends AssistantTool
             'category_code' => $schema->string()->description('New room category code, if it changes'),
             'rooms' => $schema->integer()->description('New number of rooms, if it changes'),
             'breakfast' => $schema->boolean()->description('Breakfast wanted or not, if it changes'),
+            'extra_bed' => $schema->boolean()->description('An extra bed wanted or not, if it changes'),
+            'send_to_reception' => $schema->boolean()->description('true only after the guest confirmed they want this change: it is sent to reception to apply'),
         ];
     }
 
@@ -96,7 +99,7 @@ final class QuoteBookingChange extends AssistantTool
         }
 
         $rooms = max(1, (int) ($arguments['rooms'] ?? $booking->rooms));
-        $quote = app(QuoteService::class)->quote(new StayRequest(
+        $quote = app(QuoteService::class)->quote($newStay = new StayRequest(
             categoryId: $category->id,
             checkIn: $checkIn,
             checkOut: $checkOut,
@@ -104,7 +107,7 @@ final class QuoteBookingChange extends AssistantTool
             childAges: array_values(array_map(fn ($age): int => max(0, min(17, (int) $age)), (array) ($arguments['children_ages'] ?? array_filter($booking->children_ages, fn ($a): bool => $a !== null)))),
             rooms: $rooms,
             breakfast: (bool) ($arguments['breakfast'] ?? $booking->breakfast),
-            extraBed: $booking->extra_bed,
+            extraBed: (bool) ($arguments['extra_bed'] ?? $booking->extra_bed),
         ));
 
         // Only the guests change: the booking keeps its own room and nights.
@@ -122,8 +125,17 @@ final class QuoteBookingChange extends AssistantTool
         $new = $quote->total;
         $difference = $new->minus($current);
 
+        // 0.39.3: the guest confirmed: a change request for reception (Today page).
+        $sent = false;
+        if ((bool) ($arguments['send_to_reception'] ?? false) && $issues === [] && $booking->status !== BookingStatus::CheckedIn) {
+            $summary = $this->summary($booking, $newStay, $category->localizedName($this->context->locale, $hotel->default_locale));
+            app(BookingChangeRequests::class)->requestChange($booking, $conversation, $newStay, $new, $summary);
+            $sent = true;
+        }
+
         return [
             'found' => true,
+            'sent_to_reception' => $sent,
             'booking' => $this->describe($booking),
             'new_stay' => [
                 'category' => $category->localizedName($this->context->locale, $hotel->default_locale),
@@ -139,9 +151,36 @@ final class QuoteBookingChange extends AssistantTool
             'difference' => $format($difference),
             'more_to_pay' => $difference->isPositive(),
             'special_price' => $booking->price_overridden || $booking->coupon_code !== null,
-            'note' => 'Reception makes the change: tell the guest the new total and the difference, then set handover to true with the reason "change booking '.$booking->reference.': <what changes>, new total <new_total>". Never say the change is done.'
+            'note' => ($sent
+                ? 'The change was sent to reception, who apply it and confirm to the guest. Tell the guest exactly that, in one or two sentences. Never say the change is made, done or possible.'
+                : 'Tell the guest what the change would cost (new total and difference) and that reception applies it after checking; ask if they want you to send it to reception. Never say the change is possible, made or done. If the guest already said yes, call this tool again with send_to_reception=true.')
                 .($booking->price_overridden || $booking->coupon_code !== null ? ' This booking has a special price or a discount code: say reception will confirm the final price.' : ''),
         ];
+    }
+
+    private function summary(Booking $booking, StayRequest $stay, string $category): string
+    {
+        $parts = [];
+        if (! $stay->checkIn->isSameDay($booking->check_in) || ! $stay->checkOut->isSameDay($booking->check_out)) {
+            $parts[] = $stay->checkIn->toDateString().' – '.$stay->checkOut->toDateString();
+        }
+        if ($stay->categoryId !== $booking->room_category_id) {
+            $parts[] = $category;
+        }
+        if ($stay->rooms !== $booking->rooms) {
+            $parts[] = $stay->rooms.' room(s)';
+        }
+        if ($stay->adults !== $booking->adults || count($stay->childAges) !== count(array_filter($booking->children_ages, fn ($a): bool => $a !== null))) {
+            $parts[] = $stay->adults.' adult(s), '.count($stay->childAges).' child(ren)';
+        }
+        if ($stay->breakfast !== $booking->breakfast) {
+            $parts[] = $stay->breakfast ? 'with breakfast' : 'without breakfast';
+        }
+        if ($stay->extraBed !== $booking->extra_bed) {
+            $parts[] = $stay->extraBed ? 'extra bed' : 'no extra bed';
+        }
+
+        return $parts === [] ? 'no change' : implode(', ', $parts);
     }
 
     /**

@@ -95,6 +95,23 @@ final class TodayController extends Controller
             'nextUp' => $request->user() instanceof User ? app(\App\Domains\Workspace\NextUp::class)->for($request->user(), $arrivals, $departures, $pendingRequests) : null,
             'checklists' => app(\App\Domains\Workspace\ShiftChecklists::class)->forDay(),
             'requests' => $pendingRequests === null ? [] : $requests->presentAll($pendingRequests),
+            // 0.39.3: guests' changes and cancellations of their bookings.
+            'changeRequests' => $pendingRequests === null ? [] : app(\App\Domains\BookingRequests\BookingChangeRequests::class)->pending()
+                ->map(fn (\App\Domains\BookingRequests\BookingChangeRequest $r): array => [
+                    'id' => $r->id,
+                    'kind' => $r->kind,
+                    'booking_id' => $r->booking_id,
+                    'reference' => $r->booking->reference,
+                    'guest' => $r->booking->guest?->name(),
+                    'category' => $r->booking->category?->localizedName($locale, $locale),
+                    'check_in' => $r->booking->check_in->toDateString(),
+                    'check_out' => $r->booking->check_out->toDateString(),
+                    'summary' => $r->summary,
+                    'current_total' => \App\Domains\Finance\Money\MoneyFormatter::format(\Brick\Money\Money::ofMinor($r->current_total_minor, $r->currency), $locale),
+                    'new_total' => $r->new_total_minor === null ? null : \App\Domains\Finance\Money\MoneyFormatter::format(\Brick\Money\Money::ofMinor($r->new_total_minor, $r->currency), $locale),
+                    'asked_at' => $r->created_at?->setTimezone($hotel->timezone)->format('Y-m-d H:i'),
+                    'conversation_id' => $r->conversation_id,
+                ])->values(),
             'categories' => $categories->map(fn (RoomCategory $c): array => ['id' => $c->id, 'name' => $c->localizedName($locale, $locale)])->values(),
             'registerCheck' => $check === null ? null : [
                 'matches' => $check->matches,

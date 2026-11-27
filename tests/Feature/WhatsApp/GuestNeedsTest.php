@@ -155,7 +155,7 @@ it('prices a change to the guest’s own booking, and only theirs', function ():
             ->and($context->allowsAmount('50000'))->toBeTrue()
             ->and($context->allowsAmount('55000'))->toBeTrue()
             ->and($context->allowsAmount('5000'))->toBeTrue()
-            ->and($child['note'])->toContain('change booking '.$reference);
+            ->and($child['note'])->toContain('send_to_reception=true')->and($child['sent_to_reception'])->toBeFalse();
 
         // One more adult: the Executive takes 2 adults.
         $adult = json_decode((string) $tool->handle(new Laravel\Ai\Tools\Request(['adults' => 3])), true);
