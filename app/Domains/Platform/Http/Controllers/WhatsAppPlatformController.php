@@ -32,7 +32,11 @@ final class WhatsAppPlatformController extends Controller
                 'verify_token_set' => filled(config('whatsapp.verify_token')),
                 'webhook_url' => route('webhooks.whatsapp.receive'),
             ],
-            'lastWebhookAt' => Cache::get('whatsapp:last_webhook_at'),
+            // 0.39.4: from the stored notifications when the cache was cleared
+            // or lives elsewhere (testers saw "never" while chats worked).
+            'lastWebhookAt' => Cache::get('whatsapp:last_webhook_at') ?? (fn (?string $at): ?string => $at === null ? null : \Carbon\CarbonImmutable::parse($at)->toIso8601String())(
+                app(TenantContext::class)->bypass('Platform WhatsApp page: last notification time', fn () => WebhookEvent::query()->max('received_at'), audited: false)
+            ),
             'failedEvents' => WebhookEvent::query()->whereNull('processed_at')->where('attempts', '>=', 5)->count(),
             'accounts' => $accounts->map(fn (WhatsAppAccount $account): array => [
                 'hotel' => $hotels[$account->hotel_id] ?? '—',

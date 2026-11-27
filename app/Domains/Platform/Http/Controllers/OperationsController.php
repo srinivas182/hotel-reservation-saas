@@ -30,7 +30,23 @@ final class OperationsController extends Controller
     {
         $hotels = Hotel::query()->pluck('name', 'id');
 
+        // 0.39.4: things that are not alerts but must not hide behind
+        // "All checks pass" (testers: no backup and failed jobs were shown
+        // under a green banner).
+        $warnings = [];
+        if (! config('ops.backups_enabled')) {
+            $warnings[] = ['key' => 'backups_not_checked', 'detail' => (string) __('Backups are not checked on this server (OPS_BACKUPS_ENABLED is off).')];
+        }
+        if (BackupRun::lastSuccess('backup') === null) {
+            $warnings[] = ['key' => 'no_backup', 'detail' => (string) __('No successful backup has been recorded yet.')];
+        }
+        $failedJobs = DB::table('failed_jobs')->count();
+        if ($failedJobs > 0) {
+            $warnings[] = ['key' => 'failed_jobs', 'detail' => (string) __(':count failed background job(s): retry or discard them below.', ['count' => $failedJobs])];
+        }
+
         return Inertia::render('platform/operations', [
+            'warnings' => $warnings,
             'problems' => collect($check->problems())->map(fn (string $detail, string $key): array => ['key' => $key, 'detail' => $detail])->values(),
             'incidents' => OpsIncident::query()->latest('opened_at')->limit(20)->get()->map(fn (OpsIncident $i): array => [
                 'id' => $i->id, 'title' => $i->title, 'opened' => $i->opened_at->toDateTimeString(), 'resolved' => $i->resolved_at?->toDateTimeString(),

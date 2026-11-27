@@ -40,13 +40,14 @@ enum SystemRole: string
                 Permission::cases(),
                 fn (Permission $permission): bool => ! in_array($permission, [Permission::RolesManage, Permission::WhatsAppConnect, Permission::BillingManage], true),
             )),
+            // 0.39.4: reception sees rooms, rates and availability but does not
+            // change them, does not see colleagues' details, and does not send
+            // refunds (testers, TC97).
             self::Reception => [
                 Permission::SupportContact,
-                Permission::StaffView,
                 Permission::RoomsView,
                 Permission::RatesView,
                 Permission::AvailabilityView,
-                Permission::AvailabilityManage,
                 Permission::BookingsView,
                 Permission::BookingsCreate,
                 Permission::BookingsManage,

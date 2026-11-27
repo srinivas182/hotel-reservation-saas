@@ -34,6 +34,9 @@ export default function Practice() {
     const [draft, setDraft] = useState('');
     const [result, setResult] = useState<Result | null>(null);
     const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    // 0.39.4: the same limit as a guest message (2,000 characters).
+    const LIMIT = 2000;
 
     const send = (event: FormEvent) => {
         event.preventDefault();
@@ -43,6 +46,17 @@ export default function Practice() {
             return;
         }
 
+        if (text.length > LIMIT) {
+            setError(
+                t('A message can have at most :max characters.', {
+                    max: LIMIT,
+                }),
+            );
+
+            return;
+        }
+
+        setError(null);
         const next: Turn[] = [...turns, { role: 'guest', text }];
         setTurns(next);
         setDraft('');
@@ -64,6 +78,13 @@ export default function Practice() {
                             { role: 'hotel', text: practice.reply },
                         ]);
                     }
+                },
+                onError: (errors) => {
+                    setError(
+                        Object.values(errors)[0] ??
+                            t('The assistant could not answer. Try again.'),
+                    );
+                    setTurns(turns);
                 },
                 onFinish: () => setBusy(false),
             },
@@ -140,6 +161,18 @@ export default function Practice() {
                             {t('Send as guest')}
                         </Button>
                     </form>
+                    <p className="flex justify-between text-xs text-muted-foreground">
+                        <span role="alert" className="text-destructive">
+                            {error}
+                        </span>
+                        <span
+                            className={
+                                draft.length > LIMIT ? 'text-destructive' : ''
+                            }
+                        >
+                            {draft.length} / {LIMIT}
+                        </span>
+                    </p>
                 </section>
 
                 <aside className="flex flex-col gap-3 text-sm">

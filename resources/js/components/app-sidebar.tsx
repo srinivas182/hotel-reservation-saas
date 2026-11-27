@@ -111,6 +111,8 @@ const SIMPLE_ITEMS = new Set([
     'Today',
     'Inbox',
     'Bookings',
+    // 0.39.4: reception checks transfer receipts every day.
+    'Deposits',
     'My alerts',
     'Contact support',
     'What’s new',

@@ -14,7 +14,9 @@ it('shows checks and failed jobs, and retries or discards them', function (): vo
     $ops = User::factory()->platformAdmin(PlatformRole::Operations)->withTwoFactor()->create();
 
     $this->actingAs($ops)->get(route('platform.operations'))->assertOk()
-        ->assertInertia(fn ($page) => $page->has('failed', 2)->where('failed.0.error', 'RuntimeException: boom')->has('problems')->has('heartbeats', 2));
+        ->assertInertia(fn ($page) => $page->has('failed', 2)->where('failed.0.error', 'RuntimeException: boom')->has('problems')->has('heartbeats', 2)
+            // 0.39.4: failed jobs and the missing backup are shown, not hidden behind "All checks pass".
+            ->where('warnings', fn ($warnings): bool => collect($warnings)->pluck('key')->contains('failed_jobs') && collect($warnings)->pluck('key')->contains('no_backup')));
 
     $this->actingAs($ops)->delete(route('platform.operations.forget', 'uuid-a'))->assertRedirect();
     expect(DB::table('failed_jobs')->where('uuid', 'uuid-a')->exists())->toBeFalse()

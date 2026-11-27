@@ -56,7 +56,7 @@ final class DepositController extends Controller
             'month' => $month->format('Y-m'),
             'online' => $this->deposits->online(),
             'canManage' => $manages,
-            'canRefund' => $request->user()?->can('folio.payments') === true,
+            'canRefund' => $request->user()?->can('deposits.refund') === true,
             // 0.36: one account per provider; each can be on at the same time.
             'accounts' => $manages ? MerchantAccount::query()->get()->mapWithKeys(fn (MerchantAccount $account): array => [$account->driver => [
                 'driver' => $account->driver,

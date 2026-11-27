@@ -36,7 +36,7 @@ it('shows availability and prices per category and night', function (): void {
 });
 
 it('stops and reopens sales and holds rooms back over a range', function (): void {
-    $reception = staffMember($this->hotel, SystemRole::Reception);
+    $reception = staffMember($this->hotel, SystemRole::Manager);
 
     asStaffOf($this->hotel, $reception)->post(route('hotel.calendar.stop-sell'), [
         'category_ids' => [$this->exe->id], 'from' => '2026-11-20', 'to' => '2026-11-22', 'stop_sell' => true,

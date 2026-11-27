@@ -42,7 +42,7 @@ it('gives a role in one hotel no rights in another', function (): void {
 it('protects hotel routes by permission', function (): void {
     $hotel = Hotel::factory()->create();
 
-    asStaffOf($hotel, staffMember($hotel, SystemRole::Reception))->get(route('staff.index'))->assertOk();
+    asStaffOf($hotel, staffMember($hotel, SystemRole::Reception))->get(route('staff.index'))->assertForbidden();
     asStaffOf($hotel, staffMember($hotel, SystemRole::Reception))->get(route('staff.roles.index'))->assertForbidden();
     asStaffOf($hotel, staffMember($hotel, SystemRole::RestaurantBar))->get(route('staff.index'))->assertForbidden();
     asStaffOf($hotel, staffMember($hotel, SystemRole::Owner))->get(route('staff.roles.index'))->assertOk();
@@ -64,4 +64,15 @@ it('keeps system roles in sync with the code', function (): void {
 
     expect(systemRole($hotel, SystemRole::Reception)->permissions->pluck('name')->sort()->values()->all())
         ->toBe(array_values(collect(SystemRole::Reception->permissions())->map->value->sort()->values()->all()));
+});
+
+it('gives reception view-only rooms, rates and availability, and no staff page', function (): void {
+    $hotel = Hotel::factory()->create();
+    $reception = staffMember($hotel, SystemRole::Reception);
+
+    asStaffOf($hotel, $reception)->get(route('hotel.rooms'))->assertOk();
+    asStaffOf($hotel, $reception)->get(route('hotel.rates'))->assertOk();
+    asStaffOf($hotel, $reception)->get(route('hotel.calendar'))->assertOk();
+    asStaffOf($hotel, $reception)->get(route('staff.index'))->assertForbidden();
+    asStaffOf($hotel, $reception)->post(route('hotel.calendar.stop-sell'), [])->assertForbidden();
 });
