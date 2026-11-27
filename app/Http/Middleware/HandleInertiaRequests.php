@@ -135,10 +135,12 @@ class HandleInertiaRequests extends Middleware
         }
         if ($requests) {
             $query->selectSub(\App\Domains\BookingRequests\BookingRequest::query()->selectRaw('count(*)')->where('status', \App\Domains\BookingRequests\BookingRequestStatus::Pending->value), 'requests');
+            // 0.39.3: guests' changes and cancellations waiting for reception.
+            $query->selectSub(\App\Domains\BookingRequests\BookingChangeRequest::query()->selectRaw('count(*)')->where('status', 'pending'), 'changes');
         }
         $row = (array) $query->first();
 
-        return ['deposits' => (int) ($row['deposits'] ?? 0) + (int) ($row['refunds'] ?? 0), 'requests' => (int) ($row['requests'] ?? 0)];
+        return ['deposits' => (int) ($row['deposits'] ?? 0) + (int) ($row['refunds'] ?? 0), 'requests' => (int) ($row['requests'] ?? 0) + (int) ($row['changes'] ?? 0)];
     }
 
     /**

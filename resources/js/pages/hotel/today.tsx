@@ -15,6 +15,8 @@ import BookingActionController from '@/actions/App/Domains/Bookings/Http/Control
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
 import TodayController from '@/actions/App/Domains/Bookings/Http/Controllers/TodayController';
 import { checkOut } from '@/components/bookings/check-out';
+import { ChangeRequestCard } from '@/components/booking-requests/change-request-card';
+import type { ChangeRequest } from '@/components/booking-requests/change-request-card';
 import { RequestCard } from '@/components/booking-requests/request-card';
 import type { PendingRequest } from '@/components/booking-requests/request-card';
 import { BookingStatusBadge } from '@/components/bookings/status-badge';
@@ -91,6 +93,7 @@ type Props = {
         override_price: boolean;
     };
     requests: PendingRequest[];
+    changeRequests: ChangeRequest[];
     nextUp: NextUpItem | null;
     checklists: DayChecklist[];
     categories: { id: string; name: string }[];
@@ -273,6 +276,7 @@ export default function Today(props: Props) {
     usePoll(15000, {
         only: [
             'requests',
+            'changeRequests',
             'arrivals',
             'inHouse',
             'departures',
@@ -440,6 +444,22 @@ export default function Today(props: Props) {
                                 canOverridePrice={props.can.override_price}
                             />
                         ))}
+                        {props.changeRequests.length > 0 && (
+                            <>
+                                <h3 className="mt-2 flex items-center gap-2 font-semibold">
+                                    {t(
+                                        'Changes and cancellations asked by guests',
+                                    )}{' '}
+                                    <Badge>{props.changeRequests.length}</Badge>
+                                </h3>
+                                {props.changeRequests.map((change) => (
+                                    <ChangeRequestCard
+                                        key={change.id}
+                                        request={change}
+                                    />
+                                ))}
+                            </>
+                        )}
                     </section>
                 )}
 

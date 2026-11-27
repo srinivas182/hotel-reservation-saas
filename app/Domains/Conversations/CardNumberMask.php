@@ -18,12 +18,25 @@ final class CardNumberMask
             return $text;
         }
 
+        $found = false;
+
         // 13 to 19 digits, possibly in groups separated by spaces, dots or dashes.
-        $text = (string) preg_replace_callback('/(?<!\d)(?:\d[ .\-]?){12,18}\d(?!\d)/u', function (array $m): string {
+        $text = (string) preg_replace_callback('/(?<!\d)(?:\d[ .\-]?){12,18}\d(?!\d)/u', function (array $m) use (&$found): string {
             $digits = (string) preg_replace('/\D/', '', $m[0]);
 
-            return self::luhn($digits) ? '•••• •••• •••• '.substr($digits, -4) : $m[0];
+            if (! self::luhn($digits)) {
+                return $m[0];
+            }
+            $found = true;
+
+            return '•••• •••• •••• '.substr($digits, -4);
         }, $text);
+
+        // 0.39.3: next to a card number, a plain "code" or "the code is 123"
+        // is the security code too (a spoken voice note, TC124).
+        if ($found) {
+            $text = (string) preg_replace('/\b(code|pin)\b((?:\s+\w+){0,2}?\s*[:=#\-]?\s*)\d{3,4}\b/iu', '$1$2•••', $text);
+        }
 
         // The security code after its usual names: CVV, CVC, CID, cryptogramme, code de sécurité.
         $text = (string) preg_replace('/\b(cvv2?|cvc2?|cid|csc|crypto(?:gramme)?|code\s+de\s+s[ée]curit[ée]|security\s+code)\b(\s*[:=#\-]?\s*)\d{3,4}\b/iu', '$1$2•••', $text);

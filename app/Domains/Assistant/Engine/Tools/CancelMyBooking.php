@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assistant\Engine\Tools;
 
 use App\Domains\Ai\Models\HotelAssistantSettings;
+use App\Domains\BookingRequests\BookingChangeRequests;
 use App\Domains\Bookings\BookingLifecycle;
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Exceptions\BookingActionNotAllowed;
@@ -86,10 +87,16 @@ final class CancelMyBooking extends AssistantTool
             : DepositPolicy::refundable($booking, $settings, $hotel);
 
         if (! $allowed) {
+            // 0.39.3: a cancellation request reception sees on the Today page.
+            if ((bool) ($arguments['confirm'] ?? false)) {
+                app(BookingChangeRequests::class)->requestCancellation($booking, $conversation, 'after the free cancellation time');
+            }
+
             return [
                 'allowed' => false,
                 'reference' => $booking->reference,
-                'next_step' => 'The free cancellation time for this booking is over, so the guest cannot cancel it here. Tell them reception will contact them about the cancellation conditions, and set handover to true with the reason "cancellation: '.$booking->reference.'". Never say it is cancelled.',
+                'sent_to_reception' => (bool) ($arguments['confirm'] ?? false),
+                'next_step' => 'The free cancellation time for this booking is over, so the guest cannot cancel it alone: reception decides and confirms. If the guest has not yet confirmed they want to cancel, ask; when they say yes, call cancel_booking again with confirm=true and it is sent to reception. Set handover to true with the reason "cancellation: '.$booking->reference.'". Never say it is cancelled.',
             ];
         }
 

@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### WhatsApp assistant: second test round, facts and staff visibility (0.39.3)
+
+#### Added
+
+- **Guests' changes and cancellations on Today** (TC69, TC94, TC120).
+    - When the guest confirms a change, `quote_booking_change` (`send_to_reception=true`) creates a change request. A late cancellation does the same through `cancel_booking`.
+    - Reception sees it on the Today page under "Changes and cancellations asked by guests", with the booking and the old and new totals.
+    - **Apply** changes or cancels the booking and the guest is told on WhatsApp. **Decline** needs a reason, which the guest receives.
+    - The requests count in the red badge. A newer request for the same booking replaces the older one.
+- `quote_booking_change` also quotes an extra bed (TC91).
+
+#### Fixed
+
+- **The assistant never says a change is possible, made or done.** It gives what the change would cost and says reception applies it (TC13, TC120). It never promises an extra not in the hotel information (TC91).
+- **Capacity and prices always come from the quote with the real guests and children's ages** (TC108). For several rooms, it says whether an amount is per room or for all of them (TC21). Only the hotel's own category names are used (TC31). "Another room" requests only that room (TC101).
+- **Emergencies always reach staff.** A message about chest pain, breathing, fire, an ambulance or similar flags the conversation for staff, whatever the assistant concluded (TC75).
+- **Events.** The assistant mentions an events team only when the hotel has events (TC145). A page closed by the plan now says so, instead of blaming the person's role.
+- **Voice notes:**
+    - a silent note no longer produces an invented transcript; the guest is asked to send it again (TC125);
+    - a spoken security code next to a card number is masked (TC124);
+    - an audio file sent as a document is heard like a voice note (TC141).
+- **No hand-over without a reason.** A reply with no confidence or language code is not passed to staff (TC129). A question the assistant cannot help with (a flight) is not a request for a person (TC24).
+
 ### WhatsApp assistant: second test round, critical fixes (0.39.2)
 
 #### Fixed

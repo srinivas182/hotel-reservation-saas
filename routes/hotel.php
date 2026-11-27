@@ -15,6 +15,7 @@ use App\Domains\Availability\Http\Controllers\CalendarController;
 use App\Domains\Availability\Http\Controllers\InventoryController;
 use App\Domains\Billing\Http\Controllers\BillingController;
 use App\Domains\Billing\Http\Controllers\HotelPaymentController;
+use App\Domains\BookingRequests\Http\Controllers\BookingChangeRequestController;
 use App\Domains\BookingRequests\Http\Controllers\BookingRequestController;
 use App\Domains\Bookings\Http\Controllers\BookingActionController;
 use App\Domains\Bookings\Http\Controllers\BookingController;
@@ -188,6 +189,9 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
     Route::middleware(['can:booking_requests.decide', 'throttle:60,1'])->group(function (): void {
         Route::post('hotel/booking-requests/{bookingRequest}/approve', [BookingRequestController::class, 'approve'])->name('hotel.booking-requests.approve');
         Route::post('hotel/booking-requests/{bookingRequest}/decline', [BookingRequestController::class, 'decline'])->name('hotel.booking-requests.decline');
+        // 0.39.3: a guest's change or cancellation of a booking, asked on WhatsApp.
+        Route::post('hotel/change-requests/{changeRequest}/apply', [BookingChangeRequestController::class, 'apply'])->name('hotel.change-requests.apply');
+        Route::post('hotel/change-requests/{changeRequest}/decline', [BookingChangeRequestController::class, 'decline'])->name('hotel.change-requests.decline');
     });
 
     Route::get('hotel/my-alerts', [AlertSettingsController::class, 'show'])->name('hotel.my-alerts');

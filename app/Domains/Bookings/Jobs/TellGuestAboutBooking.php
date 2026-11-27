@@ -37,6 +37,9 @@ final class TellGuestAboutBooking implements RequiresHotelContext, ShouldQueue
 
     public const CANCELLED = 'cancelled';
 
+    /** 0.39.3: reception declined the guest's change or cancellation request. */
+    public const DECLINED = 'declined';
+
     /** Retry policy (S16): attempts before the job is marked failed. */
     public int $tries = 3;
 
@@ -46,7 +49,12 @@ final class TellGuestAboutBooking implements RequiresHotelContext, ShouldQueue
     /** Seconds before a stuck attempt is stopped. */
     public int $timeout = 60;
 
-    public function __construct(public readonly string $bookingId, public readonly string $kind) {}
+    public function __construct(
+        public readonly string $bookingId,
+        public readonly string $kind,
+        public readonly ?string $requestKind = null,
+        public readonly ?string $reason = null,
+    ) {}
 
     /**
      * The guest's WhatsApp conversation: the one the booking request came
@@ -97,9 +105,13 @@ final class TellGuestAboutBooking implements RequiresHotelContext, ShouldQueue
             '{hotel}' => $hotel->name,
         ];
 
-        $text = strtr($this->kind === self::CANCELLED
-            ? (string) __('Hello {name}, your booking {reference} at {hotel} ({check_in} to {check_out}) is cancelled. If you have already paid, reception will contact you about the refund.', locale: $locale)
-            : (string) __('Hello {name}, your booking {reference} at {hotel} has been updated: {room} × {rooms}, from {check_in} to {check_out}, {guests} guest(s). New total: {total}. See you soon!', locale: $locale), $v);
+        $v['{reason}'] = (string) $this->reason;
+        $text = strtr(match (true) {
+            $this->kind === self::CANCELLED => (string) __('Hello {name}, your booking {reference} at {hotel} ({check_in} to {check_out}) is cancelled. If you have already paid, reception will contact you about the refund.', locale: $locale),
+            $this->kind === self::DECLINED && $this->requestKind === 'cancellation' => (string) __('Hello {name}, reception could not cancel your booking {reference} as asked: {reason}. Your booking stays as it is ({check_in} to {check_out}).', locale: $locale),
+            $this->kind === self::DECLINED => (string) __('Hello {name}, reception could not make the change you asked for to booking {reference}: {reason}. Your booking stays as it is: {room}, {check_in} to {check_out}, total {total}.', locale: $locale),
+            default => (string) __('Hello {name}, your booking {reference} at {hotel} has been updated: {room} × {rooms}, from {check_in} to {check_out}, {guests} guest(s). New total: {total}. See you soon!', locale: $locale),
+        }, $v);
 
         try {
             if ($conversation->windowOpen()) {
@@ -140,10 +152,14 @@ final class TellGuestAboutBooking implements RequiresHotelContext, ShouldQueue
         // flag is done once reception has made the change and told the guest.
         $reason = (string) $conversation->handover_reason;
         if ($conversation->needs_attention && str_contains($reason, $booking->reference)
-            && (str_contains($reason, 'change booking') || str_contains($reason, 'cancellation'))) {
+            && (str_contains($reason, 'change booking') || str_contains($reason, 'cancellation') || str_contains($reason, 'change'))) {
             $conversation->forceFill(['needs_attention' => false, 'handover_reason' => null])->save();
         }
 
-        Audit::record('bookings.guest_told', $this->kind === self::CANCELLED ? 'The guest was told about the cancellation on WhatsApp' : 'The guest was sent the new booking details on WhatsApp', subject: $booking, properties: ['kind' => $this->kind, 'how' => $how]);
+        Audit::record('bookings.guest_told', match ($this->kind) {
+            self::CANCELLED => 'The guest was told about the cancellation on WhatsApp',
+            self::DECLINED => 'The guest was told reception declined the request on WhatsApp',
+            default => 'The guest was sent the new booking details on WhatsApp',
+        }, subject: $booking, properties: ['kind' => $this->kind, 'how' => $how]);
     }
 }

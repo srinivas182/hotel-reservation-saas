@@ -254,6 +254,12 @@ final class MessagesHandler implements WebhookHandler
         $type = (string) ($data['type'] ?? 'unknown');
         $part = is_array($data[$type] ?? null) ? $data[$type] : [];
 
+        // 0.39.3: an audio file sent as a document (an .m4a from WhatsApp
+        // Desktop) is heard like a voice note (TC141).
+        if ($type === 'document' && str_starts_with(strtolower((string) ($part['mime_type'] ?? '')), 'audio/')) {
+            $type = 'audio';
+        }
+
         return match (true) {
             $type === 'text' => ['text', (string) ($part['body'] ?? ''), null],
             in_array($type, self::MEDIA_TYPES, true) => [$type, isset($part['caption']) ? (string) $part['caption'] : null, [

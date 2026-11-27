@@ -10,6 +10,7 @@ use App\Domains\Assistant\Engine\AssistantEngine;
 use App\Domains\Assistant\Engine\AssistantTurn;
 use App\Domains\Conversations\ConversationHandover;
 use App\Domains\Conversations\ConversationMode;
+use App\Domains\Conversations\EmergencyWords;
 use App\Domains\Conversations\Exceptions\CannotSend;
 use App\Domains\Conversations\MessageSender;
 use App\Domains\Conversations\MessageSource;
@@ -210,6 +211,15 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
             $this->markAnswered($conversation, $latest);
 
             return;
+        }
+
+        // 0.39.3: an emergency is always flagged for staff (and alerts them),
+        // whatever the assistant concluded. The assistant's reply still goes out.
+        if (! str_starts_with((string) $result->handoverReason, 'emergency') && $result->intent !== 'emergency') {
+            $words = implode(' ', array_map(fn (Message $m): string => (string) ($m->type === 'audio' ? $m->transcript : $m->body), $unanswered));
+            if (EmergencyWords::matches($words)) {
+                $handover->flag($conversation, 'emergency: '.mb_substr(trim($words), 0, 180));
+            }
         }
 
         if ($result->handover) {
@@ -514,6 +524,8 @@ final class ReplyToGuest implements RequiresHotelContext, ShouldQueue
         // A language the hotel does not use: the hotel's own message, in its language.
         $text = $message !== null && ! str_starts_with($reason, 'language:') ? $message : match (true) {
             $takeOver || str_starts_with($reason, 'language:') => app(AssistantEngine::class)->handoverMessage(HotelAssistantSettings::current(), $locale),
+            // 0.39.3: ask the guest to try again; staff can still listen to it.
+            $reason === 'voice_note_not_understood' => __('Sorry, I could not hear your voice note. Could you send it again, or write your question?', locale: $locale),
             default => __('Let me check this point with our team: they will get back to you. Meanwhile I can still help you with prices, availability and your booking.', locale: $locale),
         };
 

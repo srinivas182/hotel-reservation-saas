@@ -28,3 +28,8 @@ it('masks the security code and the expiry date', function (): void {
 it('leaves empty text alone', function (): void {
     expect(CardNumberMask::mask(null))->toBeNull()->and(CardNumberMask::mask(''))->toBe('');
 });
+
+it('masks a plain "code" only when a card number is in the same text', function (): void {
+    expect(CardNumberMask::mask('card 4242 4242 4242 4242, the code is 123'))->toBe('card •••• •••• •••• 4242, the code is •••')
+        ->and(CardNumberMask::mask('The door code is 123'))->toBe('The door code is 123');
+});
