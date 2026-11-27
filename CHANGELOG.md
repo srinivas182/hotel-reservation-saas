@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Second test round: access, platform pages and small fixes (0.39.4)
+
+#### Changed
+
+- **What reception can do** (TC97):
+    - Rooms, rates and availability are view only; stopping sales and holding rooms stay with managers.
+    - The Staff page (colleagues' emails, invitations) is no longer open to reception.
+    - Deposits is in reception's simple-mode menu.
+    - Sending money back (**Refund now**, **Refunded**) needs the new "Refund guests" permission, which only owners and managers have. Reception still sees the refunds waiting.
+- **Operations page.** It no longer says "All checks pass" over a missing backup or failed background jobs. These are shown as warnings.
+
+#### Fixed
+
+- The platform WhatsApp page shows when the last notification arrived, from the stored notifications, instead of "never".
+- Arrival card: each language box shows its example in that language (Neha 11).
+- Anonymising a guest closes their old conversations, so a new message from them opens the new chat (Neha 13).
+- Practice screen: a 2,000-character counter and a clear message when a text is too long or the assistant cannot answer (TC136).
+- A price question without dates gets the nightly prices before the bot asks for dates (TC29).
+
 ### WhatsApp assistant: second test round, facts and staff visibility (0.39.3)
 
 #### Added

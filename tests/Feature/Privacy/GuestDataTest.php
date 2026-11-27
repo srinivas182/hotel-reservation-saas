@@ -52,7 +52,8 @@ it('anonymises a guest but keeps bookings and amounts', function (): void {
             ->and(Message::query()->sole()->body)->toBe('[removed]')
             ->and(WhatsAppContact::query()->sole()->wa_id)->toStartWith('removed-')
             ->and(StayPhone::query()->count())->toBe(0)
-            ->and(Booking::query()->sole()->total_minor)->toBe($total);
+            ->and(Booking::query()->sole()->total_minor)->toBe($total)
+            ->and(Conversation::query()->where('needs_attention', true)->exists())->toBeFalse();
     });
 });
 

@@ -39,6 +39,12 @@ final class ArrivalSettingsController extends Controller
 
         return Inertia::render('hotel/arrival-settings', [
             'locales' => $place->enabled_locales ?? [$hotel->default_locale],
+            // 0.39.4: each language box shows its example in that language.
+            'examples' => collect($place->enabled_locales ?? [$hotel->default_locale])->mapWithKeys(fn (string $l): array => [$l => [
+                'directions' => __('Opposite the Grande Mosquée, blue gate, 100 m after the pharmacy.', locale: $l),
+                'tip' => __('From the bus station, a moto-taxi costs about 500 F CFA: say “First Class Lodge, quartier Résidentiel”.', locale: $l),
+                'night' => __('Ring the night bell at the gate; the guard has your key.', locale: $l),
+            ]])->all(),
             'reminder' => $reminder,
             'hasPin' => $place->latitude !== null && $place->longitude !== null,
             'mapUrl' => $place->map_url,

@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { askConfirm } from '@/lib/ask';
 
 type Props = {
+    warnings?: { key: string; detail: string }[];
     problems: { key: string; detail: string }[];
     incidents: {
         id: number;
@@ -67,6 +68,7 @@ const problemTitle = (key: string) =>
     })[key] ?? key;
 
 export default function Operations({
+    warnings = [],
     problems,
     incidents,
     heartbeats,
@@ -88,7 +90,20 @@ export default function Operations({
                     )}
                 />
 
-                {problems.length === 0 ? (
+                {warnings.length > 0 && (
+                    <ul
+                        role="status"
+                        className="flex flex-col gap-1 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+                    >
+                        {warnings.map((w) => (
+                            <li key={w.key} className="flex items-center gap-2">
+                                <TriangleAlert className="size-4 shrink-0" />
+                                {w.detail}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {problems.length === 0 && warnings.length === 0 ? (
                     <div
                         role="status"
                         className="flex items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100"
@@ -96,7 +111,7 @@ export default function Operations({
                         <CircleCheck className="size-4 shrink-0" />
                         {t('All checks pass.')}
                     </div>
-                ) : (
+                ) : problems.length === 0 ? null : (
                     <section
                         role="alert"
                         className="overflow-hidden rounded-xl border border-destructive/40 bg-card"

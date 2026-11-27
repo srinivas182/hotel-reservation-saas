@@ -66,6 +66,13 @@ final class GuestData
                 $contact->forceFill(['wa_id' => 'removed-'.Str::lower(Str::random(12)), 'profile_name' => null])->save();
             }
 
+            // 0.39.4: the old conversations are closed and no longer waiting:
+            // if the guest writes again, a new conversation starts, and
+            // dashboards link to that one (testers: "View message" led nowhere).
+            Conversation::query()->whereIn('id', $conversations)->update([
+                'needs_attention' => false, 'handover_reason' => null, 'unread_count' => 0, 'waiting_since' => null, 'status' => 'closed',
+            ]);
+
             $bookings = Booking::query()->where('guest_id', $guest->id)->pluck('id');
             StayPhone::query()->whereIn('booking_id', $bookings)->delete();
 

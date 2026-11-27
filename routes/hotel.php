@@ -242,9 +242,12 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
         Route::put('hotel/deposits/settings', [DepositController::class, 'saveSettings'])->name('hotel.deposits.settings');
         Route::put('hotel/deposits/bank', [DepositController::class, 'saveBank'])->name('hotel.deposits.bank');
     });
-    Route::middleware(['can:folio.payments', 'throttle:60,1'])->group(function (): void {
+    // 0.39.4: money out is for those allowed to refund (owner, manager).
+    Route::middleware(['can:deposits.refund', 'throttle:60,1'])->group(function (): void {
         Route::post('hotel/deposits/{link}/refunded', [DepositController::class, 'refunded'])->name('hotel.deposits.refunded');
         Route::post('hotel/deposits/{link}/refund-online', [DepositController::class, 'refundOnline'])->middleware('throttle:10,1')->name('hotel.deposits.refund-online');
+    });
+    Route::middleware(['can:folio.payments', 'throttle:60,1'])->group(function (): void {
         // 0.36: bank transfers to check.
         Route::post('hotel/deposits/transfers/{attempt}/approve', [DepositController::class, 'approveTransfer'])->name('hotel.deposits.transfers.approve');
         Route::post('hotel/deposits/transfers/{attempt}/reject', [DepositController::class, 'rejectTransfer'])->name('hotel.deposits.transfers.reject');

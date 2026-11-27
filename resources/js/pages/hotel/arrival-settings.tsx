@@ -11,6 +11,10 @@ type Extra = { enabled: boolean; price_minor: number | null; label: string };
 
 type Props = {
     locales: string[];
+    examples?: Record<
+        string,
+        { directions: string; tip: string; night: string }
+    >;
     reminder: { enabled: boolean; time: string };
     hasPin: boolean;
     mapUrl: string | null;
@@ -41,7 +45,7 @@ function Localized({
     locales: string[];
     value: Texts;
     onChange: (value: Texts) => void;
-    placeholder?: string;
+    placeholder?: string | Record<string, string>;
     error?: string;
 }) {
     return (
@@ -58,7 +62,11 @@ function Localized({
                     <textarea
                         className="min-h-16 rounded-md border bg-transparent px-3 py-2"
                         maxLength={400}
-                        placeholder={placeholder}
+                        placeholder={
+                            typeof placeholder === 'string'
+                                ? placeholder
+                                : placeholder?.[locale]
+                        }
                         value={value[locale] ?? ''}
                         onChange={(e) =>
                             onChange({ ...value, [locale]: e.target.value })
@@ -72,6 +80,13 @@ function Localized({
 }
 
 export default function ArrivalSettings(props: Props) {
+    const examples = (key: 'directions' | 'tip' | 'night') =>
+        Object.fromEntries(
+            Object.entries(props.examples ?? {}).map(([locale, texts]) => [
+                locale,
+                texts[key],
+            ]),
+        );
     const form = useForm({
         arrival_directions: { ...props.settings.arrival_directions } as Texts,
         arrival_tip: { ...props.settings.arrival_tip } as Texts,
@@ -138,9 +153,7 @@ export default function ArrivalSettings(props: Props) {
                         hint={t(
                             'Landmarks, as you would tell a visitor. Sent under the map pin.',
                         )}
-                        placeholder={t(
-                            'Opposite the Grande Mosquée, blue gate, 100 m after the pharmacy.',
-                        )}
+                        placeholder={examples('directions')}
                         locales={props.locales}
                         value={form.data.arrival_directions}
                         onChange={(v) => form.setData('arrival_directions', v)}
@@ -151,9 +164,7 @@ export default function ArrivalSettings(props: Props) {
                         hint={t(
                             'Optional: how to come, and what it usually costs.',
                         )}
-                        placeholder={t(
-                            'From the bus station, a moto-taxi costs about 500 F CFA: say “First Class Lodge, quartier Résidentiel”.',
-                        )}
+                        placeholder={examples('tip')}
                         locales={props.locales}
                         value={form.data.arrival_tip}
                         onChange={(v) => form.setData('arrival_tip', v)}
@@ -188,9 +199,7 @@ export default function ArrivalSettings(props: Props) {
                             hint={t(
                                 'Sent to guests who choose an arrival time after reception closes.',
                             )}
-                            placeholder={t(
-                                'Ring the night bell at the gate; the guard has your key.',
-                            )}
+                            placeholder={examples('night')}
                             locales={props.locales}
                             value={form.data.night_arrival}
                             onChange={(v) => form.setData('night_arrival', v)}

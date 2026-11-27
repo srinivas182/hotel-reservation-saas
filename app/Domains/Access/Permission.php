@@ -46,6 +46,8 @@ enum Permission: string
     case FolioView = 'folio.view';
     case FolioCharge = 'folio.charge';
     case FolioPayments = 'folio.payments';
+    /** 0.39.4: sending money back to a guest (owner and manager by default). */
+    case DepositsRefund = 'deposits.refund';
     case EventsView = 'events.view';
     case EventsManage = 'events.manage';
     case EventsDiscount = 'events.discount';
@@ -96,6 +98,7 @@ enum Permission: string
             self::FolioView => __('View room bills'),
             self::FolioCharge => __('Add charges and corrections to room bills'),
             self::FolioPayments => __('Record payments on room bills'),
+            self::DepositsRefund => __('Refund guests (send money back)'),
             self::EventsView => __('View events'),
             self::EventsManage => __('Handle event enquiries, quotes and options'),
             self::EventsDiscount => __('Give discounts on event quotes'),

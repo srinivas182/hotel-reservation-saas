@@ -774,3 +774,19 @@ it('asks Stripe for a refund of the payment intent, once', function (): void {
         && $request['payment_intent'] === 'pi_abc' && (int) $request['amount'] === 25000
         && $request->header('Idempotency-Key')[0] === 'deposit-refund-1');
 });
+
+it('lets reception see refunds to make but only owners and managers send them', function (): void {
+    $booking = depositBooking($this);
+    depositPayByLink($this);
+    ($this->in)(fn () => app(BookingLifecycle::class)->cancel($booking->refresh(), 'Plans changed', $this->owner));
+    $link = depositLink($this);
+
+    asStaffOf($this->hotel, $this->reception)->get(route('hotel.deposits'))->assertOk()
+        ->assertInertia(fn ($page) => $page->has('refunds', 1)->where('canRefund', false));
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.deposits.refunded', $link), ['note' => 'x'])->assertForbidden();
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.deposits.refund-online', $link))->assertForbidden();
+
+    $manager = staffMember($this->hotel, SystemRole::Manager);
+    asStaffOf($this->hotel, $manager)->post(route('hotel.deposits.refunded', $link), ['note' => 'Renvoyé par Wave'])->assertRedirect();
+    expect(depositLink($this)->refund_status)->toBe('done');
+});

@@ -89,7 +89,7 @@ it('converts a hold into booked rooms and rebuilds counts that drift', function 
 });
 
 it('places manual holds from the calendar with clear errors and an audit entry', function (): void {
-    $reception = staffMember($this->hotel, SystemRole::Reception);
+    $reception = staffMember($this->hotel, SystemRole::Manager);
     $payload = ['room_category_id' => $this->exe->id, 'check_in' => '2026-11-12', 'check_out' => '2026-11-13', 'rooms' => 2, 'note' => 'Group call'];
 
     asStaffOf($this->hotel, $reception)->post(route('hotel.holds.store'), $payload)->assertSessionHasNoErrors();
