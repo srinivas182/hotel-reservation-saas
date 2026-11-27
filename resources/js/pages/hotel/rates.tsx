@@ -73,7 +73,11 @@ type Props = {
     currency: string;
     categories: Category[];
     overrides: Override[];
-    settings: { child_age_bands: Band[]; hold_minutes: number };
+    settings: {
+        child_age_bands: Band[];
+        hold_minutes: number;
+        early_departure_charge: string;
+    };
     breakfastModes: Option[];
     childCharges: Option[];
     quote?: QuoteResult;
@@ -452,6 +456,7 @@ function SettingsForm({ props }: { props: Props }) {
     const form = useForm({
         child_age_bands: props.settings.child_age_bands,
         hold_minutes: props.settings.hold_minutes,
+        early_departure_charge: props.settings.early_departure_charge,
     });
     const errors = form.errors as Record<string, string | undefined>;
     const bands = form.data.child_age_bands;
@@ -604,6 +609,38 @@ function SettingsForm({ props }: { props: Props }) {
                             }
                         />
                         <InputError message={errors.hold_minutes} />
+                    </div>
+                </Section>
+                <Section
+                    aside
+                    title={t('Leaving early')}
+                    description={t(
+                        'When a guest who is checked in leaves before the booked departure, the nights not stayed come off the bill. The first night always counts.',
+                    )}
+                >
+                    <div className="grid max-w-sm gap-1">
+                        <Label htmlFor="early_departure_charge">
+                            {t('Nights not stayed')}
+                        </Label>
+                        <select
+                            id="early_departure_charge"
+                            className={`${selectClass} rounded-md border border-input bg-transparent px-3 text-sm`}
+                            value={form.data.early_departure_charge}
+                            onChange={(e) =>
+                                form.setData(
+                                    'early_departure_charge',
+                                    e.target.value,
+                                )
+                            }
+                        >
+                            <option value="none">
+                                {t('Not charged (only the nights stayed)')}
+                            </option>
+                            <option value="one_night">
+                                {t('One night is still charged')}
+                            </option>
+                        </select>
+                        <InputError message={errors.early_departure_charge} />
                     </div>
                 </Section>
                 {props.canManage && (

@@ -404,6 +404,7 @@ Route::middleware(['auth', 'verified', 'hotel', 'reduced'])->group(function (): 
         Route::put('hotel/bookings/{booking}/rooms/{position}', [BookingActionController::class, 'assignRoom'])->whereNumber('position')->name('hotel.bookings.rooms.assign');
         Route::post('hotel/bookings/{booking}/check-in', [BookingActionController::class, 'checkIn'])->name('hotel.bookings.check-in');
         Route::post('hotel/bookings/{booking}/check-out', [BookingActionController::class, 'checkOut'])->name('hotel.bookings.check-out');
+        Route::put('hotel/bookings/{booking}/departure', [BookingActionController::class, 'departure'])->middleware('throttle:60,1')->name('hotel.bookings.departure');
     });
 
     Route::get('hotel/taxes', [TaxRateController::class, 'index'])->middleware('can:taxes.view')->name('hotel.taxes.index');

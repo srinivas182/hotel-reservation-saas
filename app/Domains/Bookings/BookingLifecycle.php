@@ -39,6 +39,7 @@ final class BookingLifecycle
         private readonly HoldService $holds,
         private readonly QuoteService $quotes,
         private readonly RoomAssignments $assignments,
+        private readonly StayChanges $stayChanges,
     ) {}
 
     public function confirm(Booking $booking, ?User $by = null): void
@@ -256,8 +257,9 @@ final class BookingLifecycle
 
     /**
      * Check out. Before the departure date this is an early departure: the
-     * stay ends today (the first night always counts) and the unused nights
-     * go back on sale.
+     * stay ends today (the first night always counts), the unused nights go
+     * back on sale and, since 0.40.0, come off the bill (except the night the
+     * hotel still charges, Rates page).
      */
     public function checkOut(Booking $booking, ?User $by = null): void
     {
@@ -266,11 +268,15 @@ final class BookingLifecycle
         $today = $this->today();
         $newCheckOut = $today->max($booking->check_in->addDay());
         $originalCheckOut = $booking->check_out;
+        $oldTotal = $booking->total_minor;
         $early = $newCheckOut->lt($originalCheckOut);
 
         DB::transaction(function () use ($booking, $by, $newCheckOut, $originalCheckOut, $early): void {
             if ($early) {
+                ['total_minor' => $total, 'fee_nights' => $feeNights] = $this->stayChanges->shortenedTotal($booking, $newCheckOut);
+                $snapshot = $this->stayChanges->shortenedSnapshot($booking, $newCheckOut, $total, $feeNights);
                 $this->holds->unbook($booking->room_category_id, $newCheckOut, $originalCheckOut, $booking->rooms);
+                $booking->forceFill(['total_minor' => $total, 'price_snapshot' => $snapshot]);
             }
 
             $booking->forceFill([
@@ -284,7 +290,26 @@ final class BookingLifecycle
         $this->audit($early ? 'bookings.early_departure' : 'bookings.checked_out', $early ? 'Checked out early' : 'Checked out', $booking, $by, $early ? [
             'planned_check_out' => $originalCheckOut->toDateString(),
             'nights_freed' => (int) $newCheckOut->diffInDays($originalCheckOut),
+            'old_total_minor' => $oldTotal,
+            'new_total_minor' => $booking->total_minor,
         ] : []);
+    }
+
+    /**
+     * 0.40.0: the stay's total once checked out now (lower after an early
+     * departure), so the bill's balance can be checked before checking out.
+     */
+    public function totalAfterCheckOut(Booking $booking): int
+    {
+        if ($booking->status !== BookingStatus::CheckedIn) {
+            return $booking->total_minor;
+        }
+
+        $newCheckOut = $this->today()->max($booking->check_in->addDay());
+
+        return $newCheckOut->lt($booking->check_out)
+            ? $this->stayChanges->shortenedTotal($booking, $newCheckOut)['total_minor']
+            : $booking->total_minor;
     }
 
     /**

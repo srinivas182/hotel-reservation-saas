@@ -78,6 +78,7 @@ final class RatesController extends Controller
             'settings' => [
                 'child_age_bands' => $settings->child_age_bands ?? [],
                 'hold_minutes' => $settings->hold_minutes,
+                'early_departure_charge' => $settings->early_departure_charge ?? 'none',
             ],
             'breakfastModes' => collect(BreakfastMode::cases())->map(fn (BreakfastMode $mode): array => ['value' => $mode->value, 'label' => $mode->label()])->values(),
             'childCharges' => collect(ChildCharge::cases())->map(fn (ChildCharge $charge): array => ['value' => $charge->value, 'label' => $charge->label()])->values(),

@@ -295,6 +295,22 @@ final class BookingController extends Controller
                 ])->values(),
             'today' => CarbonImmutable::now($hotel->timezone)->toDateString(),
             'quote' => Inertia::optional(fn (): array => $quotes->fromRequest($request)),
+            // 0.40.0: what a new departure date would mean for a checked-in guest.
+            'departure' => Inertia::optional(function () use ($request, $booking, $money): ?array {
+                $raw = (string) $request->query('new_check_out', '');
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw) !== 1 || ! checkdate((int) substr($raw, 5, 2), (int) substr($raw, 8, 2), (int) substr($raw, 0, 4))) {
+                    return null;
+                }
+                $date = CarbonImmutable::parse($raw)->startOfDay();
+                $preview = app(\App\Domains\Bookings\StayChanges::class)->preview($booking, $date);
+
+                return [
+                    ...$preview,
+                    'current_total' => $money($preview['current_total_minor']),
+                    'new_total' => $money($preview['new_total_minor']),
+                    'difference' => $money(abs($preview['difference_minor'])),
+                ];
+            }),
         ]);
     }
 
@@ -345,6 +361,7 @@ final class BookingController extends Controller
             'check_in' => $frontdesk && $status === BookingStatus::Confirmed && $booking->check_in->lte($today) && $booking->check_out->gt($today),
             'check_out' => $frontdesk && $status === BookingStatus::CheckedIn,
             'early_departure' => $status === BookingStatus::CheckedIn && $booking->check_out->gt($today->max($booking->check_in->addDay())),
+            'change_departure' => $frontdesk && $status === BookingStatus::CheckedIn,
             'override_price' => $user?->can('bookings.override_price') === true,
         ];
     }

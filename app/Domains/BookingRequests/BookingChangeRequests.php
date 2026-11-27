@@ -6,8 +6,10 @@ namespace App\Domains\BookingRequests;
 
 use App\Domains\Audit\Audit;
 use App\Domains\Bookings\BookingLifecycle;
+use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Jobs\TellGuestAboutBooking;
 use App\Domains\Bookings\Models\Booking;
+use App\Domains\Bookings\StayChanges;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Rates\Quote\StayRequest;
 use App\Models\User;
@@ -24,7 +26,10 @@ use InvalidArgumentException;
  */
 final class BookingChangeRequests
 {
-    public function __construct(private readonly BookingLifecycle $lifecycle) {}
+    public function __construct(
+        private readonly BookingLifecycle $lifecycle,
+        private readonly StayChanges $stays,
+    ) {}
 
     public function requestChange(Booking $booking, ?Conversation $conversation, StayRequest $stay, Money $newTotal, string $summary): BookingChangeRequest
     {
@@ -67,7 +72,10 @@ final class BookingChangeRequests
                 if ($stay === null) {
                     throw new InvalidArgumentException('A change request without a stay.');
                 }
-                $this->lifecycle->modify($booking, $stay, $by);
+                // 0.40.0: a guest already in the hotel only changes the departure.
+                $booking->status === BookingStatus::CheckedIn
+                    ? $this->stays->change($booking, $stay->checkOut, $by)
+                    : $this->lifecycle->modify($booking, $stay, $by);
             }
 
             $request->forceFill(['status' => 'applied', 'decided_by' => $by->getKey(), 'decided_at' => now()])->save();

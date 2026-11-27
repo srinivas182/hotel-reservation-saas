@@ -11,6 +11,7 @@ use App\Domains\Bookings\Exceptions\BookingActionNotAllowed;
 use App\Domains\Bookings\Exceptions\BookingNotPossible;
 use App\Domains\Bookings\Jobs\TellGuestAboutBooking;
 use App\Domains\Bookings\Models\Booking;
+use App\Domains\Bookings\StayChanges;
 use App\Domains\Finance\Money\MoneyFormatter;
 use App\Domains\Folio\Folio;
 use App\Domains\Rates\Quote\StayRequest;
@@ -127,6 +128,44 @@ final class BookingActionController extends Controller
         return back();
     }
 
+    /**
+     * 0.40.0: a new departure date for a checked-in guest (extend the stay
+     * or leave early). The guest can be told on WhatsApp.
+     */
+    public function departure(Request $request, Booking $booking, StayChanges $stays, #[CurrentUser] User $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'check_out' => ['required', 'date_format:Y-m-d'],
+            'rooms' => ['nullable', 'array', 'max:20'],
+            'rooms.*' => ['nullable', 'string', 'max:40'],
+            'notify_guest' => ['sometimes', 'boolean'],
+        ]);
+
+        $rooms = array_filter((array) ($data['rooms'] ?? []), fn ($id): bool => is_string($id) && $id !== '');
+        $checkOut = CarbonImmutable::parse((string) $data['check_out'])->startOfDay();
+        $extending = $checkOut->gt($booking->check_out);
+
+        try {
+            $stays->change($booking, $checkOut, $user, $rooms);
+        } catch (BookingActionNotAllowed $exception) {
+            throw ValidationException::withMessages(['check_out' => $exception->getMessage()]);
+        }
+
+        $notify = (bool) ($data['notify_guest'] ?? false) && TellGuestAboutBooking::conversationFor($booking) !== null;
+        if ($notify) {
+            TellGuestAboutBooking::dispatch($booking->id, TellGuestAboutBooking::CHANGED);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => match (true) {
+            $extending && $notify => __('Stay extended. The guest is sent the new details on WhatsApp.'),
+            $extending => __('Stay extended.'),
+            $notify => __('Departure date changed. The guest is sent the new details on WhatsApp.'),
+            default => __('Departure date changed.'),
+        }]);
+
+        return back();
+    }
+
     public function assignRoom(Request $request, Booking $booking, int $position, #[CurrentUser] User $user): RedirectResponse
     {
         $data = $request->validate(['room_id' => ['required', 'string']]);
@@ -154,7 +193,8 @@ final class BookingActionController extends Controller
     public function checkOut(Request $request, Booking $booking, Folio $folio, #[CurrentUser] User $user): RedirectResponse
     {
         $reason = trim((string) $request->input('balance_reason', ''));
-        $balance = $folio->balance($booking);
+        // 0.40.0: an early departure lowers the total before the balance is checked.
+        $balance = $folio->balance($booking) - ($booking->total_minor - $this->lifecycle->totalAfterCheckOut($booking));
 
         if ($balance !== 0 && $reason === '') {
             $amount = MoneyFormatter::format(Money::ofMinor($balance, $booking->currency ?? $this->context->hotel()->currency), $this->context->hotel()->default_locale);

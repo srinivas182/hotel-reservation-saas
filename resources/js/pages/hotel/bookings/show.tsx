@@ -3,10 +3,15 @@ import { useState } from 'react';
 import BookingActionController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingActionController';
 import {
     CancelBooking,
+    ChangeDeparture,
     ModifyStay,
     RoomNumbers,
 } from '@/components/bookings/booking-actions';
-import type { Actions, EditStay } from '@/components/bookings/booking-actions';
+import type {
+    Actions,
+    DeparturePreview,
+    EditStay,
+} from '@/components/bookings/booking-actions';
 import type { QuoteResult } from '@/components/rates/try-a-stay';
 import { Button } from '@/components/ui/button';
 import BookingController from '@/actions/App/Domains/Bookings/Http/Controllers/BookingController';
@@ -22,6 +27,7 @@ import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 import { askConfirm } from '@/lib/ask';
+import { addDays } from '@/lib/dates';
 
 type Booking = {
     id: string;
@@ -82,6 +88,7 @@ type Props = {
     categories: { id: string; name: string; extra_bed_allowed: boolean }[];
     today: string;
     quote?: QuoteResult;
+    departure?: DeparturePreview | null;
     stayPhones: { id: number; phone: string }[];
     canEditStayPhones: boolean;
     folio: Folio | null;
@@ -190,13 +197,17 @@ export default function ShowBooking({
     editStay,
     categories,
     quote,
+    departure,
+    today,
     stayPhones,
     canEditStayPhones,
     folio,
     deposit,
     guestOnWhatsApp,
 }: Props) {
-    const [panel, setPanel] = useState<'modify' | 'cancel' | null>(null);
+    const [panel, setPanel] = useState<
+        'modify' | 'cancel' | 'departure' | null
+    >(null);
     const post = async (url: string, message?: string) => {
         if (!message || (await askConfirm(message))) {
             router.post(url, {}, { preserveScroll: true });
@@ -240,7 +251,7 @@ export default function ShowBooking({
                                         booking.id,
                                         actions.early_departure
                                             ? t(
-                                                  'Check out early? The remaining nights go back on sale.',
+                                                  'Check out early? The remaining nights go back on sale and come off the bill.',
                                               )
                                             : undefined,
                                     )
@@ -249,6 +260,20 @@ export default function ShowBooking({
                                 {actions.early_departure
                                     ? t('Check out early')
                                     : t('Check out')}
+                            </Button>
+                        )}
+                        {actions.change_departure && (
+                            <Button
+                                variant="outline"
+                                onClick={() =>
+                                    setPanel(
+                                        panel === 'departure'
+                                            ? null
+                                            : 'departure',
+                                    )
+                                }
+                            >
+                                {t('Extend or leave early')}
                             </Button>
                         )}
                         {actions.modify && (
@@ -302,6 +327,20 @@ export default function ShowBooking({
                             categories={categories}
                             quote={quote}
                             canOverride={actions.override_price}
+                            guestOnWhatsApp={guestOnWhatsApp}
+                            onDone={() => setPanel(null)}
+                        />
+                    )}
+                    {panel === 'departure' && (
+                        <ChangeDeparture
+                            bookingId={booking.id}
+                            checkOut={booking.check_out}
+                            earliest={
+                                today > booking.check_in
+                                    ? today
+                                    : addDays(booking.check_in, 1)
+                            }
+                            preview={departure}
                             guestOnWhatsApp={guestOnWhatsApp}
                             onDone={() => setPanel(null)}
                         />

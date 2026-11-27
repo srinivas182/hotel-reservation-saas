@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Extend a stay or leave early, accessibility checks (0.40.0)
+
+#### Added
+
+- **Extend or leave early** (Pooja hotel panel 18). A new button on the booking page of a guest who is checked in. Reception picks the new departure date and sees the result before saving:
+    - **Extending:** only the extra nights are priced, at today's rates. They are added to the same bill and booked at once. The price already agreed for the booked nights does not change. If the guest's room is taken on the extra nights, reception chooses a room that is free for the whole stay.
+    - **Leaving early:** the nights not stayed go back on sale and come off the bill, in proportion to their price. The first night always counts.
+    - The guest can be sent the new dates and total on WhatsApp.
+- **Leaving early setting** (Rates → Pricing settings): nights not stayed are not charged (default), or one night is still charged.
+- **On WhatsApp**, a guest who is staying can ask to stay longer or leave earlier. The bot gives the new total and, when the guest agrees, sends the request to Today, where reception applies or declines it. Other changes during a stay go to reception.
+- **Accessibility checks** (Pooja hotel panel 6): the browser tests check the booking page with Change stay and Cancel open, and the Rooms, Rates and Staff pages, against WCAG 2.1 AA (every field has a name). The New booking page was already checked: its labels are linked. A page search finds none because the page is drawn in the browser.
+
+#### Changed
+
+- **Check out early** now also takes the nights not stayed off the bill (before, the full booked total stayed on it). The balance check at check-out uses the lower total.
+
 ### Second test round: access, platform pages and small fixes (0.39.4)
 
 #### Changed
