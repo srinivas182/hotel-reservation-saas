@@ -29,12 +29,19 @@ final class SendMessage implements RequiresHotelContext, ShouldQueue
     /** Seconds before a stuck attempt is stopped. */
     public int $timeout = 60;
 
-    public int $tries = 4;
+    public int $tries = 8;
 
     /**
      * @var list<int>
      */
-    public array $backoff = [5, 30, 120];
+    public array $backoff = [5, 30, 120, 300];
+
+    /**
+     * 0.39.2: Meta's limit on messages to one guest in a short time
+     * (131056). The message waits and is sent later instead of failing:
+     * testers lost answers when they wrote many questions quickly.
+     */
+    public const PAIR_RATE_LIMIT = 131056;
 
     public function __construct(public readonly string $messageId) {}
 
@@ -67,6 +74,12 @@ final class SendMessage implements RequiresHotelContext, ShouldQueue
 
             if ($exception->httpStatus >= 500 || $exception->httpStatus === 0 || $exception->httpStatus === 429) {
                 throw $exception;
+            }
+
+            if ($exception->metaCode === self::PAIR_RATE_LIMIT && $this->attempts() < $this->tries) {
+                $this->release(min(300, 10 * 2 ** $this->attempts()));
+
+                return;
             }
 
             $this->fail($message, $exception->metaCode, self::explain($exception->metaCode, $exception->getMessage()));

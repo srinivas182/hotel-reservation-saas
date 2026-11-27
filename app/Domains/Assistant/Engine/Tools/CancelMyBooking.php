@@ -8,6 +8,7 @@ use App\Domains\Ai\Models\HotelAssistantSettings;
 use App\Domains\Bookings\BookingLifecycle;
 use App\Domains\Bookings\BookingStatus;
 use App\Domains\Bookings\Exceptions\BookingActionNotAllowed;
+use App\Domains\Bookings\GuestBookings;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Deposits\DepositPolicy;
@@ -56,16 +57,13 @@ final class CancelMyBooking extends AssistantTool
         }
 
         $conversation = Conversation::query()->with('contact')->find($this->context->conversationId);
-        $guestId = $conversation?->contact?->guest_id;
 
-        if ($conversation === null || $guestId === null) {
+        if ($conversation === null) {
             return ['found' => false, 'next_step' => 'No booking is linked to this WhatsApp number. Ask for the booking reference and pass the request to reception (handover, reason "cancellation: <reference>").'];
         }
 
-        $bookings = Booking::query()->where('guest_id', $guestId)
-            ->whereIn('status', [BookingStatus::Tentative->value, BookingStatus::Confirmed->value])
-            ->whereDate('check_out', '>=', now()->toDateString())
-            ->orderBy('check_in')->get();
+        // 0.39.2: by the guest linked to this number or any guest with the same phone.
+        $bookings = app(GuestBookings::class)->forConversation($conversation, [BookingStatus::Tentative, BookingStatus::Confirmed]);
 
         $reference = strtoupper(trim((string) ($arguments['booking_reference'] ?? '')));
         $booking = $reference !== '' ? $bookings->firstWhere('reference', $reference) : ($bookings->count() === 1 ? $bookings->first() : null);

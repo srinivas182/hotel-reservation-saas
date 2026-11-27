@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Assistant\Engine\Tools;
 
 use App\Domains\Bookings\BookingStatus;
+use App\Domains\Bookings\GuestBookings;
 use App\Domains\Bookings\Models\Booking;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Finance\Money\MoneyFormatter;
@@ -56,17 +57,12 @@ final class QuoteBookingChange extends AssistantTool
     protected function run(array $arguments): array
     {
         $conversation = $this->context->isPractice() ? null : Conversation::query()->with('contact')->find($this->context->conversationId);
-        $guestId = $conversation?->contact?->guest_id;
+        // 0.39.2: by the guest linked to this number or any guest with the same phone.
+        $bookings = app(GuestBookings::class)->forConversation($conversation, [BookingStatus::Tentative, BookingStatus::Confirmed, BookingStatus::CheckedIn]);
 
-        if ($guestId === null) {
+        if ($conversation === null || $bookings->isEmpty() && $conversation->contact?->guest_id === null) {
             return ['found' => false, 'message' => 'No booking is linked to this WhatsApp number. Ask for the booking reference and pass the request to reception (handover).'];
         }
-
-        $bookings = Booking::query()->with('category')
-            ->where('guest_id', $guestId)
-            ->whereIn('status', [BookingStatus::Tentative->value, BookingStatus::Confirmed->value, BookingStatus::CheckedIn->value])
-            ->whereDate('check_out', '>=', now()->toDateString())
-            ->orderBy('check_in')->get();
 
         $reference = strtoupper(trim((string) ($arguments['booking_reference'] ?? '')));
         $booking = $reference !== '' ? $bookings->firstWhere('reference', $reference) : ($bookings->count() === 1 ? $bookings->first() : null);

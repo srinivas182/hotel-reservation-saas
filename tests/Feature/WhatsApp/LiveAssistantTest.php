@@ -275,7 +275,20 @@ it('tells the assistant when reception is closed', function (): void {
     webhookPost($this, [inbound('wamid.IN1')]);
     runReplies($this);
 
-    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'Reception is closed now. Still take booking requests (rule 3): the rooms are held, and staff reply and confirm bookings from Friday 08:00'));
+    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'Reception is closed now. Still take booking requests (rule 3): the rooms are held, and staff reply and confirm bookings from ')
+        && str_contains($prompt->agent->instructions(), 'at 08:00 (hotel time)'));
+});
+
+it('says "today" when reception opens later the same day', function (): void {
+    ($this->in)(fn () => $this->hotel->forceFill(['timezone' => 'Africa/Abidjan'])->save());
+    $this->travelTo(Carbon\CarbonImmutable::parse('2026-11-27 06:26:00', 'Africa/Abidjan')); // Friday, before opening
+    HotelAssistantAgent::fake([aiReply('La réception vous confirmera aujourd’hui dès 8 h.', ['intent' => 'booking_request'])]);
+    ($this->in)(fn () => HotelSettings::current()->update(['staffed_hours' => ['fri' => [['from' => '08:00', 'to' => '20:00']]]]));
+
+    webhookPost($this, [inbound('wamid.TODAY')]);
+    runReplies($this);
+
+    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'confirm bookings from today at 08:00 (hotel time)'));
 });
 
 it('works out when reception is open in the hotel\'s time zone', function (): void {
@@ -397,31 +410,51 @@ it('takes over only when the guest asks for a person, not for a keyword in an or
     'call me' => ['Please ask a person to call me back', true],
 ]);
 
-it('answers again a guest passed to staff when nobody replied for 5 minutes, and keeps it flagged', function (): void {
+it('keeps answering a guest waiting for a colleague, with no second hand-over message', function (): void {
     HotelAssistantAgent::fake([
+        aiReply('Le petit-déjeuner est servi de 6 h 30 à 10 h.', ['intent' => 'faq']),
         aiReply('Bien sûr, pour quelles dates ?', ['intent' => 'availability_question']),
     ]);
 
     webhookPost($this, [inbound('wamid.R1', message: ['text' => ['body' => 'Réception']])]);
     runReplies($this);
     $conversation = ($this->in)(fn () => Conversation::query()->sole());
-    expect($conversation->mode)->toBe(ConversationMode::Staff);
+    expect($conversation->mode)->toBe(ConversationMode::Staff)->and(assistantMessages($this))->toHaveCount(1);
 
-    // Too soon: still with staff.
-    $this->travel(2)->minutes();
-    webhookPost($this, [inbound('wamid.R2', message: ['text' => ['body' => 'Il y a quelqu’un ?']])]);
+    // A minute later, nobody has answered yet: the guest's question is answered at once.
+    $this->travel(1)->minute();
+    webhookPost($this, [inbound('wamid.R2', message: ['text' => ['body' => 'Le petit-déjeuner est à quelle heure ?']])]);
     runReplies($this);
-    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Staff);
+    expect(last(assistantMessages($this)))->toBe('Le petit-déjeuner est servi de 6 h 30 à 10 h.');
+    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'A colleague has already been asked to reply'));
 
-    $this->travel(4)->minutes();
-    webhookPost($this, [inbound('wamid.R3', message: ['text' => ['body' => 'Je veux réserver une chambre pour 2']])]);
+    // Asking again for reception: no second copy of the hand-over message.
+    $this->travel(1)->minute();
+    webhookPost($this, [inbound('wamid.R3', message: ['text' => ['body' => 'Réception']])]);
     runReplies($this);
-
     $fresh = ($this->in)(fn () => $conversation->fresh());
-    expect($fresh->mode)->toBe(ConversationMode::Assistant)
+    expect(assistantMessages($this))->toHaveCount(3)
+        ->and(last(assistantMessages($this)))->toContain('déjà transmis')
+        ->and(collect(assistantMessages($this))->filter(fn ($m) => $m === assistantMessages($this)[0])->count())->toBe(1)
+        ->and($fresh->mode)->toBe(ConversationMode::Staff)
         ->and($fresh->needs_attention)->toBeTrue()
-        ->and($fresh->handover_reason)->toBe('no_staff_reply')
-        ->and(last(assistantMessages($this)))->toBe('Bien sûr, pour quelles dates ?');
+        ->and($fresh->handover_reason)->toBe('guest_asked_for_person');
+});
+
+it('stops answering once a colleague replies to a guest waiting for staff', function (): void {
+    HotelAssistantAgent::fake([aiReply('Bonjour', ['intent' => 'greeting'])]);
+
+    webhookPost($this, [inbound('wamid.W1', message: ['text' => ['body' => 'Réception']])]);
+    runReplies($this);
+    $conversation = ($this->in)(fn () => Conversation::query()->sole());
+    $this->travel(1)->minute();
+    ($this->in)(fn () => $conversation->fresh()->forceFill(['staff_replied_at' => now()])->save());
+
+    $this->travel(1)->minute();
+    webhookPost($this, [inbound('wamid.W2', message: ['text' => ['body' => 'Merci, et le parking ?']])]);
+    runReplies($this);
+
+    expect(assistantMessages($this))->toHaveCount(1);
 });
 
 it('never takes back a conversation staff took over or answered', function (): void {
@@ -453,29 +486,6 @@ it('never stores a card number a guest types in WhatsApp', function (): void {
     HotelAssistantAgent::assertPrompted(fn ($prompt) => ! str_contains($prompt->prompt, '4242 4242 4242 4242'));
 });
 
-it('comes back to a guest waiting for staff once the hand-over wait is over', function (): void {
-    HotelAssistantAgent::fake([aiReply('Bien sûr, pour quelles dates ?', ['intent' => 'availability_question'])]);
-
-    webhookPost($this, [inbound('wamid.W1', message: ['text' => ['body' => 'Réception']])]);
-    runReplies($this);
-    $conversation = ($this->in)(fn () => Conversation::query()->sole());
-    expect($conversation->mode)->toBe(ConversationMode::Staff);
-
-    $this->travel(1)->minute();
-    webhookPost($this, [inbound('wamid.W2', message: ['text' => ['body' => 'Il y a quelqu’un ?']])]);
-    runReplies($this);
-
-    // Nobody writes again: a later attempt is already planned for this message.
-    $retries = Queue::pushed(ReplyToGuest::class)->all();
-    expect($retries)->toHaveCount(1);
-
-    $this->travel(5)->minutes();
-    runReplies($this);
-
-    expect(($this->in)(fn () => $conversation->fresh()->mode))->toBe(ConversationMode::Assistant)
-        ->and(last(assistantMessages($this)))->toBe('Bien sûr, pour quelles dates ?');
-});
-
 it('answers what the guest wrote after the last staff reply when staff hands back', function (): void {
     $reception = staffMember($this->hotel, SystemRole::Reception);
     HotelAssistantAgent::fake([
@@ -501,4 +511,31 @@ it('answers what the guest wrote after the last staff reply when staff hands bac
     runReplies($this);
 
     expect(last(assistantMessages($this)))->toBe('Oui, pour combien de personnes ?');
+});
+
+it('answers a photo in the language the guest was writing, and asks for every question of a burst', function (): void {
+    HotelAssistantAgent::fake([
+        aiReply('Yes, there is a swimming pool.', ['intent' => 'faq', 'language' => 'en']),
+        aiReply('Thanks for the photo, how can I help?', ['intent' => 'other', 'language' => 'en']),
+    ]);
+
+    webhookPost($this, [
+        inbound('wamid.L1', message: ['text' => ['body' => 'Is there a swimming pool at the hotel?']]),
+        inbound('wamid.L2', message: ['text' => ['body' => 'And is there parking for my car?']]),
+    ]);
+    runReplies($this);
+    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'The guest sent 2 messages since your last reply')
+        && str_contains($prompt->agent->instructions(), 'LANGUAGE: the guest is writing in "en"'));
+
+    $this->travel(1)->minute();
+    ($this->in)(function (): void {
+        $sticker = Message::query()->create([
+            'conversation_id' => Conversation::query()->sole()->id, 'direction' => 'in', 'type' => 'sticker', 'wamid' => 'wamid.L3',
+            'status' => 'received', 'source' => 'guest', 'sent_at' => now(),
+        ]);
+        ReplyToGuest::schedule($sticker);
+    });
+    runReplies($this);
+    HotelAssistantAgent::assertPrompted(fn ($prompt) => str_contains($prompt->agent->instructions(), 'LANGUAGE: the guest is writing in "en"')
+        && ! str_contains($prompt->agent->instructions(), 'messages since your last reply'));
 });
