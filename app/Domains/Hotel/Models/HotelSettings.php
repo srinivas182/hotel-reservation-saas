@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property list<string>|null $enabled_locales
  * @property list<array{from: int, to: int, charge: string}>|null $child_age_bands
  * @property int $hold_minutes
+ * @property string|null $early_departure_charge none, one_night (0.40.0); null on a row just created = none
  * @property string|null $booking_prefix
  * @property int $tentative_hours
  * @property string|null $email_sender_name
@@ -52,7 +53,7 @@ class HotelSettings extends Model
         'app_color',
         'check_in_time', 'check_out_time', 'late_checkout_until',
         'staffed_hours', 'enabled_locales',
-        'child_age_bands', 'hold_minutes', 'booking_prefix', 'tentative_hours',
+        'child_age_bands', 'hold_minutes', 'booking_prefix', 'tentative_hours', 'early_departure_charge',
     ];
 
     /**

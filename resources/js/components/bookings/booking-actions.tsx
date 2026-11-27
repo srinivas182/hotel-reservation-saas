@@ -19,7 +19,28 @@ export type Actions = {
     check_in: boolean;
     check_out: boolean;
     early_departure: boolean;
+    change_departure: boolean;
     override_price: boolean;
+};
+
+/** 0.40.0: what a new departure date means for a checked-in guest. */
+export type DeparturePreview = {
+    kind: 'extend' | 'shorten' | 'same';
+    possible: boolean;
+    problems: string[];
+    check_out: string;
+    nights: number;
+    nights_changed: number;
+    fee_nights: number;
+    current_total: string;
+    new_total: string;
+    difference: string;
+    difference_minor: number;
+    room_conflicts: {
+        position: number;
+        number: string;
+        free: { id: string; number: string }[];
+    }[];
 };
 
 export type EditStay = {
@@ -397,6 +418,197 @@ export function ModifyStay({
             />
             <div className="flex gap-2">
                 <Button disabled={form.processing}>{t('Save changes')}</Button>
+                <Button type="button" variant="ghost" onClick={onDone}>
+                    {t('Cancel')}
+                </Button>
+            </div>
+        </form>
+    );
+}
+
+/**
+ * 0.40.0: extend the stay or leave early, for a guest who is checked in.
+ * Only the departure date changes: extra nights are priced at today's
+ * rates and added to the bill; nights not stayed come off it.
+ */
+export function ChangeDeparture({
+    bookingId,
+    checkOut,
+    earliest,
+    preview,
+    guestOnWhatsApp = false,
+    onDone,
+}: {
+    bookingId: string;
+    checkOut: string;
+    earliest: string;
+    preview?: DeparturePreview | null;
+    guestOnWhatsApp?: boolean;
+    onDone: () => void;
+}) {
+    const form = useForm<{
+        check_out: string;
+        rooms: Record<number, string>;
+        notify_guest: boolean;
+    }>({
+        check_out: checkOut,
+        rooms: {},
+        notify_guest: guestOnWhatsApp,
+    });
+    const { data, setData } = form;
+
+    useEffect(() => {
+        if (!data.check_out || data.check_out === checkOut) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            router.reload({
+                only: ['departure'],
+                data: { new_check_out: data.check_out },
+            });
+        }, 300);
+
+        return () => window.clearTimeout(timer);
+    }, [data.check_out, checkOut]);
+
+    const current =
+        preview && preview.check_out === data.check_out ? preview : null;
+    const conflictsChosen =
+        current?.room_conflicts.every((c) => data.rooms[c.position]) ?? true;
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.put(BookingActionController.departure.url(bookingId), {
+            preserveScroll: true,
+            onSuccess: () => onDone(),
+        });
+    };
+
+    return (
+        <form
+            onSubmit={submit}
+            className="flex flex-col gap-3 rounded-xl border p-4"
+        >
+            <Heading
+                variant="small"
+                title={t('Extend the stay or leave early')}
+                description={t(
+                    'Only the departure date changes. Extra nights are priced at today’s rates and added to the bill; nights not stayed come off it.',
+                )}
+            />
+            <div className="grid max-w-xs gap-1">
+                <Label htmlFor="departure-date">
+                    {t('New departure date')}
+                </Label>
+                <Input
+                    id="departure-date"
+                    type="date"
+                    min={earliest}
+                    value={data.check_out}
+                    onChange={(e) => setData('check_out', e.target.value)}
+                    aria-describedby="departure-result"
+                />
+                <InputError message={form.errors.check_out} />
+            </div>
+            <div id="departure-result" className="text-sm" aria-live="polite">
+                {current && current.problems.length > 0 && (
+                    <p className="text-destructive">
+                        {current.problems.join(' ')}
+                    </p>
+                )}
+                {current?.possible && current.kind === 'extend' && (
+                    <p>
+                        {t(
+                            ':n more night(s). New total: :total (:difference more to pay).',
+                            {
+                                n: current.nights_changed,
+                                total: current.new_total,
+                                difference: current.difference,
+                            },
+                        )}
+                    </p>
+                )}
+                {current?.possible && current.kind === 'shorten' && (
+                    <>
+                        <p>
+                            {t(
+                                ':n night(s) fewer. New total: :total (:difference less).',
+                                {
+                                    n: current.nights_changed,
+                                    total: current.new_total,
+                                    difference: current.difference,
+                                },
+                            )}
+                        </p>
+                        {current.fee_nights > 0 && (
+                            <p className="text-muted-foreground">
+                                {t(
+                                    'One night not stayed is still charged (Rates page setting).',
+                                )}
+                            </p>
+                        )}
+                    </>
+                )}
+            </div>
+            {current?.possible &&
+                current.room_conflicts.map((conflict) => (
+                    <div
+                        key={conflict.position}
+                        className="grid max-w-sm gap-1"
+                    >
+                        <Label htmlFor={`departure-room-${conflict.position}`}>
+                            {t(
+                                'Room :number is taken on the extra nights. Move the guest to:',
+                                { number: conflict.number },
+                            )}
+                        </Label>
+                        {conflict.free.length === 0 ? (
+                            <p className="text-sm text-destructive">
+                                {t(
+                                    'No other room of this category is free for the whole stay.',
+                                )}
+                            </p>
+                        ) : (
+                            <select
+                                id={`departure-room-${conflict.position}`}
+                                className={selectClass}
+                                value={data.rooms[conflict.position] ?? ''}
+                                onChange={(e) =>
+                                    setData('rooms', {
+                                        ...data.rooms,
+                                        [conflict.position]: e.target.value,
+                                    })
+                                }
+                            >
+                                <option value="">{t('Choose')}</option>
+                                {conflict.free.map((room) => (
+                                    <option key={room.id} value={room.id}>
+                                        {room.number}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                ))}
+            <NotifyGuest
+                available={guestOnWhatsApp}
+                checked={data.notify_guest}
+                onChange={(value) => setData('notify_guest', value)}
+                label={t(
+                    'Send the new dates and total to the guest on WhatsApp',
+                )}
+            />
+            <div className="flex gap-2">
+                <Button
+                    disabled={
+                        form.processing ||
+                        !current?.possible ||
+                        !conflictsChosen
+                    }
+                >
+                    {t('Save new departure')}
+                </Button>
                 <Button type="button" variant="ghost" onClick={onDone}>
                     {t('Cancel')}
                 </Button>

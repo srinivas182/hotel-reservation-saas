@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Rates\Http\Controllers;
 
 use App\Domains\Audit\Audit;
+use App\Domains\Bookings\StayChanges;
 use App\Domains\Hotel\Models\HotelSettings;
 use App\Domains\Rates\ChildCharge;
 use App\Domains\Tenancy\TenantContext;
@@ -16,7 +17,8 @@ use Illuminate\Validation\Validator;
 use Inertia\Inertia;
 
 /**
- * Hotel-wide pricing settings: child age bands and hold duration.
+ * Hotel-wide pricing settings: child age bands, hold duration and what
+ * an early departure costs (0.40.0).
  */
 final class RateSettingsController extends Controller
 {
@@ -30,6 +32,7 @@ final class RateSettingsController extends Controller
             'child_age_bands.*.to' => ['required', 'integer', 'min:0', 'max:17'],
             'child_age_bands.*.charge' => ['required', Rule::enum(ChildCharge::class)],
             'hold_minutes' => ['required', 'integer', 'min:5', 'max:1440'],
+            'early_departure_charge' => ['sometimes', Rule::in([StayChanges::CHARGE_NONE, StayChanges::CHARGE_ONE_NIGHT])],
         ]);
 
         $validator->after(function (Validator $validator) use ($request): void {
@@ -60,11 +63,13 @@ final class RateSettingsController extends Controller
                 'charge' => (string) $band['charge'],
             ], $data['child_age_bands'])),
             'hold_minutes' => (int) $data['hold_minutes'],
+            'early_departure_charge' => (string) ($data['early_departure_charge'] ?? $settings->early_departure_charge ?? StayChanges::CHARGE_NONE),
         ]);
 
         Audit::record('rates.settings_updated', 'Pricing settings updated', subject: $this->context->hotel(), properties: [
             'child_age_bands' => $settings->child_age_bands,
             'hold_minutes' => $settings->hold_minutes,
+            'early_departure_charge' => $settings->early_departure_charge,
         ]);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Pricing settings saved.')]);
 

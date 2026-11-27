@@ -171,3 +171,36 @@ it('prices a change to the guest’s own booking, and only theirs', function ():
         expect($result['found'])->toBeFalse()->and($result)->not->toHaveKey('booking');
     });
 });
+
+it('lets a guest who is checked in ask to stay longer, sent to reception', function (): void {
+    HotelAssistantAgent::fake([
+        new ToolCall('c1', 'request_booking', ['guest_name' => 'Awa Koné', 'category_code' => 'EXE', 'check_in' => '2026-11-12', 'check_out' => '2026-11-14', 'adults' => 2]),
+        aiReply('Votre demande pour 50 000 FCFA a été transmise à la réception.', ['intent' => 'booking_request']),
+    ]);
+    ($this->in)(fn () => app(AssistantEngine::class)->respond([AssistantTurn::guest('Réservez pour Awa Koné')], $this->conversation->id));
+    $request = ($this->in)(fn () => BookingRequest::query()->sole());
+    asStaffOf($this->hotel, $this->reception)->post(route('hotel.booking-requests.approve', $request), ['edit' => false, 'acknowledge_price' => false])->assertSessionHasNoErrors();
+
+    $this->travelTo('2026-11-12 15:00:00');
+    ($this->in)(function (): void {
+        $booking = Booking::query()->sole();
+        $room = App\Domains\Rooms\Models\Room::query()->where('room_category_id', $booking->room_category_id)->orderBy('number')->firstOrFail();
+        app(App\Domains\Bookings\BookingLifecycle::class)->checkIn($booking, [1 => $room->id]);
+
+        $tool = new App\Domains\Assistant\Engine\Tools\QuoteBookingChange(new App\Domains\Assistant\Engine\ToolContext('fr', $this->conversation->id));
+
+        // Other changes are for reception while the guest is staying.
+        $other = json_decode((string) $tool->handle(new Laravel\Ai\Tools\Request(['adults' => 3])), true);
+        expect($other['checked_in'])->toBeTrue()->and($other['note'])->toContain('handover');
+
+        $longer = json_decode((string) $tool->handle(new Laravel\Ai\Tools\Request(['check_out' => '2026-11-15'])), true);
+        expect($longer['change'])->toBe('stay longer')
+            ->and($longer['possible'])->toBeTrue()
+            ->and($longer['more_to_pay'])->toBeTrue()
+            ->and($longer['sent_to_reception'])->toBeFalse();
+
+        $sent = json_decode((string) $tool->handle(new Laravel\Ai\Tools\Request(['check_out' => '2026-11-15', 'send_to_reception' => true])), true);
+        expect($sent['sent_to_reception'])->toBeTrue()
+            ->and(App\Domains\BookingRequests\BookingChangeRequest::query()->where('status', 'pending')->sole()->stay['check_out'])->toBe('2026-11-15');
+    });
+});
